@@ -1,5 +1,5 @@
 [package]
-name = "cellular_automaton_control"
+name = "cellular_control"
 version = "0.1.0"
 edition = "2021"
 
