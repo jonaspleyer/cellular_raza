@@ -1,7 +1,6 @@
 use crate::concepts::domain::*;
-
-
-use nalgebra::Vector3;
+use crate::cell_properties::cell_model::*;
+use crate::concepts::mechanics::*;
 
 
 pub struct Cuboid {
@@ -12,18 +11,25 @@ pub struct Cuboid {
 
 
 impl Domain for Cuboid {
-    fn apply_boundary(&self, _pos1: &Vector3<f64>, pos2: &mut Vector3<f64>, speed: &mut Vector3<f64>) {
-        // Check if the particle is below lower edge
+    fn apply_boundary(&self, cell: &mut CellModel) {
+        let mut pos = cell.mechanics.pos();
+        let mut velocity = cell.mechanics.velocity();
+
+        // For each dimension (ie 3 in general)
         for i in 0..3 {
-            if pos2[i] < self.min[i] {
-                pos2[i] = 2.0 * self.min[i] - pos2[i];
-                speed[i] *= -self.rebound;
+            // Check if the particle is below lower edge
+            if pos[i] < self.min[i] {
+                pos[i] = 2.0 * self.min[i] - pos[i];
+                velocity[i] *= -self.rebound;
             }
             // Check if the particle is over the edge
-            if pos2[i] > self.max[i] {
-                pos2[i] = 2.0 * self.max[i] - pos2[i];
-                speed[i] *= -self.rebound;
+            if pos[i] > self.max[i] {
+                pos[i] = 2.0 * self.max[i] - pos[i];
+                velocity[i] *= -self.rebound;
             }
         }
+        // Set new position and velocity of particle
+        cell.mechanics.set_pos(&pos);
+        cell.mechanics.set_velocity(&velocity);
     }
 }

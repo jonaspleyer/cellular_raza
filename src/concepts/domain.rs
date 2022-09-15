@@ -1,6 +1,6 @@
-use nalgebra::Vector3;
+use crate::cell_properties::cell_model::*;
 
 
 pub trait Domain  {
-    fn apply_boundary(&self, pos1: &Vector3<f64>, pos2: &mut Vector3<f64>, speed: &mut Vector3<f64>);
+    fn apply_boundary(&self, cell: &mut CellModel);
 }

@@ -21,21 +21,23 @@ if __name__ == "__main__":
     dataframes = [pd.read_csv(filename) for filename in glob.glob("out/*.csv")]
     size = len(dataframes[0].x0)
 
-    x_min = -6# min([min(df.x0) for df in dataframes])
-    x_max = 6# max([max(df.x0) for df in dataframes])
+    domain_size = 15
 
-    y_min = -6# min([min(df.x1) for df in dataframes])
-    y_max = 6# max([max(df.x1) for df in dataframes])
+    x_min = -domain_size
+    x_max = domain_size
+
+    y_min = -domain_size
+    y_max = domain_size
 
     p = mp.Pool()
 
     step = 2
-
+    
     p.starmap(export_pdf,
         zip(
             np.arange(0, size, step),
-            [[df.x0[i] for df in dataframes] for i in np.arange(0, size, step)],
-            [[df.x1[i] for df in dataframes] for i in np.arange(0, size, step)],
+            [[df.x0[i] for df in dataframes if len(df.x0) > i] for i in np.arange(0, size, step)],
+            [[df.x1[i] for df in dataframes if len(df.x1) > i] for i in np.arange(0, size, step)],
             itertools.repeat(x_min),
             itertools.repeat(x_max),
             itertools.repeat(y_min),
