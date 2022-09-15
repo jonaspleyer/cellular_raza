@@ -1,2 +1,5 @@
 /target
 /Cargo.lock
+out
+*.csv
+*.mp4
