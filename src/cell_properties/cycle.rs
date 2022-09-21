@@ -1,16 +1,14 @@
 use crate::concepts::cycle::*;
 use crate::cell_properties::cell_model::CellModel;
 
-use serde::{Serialize,Deserialize};
 
-
-#[derive(Clone,Debug,Serialize,Deserialize)]
+#[derive(Clone)]
 pub struct CellCycle {
     pub lifetime: f64,
 }
 
 
-#[derive(Clone,Debug,Serialize,Deserialize)]
+#[derive(Clone)]
 pub struct CycleModel {
     pub cycles: Vec<CellCycle>,
     pub current_age: f64,

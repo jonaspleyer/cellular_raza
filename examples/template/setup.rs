@@ -13,34 +13,52 @@ use cellular_control::concepts::mechanics::*;
 // Imports from other crates
 use nalgebra::Vector3;
 
-use rand::distributions::Standard;
 use rand::Rng;
+
+use std::collections::HashMap;
+
+// Domain properties
+pub const N_VOXEL: usize = 20;
+pub const DOMAIN_SIZE: f64 = 100.0;
+
+// Cell properties
+pub const CELL_RADIUS: f64 = 3.0;
+pub const CELL_LENNARD_JONES_STRENGTH: f64 = 0.1;
+pub const CELL_INITIAL_VELOCITY: f64 = 0.1;
+pub const CELL_CYCLE_LIFETIME1_LOW: f64 = 250.0;
+pub const CELL_CYCLE_LIFETIME1_HIGH: f64 = 300.0;
+pub const CELL_CYCLE_LIFETIME2_LOW: f64 = 250.0;
+pub const CELL_CYCLE_LIFETIME2_HIGH: f64 = 300.0;
+pub const CELL_CYCLE_LIFETIME3_LOW: f64 = 250.0;
+pub const CELL_CYCLE_LIFETIME3_HIGH: f64 = 300.0;
+pub const CELL_CYCLE_LIFETIME4_LOW: f64 = 250.0;
+pub const CELL_CYCLE_LIFETIME4_HIGH: f64 = 300.0;
+
+// Number of cells initially in simulation
+pub const N_CELLS: u32 = 1000;
 
 
 pub fn insert_cells() -> Vec<CellModel> {
-    let domain_size = 15.0;
-    let velocity = 1.0;
-    let radius = 1.5;
-
     let mut cells = Vec::new();
 
-    for _ in 1..15 {
-        let de_model = DeathModel { release_fluid: false, fluid_fraction: 0.0 };
-        let in_model = LennardJones { epsilon: 0.1, sigma: radius/2.0f64.powf(1.0/6.0) };
+    for n in 0..N_CELLS {
+        let mut rng = rand::thread_rng();
+
+        let de_model = DeathModel {};
+        let in_model = LennardJones { epsilon: CELL_LENNARD_JONES_STRENGTH, sigma: CELL_RADIUS/2.0f64.powf(1.0/6.0) };
         let me_model = MechanicsModel::from((&Vector3::<f64>::from([0.0, 0.0, 0.0]), &Vector3::<f64>::from([0.0, 0.0, 0.0])));
-        let rn_model = Standard {};
         let fl_model = Flags { removal: false };
 
-        let cy1 = CellCycle { lifetime: rand::thread_rng().gen_range(5.0..40.0) };
-        let cy2 = CellCycle { lifetime: rand::thread_rng().gen_range(5.0..40.0) };
-        let cy3 = CellCycle { lifetime: rand::thread_rng().gen_range(5.0..40.0) };
-        let cy4 = CellCycle { lifetime: rand::thread_rng().gen_range(5.0..40.0) };
+        let cy1 = CellCycle { lifetime: rng.gen_range(CELL_CYCLE_LIFETIME1_LOW..CELL_CYCLE_LIFETIME1_HIGH) };
+        let cy2 = CellCycle { lifetime: rng.gen_range(CELL_CYCLE_LIFETIME2_LOW..CELL_CYCLE_LIFETIME2_HIGH) };
+        let cy3 = CellCycle { lifetime: rng.gen_range(CELL_CYCLE_LIFETIME3_LOW..CELL_CYCLE_LIFETIME3_HIGH) };
+        let cy4 = CellCycle { lifetime: rng.gen_range(CELL_CYCLE_LIFETIME4_LOW..CELL_CYCLE_LIFETIME4_HIGH) };
         let cy_model = CycleModel::from(&vec![cy1, cy2, cy3, cy4]);
 
-        let mut cell = CellModel { mechanics: me_model, cell_cycle: cy_model, death_model: de_model, interaction: in_model, rng_model: rn_model, flags: fl_model };
+        let mut cell = CellModel { mechanics: me_model, cell_cycle: cy_model, death_model: de_model, interaction: in_model, flags: fl_model, id: n };
 
-        cell.mechanics.set_pos(&Vector3::<f64>::from([rand::thread_rng().gen_range(-domain_size..domain_size), rand::thread_rng().gen_range(-domain_size..domain_size), 0.0]));
-        cell.mechanics.set_velocity(&Vector3::<f64>::from([rand::thread_rng().gen_range(-velocity..velocity), rand::thread_rng().gen_range(-velocity..velocity), 0.0]));
+        cell.mechanics.set_pos(&Vector3::<f64>::from([rng.gen_range(-DOMAIN_SIZE..DOMAIN_SIZE), rng.gen_range(-DOMAIN_SIZE..DOMAIN_SIZE), 0.0]));
+        cell.mechanics.set_velocity(&Vector3::<f64>::from([rng.gen_range(-CELL_INITIAL_VELOCITY..CELL_INITIAL_VELOCITY), rng.gen_range(-CELL_INITIAL_VELOCITY..CELL_INITIAL_VELOCITY), 0.0]));
         cells.push(cell);
     }
 
@@ -49,10 +67,11 @@ pub fn insert_cells() -> Vec<CellModel> {
 
 
 pub fn define_domain() -> Cuboid {
-    let size = 15.0;
     Cuboid {
-        min: [-size, -size, -size],
-        max: [size, size, size],
+        min: [-DOMAIN_SIZE, -DOMAIN_SIZE, -DOMAIN_SIZE],
+        max: [DOMAIN_SIZE, DOMAIN_SIZE, DOMAIN_SIZE],
         rebound: 1.0,
+        voxel_sizes: [2.0 * DOMAIN_SIZE/N_VOXEL as f64, 2.0 * DOMAIN_SIZE/N_VOXEL as f64, 2.0 * DOMAIN_SIZE/N_VOXEL as f64],
+        voxels: HashMap::new(),
     }
 }
