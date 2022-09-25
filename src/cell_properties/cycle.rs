@@ -34,7 +34,7 @@ impl Cycle for CycleModel {
             cell.cell_cycle.current_cycle += 1;
             cell.cell_cycle.current_age = 0.0;
         }
-        if cell.cell_cycle.current_cycle == cell.cell_cycle.cycles.len()-1 {
+        if cell.cell_cycle.current_cycle == cell.cell_cycle.cycles.len() {
             cell.flags.removal = true;
         }
     }
