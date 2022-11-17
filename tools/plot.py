@@ -4,11 +4,12 @@ import numpy as np
 import multiprocessing as mp
 import itertools
 import glob
+import time
 
 
-def export_pdf(i, x_slices, y_slices, x_min, x_max, y_min, y_max, size=5**2):
-    radius = 0.5
-    n_vox = 40
+def export_png(i, x_slices, y_slices, x_min, x_max, y_min, y_max, size=10**2):
+    radius = 1
+    n_vox = 20
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
@@ -30,15 +31,23 @@ def export_pdf(i, x_slices, y_slices, x_min, x_max, y_min, y_max, size=5**2):
     plt.close(fig)
 
 
+def generate_save_pairs(dataframes, step, x_min, x_max, y_min, y_max):
+    for i, df in enumerate(dataframes):
+        if i % step == 0 and len(df) > 1:
+            yield i, df.x0, df.x1, x_min, x_max, y_min ,y_max
+
+
 if __name__ == "__main__":
-    p = mp.Pool()
+    p = mp.Pool(40)
 
-    dataframes = p.map(pd.read_csv, glob.glob("out/*.csv"))
-    
-    sizes = [len(dataframes[i].t) for i in range(len(dataframes))]
-    size = max(sizes)
+    # Read the input csvs
+    start = time.time()
+    dataframes = p.map(pd.read_csv, sorted(glob.glob("out/*.csv")))
+    print("Reading csv files takes:", time.time() - start)
 
-    domain_size = 200
+    # Calculate intermediate values
+    start = time.time()
+    domain_size = 100
 
     x_min = -domain_size
     x_max = domain_size
@@ -47,18 +56,8 @@ if __name__ == "__main__":
     y_max = domain_size
 
     step = 2
+    print("Assigning values takes:", time.time()-start)
 
-    x_values = [[df.x0[i] for df in dataframes if len(df.x0) > i] for i in np.arange(0, size, step)]
-    y_values = [[df.x1[i] for df in dataframes if len(df.x1) > i] for i in np.arange(0, size, step)]
-    
-    p.starmap(export_pdf,
-        zip(
-            np.arange(0, size, step),
-            x_values,
-            y_values,
-            itertools.repeat(x_min),
-            itertools.repeat(x_max),
-            itertools.repeat(y_min),
-            itertools.repeat(y_max)
-        )
-    )
+    # Export images
+    p.starmap(export_png, generate_save_pairs(dataframes, step, x_min, x_max, y_min, y_max))
+    print("Generating all images takes:", time.time()-start)

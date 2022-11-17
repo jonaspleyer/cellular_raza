@@ -13,9 +13,12 @@ use cellular_control::concepts::mechanics::*;
 // Imports from other crates
 use nalgebra::Vector3;
 
-use rand::Rng;
+use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 
 use std::collections::HashMap;
+
+use ndarray::Array3;
 
 // Domain properties
 pub const N_VOXEL: usize = 20;
@@ -24,25 +27,26 @@ pub const DOMAIN_SIZE: f64 = 100.0;
 // Cell properties
 pub const CELL_RADIUS: f64 = 3.0;
 pub const CELL_LENNARD_JONES_STRENGTH: f64 = 0.1;
-pub const CELL_INITIAL_VELOCITY: f64 = 0.1;
-pub const CELL_CYCLE_LIFETIME1_LOW: f64 = 250.0;
-pub const CELL_CYCLE_LIFETIME1_HIGH: f64 = 300.0;
-pub const CELL_CYCLE_LIFETIME2_LOW: f64 = 250.0;
-pub const CELL_CYCLE_LIFETIME2_HIGH: f64 = 300.0;
-pub const CELL_CYCLE_LIFETIME3_LOW: f64 = 250.0;
-pub const CELL_CYCLE_LIFETIME3_HIGH: f64 = 300.0;
-pub const CELL_CYCLE_LIFETIME4_LOW: f64 = 250.0;
-pub const CELL_CYCLE_LIFETIME4_HIGH: f64 = 300.0;
+pub const CELL_INITIAL_VELOCITY: f64 = 100.0;
+pub const CELL_CYCLE_LIFETIME1_LOW:  f64 = 0.0;
+pub const CELL_CYCLE_LIFETIME1_HIGH: f64 = 1.0;
+pub const CELL_CYCLE_LIFETIME2_LOW:  f64 = 0.0;
+pub const CELL_CYCLE_LIFETIME2_HIGH: f64 = 1.0;
+pub const CELL_CYCLE_LIFETIME3_LOW:  f64 = 0.0;
+pub const CELL_CYCLE_LIFETIME3_HIGH: f64 = 1.0;
+pub const CELL_CYCLE_LIFETIME4_LOW:  f64 = 1600.0;
+pub const CELL_CYCLE_LIFETIME4_HIGH: f64 = 2400.0;
+pub const CELL_VELOCITY_REDUCTION: f64 = 1.0;
 
 // Number of cells initially in simulation
-pub const N_CELLS: u32 = 1000;
+pub const N_CELLS: u32 = 1500;
 
 
 pub fn insert_cells() -> Vec<CellModel> {
     let mut cells = Vec::new();
 
     for n in 0..N_CELLS {
-        let mut rng = rand::thread_rng();
+        let mut rng = ChaCha8Rng::seed_from_u64(n.into());
 
         let de_model = DeathModel {};
         let in_model = LennardJones { epsilon: CELL_LENNARD_JONES_STRENGTH, sigma: CELL_RADIUS/2.0f64.powf(1.0/6.0) };
@@ -66,12 +70,21 @@ pub fn insert_cells() -> Vec<CellModel> {
 }
 
 
-pub fn define_domain() -> Cuboid {
+pub fn define_domain() -> Cuboid<'static> {
+
+    // Create a voxel
+    let step = 2.0 * DOMAIN_SIZE/N_VOXEL as f64;
+    let voxel_sizes = [step, step, step];
+
+    let min = [-DOMAIN_SIZE, -DOMAIN_SIZE, -DOMAIN_SIZE];
+    let max = [-DOMAIN_SIZE + step, -DOMAIN_SIZE + step, -DOMAIN_SIZE + step];
+    let voxel = Voxel { min: min, max: max, cells: Vec::<&CellModel>::new(), };
+
+    let mut voxels = Array3::<Voxel>::from_elem((N_VOXEL, N_VOXEL, N_VOXEL), voxel);
     Cuboid {
         min: [-DOMAIN_SIZE, -DOMAIN_SIZE, -DOMAIN_SIZE],
         max: [DOMAIN_SIZE, DOMAIN_SIZE, DOMAIN_SIZE],
-        rebound: 1.0,
-        voxel_sizes: [2.0 * DOMAIN_SIZE/N_VOXEL as f64, 2.0 * DOMAIN_SIZE/N_VOXEL as f64, 2.0 * DOMAIN_SIZE/N_VOXEL as f64],
-        voxels: HashMap::new(),
+        voxel_sizes: voxel_sizes,
+        voxels: voxels,
     }
 }

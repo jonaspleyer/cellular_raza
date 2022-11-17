@@ -93,6 +93,11 @@ fn rhs(
 }
 
 
+pub const SAVE_STEP: usize = 10;
+pub const DT: f64 = 0.1;
+pub const T_MAX: f64 = 1000.0;
+
+
 fn main() {
     // Vector contains all cells currently present in simulation
     let mut cells = setup::insert_cells();
@@ -100,28 +105,18 @@ fn main() {
     // Spatial domain with boundaries to keep cells inside
     let domain = setup::define_domain();
 
-    // How much speed do the particles lose
-    let lambda = 0.5;
-
     // Time step of simulation
-    let save_step = 10;
     let mut t = 0.0;
-    let dt = 0.1;
-    let t_max = 1000.0;
 
-    for cell in cells.iter() {
-        let data = format!("t,x0,x1,x2\n{},{},{},{}\n", t, cell.mechanics.pos()[0], cell.mechanics.pos()[1], cell.mechanics.pos()[2]);
-        let filename = format!("out/cell_{:010.0}.csv", cell.id);
-        fs::write(filename, data).expect("Unable to open file");
-    }
 
     let now = Instant::now();
+    let mut save_index: usize = 0;
 
-    while t < t_max {
-        for _ in 0..save_step {
+    while t < T_MAX {
+        for _ in 0..SAVE_STEP {
 
             // Update the cycle status of cells
-            cells.iter_mut().for_each(|cell| CycleModel::update(&dt, cell));
+            cells.iter_mut().for_each(|cell| CycleModel::update(&DT, cell));
             
             // Sort into voxels
             let mut voxel_index_to_cells = HashMap::<[usize; 3], Vec<&mut CellModel>>::new();
@@ -153,7 +148,7 @@ fn main() {
                 };
                 let mut rk4 = Rk4::from(ode_def);
 
-                rk4.do_step_iter(pv, &t, &dt, &(&domain, &voxel_cells, &voxel_index_to_cells, &lambda)).unwrap();
+                rk4.do_step_iter(pv, &t, &DT, &(&domain, &voxel_cells, &voxel_index_to_cells, &CELL_VELOCITY_REDUCTION)).unwrap();
             }
             
             // Set new positions for cells
@@ -171,21 +166,30 @@ fn main() {
             cells.retain(|cell| !cell.flags.removal);
 
             // Update time step
-            t += dt;
+            t += DT;
         }
-        // Write new positions to file
+        // Write new positions to new file
+        let filename = format!("out/snapshot_{:010.0}.csv", save_index);
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&filename)
+            .expect("Unable to open file");
+
+        let data = "id,t,x0,x1,x2";
+        if let Err(e) = writeln!(file, "{}", data) {
+            eprintln!("Could not write to file: {}", e);
+        }
+
         for cell in cells.iter() {
-            let data = format!("{},{},{},{}", t, cell.mechanics.pos()[0], cell.mechanics.pos()[1], cell.mechanics.pos()[2]);
-            let filename = format!("out/cell_{:010.0}.csv", cell.id);
-            let mut file = fs::OpenOptions::new()
-                        .append(true)
-                        .open(filename)
-                        .expect("Unable to open file");
+            let data = format!("{},{},{},{},{}", cell.id, t, cell.mechanics.pos()[0], cell.mechanics.pos()[1], cell.mechanics.pos()[2]);
+
             if let Err(e) = writeln!(file, "{}", data) {
-                        eprintln!("Could not write to file: {}", e);
+                eprintln!("Could not write to file: {}", e);
             }
         }
-        println!("t={:10.4} Saving", t);
+        println!("t={:10.4} Saving to file {}", t, &filename);
+        save_index += 1;
     }
     println!("Elapsed time: {:10.2}s", now.elapsed().as_secs());
 }
