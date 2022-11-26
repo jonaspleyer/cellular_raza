@@ -5,6 +5,11 @@ use crate::cell_properties::mechanics::*;
 use crate::cell_properties::flags::*;
 
 
+// Implement Sender/Sync traits
+unsafe impl Send for CellModel {}
+unsafe impl Sync for CellModel {}
+
+
 #[derive(Clone)]
 pub struct CellModel {
     pub mechanics: MechanicsModel,

@@ -1,32 +1,29 @@
 // Imports from the cellular_control crate
 use cellular_control::concepts::mechanics::*;
 use cellular_control::concepts::interaction::*;
-use cellular_control::concepts::cycle::*;
-use cellular_control::concepts::domain::*;
-
-use cellular_control::cell_properties::cycle::*;
+use cellular_control::cell_properties::cell_model::*;
 use cellular_control::domain::cuboid::*;
+use cellular_control::plotting::cells_2d::plot_current_cells;
 
 // Imports from other files for this example
 mod setup;
 use crate::setup::*;
 
-// Imports from other crates
+// Standard library imports
 use std::fs;
 use std::io::Write;
-
 use std::collections::HashMap;
-use cellular_control::cell_properties::cell_model::*;
+use std::cmp::{min,max};
+use std::time::{Instant};
+use std::sync::atomic::{AtomicBool,AtomicI32,Ordering};
+use std::sync::Arc;
 
-use ode_integrate::solvers::fixed_step::Rk4;
-use ode_integrate::concepts::steppers::Stepper;
-use ode_integrate::concepts::ode_def::OdeDefinition;
-use ode_integrate::prelude::*;
+use hurdles::Barrier;
 
 use itertools::Itertools;
-use std::cmp::{min,max};
 use nalgebra::Vector3;
-use std::time::{Instant};
+
+use ode_integrate::prelude::*;
 
 
 fn generate_voxels(vox: &[usize; 3], n_vox: &[usize; 3]) -> Vec<[usize; 3]> {
@@ -57,7 +54,7 @@ fn rhs(
         let vox = domain.determine_voxel(&cell0);
 
         // Get voxels with which the cells are interacting
-        let voxels = generate_voxels(&vox, &[N_VOXEL; 3]);
+        let voxels = generate_voxels(&vox, &[N_VOXEL_X, N_VOXEL_Y, N_VOXEL_Z]);
 
         // Loop over all cells in all interaction voxels
         for voxel in voxels {
@@ -93,103 +90,176 @@ fn rhs(
 }
 
 
-pub const SAVE_STEP: usize = 10;
+pub const MULT_SAVE: usize = 4;
 pub const DT: f64 = 0.1;
-pub const T_MAX: f64 = 1000.0;
+pub const T_MAX: f64 = 10.0;
+
+
+fn save_to_file(t: f64, save_index: usize, cells: &Vec<CellModel>) {
+    // Write new positions to new file
+    let filename = format!("out/snapshot_{:010.0}.csv", save_index);
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&filename)
+        .expect("Unable to open file");
+
+    let data = "id,t,x0,x1,x2";
+    if let Err(e) = writeln!(file, "{}", data) {
+        eprintln!("Could not write to file: {}", e);
+    }
+
+    for cell in cells.iter() {
+        let data = format!("{},{},{},{},{}", cell.id, t, cell.mechanics.pos()[0], cell.mechanics.pos()[1], cell.mechanics.pos()[2]);
+
+        if let Err(e) = writeln!(file, "{}", data) {
+            eprintln!("Could not write to file: {}", e);
+        }
+    }
+    println!("t={:10.4} Saving to file {}", t, &filename);
+}
 
 
 fn main() {
     // Vector contains all cells currently present in simulation
-    let mut cells = setup::insert_cells();
+    let cells = setup::insert_cells();
 
     // Spatial domain with boundaries to keep cells inside
-    let domain = setup::define_domain();
+    let (domain, mut voxels) = setup::define_domain();
 
-    // Time step of simulation
-    let mut t = 0.0;
+    for cell in cells {
+        let index = domain.determine_voxel(&cell);
+        voxels[index].cells.push(cell);
+    }
 
+    let n_threads = min(N_THREADS, voxels.len());
+
+    println!("Creating {} threads", n_threads);
+
+    let chunk_size = max(1, ((voxels.len() as f64) / (n_threads as f64)).floor() as usize);
+
+    let mut vox_vec: Vec<Voxel> = voxels.into_raw_vec();
+    let mut handlers = Vec::new();
+
+    let mut barrier_between_threads = Barrier::new(n_threads);
+    let mut barrier_start = Barrier::new(n_threads+1);
+    let mut barrier_end = Barrier::new(n_threads+1);
+
+    let stop = Arc::new(AtomicBool::new(false));
+
+    for k in 0..n_threads {
+        // Tell threads to wait until started from outside
+        let stop_new = Arc::clone(&stop);
+
+        let mut barrier_start_new = barrier_start.clone();
+        let mut barrier_end_new = barrier_end.clone();
+
+        // Distribute the voxels onto the threads
+        let vox_chunk: Vec<Voxel> = vox_vec.drain(..chunk_size).collect();
+        let mut vox_cont = VoxelContainer {
+            voxels: vox_chunk,
+            barrier: barrier_between_threads.clone(),
+        };
+
+        // Spawn threads for our voxel containers
+        let handler = std::thread::spawn(move || {
+            let mut total_iter = 0;
+            let mut t = 0.0;
+
+            loop {
+                t = total_iter as f64 * DT;
+                barrier_start_new.wait();
+
+                vox_cont.update(t, DT);
+
+                barrier_end_new.wait();
+
+                if stop_new.load(Ordering::Relaxed) {
+                    break;
+                }
+                total_iter += 1;
+            }
+        });
+        handlers.push(handler);
+    }
 
     let now = Instant::now();
-    let mut save_index: usize = 0;
+    let total_steps = (T_MAX / DT).ceil() as usize + 1;
+    let n_digits = T_MAX.to_string().len() as usize;
+    let n_digits_after_decimal = max(0, n_digits as i64 - (T_MAX / DT).round().to_string().len() as i64) as usize;
 
-    while t < T_MAX {
-        for _ in 0..SAVE_STEP {
+    println!("Running loop for {} steps.", total_steps);
+    println!("┌─{:─<w1$}─┬─{:─<8}─┐", "", "", w1=n_digits+n_digits_after_decimal);
+    println!("│{:^w1$}│ {:^8} │", "Sim", "Wall", w1=n_digits+n_digits_after_decimal+2);
+    println!("├─{:─<w1$}─┼─{:─<8}─┤", "", "", w1=n_digits+n_digits_after_decimal);
 
-            // Update the cycle status of cells
-            cells.iter_mut().for_each(|cell| CycleModel::update(&DT, cell));
-            
-            // Sort into voxels
-            let mut voxel_index_to_cells = HashMap::<[usize; 3], Vec<&mut CellModel>>::new();
-            for cell in cells.iter_mut() {
-                let index = domain.determine_voxel(&cell);
-                match voxel_index_to_cells.get_mut(&index) {
-                    Some(key) => key.push(cell),
-                    None => match voxel_index_to_cells.insert(index, vec![cell]) {
-                        Some(_) => panic!("Test"),
-                        None => (),
-                    },
-                };
-            }
-            
-            // Initialize values for solving with ode solver
-            let mut pv_s: Vec<Vec<f64>> = voxel_index_to_cells.iter().map(|(_, b)| b).map(|voxel_cells| voxel_cells.iter().flat_map(|cell| {
-                let p = cell.mechanics.pos();
-                let v = cell.mechanics.velocity();
-                vec![p[0], p[1], p[2], v[0], v[1], v[2]]
-            }).collect()).collect();
+    // Run a loop 
+    for loop_index in 0..total_steps {
+        // Define the current time
+        let t = loop_index as f64 * DT;
 
-            // Calculate new velocitites and positions by integrating with ode solver
-            for ((_, voxel_cells), pv) in voxel_index_to_cells.iter().zip(pv_s.iter_mut()) {
+        barrier_start.wait();
 
-                let ode_def = OdeDefinition {
-                    y0: pv.clone(),
-                    t0: t,
-                    func: &rhs,
-                };
-                let mut rk4 = Rk4::from(ode_def);
+        // Stop the simulation if we reached the last step
+        if loop_index==total_steps-1 {
+            stop.store(true, Ordering::Relaxed);
+        }
+        barrier_end.wait();
 
-                rk4.do_step_iter(pv, &t, &DT, &(&domain, &voxel_cells, &voxel_index_to_cells, &CELL_VELOCITY_REDUCTION)).unwrap();
-            }
-            
-            // Set new positions for cells
-            voxel_index_to_cells.iter_mut().zip(pv_s.iter()).for_each(|((_, voxel_cells), pv)| {
-                voxel_cells.iter_mut().enumerate().for_each(|(i, cell)| {
-                    cell.mechanics.set_pos(&Vector3::<f64>::from([pv[6*i + 0], pv[6*i + 1], pv[6*i + 2]]));
-                    cell.mechanics.set_velocity(&Vector3::<f64>::from([pv[6*i + 3], pv[6*i + 4], pv[6*i + 5]]));
-                });
+        // Sort into voxels
+        /* let mut voxel_index_to_cells = HashMap::<[usize; 3], Vec<&mut CellModel>>::new();
+        for cell in cells.iter_mut() {
+            let index = domain.determine_voxel(&cell);
+            match voxel_index_to_cells.get_mut(&index) {
+                Some(key) => key.push(cell),
+                None => match voxel_index_to_cells.insert(index, vec![cell]) {
+                    Some(_) => panic!("Test"),
+                    None => (),
+                },
+            };
+        }*/
+        
+        // Initialize values for solving with ode solver
+        /* let mut pv_s: Vec<Vec<f64>> = voxel_index_to_cells.iter().map(|(_, b)| b).map(|voxel_cells| voxel_cells.iter().flat_map(|cell| {
+            let p = cell.mechanics.pos();
+            let v = cell.mechanics.velocity();
+            vec![p[0], p[1], p[2], v[0], v[1], v[2]]
+        }).collect()).collect();
+
+        // Calculate new velocitites and positions by integrating with ode solver
+        for ((_, voxel_cells), pv) in voxel_index_to_cells.iter().zip(pv_s.iter_mut()) {
+
+            let ode_def = OdeDefinition {
+                y0: pv.clone(),
+                t0: t,
+                func: &rhs,
+            };
+            let mut rk4 = Rk4::from(ode_def);
+
+            rk4.do_step_iter(pv, &t, &DT, &(&domain, &voxel_cells, &voxel_index_to_cells, &CELL_VELOCITY_REDUCTION)).unwrap();
+        }
+        
+        // Set new positions for cells
+        voxel_index_to_cells.iter_mut().zip(pv_s.iter()).for_each(|((_, voxel_cells), pv)| {
+            voxel_cells.iter_mut().enumerate().for_each(|(i, cell)| {
+                cell.mechanics.set_pos(&Vector3::<f64>::from([pv[6*i + 0], pv[6*i + 1], pv[6*i + 2]]));
+                cell.mechanics.set_velocity(&Vector3::<f64>::from([pv[6*i + 3], pv[6*i + 4], pv[6*i + 5]]));
             });
-
-            // Apply boundary conditions
-            cells.iter_mut().for_each(|cell| domain.apply_boundary(cell).unwrap());
-
-            // Delete cells which are flagged for removal
-            cells.retain(|cell| !cell.flags.removal);
-
-            // Update time step
-            t += DT;
-        }
-        // Write new positions to new file
-        let filename = format!("out/snapshot_{:010.0}.csv", save_index);
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(&filename)
-            .expect("Unable to open file");
-
-        let data = "id,t,x0,x1,x2";
-        if let Err(e) = writeln!(file, "{}", data) {
-            eprintln!("Could not write to file: {}", e);
+        });
+        */
+        
+        if loop_index % (MULT_SAVE-1) == 0 {
+            println!("│ {:w1$.w2$} │ {:8.2} │ Saving to file", t, now.elapsed().as_millis() as f64/1000.0, w1=n_digits+n_digits_after_decimal, w2=n_digits_after_decimal);
+            // save_to_file(t, save_index, &cells);
         }
 
-        for cell in cells.iter() {
-            let data = format!("{},{},{},{},{}", cell.id, t, cell.mechanics.pos()[0], cell.mechanics.pos()[1], cell.mechanics.pos()[2]);
-
-            if let Err(e) = writeln!(file, "{}", data) {
-                eprintln!("Could not write to file: {}", e);
-            }
-        }
-        println!("t={:10.4} Saving to file {}", t, &filename);
-        save_index += 1;
+        // Additionally plot a nice 2d picture of all cells
+        // plot_current_cells(save_index, t, &cells, DOMAIN_SIZE, N_VOXEL, CELL_RADIUS);
     }
-    println!("Elapsed time: {:10.2}s", now.elapsed().as_secs());
+
+    for handler in handlers {
+        handler.join().unwrap();
+    }
+    println!("└─{:─<w1$}─┴─{:─<8}─┘", "", "", w1=n_digits+n_digits_after_decimal);
+    println!("Simulation done");
 }

@@ -8,16 +8,18 @@ use nalgebra::{Vector3,Vector6};
 #[derive(Clone,Debug)]
 pub struct MechanicsModel {
     pos_vel: Vector6<f64>,
+    pub dampening_constant: f64,
 }
 
 
-impl From<(&Vector3<f64>, &Vector3<f64>)> for MechanicsModel {
-    fn from(pv: (&Vector3<f64>, &Vector3<f64>)) -> Self {
+impl From<(&Vector3<f64>, &Vector3<f64>, f64)> for MechanicsModel {
+    fn from(pv: (&Vector3<f64>, &Vector3<f64>, f64)) -> Self {
         let p = pv.0;
         let v = pv.1;
         let x = Vector6::<f64>::new(p[0], p[1], p[2], v[0], v[1], v[2]);
         MechanicsModel {
             pos_vel: x,
+            dampening_constant: pv.2,
         }
     }
 }
