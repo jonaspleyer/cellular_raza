@@ -6,7 +6,7 @@ use cellular_control::cell_properties::interaction::*;
 use cellular_control::cell_properties::mechanics::*;
 use cellular_control::cell_properties::flags::*;
 
-use cellular_control::domain::cuboid::*;
+use cellular_control::domain::cartesian_cuboid::*;
 
 use cellular_control::concepts::mechanics::*;
 

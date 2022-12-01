@@ -1,1 +1,1 @@
-pub mod cuboid;
+pub mod cartesian_cuboid;

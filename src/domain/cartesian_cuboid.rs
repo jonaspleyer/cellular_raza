@@ -5,18 +5,20 @@ use crate::concepts::errors::*;
 use crate::cell_properties::cycle::CycleModel;
 use crate::concepts::cycle::Cycle;
 use crate::concepts::interaction::Interaction;
-use crate::plotting::cells_2d::*;
 
 use std::collections::HashMap;
 
-use ndarray::Array3;
-
 use nalgebra::Vector3;
 
-use std::sync::Arc;
 use hurdles::Barrier;
-use crossbeam_channel::{Sender, Receiver};
+use crossbeam_channel::{Sender, Receiver, SendError};
 
+
+
+pub type IndexType = [usize; 3];
+pub type PositionType = Vector3<f64>;
+pub type ForceType = Vector3<f64>;
+pub type IdType = u32;
 
 
 #[derive(Clone)]
@@ -24,11 +26,13 @@ pub struct Voxel {
     pub min: [f64; 3],
     pub max: [f64; 3],
     pub cells: Vec<CellModel>,
-    pub cell_senders: HashMap<[usize; 3], Sender<CellModel>>,
+    pub cell_senders: HashMap<IndexType, Sender<CellModel>>,
     pub cell_receiver: Receiver<CellModel>,
-    pub pos_senders: HashMap<[usize; 3], Sender<([usize; 3], Vector3<f64>, u32)>>,
-    pub pos_receiver: Receiver<([usize; 3], Vector3<f64>, u32)>,
-    pub id: [usize; 3],
+    pub pos_senders: HashMap<IndexType, Sender<(IndexType, PositionType, IdType)>>,
+    pub pos_receiver: Receiver<(IndexType, PositionType, IdType)>,
+    pub force_senders: HashMap<IndexType, Sender<(IndexType, ForceType, IdType)>>,
+    pub force_receiver: Receiver<(IndexType, ForceType, IdType)>,
+    pub index: IndexType,
     pub domain: Cuboid,
 }
 
@@ -51,7 +55,7 @@ unsafe impl Send for Cuboid {}
 unsafe impl Sync for Cuboid {}
 
 
-impl Domain for Cuboid {
+impl Domain<CellModel,IndexType> for Cuboid {
     fn apply_boundary(&self, cell: &mut CellModel) -> Result<(),BoundaryError> {
         let mut pos = cell.mechanics.pos();
         let mut velocity = cell.mechanics.velocity();
@@ -83,11 +87,19 @@ impl Domain for Cuboid {
         }
         Ok(())
     }
+
+    fn get_voxel_index(&self, cell: &CellModel) -> IndexType {
+        let p = cell.mechanics.pos();
+        let q0 = (p[0] - self.min[0]) / self.voxel_sizes[0];
+        let q1 = (p[1] - self.min[1]) / self.voxel_sizes[1];
+        let q2 = (p[2] - self.min[2]) / self.voxel_sizes[2];
+        return [q0 as usize, q1 as usize, q2 as usize];
+    }
 }
 
 
 impl Cuboid {
-    pub fn determine_voxel(&self, cell: &CellModel) -> [usize; 3] {
+    pub fn determine_voxel(&self, cell: &CellModel) -> IndexType {
         let p = cell.mechanics.pos();
         let q0 = (p[0] - self.min[0]) / self.voxel_sizes[0];
         let q1 = (p[1] - self.min[1]) / self.voxel_sizes[1];
@@ -98,18 +110,19 @@ impl Cuboid {
 
 
 impl Voxel {
-    pub fn update_cell_cycles(&mut self, dt: f64) {
+    pub fn update_cell_cycles(&mut self, dt: f64) -> Result<(), CalcError> {
         // Update the cycle status of cells
         self.cells.iter_mut().for_each(|cell| CycleModel::update(&dt, cell));
 
         // Remove cells which have been flagged
         self.cells.retain(|cell| !cell.flags.removal);
+        Ok(())
     }
 
     // TODO use ODE integrator to solve for all forces
     // Calculate the forces beforehand and then just reuse in ODE rhs
     // This should not be a problem since there is no time dependence
-    fn calculate_total_cell_forces(&self, x: &Vector3<f64>) -> Result<Vector3<f64>, CalcError> {
+    fn calculate_total_cell_forces(&self, x: &PositionType) -> Result<ForceType, CalcError> {
         let mut force = Vector3::from([0.0; 3]);
         for cell in &self.cells {
                 if &cell.mechanics.pos() != x {
@@ -119,44 +132,55 @@ impl Voxel {
         Ok(force)
     }
 
-    fn receive_cells(&mut self) {
+    fn receive_cells(&mut self) -> Result<(), CalcError> {
         let new_cells: Vec<CellModel> = self.cell_receiver.try_iter().collect();
         for cell in new_cells {
             self.cells.push(cell);
         }
+        Ok(())
     }
 
-    fn send_pos_information(&mut self) -> Result<(), CalcError> {
+    fn send_pos_information(&mut self) -> Result<(), SendError<(IndexType, PositionType, IdType)>> {
+        // println!("{:?}", self.pos_senders.keys());
+        // println!("{:?}\n", self.index);
         for index in self.pos_senders.keys() {
             for cell in self.cells.iter() {
-                self.pos_senders[index].send((*index, cell.mechanics.pos(), cell.id));
+                self.pos_senders[index].send((self.index, cell.mechanics.pos(), cell.id))?;
             }
         }
         Ok(())
     }
 
-    fn receive_pos_and_send_force_informations(&self) -> Result<(), CalcError> {
-        let pos_combinations: Vec<([usize; 3], Vector3<f64>, u32)> = self.pos_receiver.try_iter().collect();
+    fn receive_pos_and_send_force_informations(&self, barrier: &mut Barrier) -> Result<(), ErrorVariant> {
+        let pos_combinations: Vec<(IndexType, PositionType, IdType)> = self.pos_receiver.try_iter().collect();
+
+        // TODO WAIT HERE!
+        barrier.wait();
 
         for (index, pos, id) in pos_combinations {
             let force = self.calculate_total_cell_forces(&pos)?;
-            self.pos_senders[&index].send((index, force, id));
+            println!("Current Voxel {:?} Cell index {:?} Keys: {:?}", self.index, index, self.pos_senders.keys());
+            self.pos_senders[&index].send((index, force, id))?;
         }
         Ok(())
     }
 
+    // TODO seperate force and position sending channels
+    // Also introduce different types for both of them
+
     fn receive_forces_and_update_mechanics(&mut self, dt: f64) -> Result<(), CalcError> {
-        let forces_other_voxels: HashMap<u32, Vector3<f64>> = self.pos_receiver
+        // TODO this is not correct and needs to be fixed
+        let forces_other_voxels: HashMap<u32, ForceType> = self.pos_receiver
             .try_iter()
-            .map(|(index, force, id)| {
+            .map(|(_, force, id)| {
                 (id, force)
             }).collect();
         
-        let forces_total: Vec<Vector3<f64>> = self.cells
+        let forces_total: Vec<ForceType> = self.cells
             .iter()
             .map(|cell| {
                 // Calculate the forces of cells in this voxel
-                let res = self.calculate_total_cell_forces(&cell.mechanics.pos()).unwrap();
+                let res = self.calculate_total_cell_forces(&cell.mechanics.pos()).unwrap();// TODO no unwrapping!
                 
                 // See if we have some result from other voxels and add it
                 let add = match forces_other_voxels.get(&cell.id) {
@@ -183,48 +207,47 @@ impl Voxel {
         Ok(())
     }
 
-    fn send_cells(&mut self) -> Result<(), CalcError> {
+    fn send_cells(&mut self) -> Result<(), ErrorVariant> {
         // Send the updated cells to other threads if necessary
-        for cell in self.cells.drain_filter(|cell| self.domain.determine_voxel(&cell)!=self.id) {
+        for cell in self.cells.drain_filter(|cell| self.domain.determine_voxel(&cell)!=self.index) {
             let index = self.domain.determine_voxel(&cell);
             let sender = self.cell_senders.get(&index).ok_or(CalcError{message: "Cell is not in any voxel".to_owned()})?;
-            sender.send(cell);
+            sender.send(cell)?;
         }
-        Ok(())
-    }
-
-    pub fn run_full_update(&mut self, t: f64, dt: f64) -> Result<(), CalcError> {
-        
-
-        // Receive calculated forces and update velocity and position
-        // Calculate forces and update cell locations
-
-        
-        self.apply_boundaries();
-
-        // Receive new cells in domain
-        self.receive_cells();
         Ok(())
     }
 }
 
 
 impl VoxelContainer {
-    pub fn update(&mut self, t: f64, dt: f64) -> Result<(), CalcError> {
+    pub fn update(&mut self, _t: f64, dt: f64) -> Result<(), ErrorVariant> {
         for vox in self.voxels.iter_mut() {
             // Updat the cell cycle. This also removes dead cells and creates new ones.
-            vox.update_cell_cycles(dt);
+            vox.update_cell_cycles(dt)?;
 
             // Send information to calculate forces to other voxels
-            vox.send_pos_information();
+            vox.send_pos_information()?;
         }
 
         // Wait until all information is exchanged between voxels
         self.barrier.wait();
 
-        for vox in self.voxels.iter_mut() {
+        let mut pos_info = HashMap::new();
+        for vox in self.voxels.iter() {
             // Receive positions and calculate forces
-            vox.receive_pos_and_send_force_informations()?;
+            let pos_combinations: Vec<(IndexType, PositionType, IdType)> = vox.pos_receiver.try_iter().collect();
+            pos_info.insert(vox.index, pos_combinations);
+        }
+
+        self.barrier.wait();
+
+        for vox in self.voxels.iter() {
+            let pos_combinations = pos_info.remove(&vox.index).unwrap();// TODO
+            for (index, pos, id) in pos_combinations {
+                let force = vox.calculate_total_cell_forces(&pos)?;
+                // println!("Current Voxel {:?} Cell index {:?} Keys: {:?}", vox.index, index, vox.pos_senders.keys());
+                vox.pos_senders[&index].send((index, force, id))?;
+            }
         }
 
         // Wait until information exchange is complete
@@ -234,10 +257,10 @@ impl VoxelContainer {
             vox.receive_forces_and_update_mechanics(dt)?;
 
             // Apply boundary conditions to the cell
-            vox.apply_boundaries();
+            vox.apply_boundaries()?;
 
             // Send cells to new voxels if needed
-            vox.send_cells();
+            vox.send_cells()?;
         }
 
         // Wait for sending to finish
@@ -245,7 +268,7 @@ impl VoxelContainer {
 
         // Include the sent cells
         for vox in self.voxels.iter_mut() {
-            vox.receive_cells();
+            vox.receive_cells()?;
         }
 
         self.barrier.wait();
