@@ -1,3 +1,4 @@
+pub mod cell;
 pub mod cycle;
 pub mod domain;
 pub mod errors;
