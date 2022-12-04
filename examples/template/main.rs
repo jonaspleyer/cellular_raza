@@ -2,8 +2,8 @@
 use cellular_control::concepts::mechanics::*;
 use cellular_control::concepts::interaction::*;
 use cellular_control::cell_properties::cell_model::*;
-use cellular_control::domain::cuboid::*;
-use cellular_control::plotting::cells_2d::plot_current_cells;
+use cellular_control::domain::cartesian_cuboid::*;
+use cellular_control::plotting::cells_2d::plot_current_cells_2d;
 
 // Imports from other files for this example
 mod setup;
@@ -15,18 +15,18 @@ use std::io::Write;
 use std::collections::HashMap;
 use std::cmp::{min,max};
 use std::time::{Instant};
-use std::sync::atomic::{AtomicBool,AtomicI32,Ordering};
+use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::Arc;
 
 use hurdles::Barrier;
 
 use itertools::Itertools;
-use nalgebra::Vector3;
+// use nalgebra::Vector3;
 
 use ode_integrate::prelude::*;
 
 
-fn generate_voxels(vox: &[usize; 3], n_vox: &[usize; 3]) -> Vec<[usize; 3]> {
+fn _generate_voxels(vox: &[usize; 3], n_vox: &[usize; 3]) -> Vec<[usize; 3]> {
     (0..3)
         .map(|i| (max(vox[i] as isize - 1, 0) as usize)..(min(vox[i] + 2, n_vox[i])))
         .multi_cartesian_product()
@@ -35,7 +35,7 @@ fn generate_voxels(vox: &[usize; 3], n_vox: &[usize; 3]) -> Vec<[usize; 3]> {
 }
 
 
-fn rhs(
+fn _rhs(
     y: &Vec<f64>,
     dy: &mut Vec<f64>,
     _t: &f64,
@@ -54,7 +54,7 @@ fn rhs(
         let vox = domain.determine_voxel(&cell0);
 
         // Get voxels with which the cells are interacting
-        let voxels = generate_voxels(&vox, &[N_VOXEL_X, N_VOXEL_Y, N_VOXEL_Z]);
+        let voxels = _generate_voxels(&vox, &[N_VOXEL_X, N_VOXEL_Y, N_VOXEL_Z]);
 
         // Loop over all cells in all interaction voxels
         for voxel in voxels {
@@ -90,14 +90,14 @@ fn rhs(
 }
 
 
-pub const MULT_SAVE: usize = 4;
-pub const DT: f64 = 0.1;
-pub const T_MAX: f64 = 10.0;
+pub const MULT_SAVE: usize = 40;
+pub const DT: f64 = 0.02;
+pub const T_MAX: f64 = 50.0;
 
 
-fn save_to_file(t: f64, save_index: usize, cells: &Vec<CellModel>) {
+fn save_to_file(t: f64, cells: &Vec<CellModel>) {
     // Write new positions to new file
-    let filename = format!("out/snapshot_{:010.0}.csv", save_index);
+    let filename = format!("out/snapshot_{:08.2}.csv", t);
     let mut file = fs::OpenOptions::new()
         .write(true)
         .create(true)
