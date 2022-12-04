@@ -116,8 +116,10 @@ fn save_to_file(t: f64, save_index: usize, cells: &Vec<CellModel>) {
             eprintln!("Could not write to file: {}", e);
         }
     }
-    println!("t={:10.4} Saving to file {}", t, &filename);
 }
+
+
+use crossbeam_channel::*;
 
 
 fn main() {
@@ -127,6 +129,10 @@ fn main() {
     // Spatial domain with boundaries to keep cells inside
     let (domain, mut voxels) = setup::define_domain();
 
+    // Define sender receiver for cells when plotting results
+    let (sender_plots, receiver_plots) = unbounded::<CellModel>();
+    let save_now = Arc::new(AtomicBool::new(false));
+
     for cell in cells {
         let index = domain.determine_voxel(&cell);
         voxels[index].cells.push(cell);
@@ -134,25 +140,28 @@ fn main() {
 
     let n_threads = min(N_THREADS, voxels.len());
 
-    println!("Creating {} threads", n_threads);
-
     let chunk_size = max(1, ((voxels.len() as f64) / (n_threads as f64)).floor() as usize);
 
     let mut vox_vec: Vec<Voxel> = voxels.into_raw_vec();
     let mut handlers = Vec::new();
 
-    let mut barrier_between_threads = Barrier::new(n_threads);
+    let barrier_between_threads = Barrier::new(n_threads);
     let mut barrier_start = Barrier::new(n_threads+1);
     let mut barrier_end = Barrier::new(n_threads+1);
 
     let stop = Arc::new(AtomicBool::new(false));
 
-    for k in 0..n_threads {
+    for _ in 0..n_threads {
         // Tell threads to wait until started from outside
         let stop_new = Arc::clone(&stop);
 
+        // Barriers to start/stop threads between iterations
         let mut barrier_start_new = barrier_start.clone();
         let mut barrier_end_new = barrier_end.clone();
+
+        // Channel to send cells for plotting and file storage
+        let sender_plots_new = sender_plots.clone();
+        let save_now_new = Arc::clone(&save_now);
 
         // Distribute the voxels onto the threads
         let vox_chunk: Vec<Voxel> = vox_vec.drain(..chunk_size).collect();
@@ -164,20 +173,29 @@ fn main() {
         // Spawn threads for our voxel containers
         let handler = std::thread::spawn(move || {
             let mut total_iter = 0;
-            let mut t = 0.0;
+            let mut t;
 
             loop {
                 t = total_iter as f64 * DT;
                 barrier_start_new.wait();
 
-                vox_cont.update(t, DT);
+                vox_cont.update(t, DT).unwrap();
 
-                barrier_end_new.wait();
-
-                if stop_new.load(Ordering::Relaxed) {
-                    break;
+                if save_now_new.load(Ordering::Relaxed) {
+                    let mut all_cells: Vec<CellModel> = vox_cont.voxels.iter().map(|v| v.cells.clone()).flatten().collect();
+                    for cell in all_cells.drain(..) {
+                        // TODO do not unwrap but catch nicely
+                        sender_plots_new.send(cell).unwrap();
+                    }
                 }
                 total_iter += 1;
+
+                if stop_new.load(Ordering::Relaxed) {
+                    barrier_end_new.wait();
+                    break;
+                }
+
+                barrier_end_new.wait();
             }
         });
         handlers.push(handler);
@@ -198,13 +216,30 @@ fn main() {
         // Define the current time
         let t = loop_index as f64 * DT;
 
-        barrier_start.wait();
-
         // Stop the simulation if we reached the last step
         if loop_index==total_steps-1 {
             stop.store(true, Ordering::Relaxed);
         }
+
+        // Tell worker threads to send results for saving
+        if loop_index % MULT_SAVE == 0 {
+            println!("│ {:w1$.w2$} │ {:8.2} │ Saving to file", t, now.elapsed().as_millis() as f64/1000.0, w1=n_digits+n_digits_after_decimal, w2=n_digits_after_decimal);
+            save_now.store(true, Ordering::Relaxed);
+        }
+
+        // Tell the threads to start
+        barrier_start.wait();
+
         barrier_end.wait();
+
+        if save_now.load(Ordering::Relaxed) {
+            save_now.store(false, Ordering::Relaxed);
+            // let all_cells: Vec<CellModel> = receiver_plots.try_iter().collect();
+            // std::thread::spawn(move || {
+            //     save_to_file(t, &all_cells);
+            //     plot_current_cells_2d(t, all_cells, [DOMAIN_SIZE_X, DOMAIN_SIZE_Y], [N_VOXEL_X, N_VOXEL_Y], CELL_RADIUS).unwrap();
+            // });
+        }
 
         // Sort into voxels
         /* let mut voxel_index_to_cells = HashMap::<[usize; 3], Vec<&mut CellModel>>::new();
@@ -247,11 +282,6 @@ fn main() {
             });
         });
         */
-        
-        if loop_index % (MULT_SAVE-1) == 0 {
-            println!("│ {:w1$.w2$} │ {:8.2} │ Saving to file", t, now.elapsed().as_millis() as f64/1000.0, w1=n_digits+n_digits_after_decimal, w2=n_digits_after_decimal);
-            // save_to_file(t, save_index, &cells);
-        }
 
         // Additionally plot a nice 2d picture of all cells
         // plot_current_cells(save_index, t, &cells, DOMAIN_SIZE, N_VOXEL, CELL_RADIUS);
