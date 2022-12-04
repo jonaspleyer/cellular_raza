@@ -8,14 +8,67 @@ use crate::concepts::interaction::Interaction;
 
 use std::collections::HashMap;
 
-use itertools::iproduct;
-
 use nalgebra::Vector3;
 
 use hurdles::Barrier;
 use crossbeam_channel::{Sender, Receiver, SendError};
 
-use core::cmp::{min,max};
+use core::fmt::Display;
+
+
+#[derive(Debug)]
+pub enum ErrorVariant {
+    SendCellErorr(SendError<CellModel>),
+    SendPosError(SendError<(IndexType, PositionType, IdType)>),
+    SendForceError(SendError<(IndexType, ForceType, IdType)>),
+    CalcError(CalcError),
+    BoundaryError(BoundaryError),
+}
+
+impl Display for ErrorVariant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErrorVariant::SendCellErorr(send_cell_error) => 
+                write!(f, "{}", send_cell_error),
+            ErrorVariant::SendPosError(send_pos_error) => 
+                write!(f, "{}", send_pos_error),
+            ErrorVariant::SendForceError(send_force_error) =>
+                write!(f, "{}", send_force_error),
+            ErrorVariant::CalcError(calc_error) =>
+                write!(f, "{}", calc_error),
+            ErrorVariant::BoundaryError(boundary_error) => 
+                write!(f, "{}", boundary_error),
+        }
+    }
+}
+
+impl From<SendError<CellModel>> for ErrorVariant {
+    fn from(err: SendError<CellModel>) -> Self {
+        ErrorVariant::SendCellErorr(err)
+    }
+}
+
+impl From<SendError<(IndexType, Vector3<f64>, u32)>> for ErrorVariant {
+    fn from(err: SendError<(IndexType, Vector3<f64>, u32)>) -> Self {
+        ErrorVariant::SendPosError(err)
+    }
+}
+
+impl From<CalcError> for ErrorVariant {
+    fn from(err: CalcError) -> Self {
+        ErrorVariant::CalcError(err)
+    }
+}
+
+impl From<BoundaryError> for ErrorVariant {
+    fn from(err: BoundaryError) -> Self {
+        ErrorVariant::BoundaryError(err)
+    }
+}
+
+
+impl std::error::Error for ErrorVariant {}
+
 
 pub type IndexType = [usize; 3];
 pub type PositionType = Vector3<f64>;
@@ -49,7 +102,6 @@ pub struct VoxelContainer {
 pub struct Cuboid {
     pub min: [f64; 3],
     pub max: [f64; 3],
-    pub n_vox: [usize; 3],
     pub voxel_sizes: [f64; 3],
 }
 
@@ -58,7 +110,7 @@ unsafe impl Send for Cuboid {}
 unsafe impl Sync for Cuboid {}
 
 
-impl Domain<CellModel,IndexType> for Cuboid {
+impl Domain for Cuboid {
     fn apply_boundary(&self, cell: &mut CellModel) -> Result<(),BoundaryError> {
         let mut pos = cell.mechanics.pos();
         let mut velocity = cell.mechanics.velocity();
@@ -90,27 +142,6 @@ impl Domain<CellModel,IndexType> for Cuboid {
         }
         Ok(())
     }
-
-    fn get_voxel_index(&self, cell: &CellModel) -> IndexType {
-        let p = cell.mechanics.pos();
-        let q0 = (p[0] - self.min[0]) / self.voxel_sizes[0];
-        let q1 = (p[1] - self.min[1]) / self.voxel_sizes[1];
-        let q2 = (p[2] - self.min[2]) / self.voxel_sizes[2];
-        return [q0 as usize, q1 as usize, q2 as usize];
-    }
-
-    fn get_neighbor_voxel_indices(&self, index: &IndexType) -> Vec<IndexType> {
-        let [m0, m1, m2] = *index;
-
-        let l0 = max(m0 as i32 - 1, 0) as usize;
-        let u0 = min(m0+2, self.n_vox[0]);
-        let l1 = max(m1 as i32 - 1, 0) as usize;
-        let u1 = min(m1+2, self.n_vox[1]);
-        let l2 = max(m2 as i32 - 1, 0) as usize;
-        let u2 = min(m2+2, self.n_vox[2]);
-
-        iproduct!(l0..u0, l1..u1, l2..u2).into_iter().map(|(i0, i1, i2)| [i0, i1, i2]).filter(|ind| *ind!=*index).collect()
-    }
 }
 
 
@@ -128,7 +159,7 @@ impl Cuboid {
 impl Voxel {
     pub fn update_cell_cycles(&mut self, dt: f64) -> Result<(), CalcError> {
         // Update the cycle status of cells
-        self.cells.iter_mut().for_each(|cell| CycleModel::update_cycle(&dt, cell));
+        self.cells.iter_mut().for_each(|cell| CycleModel::update(&dt, cell));
 
         // Remove cells which have been flagged
         self.cells.retain(|cell| !cell.flags.removal);
@@ -156,7 +187,7 @@ impl Voxel {
         Ok(())
     }
 
-    fn send_pos_information(&mut self) -> Result<(), SendError<(IndexType, PositionType, IdType)>> {
+    fn send_pos_information(&mut self) -> Result<(), ErrorVariant> {
         // println!("{:?}", self.pos_senders.keys());
         // println!("{:?}\n", self.index);
         for index in self.pos_senders.keys() {
@@ -196,7 +227,7 @@ impl Voxel {
             .iter()
             .map(|cell| {
                 // Calculate the forces of cells in this voxel
-                let res = self.calculate_total_cell_forces(&cell.mechanics.pos()).unwrap();// TODO no unwrapping!
+                let res = self.calculate_total_cell_forces(&cell.mechanics.pos()).unwrap();
                 
                 // See if we have some result from other voxels and add it
                 let add = match forces_other_voxels.get(&cell.id) {
@@ -258,7 +289,7 @@ impl VoxelContainer {
         self.barrier.wait();
 
         for vox in self.voxels.iter() {
-            let pos_combinations = pos_info.remove(&vox.index).unwrap();// TODO
+            let pos_combinations = pos_info.remove(&vox.index).unwrap();
             for (index, pos, id) in pos_combinations {
                 let force = vox.calculate_total_cell_forces(&pos)?;
                 // println!("Current Voxel {:?} Cell index {:?} Keys: {:?}", vox.index, index, vox.pos_senders.keys());
