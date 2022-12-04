@@ -1,4 +1,4 @@
 
-pub trait Cycle<C> {
-    fn update(dt: &f64, cell: &mut C);
+pub trait Cycle<Cell> {
+    fn update_cycle(dt: &f64, c: &mut Cell);
 }
