@@ -27,8 +27,8 @@ impl From<&Vec<CellCycle>> for CycleModel {
 }
 
 
-impl Cycle for CycleModel {
-    fn update(dt: &f64, cell: &mut CellModel) {
+impl Cycle<CellModel> for CycleModel {
+    fn update_cycle(dt: &f64, cell: &mut CellModel) {
         cell.cell_cycle.current_age += dt;
         if cell.cell_cycle.current_age >= cell.cell_cycle.cycles[cell.cell_cycle.current_cycle].lifetime {
             cell.cell_cycle.current_cycle += 1;

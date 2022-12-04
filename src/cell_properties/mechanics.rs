@@ -25,7 +25,7 @@ impl From<(&Vector3<f64>, &Vector3<f64>, f64)> for MechanicsModel {
 }
 
 
-impl Mechanics for MechanicsModel {
+impl Mechanics<Vector3<f64>,Vector3<f64>> for MechanicsModel {
     fn pos(&self) -> Vector3<f64> {
         return Vector3::<f64>::from(self.pos_vel.fixed_rows::<3>(0));
     }
