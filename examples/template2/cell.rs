@@ -3,20 +3,21 @@ use cellular_control::prelude::*;
 use nalgebra::Vector2;
 use uuid::Uuid;
 
-use core::cmp::max;
+use core::fmt::Debug;
 
 
+#[derive(Clone,Debug)]
 pub struct StandardCell2D {
-    pos: Vector2<f64>,
-    velocity: Vector2<f64>,
+    pub pos: Vector2<f64>,
+    pub velocity: Vector2<f64>,
 
-    cell_radius: f64,
-    potential_strength: f64,
+    pub cell_radius: f64,
+    pub potential_strength: f64,
 
-    remove: bool,
-    age: f64,
+    pub remove: bool,
+    pub age: f64,
 
-    id: Uuid,
+    pub id: Uuid,
 }
 
 
