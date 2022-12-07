@@ -1,4 +1,4 @@
-use crate::cell_properties::cell_model::*;
+use crate::impls_cell_properties::cell_model::*;
 use crate::concepts::mechanics::*;
 
 use plotters::prelude::*;

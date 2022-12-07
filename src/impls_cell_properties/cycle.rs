@@ -1,5 +1,5 @@
 use crate::concepts::cycle::*;
-use crate::cell_properties::cell_model::CellModel;
+use crate::impls_cell_properties::cell_model::CellModel;
 
 
 #[derive(Clone)]

@@ -1,8 +1,8 @@
-use crate::cell_properties::cycle::*;
-use crate::cell_properties::death::*;
-use crate::cell_properties::interaction::*;
-use crate::cell_properties::mechanics::*;
-use crate::cell_properties::flags::*;
+use crate::impls_cell_properties::cycle::*;
+use crate::impls_cell_properties::death::*;
+use crate::impls_cell_properties::interaction::*;
+use crate::impls_cell_properties::mechanics::*;
+use crate::impls_cell_properties::flags::*;
 
 
 // Implement Sender/Sync traits
