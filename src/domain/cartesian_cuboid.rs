@@ -16,8 +16,10 @@ use hurdles::Barrier;
 use crossbeam_channel::{Sender, Receiver, SendError};
 
 use core::cmp::{min,max};
+use core::fmt::Debug;
 
-pub type IndexType = [usize; 3];
+pub type IndexType3 = [usize; 3];
+pub type IndexType2 = [usize; 2];
 pub type PositionType = Vector3<f64>;
 pub type ForceType = Vector3<f64>;
 pub type IdType = u32;
@@ -28,14 +30,14 @@ pub struct Voxel {
     pub min: [f64; 3],
     pub max: [f64; 3],
     pub cells: Vec<CellModel>,
-    pub cell_senders: HashMap<IndexType, Sender<CellModel>>,
+    pub cell_senders: HashMap<IndexType3, Sender<CellModel>>,
     pub cell_receiver: Receiver<CellModel>,
-    pub pos_senders: HashMap<IndexType, Sender<(IndexType, PositionType, IdType)>>,
-    pub pos_receiver: Receiver<(IndexType, PositionType, IdType)>,
-    pub force_senders: HashMap<IndexType, Sender<(IndexType, ForceType, IdType)>>,
-    pub force_receiver: Receiver<(IndexType, ForceType, IdType)>,
-    pub index: IndexType,
-    pub domain: Cuboid,
+    pub pos_senders: HashMap<IndexType3, Sender<(IndexType3, PositionType, IdType)>>,
+    pub pos_receiver: Receiver<(IndexType3, PositionType, IdType)>,
+    pub force_senders: HashMap<IndexType3, Sender<(IndexType3, ForceType, IdType)>>,
+    pub force_receiver: Receiver<(IndexType3, ForceType, IdType)>,
+    pub index: IndexType3,
+    pub domain: CartesianCuboid3,
 }
 
 
@@ -45,8 +47,8 @@ pub struct VoxelContainer {
 }
 
 
-#[derive(Clone)]
-pub struct Cuboid {
+#[derive(Clone,Debug)]
+pub struct CartesianCuboid3 {
     pub min: [f64; 3],
     pub max: [f64; 3],
     pub n_vox: [usize; 3],
@@ -54,11 +56,24 @@ pub struct Cuboid {
 }
 
 
-unsafe impl Send for Cuboid {}
-unsafe impl Sync for Cuboid {}
+unsafe impl Send for CartesianCuboid3 {}
+unsafe impl Sync for CartesianCuboid3 {}
 
 
-impl Domain<CellModel,IndexType> for Cuboid {
+#[derive(Clone,Debug)]
+pub struct CartesianCuboid2 {
+    pub min: [f64; 2],
+    pub max: [f64; 2],
+    pub n_vox: [usize; 2],
+    pub voxel_sizes: [f64; 2],
+}
+
+
+unsafe impl Send for CartesianCuboid2 {}
+unsafe impl Sync for CartesianCuboid2 {}
+
+
+impl Domain<CellModel,IndexType3,Voxel> for CartesianCuboid3 {
     fn apply_boundary(&self, cell: &mut CellModel) -> Result<(),BoundaryError> {
         let mut pos = cell.mechanics.pos();
         let mut velocity = cell.mechanics.velocity();
@@ -91,7 +106,7 @@ impl Domain<CellModel,IndexType> for Cuboid {
         Ok(())
     }
 
-    fn get_voxel_index(&self, cell: &CellModel) -> IndexType {
+    fn get_voxel_index(&self, cell: &CellModel) -> IndexType3 {
         let p = cell.mechanics.pos();
         let q0 = (p[0] - self.min[0]) / self.voxel_sizes[0];
         let q1 = (p[1] - self.min[1]) / self.voxel_sizes[1];
@@ -99,7 +114,7 @@ impl Domain<CellModel,IndexType> for Cuboid {
         return [q0 as usize, q1 as usize, q2 as usize];
     }
 
-    fn get_neighbor_voxel_indices(&self, index: &IndexType) -> Vec<IndexType> {
+    fn get_neighbor_voxel_indices(&self, index: &IndexType3) -> Vec<IndexType3> {
         let [m0, m1, m2] = *index;
 
         let l0 = max(m0 as i32 - 1, 0) as usize;
@@ -114,13 +129,56 @@ impl Domain<CellModel,IndexType> for Cuboid {
 }
 
 
-impl Cuboid {
-    pub fn determine_voxel(&self, cell: &CellModel) -> IndexType {
+// TODO write this implementation more abstractly with macros such that more cell types and dimensions are supported
+impl Domain<CellModel,IndexType2,Voxel> for CartesianCuboid2 {
+    fn apply_boundary(&self, cell: &mut CellModel) -> Result<(),BoundaryError> {
+        let mut pos = cell.mechanics.pos();
+        let mut velocity = cell.mechanics.velocity();
+
+        // For each dimension (ie 3 in general)
+        for i in 0..2 {
+            // Check if the particle is below lower edge
+            if pos[i] < self.min[i] {
+                pos[i] = 2.0 * self.min[i] - pos[i];
+                velocity[i] *= -1.0;
+            }
+            // Check if the particle is over the edge
+            if pos[i] > self.max[i] {
+                pos[i] = 2.0 * self.max[i] - pos[i];
+                velocity[i] *= -1.0;
+            }
+        }
+        // Set new position and velocity of particle
+        cell.mechanics.set_pos(&pos);
+        cell.mechanics.set_velocity(&velocity);
+
+        // If new position is still out of boundary return error
+        for i in 0..2 {
+            if pos[i] < self.min[i] || pos[i] > self.max[i] {
+                return Err(BoundaryError { message: format!("Particle with id {} is out of domain at position {:?}", cell.id, pos) });
+            } else {
+                return Ok(());
+            }
+        }
+        Ok(())
+    }
+
+    fn get_voxel_index(&self, cell: &CellModel) -> IndexType2 {
         let p = cell.mechanics.pos();
         let q0 = (p[0] - self.min[0]) / self.voxel_sizes[0];
         let q1 = (p[1] - self.min[1]) / self.voxel_sizes[1];
-        let q2 = (p[2] - self.min[2]) / self.voxel_sizes[2];
-        return [q0 as usize, q1 as usize, q2 as usize];
+        return [q0 as usize, q1 as usize];
+    }
+
+    fn get_neighbor_voxel_indices(&self, index: &IndexType2) -> Vec<IndexType2> {
+        let [m0, m1] = *index;
+
+        let l0 = max(m0 as i32 - 1, 0) as usize;
+        let u0 = min(m0+2, self.n_vox[0]);
+        let l1 = max(m1 as i32 - 1, 0) as usize;
+        let u1 = min(m1+2, self.n_vox[1]);
+
+        iproduct!(l0..u0, l1..u1).into_iter().map(|(i0, i1)| [i0, i1]).filter(|ind| *ind!=*index).collect()
     }
 }
 
@@ -156,7 +214,7 @@ impl Voxel {
         Ok(())
     }
 
-    fn send_pos_information(&mut self) -> Result<(), SendError<(IndexType, PositionType, IdType)>> {
+    fn send_pos_information(&mut self) -> Result<(), SendError<(IndexType3, PositionType, IdType)>> {
         // println!("{:?}", self.pos_senders.keys());
         // println!("{:?}\n", self.index);
         for index in self.pos_senders.keys() {
@@ -168,7 +226,7 @@ impl Voxel {
     }
 
     fn receive_pos_and_send_force_informations(&self, barrier: &mut Barrier) -> Result<(), ErrorVariant> {
-        let pos_combinations: Vec<(IndexType, PositionType, IdType)> = self.pos_receiver.try_iter().collect();
+        let pos_combinations: Vec<(IndexType3, PositionType, IdType)> = self.pos_receiver.try_iter().collect();
 
         // TODO WAIT HERE!
         barrier.wait();
@@ -225,8 +283,8 @@ impl Voxel {
 
     fn send_cells(&mut self) -> Result<(), ErrorVariant> {
         // Send the updated cells to other threads if necessary
-        for cell in self.cells.drain_filter(|cell| self.domain.determine_voxel(&cell)!=self.index) {
-            let index = self.domain.determine_voxel(&cell);
+        for cell in self.cells.drain_filter(|cell| self.domain.get_voxel_index(&cell)!=self.index) {
+            let index = self.domain.get_voxel_index(&cell);
             let sender = self.cell_senders.get(&index).ok_or(CalcError{message: "Cell is not in any voxel".to_owned()})?;
             sender.send(cell)?;
         }
@@ -251,7 +309,7 @@ impl VoxelContainer {
         let mut pos_info = HashMap::new();
         for vox in self.voxels.iter() {
             // Receive positions and calculate forces
-            let pos_combinations: Vec<(IndexType, PositionType, IdType)> = vox.pos_receiver.try_iter().collect();
+            let pos_combinations: Vec<(IndexType3, PositionType, IdType)> = vox.pos_receiver.try_iter().collect();
             pos_info.insert(vox.index, pos_combinations);
         }
 
