@@ -16,17 +16,24 @@ use hurdles::Barrier;
 use uuid::Uuid;
 
 
-pub trait Domain<Cell,Index> {// <Cell, Index, Voxel> {
+pub trait Domain<Cell, Index, V>
+{
     fn apply_boundary(&self, cell: &mut Cell) -> Result<(), BoundaryError>;
-    // fn generate_voxels(&self) -> HashMap<Index,Voxel>;
     fn get_neighbor_voxel_indices(&self, index: &Index) -> Vec<Index>;
     fn get_voxel_index(&self, cell: &Cell) -> Index;
+    fn distribute_voxels_for_threads(&self, n_threads: usize) -> Result<(usize, Vec<Vec<(Index, V)>>), CalcError>;
 }
 
 
-pub trait Voxel {
-    fn calculate_total_force_on_cell<Pos,Force>(&self, cell: &Pos) -> Option<Result<Force, CalcError>>;
-    fn get_index<Index:Hash>(&self) -> Index;
+pub trait Voxel<Index, Pos, Force>
+where
+    Index: Hash,
+{
+    fn custom_force_on_cell(&self, cell: &Pos) -> Option<Result<Force, CalcError>> {
+        None
+    }
+
+    fn get_index(&self) -> Index;
 }
 
 
@@ -48,9 +55,9 @@ struct ForceInformation<Force> {
 pub struct MultiVoxelContainer<Index, Pos, Force, Velocity, V, D, C>
 where
     Index: Hash,
-    V: Voxel,
+    V: Voxel<Index, Pos, Force>,
     C: Cell<Pos, Force, Velocity>,
-    D: Domain<C, Index>,
+    D: Domain<C, Index, V>,
 {
     voxels: HashMap<Index, V>,
     voxel_cells: HashMap<Index, VecDeque<C>>,
@@ -95,8 +102,8 @@ where
     // these traits should be defined when specifying the individual cell components
     // (eg. mechanics, interaction, etc...)
     Index: Hash + Eq + Copy + Debug,
-    V: Voxel,
-    D: Domain<C, Index>,
+    V: Voxel<Index, Pos, Force>,
+    D: Domain<C, Index, V>,
     Velocity: Add + AddAssign + Sub + SubAssign + Zero,
     Force: Add + AddAssign + Sub + SubAssign + Zero,
     Pos: Add + AddAssign + Sub + SubAssign + Clone,
@@ -152,7 +159,7 @@ where
                 let position = cell.pos();
 
                 // Calculate the force from this voxel
-                let force = match self.voxels[index].calculate_total_force_on_cell::<Pos,Force>(&position) {
+                let force = match self.voxels[index].custom_force_on_cell(&position) {
                     Some(force) => force,
                     None => Ok(Force::zero()),
                 }?;
@@ -169,7 +176,7 @@ where
                     if self.voxels.contains_key(&neighbor_index) {
                         
                         // Calculate the force
-                        let force = match self.voxels[&neighbor_index].calculate_total_force_on_cell::<Pos,Force>(&position) {
+                        let force = match self.voxels[&neighbor_index].custom_force_on_cell(&position) {
                             Some(force) => force,
                             None => Ok(Force::zero()),
                         }?;
@@ -199,7 +206,7 @@ where
 
         for obt_position in obtained_positions.drain(..) {
             // Calculate the force acting on the cell from this voxel
-            let force = match self.voxels[&obt_position.index].calculate_total_force_on_cell::<Pos, Force>(&obt_position.pos) {
+            let force = match self.voxels[&obt_position.index].custom_force_on_cell(&obt_position.pos) {
                 Some(force) => force,
                 None => Ok(Force::zero()),
             }?;

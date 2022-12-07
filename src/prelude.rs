@@ -12,6 +12,6 @@ pub use crate::concepts::errors::*;
 pub use crate::concepts::interaction::*;
 pub use crate::concepts::mechanics::*;
 
-pub use crate::domain::cartesian_cuboid::*;
+pub use crate::domain::cartesian_cuboid_n::*;
 
 pub use crate::plotting::cells_2d::*;
