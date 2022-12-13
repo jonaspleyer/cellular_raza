@@ -67,29 +67,24 @@ define_errors!(
 );
 
 
-/// # Errors related to Simulation Engine Failure
-#[derive(Debug)]
-pub enum EngineError {
-    IndexError(IndexError),
-}
-
-impl_from_error!(EngineError, (IndexError, IndexError));
-impl_error_variant!(EngineError, IndexError);
-
-
 /// # Covers all errors that can occur in this Simulation
 #[derive(Debug)]
 pub enum SimulationError {
-    SendError(String),
-    ReceiveError(RecvError),
+    // Very likely to be user errors
     CalcError(CalcError),
     BoundaryError(BoundaryError),
-    EngineError(EngineError),
+
+    // Less likely but possible to be user errors
+    SendError(String),
+    ReceiveError(RecvError),
+
+    // Highly unlikely to be user errors
+    IndexError(IndexError),
 }
 
 
-impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (EngineError, EngineError));
-impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, EngineError);
+impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (IndexError, IndexError));
+impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, IndexError);
 
 
 // Implement conversion from Sending error manually
