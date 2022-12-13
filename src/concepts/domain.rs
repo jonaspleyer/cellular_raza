@@ -1,10 +1,10 @@
 use crate::concepts::errors::*;
 use crate::concepts::cell::*;
 
-use std::collections::{HashMap,VecDeque};
+use std::collections::{HashMap,LinkedList};
+use std::marker::Send;
 
 use core::marker::PhantomData;
-use core::fmt::Debug;
 use core::hash::Hash;
 use core::cmp::Eq;
 use core::ops::{Add,AddAssign,Sub,SubAssign};
@@ -16,51 +16,55 @@ use hurdles::Barrier;
 use uuid::Uuid;
 
 
-pub trait Domain<Cell, Index, V>
+pub trait Domain<Cell, I, V>: Send
 {
     fn apply_boundary(&self, cell: &mut Cell) -> Result<(), BoundaryError>;
-    fn get_neighbor_voxel_indices(&self, index: &Index) -> Vec<Index>;
-    fn get_voxel_index(&self, cell: &Cell) -> Index;
-    fn distribute_voxels_for_threads(&self, n_threads: usize) -> Result<(usize, Vec<Vec<(Index, V)>>), CalcError>;
+    fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
+    fn get_voxel_index(&self, cell: &Cell) -> I;
+    fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError>;
 }
 
 
-pub trait Voxel<Index, Pos, Force>
+pub trait Index = Hash + Eq + Clone + Send + std::fmt::Debug;
+
+
+pub trait Voxel<I, Pos, Force>: Send
 where
-    Index: Hash,
+    I: Index,
 {
-    fn custom_force_on_cell(&self, cell: &Pos) -> Option<Result<Force, CalcError>> {
+    fn custom_force_on_cell(&self, _cell: &Pos) -> Option<Result<Force, CalcError>> {
         None
     }
 
-    fn get_index(&self) -> Index;
+    fn get_index(&self) -> I;
 }
 
 
-struct PosInformation<Index, Pos> {
-    pos: Pos,
-    uuid: Uuid,
-    index: Index,
+pub struct PosInformation<I, Pos> {
+    pub pos: Pos,
+    pub uuid: Uuid,
+    pub index_sender: I,
+    pub index_receiver: I,
 }
 
 
-struct ForceInformation<Force> {
-    force: Force,
-    uuid: Uuid,
+pub struct ForceInformation<Force> {
+    pub forces: LinkedList<Result<Force, CalcError>>,
+    pub uuid: Uuid,
 }
 
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub struct MultiVoxelContainer<Index, Pos, Force, Velocity, V, D, C>
+pub struct MultiVoxelContainer<I, Pos, Force, Velocity, V, D, C>
 where
-    Index: Hash,
-    V: Voxel<Index, Pos, Force>,
+    I: Index,
+    V: Voxel<I, Pos, Force>,
     C: Cell<Pos, Force, Velocity>,
-    D: Domain<C, Index, V>,
+    D: Domain<C, I, V>,
 {
-    voxels: HashMap<Index, V>,
-    voxel_cells: HashMap<Index, VecDeque<C>>,
+    pub voxels: HashMap<I, V>,
+    pub voxel_cells: HashMap<I, LinkedList<C>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -71,72 +75,72 @@ where
     // And then automatically have the ability to change cell positions if the domain shrinks/grows for example
     // but then we might also want to change the number of voxels and redistribute cells accordingly
     // This needs much more though!
-    domain: D,
+    pub domain: D,
 
     // Where do we want to send cells, positions and forces
-    senders_cell: HashMap<Index, Sender<C>>,
-    senders_pos: HashMap<Index, Sender<PosInformation<Index,Pos>>>,
-    senders_force: HashMap<Index, Sender<ForceInformation<Force>>>,
+    pub senders_cell: HashMap<I, Sender<C>>,
+    pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos>>>,
+    pub senders_force: HashMap<I, Sender<ForceInformation<Force>>>,
 
     // Same for receiving
-    receiver_cell: Receiver<C>,
-    receiver_pos: Receiver<PosInformation<Index,Pos>>,
-    receiver_force: Receiver<ForceInformation<Force>>,
+    pub receiver_cell: Receiver<C>,
+    pub receiver_pos: Receiver<PosInformation<I,Pos>>,
+    pub receiver_force: Receiver<ForceInformation<Force>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
-    cell_forces: HashMap<Uuid, VecDeque<Force>>,
-    neighbor_indices: HashMap<Index, Vec<Index>>,
+    pub cell_forces: HashMap<Uuid, LinkedList<Result<Force, CalcError>>>,
+    pub neighbor_indices: HashMap<I, Vec<I>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
-    sending_barrier: Barrier,
+    pub barrier: Barrier,
 
     // Phantom data for velocity
-    phantom_vel: PhantomData<Velocity>,
+    pub phantom_vel: PhantomData<Velocity>,
 }
 
 
-impl<Index, Pos, Force, Velocity, V, D, C> MultiVoxelContainer<Index, Pos, Force, Velocity, V, D, C>
+impl<I, Pos, Force, Velocity, V, D, C> MultiVoxelContainer<I, Pos, Force, Velocity, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
     // (eg. mechanics, interaction, etc...)
-    Index: Hash + Eq + Copy + Debug,
-    V: Voxel<Index, Pos, Force>,
-    D: Domain<C, Index, V>,
+    I: Index,
+    V: Voxel<I, Pos, Force>,
+    D: Domain<C, I, V>,
     Velocity: Add + AddAssign + Sub + SubAssign + Zero,
     Force: Add + AddAssign + Sub + SubAssign + Zero,
     Pos: Add + AddAssign + Sub + SubAssign + Clone,
     C: Cell<Pos, Force, Velocity>,
 {
-    fn update_cell_cycle(&mut self, dt: f64) {
+    fn update_cell_cycle(&mut self, dt: &f64) {
         self.voxel_cells
             .iter_mut()
             .for_each(|(_, cs)| cs
                 .iter_mut()
-                .for_each(|c| C::update_cycle(&dt, c))
+                .for_each(|c| C::update_cycle(dt, c))
             );
     }
 
-    fn apply_boundaries(&mut self, domain: &D) -> Result<(), BoundaryError> {
+    fn apply_boundaries(&mut self) -> Result<(), BoundaryError> {
         self.voxel_cells
             .iter_mut()
             .map(|(_, cells)| cells.iter_mut())
             .flatten()
-            .map(|cell| domain.apply_boundary(cell))
+            .map(|cell| self.domain.apply_boundary(cell))
             .collect()
     }
 
-    fn insert_cells(&mut self, index: Index, new_cells: &mut VecDeque<C>) -> Result<(), CalcError>
+    pub fn insert_cells(&mut self, index: &I, new_cells: &mut LinkedList<C>) -> Result<(), CalcError>
     {
-        self.voxel_cells.get_mut(&index)
+        self.voxel_cells.get_mut(index)
             .ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?
             .append(new_cells);
         Ok(())
     }
 
     // TODO add functionality
-    fn sort_cell_in_voxel(&mut self, cell: C) -> Result<(), ErrorVariant>
+    pub fn sort_cell_in_voxel(&mut self, cell: C) -> Result<(), SimulationError>
     {
         let index = self.domain.get_voxel_index(&cell);
 
@@ -152,93 +156,232 @@ where
         Ok(())
     }
 
-    fn update_mechanics(&mut self, dt: &f64) -> Result<(), ErrorVariant> {
-        for (index, cells) in self.voxel_cells.iter() {
-            for cell in cells.iter() {
-                let id = cell.get_uuid();
-                let position = cell.pos();
+    fn calculate_forces_for_external_cells(&self, pos_info: PosInformation<I, Pos>) -> Result<(), SimulationError> {
+        // Calculate force from cells in voxel
+        let mut forces = LinkedList::new();
+        for cell in self.voxel_cells[&pos_info.index_receiver].iter() {
+            match cell.force(&cell.pos(), &pos_info.pos) {
+                Some(force) => forces.push_back(force),
+                None => (),
+            }
+        }
 
-                // Calculate the force from this voxel
-                let force = match self.voxels[index].custom_force_on_cell(&position) {
-                    Some(force) => force,
-                    None => Ok(Force::zero()),
-                }?;
+        // Send back force information
+        // println!("Thread: {} Senders indices: {:?} Sender Index: {:?} Receiver Index {:?}", std::thread::current().name().unwrap(), self.senders_force.iter().map(|(i, _)| i.clone()).collect::<Vec<I>>(), pos_info.index_sender, pos_info.index_receiver);
+        self.senders_force[&pos_info.index_sender].send(
+            ForceInformation{
+                forces: forces,
+                uuid: pos_info.uuid
+            }
+        )?;
+        Ok(())
+    }
 
-                // Store force
-                match self.cell_forces.get_mut(&id) {
-                    Some(forces) => forces.push_back(force),
-                    None => (),
-                };
+    pub fn update_mechanics(&mut self, dt: &f64) -> Result<(), SimulationError> {
+        // General Idea of this function
+        // for each cell
+        //      for each neighbor_voxel in neighbors of voxel containing cell
+        //              if neighbor_voxel is in current MultivoxelContainer
+        //                      calculate forces of current cells on cell and store
+        //                      calculate force from voxel on cell and store
+        //              else
+        //                      send PosInformation to other MultivoxelContainer
+        // 
+        // for each PosInformation received from other MultivoxelContainers
+        //      calculate forces of current_cells on cell and send back
+        //
+        // for each ForceInformation received from other MultivoxelContainers
+        //      store received force
+        //
+        // for each cell in this MultiVoxelContainer
+        //      update pos and velocity with all forces obtained
+        //      Simultanously 
 
-                // Calculate forces from other voxels
-                for neighbor_index in &self.neighbor_indices[&index] {
-                    // If the desired voxel is in the current MultiVoxelContainer, we do not have to send any messages
-                    if self.voxels.contains_key(&neighbor_index) {
-                        
-                        // Calculate the force
-                        let force = match self.voxels[&neighbor_index].custom_force_on_cell(&position) {
-                            Some(force) => force,
-                            None => Ok(Force::zero()),
-                        }?;
+        // TODO rewrite this function in this style
 
-                        // Append to other forces acting on the same cell
-                        match self.cell_forces.get_mut(&id) {
-                            Some(forces) => forces.push_back(force),
-                            None => (),// TODO Return an error since this should succeed always!
-                        };
+        // Define to calculate forces on a cell from external cells in a voxel with a certain index
+        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &C| -> Result<(), SimulationError> {
+            // Iterate over all cells which are in the voxel of interest
+            match self.voxel_cells.get(voxel_index) {
 
-                    // Otherwise send information to other voxels to obtain value this way
-                    } else {
-                        // Send information on how to calculate the force and where to send back the result
-                        let spi = PosInformation::<Index, Pos> {pos: position.clone(), uuid: id, index: *index};
-                        self.senders_pos[&neighbor_index].send(spi)?;
+                // If cells are present (which means the voxel is in this multivoxelcontainer), we can calculate the result immediately
+                Some(ext_cells) => {
+                    for ext_cell in ext_cells.iter().filter(|c| c.get_uuid()!=cell.get_uuid()) {
+                        // Calculate the force and store the raw Result
+                        match ext_cell.force(&ext_cell.pos(), &cell.pos()) {
+                            Some(force) => {
+                                match self.cell_forces.get_mut(&cell.get_uuid()) {
+                                    // We need to check if there is already an entry for the cell if this is the case, we can simply append there
+                                    Some(forces) => {
+                                        forces.push_back(force);
+                                    },
+                                    // If not then we create a new entry
+                                    None => {
+                                        self.cell_forces.insert(cell.get_uuid(), LinkedList::from([force]));
+                                    },
+                                };
+                            },
+                            None => (),
+                        }
                     }
+                    Ok(())
+                },
+
+                // If the voxel is not in this multicontainervoxel, we will send the required positional information to the corresponding container
+                // such that the force will be calculated there. We can then later receive the information and include it in our calculation.
+                None => self.senders_pos[voxel_index].send(
+                    PosInformation {
+                        index_sender: self.domain.get_voxel_index(cell),
+                        index_receiver: voxel_index.clone(),
+                        pos: cell.pos(),
+                        uuid: cell.get_uuid(),
+                    }),
+            }?;
+            Ok(())
+        };
+
+        // Calculate forces for all cells from neighbors
+        for (voxel_index, cells) in self.voxel_cells.iter() {
+            
+            for cell in cells.iter() {
+                // Calculate force from own voxel
+                calculate_force_from_cells_on_cell_and_store_or_send(&voxel_index, cell)?;
+                
+                
+                // Calculate force from neighbors
+                for neighbor_index in self.neighbor_indices[voxel_index].iter() {
+                    calculate_force_from_cells_on_cell_and_store_or_send(&neighbor_index, cell)?;
                 }
             }
         }
 
-        // Wait for synchronization of threads. Every information should be sent such that receiving does not lose any information
-        self.sending_barrier.wait();
-
-        // Receive the positons for which to calculate forces for the other voxels
-        let mut obtained_positions: Vec<PosInformation<Index,Pos>> = self.receiver_pos.try_iter().collect();
-
-
-        for obt_position in obtained_positions.drain(..) {
-            // Calculate the force acting on the cell from this voxel
-            let force = match self.voxels[&obt_position.index].custom_force_on_cell(&obt_position.pos) {
-                Some(force) => force,
-                None => Ok(Force::zero()),
-            }?;
-
-            // Send back the force information to that MultiVoxelContainer
-            let sfi = ForceInformation::<Force> {force: force, uuid: obt_position.uuid};
-            self.senders_force[&obt_position.index].send(sfi)?;
-        }
-
-        // Wait for all forces which have been calculated in all threads
-        self.sending_barrier.wait();
-
-        // Receive forces
-        let mut obtained_forces: Vec<ForceInformation<Force>> = self.receiver_force.try_iter().collect();
-
-        // Store the obtained forces to the correct cells
-        for obtained_force in obtained_forces.drain(..) {
-            match self.cell_forces.get_mut(&obtained_force.uuid) {
-                Some(forces) => forces.push_back(obtained_force.force),
-                None => (),// TODO Return an error since this should succeed always!
+        // Calculate custom force of voxel on cell
+        for (voxel_index, cells) in self.voxel_cells.iter() {
+            for cell in cells.iter() {
+                match self.voxels[voxel_index].custom_force_on_cell(&cell.pos()) {
+                    Some(force) => {
+                        match self.cell_forces.get_mut(&cell.get_uuid()) {
+                            Some(forces) => forces.push_back(force),
+                            None => {self.cell_forces.insert(cell.get_uuid(), LinkedList::from([force]));},
+                        }
+                    },
+                    None => (),
+                }
             }
         }
 
-        // TODO we actually need to use the forces to calculate the new velocities and positions together with the time step dt
+        // Wait for all threads to send PositionInformation
+        self.barrier.wait();
 
+        // Receive PositionInformation and send back ForceInformation
+        for obt_pos in self.receiver_pos.try_iter() {
+            self.calculate_forces_for_external_cells(obt_pos)?;
+        }
+
+        // Synchronize again such that every message reaches its receiver
+        self.barrier.wait();
+        
+        // Update position and velocity of all cells with new information
+        for mut obt_forces in self.receiver_force.try_iter() {
+            match self.cell_forces.get_mut(&obt_forces.uuid) {
+                Some(saved_forces) => {
+                    saved_forces.append(&mut obt_forces.forces);
+                    Ok(())
+                },
+                None => Err(CalcError {message: format!("Could not find cell {} in current voxel", &obt_forces.uuid)}),
+            }?;
+        }
+        
+
+        // Update position and velocity of cells
+        for (_, cells) in self.voxel_cells.iter_mut() {
+            for cell in cells.iter_mut() {
+                let mut force = Force::zero();
+                for new_force in self.cell_forces.get_mut(&cell.get_uuid()).ok_or(CalcError{message: format!("internal error: could not find entry in hasmap for cell {}", cell.get_uuid())})?.drain_filter(|_| true) {
+                    match new_force {
+                        Ok(n_force) => {
+                            force += n_force;
+                            Ok(())
+                        },
+                        Err(error) => Err(error),
+                    }?;
+                }
+
+                // Update cell position and velocity
+                let (dx, dv) = cell.calculate_increment(force)?;
+                cell.set_pos(&(cell.pos() + dx * *dt));
+                cell.set_velocity(&(cell.velocity() + dv * *dt));
+            }
+        }
+
+        /* println!("Thread {} Voxels: {:?} Cells: {} Total forces: {:?} Positions: {:7.2?}",
+            std::thread::current().name().unwrap(),
+            self.voxels.iter().map(|(i, _)| i.clone()).collect::<Vec<I>>(),
+            self.voxel_cells.iter().map(|(_, cs)| cs.len()).sum::<usize>(),
+            self.cell_forces.iter().map(|(_, forces)| forces.len()).sum::<usize>(),
+            self.voxel_cells.iter().map(|(_, cs)| cs.iter().map(|c| c.pos())).flatten().collect::<Vec<Pos>>(),
+        );*/
+
+        Ok(())
+    }
+
+    pub fn sort_cells_in_voxels(&mut self) -> Result<(), SimulationError> {
+        // Store all cells which need to find a new home in this variable
+        let mut find_new_home_cells = LinkedList::<_>::new();
+        
+        for (voxel_index, cells) in self.voxel_cells.iter_mut() {
+            // Drain every cell which is currently not in the correct voxel
+            let new_voxel_cells = cells.drain_filter(|c| &self.domain.get_voxel_index(&c)!=voxel_index);
+            // Check if the cell needs to be sent to another multivoxelcontainer
+            find_new_home_cells.append(&mut new_voxel_cells.collect::<LinkedList<_>>());
+        }
+
+        // Send cells to other multivoxelcontainer or keep them here
+        for cell in find_new_home_cells {
+            let cell_index = self.domain.get_voxel_index(&cell);
+            match self.voxel_cells.get_mut(&cell_index) {
+                Some(cells) => {
+                    cells.push_back(cell);
+                    Ok(())
+                },
+                None => {
+                    match self.senders_cell.get(&cell_index) {
+                        Some(sender) => {
+                            sender.send(cell)?;
+                            Ok(())
+                        }
+                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())}),
+                    }
+                }
+            }?;
+        }
+
+        // Wait until every cell has been sent
+        self.barrier.wait();
+
+        // Now receive new cells and insert them
+        let mut new_cells = self.receiver_cell.try_iter().collect::<Vec<_>>();
+        for cell in new_cells.drain(..) {
+            self.sort_cell_in_voxel(cell)?;
+        }
+        Ok(())
+    }
+
+    pub fn run_full_update(&mut self, t: &f64, dt: &f64) -> Result<(), SimulationError> {
+        self.update_cell_cycle(dt);
+
+        self.update_mechanics(dt)?;
+
+        self.apply_boundaries()?;
+
+        self.sort_cells_in_voxels()?;
         Ok(())
     }
 }
 
 // These should be sharable between threads
-// unsafe impl<Index: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,Index>, C> Send for MultiVoxelContainer<Index, Cell, Pos, Force, V, D, C> {}
-// unsafe impl<Index: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,Index>, C> Sync for MultiVoxelContainer<Index, Cell, Pos, Force, V, D, C> {}
+// unsafe impl<I: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,I>, C> Send for MultiVoxelContainer<I, Cell, Pos, Force, V, D, C> {}
+// unsafe impl<I: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,I>, C> Sync for MultiVoxelContainer<I, Cell, Pos, Force, V, D, C> {}
 
 
 // TODO automatically create many MultiVoxelContainers depending on how many threads are being used
