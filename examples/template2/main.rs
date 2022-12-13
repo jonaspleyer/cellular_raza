@@ -6,11 +6,11 @@ use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 
 // Imports from this crate
-use cellular_control::prelude::*;
+use cellular_raza::prelude::*;
 
 
 // Constants of the simulation
-pub const N_CELLS: u32 = 50000;
+pub const N_CELLS: u32 = 1000;
 
 pub const CELL_CYCLE_LIFETIME_LOW: f64 = 1000.0;
 pub const CELL_CYCLE_LIFETIME_HIGH: f64 = 1200.0;
@@ -23,8 +23,8 @@ pub const CELL_INITIAL_VELOCITY: f64 = 0.2;
 pub const CELL_VELOCITY_REDUCTION: f64 = 1.0;
 
 // Parameters for domain
-pub const N_VOXEL_X: usize = 100;
-pub const N_VOXEL_Y: usize = 100;
+pub const N_VOXEL_X: usize = 10;
+pub const N_VOXEL_Y: usize = 10;
 pub const DOMAIN_SIZE_X: f64 = 1000.0;
 pub const DOMAIN_SIZE_Y: f64 = 1000.0;
 pub const DX_VOXEL_X: f64 = 2.0 * DOMAIN_SIZE_X / N_VOXEL_X as f64;
@@ -37,7 +37,7 @@ pub const T_START: f64 = 0.0;
 
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 2;
+pub const N_THREADS: usize = 4;
 
 
 pub fn create_cells() -> Vec<StandardCell2D> {
