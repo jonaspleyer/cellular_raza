@@ -1,7 +1,7 @@
-use crate::concepts::mechanics::*;
+use crate::concepts::errors::CalcError;
+use crate::concepts::mechanics::Mechanics;
 
 
-use std::ops::AddAssign;
 use nalgebra::{Vector3,Vector6};
 
 
@@ -25,7 +25,7 @@ impl From<(&Vector3<f64>, &Vector3<f64>, f64)> for MechanicsModel {
 }
 
 
-impl Mechanics<Vector3<f64>,Vector3<f64>> for MechanicsModel {
+impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MechanicsModel {
     fn pos(&self) -> Vector3<f64> {
         return Vector3::<f64>::from(self.pos_vel.fixed_rows::<3>(0));
     }
@@ -42,11 +42,9 @@ impl Mechanics<Vector3<f64>,Vector3<f64>> for MechanicsModel {
         self.pos_vel.fixed_rows_mut::<3>(3).set_column(0, v);
     }
 
-    fn add_pos(&mut self, dp: &Vector3<f64>) {
-        self.pos_vel.fixed_rows_mut::<3>(0).add_assign(dp);
-    }
-
-    fn add_velocity(&mut self, dv: &Vector3<f64>) {
-        self.pos_vel.fixed_rows_mut::<3>(3).add_assign(dv);
+    fn calculate_increment(&self, force: Vector3<f64>) -> Result<(Vector3<f64>, Vector3<f64>), CalcError> {
+        let dx = self.velocity();
+        let dv = force - self.dampening_constant * self.velocity();
+        Ok((dx, dv))
     }
 }
