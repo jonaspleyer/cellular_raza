@@ -195,9 +195,7 @@ where
         //
         // for each cell in this MultiVoxelContainer
         //      update pos and velocity with all forces obtained
-        //      Simultanously 
-
-        // TODO rewrite this function in this style
+        //      Simultanously
 
         // Define to calculate forces on a cell from external cells in a voxel with a certain index
         let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &C| -> Result<(), SimulationError> {
@@ -367,7 +365,7 @@ where
         Ok(())
     }
 
-    pub fn run_full_update(&mut self, t: &f64, dt: &f64) -> Result<(), SimulationError> {
+    pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError> {
         self.update_cell_cycle(dt);
 
         self.update_mechanics(dt)?;
