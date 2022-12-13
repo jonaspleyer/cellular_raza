@@ -1,96 +1,100 @@
 use core::fmt::{Display,Debug};
 use core::any::type_name;
 
+use std::error::Error;// TODO in the future use core::error::Error (unstable right now)
+
 use crossbeam_channel::{SendError,RecvError};
 
 
-// Define a error which can occur during general calculation
-#[derive(Debug,Clone)]
-pub struct CalcError {
-    pub message: String,
-}
+#[macro_export]
+macro_rules! define_errors {
+    ($(($err_name: ident, $err_descr: expr)),+) => {
+        $(
+            #[doc = $err_descr]
+            #[derive(Debug,Clone)]
+            pub struct $err_name {
+                pub message: String,
+            }
 
-impl Display for CalcError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+            impl Display for $err_name {
+                fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    write!(f, "{}", self.message)
+                }
+            }
+
+            impl Error for $err_name {}
+        )+
     }
 }
 
 
-// Define an error that can occur during boundary calculation
-#[derive(Debug,Clone)]
-pub struct BoundaryError {
-    pub message: String,
-}
+macro_rules! impl_error_variant {
+    ($name: ident, $($err_var: ident),+) => {
+        // Implement Display for ErrorVariant
+        impl Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    $(
+                        $name::$err_var(message) => write!(f, "{}", message),
+                    )+
+                }
+            }
+        }
 
-impl Display for BoundaryError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+        // Also implement the general error property
+        impl std::error::Error for $name {}
     }
 }
 
 
+macro_rules! impl_from_error {
+    ($name: ident, $(($err_var: ident, $err_type: ty)),+) => {
+        $(
+            // Implement conversion from error to errorvariant
+            impl From<$err_type> for $name {
+                fn from(err: $err_type) -> Self {
+                    $name::$err_var(err)
+                }
+            }
+        )+
+    }
+}
+
+define_errors!(
+    (CalcError, "General Calculation Error"),
+    (IndexError, "Can occur internally when information is not present at expected place"),
+    (BoundaryError, "Can occur during boundary calculation")
+);
+
+
+/// # Errors related to Simulation Engine Failure
 #[derive(Debug)]
-pub enum ErrorVariant {
+pub enum EngineError {
+    IndexError(IndexError),
+}
+
+impl_from_error!(EngineError, (IndexError, IndexError));
+impl_error_variant!(EngineError, IndexError);
+
+
+/// # Covers all errors that can occur in this Simulation
+#[derive(Debug)]
+pub enum SimulationError {
     SendError(String),
     ReceiveError(RecvError),
     CalcError(CalcError),
     BoundaryError(BoundaryError),
+    EngineError(EngineError),
 }
 
 
-// Implement that this error variant actually is an error type
-impl std::error::Error for ErrorVariant {}
+impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (EngineError, EngineError));
+impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, EngineError);
 
 
-impl Display for ErrorVariant {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            // Sender errors
-            ErrorVariant::SendError(message) =>
-                write!(f, "{}", message),
-
-            // Receiver errors
-            ErrorVariant::ReceiveError(recv_error) =>
-                write!(f, "{}", recv_error),
-
-            // Errors during calculation
-            ErrorVariant::CalcError(calc_error) =>
-                write!(f, "{}", calc_error),
-
-            // Errors if cells cannot be kept inside the simulation domain for whatever reason
-            ErrorVariant::BoundaryError(boundary_error) =>
-                write!(f, "{}", boundary_error),
-        }
-    }
-}
-
-
-// Sending
-impl<T> From<SendError<T>> for ErrorVariant {
+// Implement conversion from Sending error manually
+impl<T> From<SendError<T>> for SimulationError {
     fn from(_err: SendError<T>) -> Self {
-        ErrorVariant::SendError(format!("Error receiving object of type {}", type_name::<SendError<T>>()))
-    }
-}
-
-// Receiving
-impl From<RecvError> for ErrorVariant {
-    fn from(err: RecvError) -> Self {
-        ErrorVariant::ReceiveError(err)
-    }
-}
-
-
-// Calculation
-impl From<CalcError> for ErrorVariant {
-    fn from(err: CalcError) -> Self {
-        ErrorVariant::CalcError(err)
-    }
-}
-
-// Boundary
-impl From<BoundaryError> for ErrorVariant {
-    fn from(err: BoundaryError) -> Self {
-        ErrorVariant::BoundaryError(err)
+        SimulationError::SendError(format!("Error receiving object of type {}", type_name::<SendError<T>>()))
     }
 }
