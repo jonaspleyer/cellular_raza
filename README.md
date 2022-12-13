@@ -1,4 +1,4 @@
-# Cellular Control
+# cellular_raza
 [![License: MPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_control?style=flat-square)](https://opensource.org/licenses/MPL-2.0)
 [![Test Status](https://img.shields.io/github/workflow/status/jonaspleyer/cellular_control/test.yml?style=flat-square)](https://github.com/jonaspleyer/cellular_control/actions)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.36+-lightgray.svg?style=flat-square)](https://github.com/jonaspleyer/cellular_control#rust-version-requirements)
