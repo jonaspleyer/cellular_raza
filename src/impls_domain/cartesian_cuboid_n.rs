@@ -4,13 +4,11 @@ use crate::concepts::domain::*;
 use crate::concepts::cell::*;
 
 // Imports from std and core
-use std::collections::HashMap;
 use core::cmp::{min,max};
-use core::marker::PhantomData;
 
 // Imports from other crates
 use nalgebra::SVector;
-use itertools::{iproduct,Itertools};
+use itertools::Itertools;
 
 
 #[macro_export]
@@ -19,6 +17,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
+        #[derive(Clone,Debug)]
         pub struct $name {
             pub min: [f64; $d],
             pub max: [f64; $d],
@@ -32,10 +31,18 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = "` in `"]
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
+        #[derive(Clone,Debug)]
         pub struct $voxel_name {
                 pub min: [f64; $d],
                 pub max: [f64; $d],
                 pub index: [usize; $d],
+        }
+
+        // Implement the Voxel trait for our n-dim voxel
+        impl Voxel<[usize; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name {
+            fn get_index(&self) -> [usize; $d] {
+                self.index
+            }
         }
 
         // Implement the cartesian cuboid
@@ -110,8 +117,8 @@ macro_rules! define_and_implement_cartesian_cuboid {
             /// The procedure depends on if we have an even or odd amount of threads
             ///    
             /// ## Case 1)
-            /// It is clear that n_threads >= n_voxel
-            /// otherwise we set n_threads = n_voxel
+            /// It is clear that n_regions >= n_voxel
+            /// otherwise we set n_regions = n_voxel
             ///
             /// ## Case 2)
             /// For the problem where
@@ -187,9 +194,9 @@ macro_rules! define_and_implement_cartesian_cuboid {
             /// THIS ALGORITHM IS NOT WORKING AND NOT A GOOD IDEA! MAYBE WE NEED TO MODIFY IT.
             /// THE CURRENT IMPLEMENTATION IS VERY STUDPID AND SIMPLY PRODUCES AN ITERATOR OVER ALL
             /// AVAILABLE INDICES AND THEN YIELDS CHUNKS FOR THE VOXEL CONTAINERS
-            fn distribute_voxels_for_threads(&self, n_threads: usize) -> Result<(usize, Vec<Vec<([usize; $d], $voxel_name)>>), CalcError> {
+            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([usize; $d], $voxel_name)>>), CalcError> {
                 // Get all voxel indices
-                let mut indices: Vec<[usize; $d]> = [$($k),+]
+                let indices: Vec<[usize; $d]> = [$($k),+]
                     .iter()                                     // indices supplied in macro invokation
                     .map(|i| (0..self.n_vox[*i]))               // ranges from self.n_vox
                     .multi_cartesian_product()                  // all possible combinations
@@ -199,22 +206,22 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 // We calculate how many times we need to drain how many voxels
                 // Example:
                 //      n_voxels    = 59
-                //      n_threads   = 6
+                //      n_regions   = 6
                 //      average_len = (59 / 8).ceil() = (9.833 ...).ceil() = 10
                 //
                 // try to solve this equation:
                 //      n_voxels = average_len * n + (average_len-1) * m
                 //      where n,m are whole positive numbers
                 //
-                // We start with    n = n_threads = 6
+                // We start with    n = n_regions = 6
                 // and with         m = min(0, n_voxel - average_len.pow(2)) = min(0, 59 - 6^2) = 23
-                let average_len = (indices.len() as f64 / n_threads as f64).ceil() as i64;
+                let average_len = (indices.len() as f64 / n_regions as f64).ceil() as i64;
                 let n_voxel = indices.len() as i64;
-                let mut n = n_threads as i64;
+                let mut n = n_regions as i64;
                 let mut m = max(0, n_voxel - average_len.pow(2));
 
                 // Check that we have more voxels than threads. Otherwise assign one voxel to each thread.
-                if n_threads >= n_voxel as usize {
+                if n_regions >= n_voxel as usize {
                     let voxels = indices.iter().map(|ind| {
                         vec![(*ind, $voxel_name {
                             min: [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+],
@@ -231,7 +238,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 // We give the first iterations of this loop for the previous example
                 // 1. Calculate residue r = ...
                 // TODO continue documentation
-                for k in 0..n_voxel {
+                for _ in 0..n_voxel {
                     let r = residue(n, m);
                     if r.abs() > average_len as i64 {
                         n += r.signum() * (r.abs() as f64 / average_len as f64).floor() as i64;
@@ -279,7 +286,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 
                 ind_n.append(&mut ind_m);
 
-                Ok((n_threads as usize, ind_n))
+                Ok((n_regions as usize, ind_n))
             }
         }
     }
