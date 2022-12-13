@@ -14,8 +14,10 @@ pub struct StandardCell2D {
     pub cell_radius: f64,
     pub potential_strength: f64,
 
+    pub maximum_age: f64,
+
     pub remove: bool,
-    pub age: f64,
+    pub current_age: f64,
 
     pub id: Uuid,
 }
@@ -23,8 +25,8 @@ pub struct StandardCell2D {
 
 impl Cycle<StandardCell2D> for StandardCell2D {
     fn update_cycle(dt: &f64, cell: &mut StandardCell2D) {
-        cell.age += dt;
-        if cell.age > 1000.0 {
+        cell.current_age += dt;
+        if cell.current_age > cell.maximum_age {
             cell.remove = true;
         }
     }
