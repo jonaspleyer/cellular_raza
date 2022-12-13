@@ -127,7 +127,7 @@ where
             .iter_mut()
             .map(|(_, cells)| cells.iter_mut())
             .flatten()
-            .map(|cell| self.domain.apply_boundary(cell))
+            .map(|cell| self.domain.apply_boundary(cell))// TODO catch this error
             .collect()
     }
 
@@ -289,7 +289,6 @@ where
                 None => Err(CalcError {message: format!("Could not find cell {} in current voxel", &obt_forces.uuid)}),
             }?;
         }
-        
 
         // Update position and velocity of cells
         for (_, cells) in self.voxel_cells.iter_mut() {
@@ -311,15 +310,6 @@ where
                 cell.set_velocity(&(cell.velocity() + dv * *dt));
             }
         }
-
-        /* println!("Thread {} Voxels: {:?} Cells: {} Total forces: {:?} Positions: {:7.2?}",
-            std::thread::current().name().unwrap(),
-            self.voxels.iter().map(|(i, _)| i.clone()).collect::<Vec<I>>(),
-            self.voxel_cells.iter().map(|(_, cs)| cs.len()).sum::<usize>(),
-            self.cell_forces.iter().map(|(_, forces)| forces.len()).sum::<usize>(),
-            self.voxel_cells.iter().map(|(_, cs)| cs.iter().map(|c| c.pos())).flatten().collect::<Vec<Pos>>(),
-        );*/
-
         Ok(())
     }
 
@@ -376,11 +366,3 @@ where
         Ok(())
     }
 }
-
-// These should be sharable between threads
-// unsafe impl<I: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,I>, C> Send for MultiVoxelContainer<I, Cell, Pos, Force, V, D, C> {}
-// unsafe impl<I: Hash, Cell, Pos, Force, V:Voxel, D:Domain<Cell,I>, C> Sync for MultiVoxelContainer<I, Cell, Pos, Force, V, D, C> {}
-
-
-// TODO automatically create many MultiVoxelContainers depending on how many threads are being used
-// possibly use the builder pattern (check online resources first)
