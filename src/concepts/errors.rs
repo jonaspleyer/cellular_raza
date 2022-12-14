@@ -6,7 +6,6 @@ use std::error::Error;// TODO in the future use core::error::Error (unstable rig
 use crossbeam_channel::{SendError,RecvError};
 
 
-#[macro_export]
 macro_rules! define_errors {
     ($(($err_name: ident, $err_descr: expr)),+) => {
         $(

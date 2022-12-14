@@ -11,7 +11,6 @@ use nalgebra::SVector;
 use itertools::Itertools;
 
 
-#[macro_export]
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $voxel_name: ident, $($k: expr),+) => {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
