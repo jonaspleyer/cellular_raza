@@ -2,7 +2,7 @@ use crate::concepts::cell::Cell;
 use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation};
 use crate::concepts::domain::Index;
 use crate::concepts::mechanics::{Position,Force,Velocity};
-use crate::concepts::errors::CalcError;
+use crate::concepts::errors::{CalcError,SimulationError};
 
 use std::thread;
 use std::collections::{HashMap,LinkedList};
@@ -214,7 +214,7 @@ where
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: Cell<Pos, For, Vel> + 'static,
 {
-    fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), Box<dyn Error>> {
+    fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), SimulationError> {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
 
@@ -280,7 +280,7 @@ where
         Ok(())
     }
 
-    pub fn run_full_sim(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn run_full_sim(&mut self) -> Result<(), SimulationError> {
         self.spawn_worker_threads_and_run_sim()?;
         
         Ok(())

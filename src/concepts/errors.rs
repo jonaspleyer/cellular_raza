@@ -79,11 +79,12 @@ pub enum SimulationError {
 
     // Highly unlikely to be user errors
     IndexError(IndexError),
+    IOError(std::io::Error),
 }
 
 
-impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (IndexError, IndexError));
-impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, IndexError);
+impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (IndexError, IndexError), (IOError, std::io::Error));
+impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, IndexError, IOError);
 
 
 // Implement conversion from Sending error manually
