@@ -5,7 +5,7 @@ use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::{CalcError,SimulationError};
 
 use std::thread;
-use std::collections::{HashMap,LinkedList};
+use std::collections::{HashMap};
 use std::error::Error;
 
 use core::marker::PhantomData;
@@ -18,9 +18,11 @@ use hurdles::Barrier;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::Arc;
 
-use itertools::any;
+use itertools::{any, Itertools};
 
 use uuid::Uuid;
+
+use rayon::prelude::*;
 
 
 /// # Supervisor controlling simulation execution

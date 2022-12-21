@@ -1,8 +1,8 @@
 use crate::concepts::errors::*;
 use crate::concepts::cell::*;
 
-use std::collections::{HashMap,LinkedList};
-use std::marker::Send;
+use std::collections::{HashMap};
+use std::marker::{Send,Sync};
 
 use core::marker::PhantomData;
 use core::hash::Hash;
@@ -49,7 +49,7 @@ pub struct PosInformation<I, Pos> {
 
 
 pub struct ForceInformation<Force> {
-    pub forces: LinkedList<Result<Force, CalcError>>,
+    pub forces: Vec<Result<Force, CalcError>>,
     pub uuid: Uuid,
 }
 
@@ -64,7 +64,7 @@ where
     D: Domain<C, I, V>,
 {
     pub voxels: HashMap<I, V>,
-    pub voxel_cells: HashMap<I, LinkedList<C>>,
+    pub voxel_cells: HashMap<I, Vec<C>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -89,7 +89,7 @@ where
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
-    pub cell_forces: HashMap<Uuid, LinkedList<Result<Force, CalcError>>>,
+    pub cell_forces: HashMap<Uuid, Vec<Result<Force, CalcError>>>,
     pub neighbor_indices: HashMap<I, Vec<I>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
@@ -131,7 +131,7 @@ where
             .collect()
     }
 
-    pub fn insert_cells(&mut self, index: &I, new_cells: &mut LinkedList<C>) -> Result<(), CalcError>
+    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<C>) -> Result<(), CalcError>
     {
         self.voxel_cells.get_mut(index)
             .ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?
@@ -145,7 +145,7 @@ where
         let index = self.domain.get_voxel_index(&cell);
 
         match self.voxel_cells.get_mut(&index) {
-            Some(cells) => cells.push_back(cell),
+            Some(cells) => cells.push(cell),
             None => {
                 match self.senders_cell.get(&index) {
                     Some(sender) => sender.send(cell),
@@ -158,10 +158,10 @@ where
 
     fn calculate_forces_for_external_cells(&self, pos_info: PosInformation<I, Pos>) -> Result<(), SimulationError> {
         // Calculate force from cells in voxel
-        let mut forces = LinkedList::new();
+        let mut forces = Vec::new();
         for cell in self.voxel_cells[&pos_info.index_receiver].iter() {
             match cell.force(&cell.pos(), &pos_info.pos) {
-                Some(force) => forces.push_back(force),
+                Some(force) => forces.push(force),
                 None => (),
             }
         }
@@ -211,11 +211,11 @@ where
                                 match self.cell_forces.get_mut(&cell.get_uuid()) {
                                     // We need to check if there is already an entry for the cell if this is the case, we can simply append there
                                     Some(forces) => {
-                                        forces.push_back(force);
+                                        forces.push(force);
                                     },
                                     // If not then we create a new entry
                                     None => {
-                                        self.cell_forces.insert(cell.get_uuid(), LinkedList::from([force]));
+                                        self.cell_forces.insert(cell.get_uuid(), Vec::from([force]));
                                     },
                                 };
                             },
@@ -259,8 +259,8 @@ where
                 match self.voxels[voxel_index].custom_force_on_cell(&cell.pos()) {
                     Some(force) => {
                         match self.cell_forces.get_mut(&cell.get_uuid()) {
-                            Some(forces) => forces.push_back(force),
-                            None => {self.cell_forces.insert(cell.get_uuid(), LinkedList::from([force]));},
+                            Some(forces) => forces.push(force),
+                            None => {self.cell_forces.insert(cell.get_uuid(), Vec::from([force]));},
                         }
                     },
                     None => (),
@@ -315,13 +315,13 @@ where
 
     pub fn sort_cells_in_voxels(&mut self) -> Result<(), SimulationError> {
         // Store all cells which need to find a new home in this variable
-        let mut find_new_home_cells = LinkedList::<_>::new();
+        let mut find_new_home_cells = Vec::<_>::new();
         
         for (voxel_index, cells) in self.voxel_cells.iter_mut() {
             // Drain every cell which is currently not in the correct voxel
             let new_voxel_cells = cells.drain_filter(|c| &self.domain.get_voxel_index(&c)!=voxel_index);
             // Check if the cell needs to be sent to another multivoxelcontainer
-            find_new_home_cells.append(&mut new_voxel_cells.collect::<LinkedList<_>>());
+            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());
         }
 
         // Send cells to other multivoxelcontainer or keep them here
@@ -329,7 +329,7 @@ where
             let cell_index = self.domain.get_voxel_index(&cell);
             match self.voxel_cells.get_mut(&cell_index) {
                 Some(cells) => {
-                    cells.push_back(cell);
+                    cells.push(cell);
                     Ok(())
                 },
                 None => {
