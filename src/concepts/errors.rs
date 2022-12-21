@@ -66,7 +66,8 @@ define_errors!(
 );
 
 
-/// # Covers all errors that can occur in this Simulation
+/// Covers all errors that can occur in this Simulation
+/// The errors are listed from very likely to be a user error from almost certainly an internal error.
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
