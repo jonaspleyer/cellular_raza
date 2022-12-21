@@ -63,7 +63,7 @@ pub struct SimulationMetaParams {
 
 pub struct TimeSetup {
     pub t_start: f64,
-    pub t_eval: Vec<f64>,
+    pub t_eval: Vec<(f64, bool)>,
 }
 
 
@@ -89,11 +89,11 @@ where
 {
     fn from(setup: SimulationSetup<Dom, Cel>) -> Result<SimulationSupervisor<Dom, Cel, Ind, Pos, For, Vel, Vox>, Box<dyn Error>> {
         // Create groups of voxels to put into our MultiVelContainers
-        let (n_threads, mut voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
+        let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
 
         // Create MultiVelContainer from voxel chunks
-        let mut multivoxelcontainers = Vec::new();
-        let mut cells = setup.cells;
+        let multivoxelcontainers;
+        let cells = setup.cells;
 
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(Sender<Cel>, Receiver<Cel>)> = (0..n_threads).map(|_| unbounded()).collect();
@@ -112,10 +112,57 @@ where
             }
         }
 
-        for (i, chunk) in voxel_chunks.drain(..).enumerate() {
+        let chunk_size = (cells.len() as f64/ n_threads as f64).ceil() as usize;
+        let mut sorted_cells = cells
+            .into_par_iter()
+            .chunks(chunk_size)
+            .map(|cell_chunk| {
+                let mut cs = HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new();
+                for cell in cell_chunk.into_iter() {
+                    let index = setup.domain.get_voxel_index(&cell);
+                    let id_thread = index_to_thread[&index];
+                    match cs.get_mut(&id_thread) {
+                        Some(index_to_cells) => match index_to_cells.get_mut(&index) {
+                            Some(cs) => cs.push(cell),
+                            None => {index_to_cells.insert(index, vec![cell]);},
+                        },
+                        None => {cs.insert(id_thread, HashMap::from([(index, vec![cell])]));},
+                    }
+                }
+                cs
+            })
+            .reduce(|| HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new(), |mut acc, x| {
+                for (id_thread, idc) in x.into_iter() {
+                    for (index, mut cells) in idc.into_iter() {
+                        match acc.get_mut(&id_thread) {
+                            Some(index_to_cells) => match index_to_cells.get_mut(&index) {
+                                Some(cs) => cs.append(&mut cells),
+                                None => {index_to_cells.insert(index, cells);},
+                            },
+                            None => {acc.insert(id_thread, HashMap::from([(index, cells)]));},
+                        }
+                    }
+                }
+                return acc;
+            });
+
+        let voxel_and_cells: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<Cel>>)> = voxel_chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
+            .collect();
+
+        multivoxelcontainers = voxel_and_cells.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
             let voxels: HashMap<Ind,Vox> = chunk.clone().into_iter().collect();
-            let voxel_cells_empty: HashMap<Ind, LinkedList<Cel>> = chunk.clone().into_iter().map(|(i, _)| (i, LinkedList::new())).collect();
+
+            // Fill index_to_cells with non-occupied indices of voxels
+            for (ind, _) in voxels.iter() {
+                match index_to_cells.get(&ind) {
+                    Some(_) => (),
+                    None => {index_to_cells.insert(ind.clone(), Vec::new());},
+                }
+            }
 
             // Quick macro to create senders
             macro_rules! create_senders {
@@ -137,8 +184,15 @@ where
             let senders_force = create_senders!(sender_receiver_pairs_force);
 
             // Get all cells which belong into this voxel_chunk
-            let cells_filt: Vec<Cel> = cells.drain_filter(|c| any(chunk.iter(), |(i, _)| *i==setup.domain.get_voxel_index(&c))).collect();
-            let cell_forces_empty: HashMap<Uuid, LinkedList<Result<For, CalcError>>> = cells.iter().map(|c| (c.get_uuid(), LinkedList::new())).collect();
+            // let cells_filt: Vec<Cel> = cells.drain_filter(|c| any(chunk.iter(), |(i, _)| *i==setup.domain.get_voxel_index(&c))).collect();
+            let cell_forces_empty: HashMap<Uuid, Vec<Result<For, CalcError>>> = index_to_cells
+                .iter()
+                .map(|(_, cs)| cs
+                    .iter()
+                    .map(|c| (c.get_uuid(), Vec::new()))
+                ).flatten()
+                .collect();
+
             let neighbor_indices: HashMap<Ind, Vec<Ind>> = chunk
                 .clone()
                 .into_iter()
@@ -146,9 +200,9 @@ where
                 .collect();
 
             // Define the container for many voxels
-            let mut cont = MultiVoxelContainer {
+            let cont = MultiVoxelContainer {
                 voxels: voxels,
-                voxel_cells: voxel_cells_empty,
+                voxel_cells: index_to_cells,
                 
                 domain: setup.domain.clone(),
 
@@ -167,14 +221,10 @@ where
 
                 phantom_vel: PhantomData,
             };
-            
-            // Now filter again for the different voxels
-            for cell in cells_filt {
-                cont.sort_cell_in_voxel(cell)?;
-            }
 
-            multivoxelcontainers.push(cont);
-        }
+            // multivoxelcontainers.push(cont);
+            return cont;
+        }).collect();
 
         let save_now = Arc::new(AtomicBool::new(false));
         let stop_now = Arc::new(AtomicBool::new(false));
@@ -235,10 +285,9 @@ where
             // Spawn a thread for each multivoxelcontainer that is running
             let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || {
                 new_start_barrier.wait();
-                println!("thread {} executing with voxels {} and cells {}", l, cont.voxel_cells.len(), cont.voxel_cells.iter().map(|(_, cells)| cells.len()).sum::<usize>());
 
                 let mut time = t_start;
-                for t in t_eval {
+                for (t, save) in t_eval {
                     let dt = t - time;
                     time = t;
 
@@ -251,11 +300,15 @@ where
                         },
                     }
 
-                    if save_now_new.load(Ordering::Relaxed) {
-                        // let mut all_cells: Vec<CellModel> = vox_cont.voxels.iter().map(|v| v.cells.clone()).flatten().collect();
+                    // if save_now_new.load(Ordering::Relaxed) {
+                    if save {
+                        // let mut all_cells: Vec<Cel> = cont.voxel_cells.iter().map(|(_, cells)| cells.clone()).flatten().collect();
                         // for cell in all_cells.drain(..) {
                         //     // TODO do not unwrap but catch nicely
-                        //     sender_plots_new.send(cell).unwrap();
+                        //     // sender_plots_new.send(cell).unwrap();
+                        // }
+                        // if l==0 {
+                        //     println!("Saving Simulation at time {}", t);
                         // }
                     }
 
@@ -266,7 +319,7 @@ where
                     }
                 }
 
-                println!("thread {} stopping with voxels {} and cells {}", l, cont.voxel_cells.len(), cont.voxel_cells.iter().map(|(_, cells)| cells.len()).sum::<usize>());
+                // println!("thread {} stopping with voxels {} and cells {}", l, cont.voxel_cells.len(), cont.voxel_cells.iter().map(|(_, cells)| cells.len()).sum::<usize>());
 
                 // new_barrier.wait();
             })?;
@@ -277,7 +330,6 @@ where
         self.worker_threads = handles;
 
         // This starts all threads simultanously
-        println!("Before starting");
         start_barrier.wait();
         Ok(())
     }
@@ -287,6 +339,17 @@ where
         
         Ok(())
     }
+
+    pub fn run_until(&mut self, end_time: f64) -> Result<(), SimulationError> {
+        self.time.t_eval.drain_filter(|(t, _)| *t <= end_time);
+        self.run_full_sim()?;
+        Ok(())
+    }
+
+    /* TODO figure this out
+    pub fn get_current_cells(&self) -> Result<Vec<Cel>, SimulationError> {
+
+    }*/
 
     pub fn end_simulation(self) {
         for thread in self.worker_threads {

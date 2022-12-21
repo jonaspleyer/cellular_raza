@@ -27,3 +27,4 @@ crossbeam-channel = { version="0.5" }
 hurdles = { version="1.0" }
 num = { version="0.4" }
 uuid = { version="1.2" }
+rayon = { version="1.6" }
