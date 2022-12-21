@@ -16,7 +16,7 @@ use hurdles::Barrier;
 use uuid::Uuid;
 
 
-pub trait Domain<Cell, I, V>: Send
+pub trait Domain<Cell, I, V>: Send + Sync
 {
     fn apply_boundary(&self, cell: &mut Cell) -> Result<(), BoundaryError>;
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
@@ -25,7 +25,7 @@ pub trait Domain<Cell, I, V>: Send
 }
 
 
-pub trait Index = Hash + Eq + Clone + Send + std::fmt::Debug;
+pub trait Index = Hash + Eq + Clone + Send + Sync + std::fmt::Debug;
 
 
 pub trait Voxel<I, Pos, Force>: Send
