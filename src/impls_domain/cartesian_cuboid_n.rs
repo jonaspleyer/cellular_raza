@@ -11,6 +11,59 @@ use nalgebra::SVector;
 use itertools::Itertools;
 
 
+
+/// Helper function to calculate the decomposition of a large number N into n as evenly-sized chunks as possible
+/// Examples:
+/// N   n   decomp
+/// 10  3    1 *  4  +  3 *  3
+/// 13  4    1 *  5  +  3 *  4
+/// 100 13   4 * 13  +  4 * 12
+/// 225 16   1 * 15  + 15 * 14
+/// 225 17   4 * 14  + 13 * 13
+fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize, usize, usize)> {
+    // We calculate how many times we need to drain how many voxels
+    // Example:
+    //      n_voxels    = 59
+    //      n_regions   = 6
+    //      average_len = (59 / 8).ceil() = (9.833 ...).ceil() = 10
+    //
+    // try to solve this equation:
+    //      n_voxels = average_len * n + (average_len-1) * m
+    //      where n,m are whole positive numbers
+    //
+    // We start with    n = n_regions = 6
+    // and with         m = min(0, n_voxel - average_len.pow(2)) = min(0, 59 - 6^2) = 23
+    let mut average_len: i64 = (n_voxel as f64 / n_regions as f64).ceil() as i64;
+
+    let residue = |n: i64, m: i64, avg: i64| {n_voxel as i64 - avg*n - (avg-1)*m};
+
+    let mut n = n_regions as i64;
+    let mut m = 0;
+
+    for _ in 0..n_regions {
+        let r = residue(n, m, average_len);
+        if r == 0 {
+            return Some((n as usize, m as usize, average_len as usize));
+        } else if r > 0 {
+            if n==n_regions as i64 {
+                // Start from the beginning again but with different value for average length
+                average_len += 1;
+                n = n_regions as i64;
+                m = 0;
+            } else {
+                n += 1;
+                m -= 1;
+            }
+        // Residue is negative. This means we have subtracted too much and we just decrease n and increase m
+        } else {
+            n -= 1;
+            m += 1;
+        }
+    }
+    None
+}
+
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $voxel_name: ident, $($k: expr),+) => {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
@@ -97,7 +150,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 let bounds: [[usize; 2]; $d] = [$(
                     [
                         max(index[$k] as i32 - 1, 0) as usize,
-                        min(index[$k]+2, self.n_vox[$k  ])
+                        min(index[$k]+2, self.n_vox[$k])
                     ]
                 ),+];
 
@@ -202,57 +255,11 @@ macro_rules! define_and_implement_cartesian_cuboid {
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
                     .collect();
                 
-                // We calculate how many times we need to drain how many voxels
-                // Example:
-                //      n_voxels    = 59
-                //      n_regions   = 6
-                //      average_len = (59 / 8).ceil() = (9.833 ...).ceil() = 10
-                //
-                // try to solve this equation:
-                //      n_voxels = average_len * n + (average_len-1) * m
-                //      where n,m are whole positive numbers
-                //
-                // We start with    n = n_regions = 6
-                // and with         m = min(0, n_voxel - average_len.pow(2)) = min(0, 59 - 6^2) = 23
-                let average_len = (indices.len() as f64 / n_regions as f64).ceil() as i64;
-                let n_voxel = indices.len() as i64;
-                let mut n = n_regions as i64;
-                let mut m = max(0, n_voxel - average_len.pow(2));
-
-                // Check that we have more voxels than threads. Otherwise assign one voxel to each thread.
-                if n_regions >= n_voxel as usize {
-                    let voxels = indices.iter().map(|ind| {
-                        vec![(*ind, $voxel_name {
-                            min: [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+],
-                            max: [$(self.min[$k] + (1+ind[$k]) as f64*self.voxel_sizes[$k]),+],
-                            index: *ind,
-                        })]
-                    }).collect();
-                    return Ok((n_voxel as usize, voxels));
-                }
-
-                // Define a closure to calculate the residue
-                let residue = |n, m| {n_voxel - average_len*n - (average_len-1)*m};
-
-                // We give the first iterations of this loop for the previous example
-                // 1. Calculate residue r = ...
-                // TODO continue documentation
-                for _ in 0..n_voxel {
-                    let r = residue(n, m);
-                    if r.abs() > average_len as i64 {
-                        n += r.signum() * (r.abs() as f64 / average_len as f64).floor() as i64;
-                    } else {
-                        n += r.signum();
-                        m -= r.signum();
-                    }
-
-                    if residue(n, m) == 0 {
-                        break;
-                    }
-                }
-                if residue(n, m) != 0 {
-                    return Err(CalcError {message: "Could not find a suiting decomposition".to_owned(), });
-                }
+                let (n, _m, average_len);
+                match get_decomp_res(indices.len(), n_regions) {
+                    Some(res) => (n, _m, average_len) = res,
+                    None => return Err(CalcError {message: "Could not find a suiting decomposition".to_owned(), }),
+                };
 
                 // Now we drain the indices vector
 
@@ -278,7 +285,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 let mut ind_m: Vec<Vec<_>> = index_voxel_combinations
                     .drain(..)
                     .into_iter()
-                    .chunks((average_len-1) as usize)
+                    .chunks((max(average_len-1, 1)) as usize)
                     .into_iter()
                     .map(|chunk| chunk.collect::<Vec<_>>())
                     .collect();
