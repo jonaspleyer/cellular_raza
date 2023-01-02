@@ -18,8 +18,6 @@ use hurdles::Barrier;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::Arc;
 
-use itertools::{any, Itertools};
-
 use uuid::Uuid;
 
 use rayon::prelude::*;
@@ -32,6 +30,9 @@ where
     Dom: Domain<Cel, Ind, Vox>,
     Ind: Index,
     Vox: Voxel<Ind, Pos, For>,
+    Pos: Position,
+    For: Force,
+    Vel: Velocity,
     Cel: Cell<Pos, For, Vel>,
 {
     worker_threads: Vec<thread::JoinHandle<()>>,
