@@ -6,9 +6,9 @@ use num::Zero;
 use std::marker::Send;
 
 
-pub trait Position = Sized + Add<Self,Output=Self> + AddAssign + Sub + SubAssign + Clone + Debug + Send + Mul<f64,Output=Self>;
-pub trait Force = Sized + Add<Self,Output=Self> + AddAssign + Sub + SubAssign + Debug + Zero + Send + Mul<f64,Output=Self>;
-pub trait Velocity = Sized + Add<Self,Output=Self> + AddAssign + Sub + SubAssign + Debug + Zero + Send + Mul<f64,Output=Self>;
+pub trait Position = Sized + Add<Self,Output=Self> + AddAssign + Sub<Output=Self> + SubAssign + Clone + Debug + Send + Mul<f64,Output=Self>;
+pub trait Force = Sized + Add<Self,Output=Self> + AddAssign + Sub<Output=Self> + SubAssign + Debug + Zero + Send + Mul<f64,Output=Self>;
+pub trait Velocity = Sized + Add<Self,Output=Self> + AddAssign + Sub<Output=Self> + SubAssign + Debug + Zero + Send + Mul<f64,Output=Self>;
 
 
 pub trait Mechanics<Pos, For, Vel>
