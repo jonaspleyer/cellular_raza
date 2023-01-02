@@ -6,7 +6,7 @@ use core::fmt::Debug;
 
 
 #[derive(Clone,Debug)]
-pub struct StandardCell2D {
+pub struct CustomCell2D {
     pub pos: Vector2<f64>,
     pub velocity: Vector2<f64>,
 
@@ -20,8 +20,8 @@ pub struct StandardCell2D {
 }
 
 
-impl Cycle<StandardCell2D> for StandardCell2D {
-    fn update_cycle(dt: &f64, cell: &mut StandardCell2D) {
+impl Cycle<CustomCell2D> for CustomCell2D {
+    fn update_cycle(dt: &f64, cell: &mut CustomCell2D) {
         cell.current_age += dt;
         if cell.current_age > cell.maximum_age {
             cell.remove = true;
@@ -29,7 +29,7 @@ impl Cycle<StandardCell2D> for StandardCell2D {
     }
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>> for StandardCell2D {
+impl Interaction<Vector2<f64>, Vector2<f64>> for CustomCell2D {
     fn force(&self, own_pos: &Vector2<f64>, ext_pos: &Vector2<f64>) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = own_pos - ext_pos;
         let r = z.norm();
@@ -38,7 +38,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>> for StandardCell2D {
     }
 }
 
-impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for StandardCell2D {
+impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for CustomCell2D {
     fn pos(&self) -> Vector2<f64> {
         self.pos
     }
