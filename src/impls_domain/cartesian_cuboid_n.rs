@@ -101,7 +101,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         // Index is an array of size 3 with elements of type usize
         impl<C> Domain<C, [usize; $d], $voxel_name> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where C: Cell<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+        where C: CellAgent<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
             fn apply_boundary(&self, cell: &mut C) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();
@@ -127,7 +127,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 // If new position is still out of boundary return error
                 for i in 0..$d {
                     if pos[i] < self.min[i] || pos[i] > self.max[i] {
-                        return Err(BoundaryError { message: format!("Particle with id {} is out of domain at position {:?}", cell.get_uuid(), pos) });
+                        return Err(BoundaryError { message: format!("Particle is out of domain at position {:?}", pos) });
                     } else {
                         return Ok(());
                     }
