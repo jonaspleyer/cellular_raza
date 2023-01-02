@@ -130,11 +130,11 @@ where
     For: Force,
     Vel: Velocity,
     V: Voxel<I, Pos, For>,
-    C: Cell<Pos, For, Vel>,
-    D: Domain<C, I, V>,
+    C: CellAgent<Pos, For, Vel>,
+    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>,
 {
     pub voxels: HashMap<I, V>,
-    pub voxel_cells: HashMap<I, Vec<C>>,
+    pub voxel_cells: HashMap<I, Vec<CellAgentBox<Pos, For, Vel, C>>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -148,12 +148,12 @@ where
     pub domain: D,
 
     // Where do we want to send cells, positions and forces
-    pub senders_cell: HashMap<I, Sender<C>>,
+    pub senders_cell: HashMap<I, Sender<CellAgentBox<Pos, For, Vel, C>>>,
     pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos>>>,
     pub senders_force: HashMap<I, Sender<ForceInformation<For>>>,
 
     // Same for receiving
-    pub receiver_cell: Receiver<C>,
+    pub receiver_cell: Receiver<CellAgentBox<Pos, For, Vel, C>>,
     pub receiver_pos: Receiver<PosInformation<I,Pos>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
@@ -164,9 +164,6 @@ where
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
-
-    // Phantom data for velocity
-    pub phantom_vel: PhantomData<Vel>,
 }
 
 
@@ -177,18 +174,18 @@ where
     // (eg. mechanics, interaction, etc...)
     I: Index,
     V: Voxel<I, Pos, For>,
-    D: Domain<C, I, V>,
+    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>,
     Vel: Velocity,
     For: Force,
     Pos: Position,
-    C: Cell<Pos, For, Vel>,
+    C: CellAgent<Pos, For, Vel>,
 {
     fn update_cell_cycle(&mut self, dt: &f64) {
         self.voxel_cells
             .iter_mut()
             .for_each(|(_, cs)| cs
                 .iter_mut()
-                .for_each(|c| C::update_cycle(dt, c))
+                .for_each(|c| CellAgentBox::<Pos, For, Vel, C>::update_cycle(dt, c))
             );
     }
 
@@ -201,7 +198,7 @@ where
             .collect()
     }
 
-    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<C>) -> Result<(), CalcError>
+    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<CellAgentBox<Pos, For, Vel, C>>) -> Result<(), CalcError>
     {
         self.voxel_cells.get_mut(index)
             .ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?
@@ -210,7 +207,7 @@ where
     }
 
     // TODO add functionality
-    pub fn sort_cell_in_voxel(&mut self, cell: C) -> Result<(), SimulationError>
+    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<Pos, For, Vel, C>) -> Result<(), SimulationError>
     {
         let index = self.domain.get_voxel_index(&cell);
 
@@ -268,7 +265,7 @@ where
         //      Simultanously
 
         // Define to calculate forces on a cell from external cells in a voxel with a certain index
-        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &C| -> Result<(), SimulationError> {
+        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &CellAgentBox<Pos, For, Vel, C>| -> Result<(), SimulationError> {
             // Iterate over all cells which are in the voxel of interest
             match self.voxel_cells.get(voxel_index) {
 
