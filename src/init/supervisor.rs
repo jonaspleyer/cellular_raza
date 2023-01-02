@@ -113,6 +113,7 @@ where
             }
         }
 
+        let n_chunks = voxel_chunks.len();
         let chunk_size = (cells.len() as f64/ n_threads as f64).ceil() as usize;
         let mut sorted_cells = cells
             .into_par_iter()
@@ -132,7 +133,8 @@ where
                 }
                 cs
             })
-            .reduce(|| HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new(), |mut acc, x| {
+            // .reduce(|| HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new(), |mut acc, x| {
+            .reduce(|| (0..n_chunks).map(|i| (i, HashMap::new())).collect::<HashMap<usize, HashMap<Ind, Vec<Cel>>>>(), |mut acc, x| {
                 for (id_thread, idc) in x.into_iter() {
                     for (index, mut cells) in idc.into_iter() {
                         match acc.get_mut(&id_thread) {
