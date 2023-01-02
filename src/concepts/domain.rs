@@ -1,5 +1,6 @@
 use crate::concepts::errors::*;
 use crate::concepts::cell::*;
+use crate::concepts::mechanics::{Position,Force,Velocity};
 
 use std::collections::{HashMap};
 use std::marker::{Send,Sync};
@@ -7,8 +8,6 @@ use std::marker::{Send,Sync};
 use core::marker::PhantomData;
 use core::hash::Hash;
 use core::cmp::Eq;
-use core::ops::{Add,AddAssign,Sub,SubAssign};
-use num::Zero;
 
 use crossbeam_channel::{Sender,Receiver,SendError};
 use hurdles::Barrier;
@@ -56,11 +55,14 @@ pub struct ForceInformation<Force> {
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub struct MultiVoxelContainer<I, Pos, Force, Velocity, V, D, C>
+pub struct MultiVoxelContainer<I, Pos, For, Vel, V, D, C>
 where
     I: Index,
-    V: Voxel<I, Pos, Force>,
-    C: Cell<Pos, Force, Velocity>,
+    Pos: Position,
+    For: Force,
+    Vel: Velocity,
+    V: Voxel<I, Pos, For>,
+    C: Cell<Pos, For, Vel>,
     D: Domain<C, I, V>,
 {
     pub voxels: HashMap<I, V>,
@@ -80,38 +82,38 @@ where
     // Where do we want to send cells, positions and forces
     pub senders_cell: HashMap<I, Sender<C>>,
     pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos>>>,
-    pub senders_force: HashMap<I, Sender<ForceInformation<Force>>>,
+    pub senders_force: HashMap<I, Sender<ForceInformation<For>>>,
 
     // Same for receiving
     pub receiver_cell: Receiver<C>,
     pub receiver_pos: Receiver<PosInformation<I,Pos>>,
-    pub receiver_force: Receiver<ForceInformation<Force>>,
+    pub receiver_force: Receiver<ForceInformation<For>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
-    pub cell_forces: HashMap<Uuid, Vec<Result<Force, CalcError>>>,
+    pub cell_forces: HashMap<Uuid, Vec<Result<For, CalcError>>>,
     pub neighbor_indices: HashMap<I, Vec<I>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
     // Phantom data for velocity
-    pub phantom_vel: PhantomData<Velocity>,
+    pub phantom_vel: PhantomData<Vel>,
 }
 
 
-impl<I, Pos, Force, Velocity, V, D, C> MultiVoxelContainer<I, Pos, Force, Velocity, V, D, C>
+impl<I, Pos, For, Vel, V, D, C> MultiVoxelContainer<I, Pos, For, Vel, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
     // (eg. mechanics, interaction, etc...)
     I: Index,
-    V: Voxel<I, Pos, Force>,
+    V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
-    Velocity: Add + AddAssign + Sub + SubAssign + Zero,
-    Force: Add + AddAssign + Sub + SubAssign + Zero,
-    Pos: Add + AddAssign + Sub + SubAssign + Clone,
-    C: Cell<Pos, Force, Velocity>,
+    Vel: Velocity,
+    For: Force,
+    Pos: Position,
+    C: Cell<Pos, For, Vel>,
 {
     fn update_cell_cycle(&mut self, dt: &f64) {
         self.voxel_cells
