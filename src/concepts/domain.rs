@@ -95,7 +95,7 @@ where
 pub trait Index = Hash + Eq + Clone + Send + Sync + std::fmt::Debug;
 
 
-pub trait Voxel<I, Pos, Force>: Send
+pub trait Voxel<I, Pos, Force>: Send + Sync + Clone
 where
     I: Index,
 {
