@@ -286,24 +286,28 @@ where
             match self.cell_forces.get_mut(&obt_forces.uuid) {
                 Some(saved_forces) => {
                     saved_forces.append(&mut obt_forces.forces);
-                    Ok(())
                 },
-                None => Err(CalcError {message: format!("Could not find cell {} in current voxel", &obt_forces.uuid)}),
-            }?;
+                None => (),
+            };
         }
 
         // Update position and velocity of cells
         for (_, cells) in self.voxel_cells.iter_mut() {
             for cell in cells.iter_mut() {
-                let mut force = Force::zero();
-                for new_force in self.cell_forces.get_mut(&cell.get_uuid()).ok_or(CalcError{message: format!("internal error: could not find entry in hasmap for cell {}", cell.get_uuid())})?.drain_filter(|_| true) {
-                    match new_force {
-                        Ok(n_force) => {
-                            force += n_force;
-                            Ok(())
-                        },
-                        Err(error) => Err(error),
-                    }?;
+                let mut force = For::zero();
+                match self.cell_forces.get_mut(&cell.get_uuid()) {
+                    Some(new_forces) => {
+                        for new_force in new_forces.drain(..) {
+                            match new_force {
+                                Ok(n_force) => {
+                                    force += n_force;
+                                    Ok(())
+                                },
+                                Err(error) => Err(error),
+                            }?;
+                        }
+                    }
+                    None => (),
                 }
 
                 // Update cell position and velocity
