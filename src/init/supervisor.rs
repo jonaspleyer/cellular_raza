@@ -253,8 +253,106 @@ where
 }
 
 
-// TODO give constants in setup
-pub const DT: f64 = 0.01;
+#[macro_export]
+macro_rules! implement_cell_types {
+    ($pos:ty, $force:ty, $velocity:ty, [$($celltype:ident),+]) => {
+        #[derive(Debug,Clone)]
+        pub enum CellType {
+            $($celltype($celltype)),+
+        }
+
+        impl Id for CellType {
+            fn get_uuid(&self) -> Uuid {
+                match self {
+                    $(CellType::$celltype(cell) => cell.get_uuid(),)+
+                }
+            }
+        }
+
+        impl Interaction<$pos, $force> for CellType {
+            fn force(&self, own_pos: &$pos, ext_pos: &$pos) -> Option<Result<$force, CalcError>> {
+                match self {
+                    $(CellType::$celltype(cell) => cell.force(own_pos, ext_pos),)+
+                }
+            }
+        }
+
+        impl Cycle<CellType> for CellType {
+            fn update_cycle(dt: &f64, c: &mut CellType) {
+                match c {
+                    $(CellType::$celltype(cell) => $celltype::update_cycle(dt, cell),)+
+                }
+            }
+        }
+
+        impl Mechanics<$pos, $force, $velocity> for CellType {
+            fn pos(&self) -> $pos {
+                match self {
+                    $(CellType::$celltype(cell) => cell.pos(),)+
+                }
+            }
+
+            fn velocity(&self) -> $velocity {
+                match self {
+                    $(CellType::$celltype(cell) => cell.velocity(),)+
+                }
+            }
+
+            fn set_pos(&mut self, pos: &$pos) {
+                match self {
+                    $(CellType::$celltype(cell) => cell.set_pos(pos),)+
+                }
+            }
+
+            fn set_velocity(&mut self, velocity: &$velocity) {
+                match self {
+                    $(CellType::$celltype(cell) => cell.set_velocity(velocity),)+
+                }
+            }
+
+            fn calculate_increment(&self, force: $force) -> Result<($pos, $velocity), CalcError> {
+                match self {
+                    $(CellType::$celltype(cell) => cell.calculate_increment(force),)+
+                }
+            }
+        }
+
+        unsafe impl Send for CellType {}
+        unsafe impl Sync for CellType {}
+    }
+}
+
+
+#[macro_export]
+macro_rules! define_simulation_types {
+    (
+        Position:   $position:ty,
+        Force:      $force:ty,
+        Velocity:   $velocity:ty,
+        CellTypes:  [$($celltype:ident),+],
+        Domain:     $domain:ty,
+        Voxel:      $voxel:ty,
+        Index:      $index:ty
+    ) => {
+        // Create an enum containing all cell types
+        implement_cell_types!($position, $force, $velocity, [$($celltype),+]);
+
+        pub type Position = $position;
+        pub type Force = $force;
+        pub type Velocity = $velocity;
+        pub type Domain = $domain;
+        pub type Voxel = $voxel;
+        pub type Index = $index;
+    }
+}
+
+
+#[macro_export]
+macro_rules! create_sim_supervisor {
+    ($setup:expr) => {
+        Result::<SimulationSupervisor::<Domain, CellType, Index, Position, Force, Velocity, Voxel>, Box<dyn std::error::Error>>::from($setup).unwrap()
+    }
+}
 
 
 impl<Dom, Cel, Ind, Pos, For, Vel, Vox> SimulationSupervisor<Dom, Cel, Ind, Pos, For, Vel, Vox>
