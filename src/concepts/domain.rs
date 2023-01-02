@@ -1,5 +1,8 @@
 use crate::concepts::errors::*;
 use crate::concepts::cell::*;
+use crate::concepts::cycle::*;
+use crate::concepts::interaction::*;
+use crate::concepts::mechanics::*;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
 use std::collections::{HashMap};
@@ -15,12 +18,77 @@ use hurdles::Barrier;
 use uuid::Uuid;
 
 
-pub trait Domain<Cell, I, V>: Send + Sync
+pub trait Domain<C, I, V>: Send + Sync
 {
-    fn apply_boundary(&self, cell: &mut Cell) -> Result<(), BoundaryError>;
+    fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
-    fn get_voxel_index(&self, cell: &Cell) -> I;
+    fn get_voxel_index(&self, cell: &C) -> I;
     fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError>;
+}
+
+
+#[derive(Clone)]
+pub struct DomainBox<C, I, V, D>
+where
+    I: Index,
+    D: Domain<C, I, V>,
+{
+    domain: D,
+
+    // phantom_pos: PhantomData<Pos>,
+    // phantom_for: PhantomData<For>,
+    // phantom_vel: PhantomData<Vel>,
+    phantom_cel: PhantomData<C>,
+    phantom_ind: PhantomData<I>,
+    phantom_vox: PhantomData<V>,
+}
+
+
+impl<C, I, V, D> From<D> for DomainBox<C, I, V, D>
+where
+    I: Index,
+    D: Domain<C, I, V>,
+{
+    fn from(domain: D) -> DomainBox<C, I, V, D> {
+        DomainBox {
+            domain: domain,
+
+            // phantom_pos: PhantomData,
+            // phantom_for: PhantomData,
+            // phantom_vel: PhantomData,
+            phantom_cel: PhantomData,
+            phantom_ind: PhantomData,
+            phantom_vox: PhantomData,
+        }
+    }
+}
+
+
+impl<Pos, For, Vel, C, I, V, D> Domain<CellAgentBox<Pos, For, Vel, C>, I, V> for DomainBox<CellAgentBox<Pos, For, Vel, C>, I, V, D>
+where
+    Pos: Position,
+    For: Force,
+    Vel: Velocity,
+    I: Index,
+    V: Voxel<I, Pos, For>,
+    C: CellAgent<Pos, For, Vel>,
+    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>
+{
+    fn apply_boundary(&self, cbox: &mut CellAgentBox<Pos, For, Vel, C>) -> Result<(), BoundaryError> {
+        self.domain.apply_boundary(cbox)
+    }
+
+    fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I> {
+        self.domain.get_neighbor_voxel_indices(index)
+    }
+
+    fn get_voxel_index(&self, cbox: &CellAgentBox<Pos, For, Vel, C>) -> I {
+        self.domain.get_voxel_index(cbox)
+    }
+
+    fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError> {
+        self.domain.generate_contiguous_multi_voxel_regions(n_regions)
+    }
 }
 
 
