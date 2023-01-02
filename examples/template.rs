@@ -1,5 +1,4 @@
 // Imports from other crates
-use uuid::Uuid;
 use nalgebra::Vector2;
 
 use rand::prelude::*;
@@ -45,7 +44,7 @@ pub fn create_cells() -> Vec<StandardCell2D> {
     let mut rng = ChaCha8Rng::seed_from_u64(2022);
     let mut cells = Vec::<StandardCell2D>::with_capacity(N_CELLS as usize);
 
-    for k in 0..N_CELLS {
+    for _ in 0..N_CELLS {
         let cell = StandardCell2D {
             pos: Vector2::<f64>::from([
                 rng.gen_range(-DOMAIN_SIZE_X..DOMAIN_SIZE_X),
@@ -61,8 +60,6 @@ pub fn create_cells() -> Vec<StandardCell2D> {
 
             remove: false,
             current_age: 0.0,
-
-            id: Uuid::from_u128(k as u128),
         };
 
         cells.push(cell);
@@ -104,7 +101,7 @@ fn main() {
                 }
             };
 
-            let mut supervisor = Result::<SimulationSupervisor::<CartesianCuboid2, StandardCell2D, [usize; 2], Vector2<f64>, Vector2<f64>, Vector2<f64>, CartesianCuboidVoxel2>, Box<dyn std::error::Error>>::from(setup).unwrap();
+            let mut supervisor = Result::<SimulationSupervisor::<Vector2<f64>, Vector2<f64>, Vector2<f64>, StandardCell2D, [usize; 2], CartesianCuboidVoxel2, CartesianCuboid2>, Box<dyn std::error::Error>>::from(setup).unwrap();
             let supervisor_create_time = start.elapsed().as_millis();
 
             match supervisor.run_full_sim() {
