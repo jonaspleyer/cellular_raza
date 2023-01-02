@@ -301,3 +301,31 @@ macro_rules! define_and_implement_cartesian_cuboid {
 define_and_implement_cartesian_cuboid!(1, CartesianCuboid1, CartesianCuboidVoxel1, 0);
 define_and_implement_cartesian_cuboid!(2, CartesianCuboid2, CartesianCuboidVoxel2, 0, 1);
 define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, CartesianCuboidVoxel3, 0, 1, 2);
+
+
+#[cfg(test)]
+mod test {
+    use super::get_decomp_res;
+    use rayon::prelude::*;
+
+    #[test]
+    fn test_get_demomp_res() {
+        #[cfg(not(feature = "test_exhaustive"))]
+        let max = 50_000;
+        #[cfg(feature = "test_exhaustive")]
+        let max = 5_000_000;
+
+        (1..max).into_par_iter().map(|n_voxel| {
+            for n_regions in 1..1_000 {
+                match get_decomp_res(n_voxel, n_regions) {
+                    Some(res) => {
+                        let (n, m, average_len) = res;
+                        assert_eq!(n + m, n_regions);
+                        assert_eq!(n*average_len + m*(average_len-1), n_voxel);
+                    },
+                    None => panic!("No result for inputs n_voxel: {} n_regions: {}", n_voxel, n_regions),
+                }
+            }
+        }).collect::<Vec<()>>();
+    }
+}

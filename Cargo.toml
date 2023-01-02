@@ -34,3 +34,7 @@ ndarray = { version="0.15" }
 
 
 [dev-dependencies]
+
+
+[features]
+test_exhaustive = []
