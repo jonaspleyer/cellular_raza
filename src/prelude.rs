@@ -16,6 +16,7 @@ pub use crate::impls_cell_properties::mechanics::*;
 
 // Complete Cell Models
 pub use crate::impls_cell_models::standard_cell_2d::*;
+pub use crate::impls_cell_models::custom_cell_nd::*;
 
 // Domain Implementations
 pub use crate::impls_domain::cartesian_cuboid_n::*;
