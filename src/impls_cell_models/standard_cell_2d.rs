@@ -1,11 +1,12 @@
 use crate::prelude::*;
 
 use nalgebra::Vector2;
+use serde::{Serialize,Deserialize};
 
 use core::fmt::Debug;
 
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,Serialize,Deserialize)]
 pub struct StandardCell2D {
     pub pos: Vector2<f64>,
     pub velocity: Vector2<f64>,
