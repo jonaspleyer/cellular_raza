@@ -68,6 +68,11 @@ pub struct TimeSetup {
 }
 
 
+pub struct DataBaseConfig  {
+    pub name: String,
+}
+
+
 /// # Complete Set of parameters controlling execution flow of simulation
 pub struct SimulationSetup<Dom, C>
 {
@@ -75,6 +80,7 @@ pub struct SimulationSetup<Dom, C>
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
+    pub database: DataBaseConfig,
 }
 
 
@@ -159,6 +165,9 @@ where
             .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
             .collect();
 
+        // Create an instance to communicate with the database
+        let tree = sled::open(setup.database.name).unwrap();
+
         multivoxelcontainers = voxel_and_cells.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
             let voxels: HashMap<Ind,Vox> = chunk.clone().into_iter().collect();
@@ -189,6 +198,9 @@ where
             let senders_cell = create_senders!(sender_receiver_pairs_cell);
             let senders_pos = create_senders!(sender_receiver_pairs_pos);
             let senders_force = create_senders!(sender_receiver_pairs_force);
+
+            // Clone database instance
+            let tree_new = tree.clone();
 
             // Get all cells which belong into this voxel_chunk
             // let cells_filt: Vec<Cel> = cells.drain_filter(|c| any(chunk.iter(), |(i, _)| *i==setup.domain.get_voxel_index(&c))).collect();
@@ -225,6 +237,8 @@ where
                 neighbor_indices: neighbor_indices,
 
                 barrier: barrier.clone(),
+
+                database: tree_new,
             };
 
             // multivoxelcontainers.push(cont);
@@ -260,7 +274,9 @@ where
 #[macro_export]
 macro_rules! implement_cell_types {
     ($pos:ty, $force:ty, $velocity:ty, [$($celltype:ident),+]) => {
-        #[derive(Debug,Clone)]
+        use serde::{Serialize,Deserialize};
+
+        #[derive(Debug,Clone,Serialize,Deserialize)]
         pub enum CellAgentType {
             $($celltype($celltype)),+
         }
@@ -405,6 +421,9 @@ where
                         // if l==0 {
                         //     println!("Saving Simulation at time {}", t);
                         // }
+
+                        // Save cells to database
+                        cont.save_cells_to_database(&t).unwrap();
                     }
 
                     // Check if we are stopping the simulation now

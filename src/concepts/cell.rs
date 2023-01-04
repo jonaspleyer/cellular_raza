@@ -11,13 +11,13 @@ use serde::{Serialize,Deserialize};
 
 
 // pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity> = Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Id + Send + Sync + Clone;
-pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity>: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone {}
+pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity>: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize{}
 impl<Pos, For, Vel, A> CellAgent<Pos, For, Vel> for A
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone,
+    A: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize,
 {}
 
 

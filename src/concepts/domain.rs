@@ -164,6 +164,8 @@ where
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
+
+    pub database: sled::Db,
 }
 
 
@@ -425,6 +427,43 @@ where
         }
         Ok(())
     }
+
+
+    pub fn save_cells_to_database(&self, t: &f64) -> Result<(), SimulationError> {
+        let cells_encoded: Vec<_> = self.voxel_cells
+            .iter()
+            .map(|(_, cells)| cells
+                .iter()
+                .map(|cell| (cell.get_uuid(), bincode::serialize(&cell).unwrap())))
+            .flatten()
+            .collect();
+
+        let tree = self.database.clone();
+        let time = t.clone();
+
+        async_std::task::spawn(async move {
+            // TODO use batches to write multiple entries at once
+            let mut batch = sled::Batch::default();
+
+            cells_encoded.into_iter().for_each(|(uuid, cell_enc)| {
+                // TODO Find another format to save cells in sled database
+                // TODO create features to use other databases
+                let name = format!("Time_{}_Cell_{}", time, uuid);
+                batch.insert(name.clone().as_bytes(), cell_enc);
+            });
+            match tree.apply_batch(batch) {
+                Ok(()) => (),
+                Err(error) => {
+                    println!("Database error: {}", error);
+                    println!("Continuing simulation anyway!");
+                },
+            }
+
+        });
+
+        Ok(())
+    }
+
 
     pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError> {
         self.update_cell_cycle(dt);
