@@ -35,7 +35,7 @@ where
     Cel: CellAgent<Pos, For, Vel>,
     Dom: Domain<CellAgentBox<Pos, For, Vel, Cel>, Ind, Vox>,
 {
-    worker_threads: Vec<thread::JoinHandle<()>>,
+    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>>,
     multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>,
 
     time: TimeSetup,
@@ -432,6 +432,7 @@ where
                         break;
                     }
                 }
+                return cont;
 
                 // println!("thread {} stopping with voxels {} and cells {}", l, cont.voxel_cells.len(), cont.voxel_cells.iter().map(|(_, cells)| cells.len()).sum::<usize>());
 
@@ -465,12 +466,16 @@ where
 
     }*/
 
-    pub fn end_simulation(self) {
-        for thread in self.worker_threads {
-            match thread.join() {
-                Ok(_) => (),
-                Err(err) => println!("{:?}", err),
-            }
+    // TODO find a way to pause the simulation without destroying the threads and
+    // send/retrieve information to from the threads to the main thread where
+    // the program was executed
+
+    pub fn end_simulation(&mut self) -> Result<(), SimulationError> {
+        for thread in self.worker_threads.drain(..) {
+            // TODO introduce new error type to gain a error message here!
+            // Do not use unwrap anymore
+            self.multivoxelcontainers.push(thread.join().unwrap());
         }
+        Ok(())
     }
 }
