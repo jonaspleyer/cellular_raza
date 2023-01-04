@@ -35,9 +35,6 @@ where
 {
     domain: D,
 
-    // phantom_pos: PhantomData<Pos>,
-    // phantom_for: PhantomData<For>,
-    // phantom_vel: PhantomData<Vel>,
     phantom_cel: PhantomData<C>,
     phantom_ind: PhantomData<I>,
     phantom_vox: PhantomData<V>,
@@ -53,9 +50,6 @@ where
         DomainBox {
             domain: domain,
 
-            // phantom_pos: PhantomData,
-            // phantom_for: PhantomData,
-            // phantom_vel: PhantomData,
             phantom_cel: PhantomData,
             phantom_ind: PhantomData,
             phantom_vox: PhantomData,
