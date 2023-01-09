@@ -246,21 +246,21 @@ where
 
             // Define the container for many voxels
             let cont = MultiVoxelContainer {
-                voxels: voxels,
+                voxels,
                 voxel_cells: index_to_cells,
                 
                 domain: DomainBox::from(setup.domain.clone()),
 
-                senders_cell: senders_cell,
-                senders_pos: senders_pos,
-                senders_force: senders_force,
+                senders_cell,
+                senders_pos,
+                senders_force,
                 
                 receiver_cell: sender_receiver_pairs_cell[i].1.clone(),
                 receiver_pos: sender_receiver_pairs_pos[i].1.clone(),
                 receiver_force: sender_receiver_pairs_force[i].1.clone(),
 
                 cell_forces: cell_forces_empty,
-                neighbor_indices: neighbor_indices,
+                neighbor_indices,
 
                 barrier: barrier.clone(),
 
@@ -274,7 +274,6 @@ where
             return cont;
         }).collect();
 
-        let save_now = Arc::new(AtomicBool::new(false));
         let stop_now = Arc::new(AtomicBool::new(false));
 
         Ok(SimulationSupervisor {
@@ -286,7 +285,6 @@ where
             domain: setup.domain.into(),
 
             // Variables controlling simulation flow
-            save_now: save_now,
             stop_now: stop_now,
 
             tree: tree,
@@ -417,7 +415,6 @@ where
             let mut new_start_barrier = start_barrier.clone();
 
             // See if we need to save
-            let save_now_new = Arc::clone(&self.save_now);
             let stop_now_new = Arc::clone(&self.stop_now);
 
             // Copy time evaluation points
@@ -437,6 +434,7 @@ where
                     match cont.run_full_update(&t, &dt) {
                         Ok(()) => (),
                         Err(error) => {
+                            // TODO this is not always an error in update_mechanics!
                             println!("Encountered error in update_mechanics: {}. Stopping simulation.", error);
                             // Make sure to stop all threads after this iteration.
                             stop_now_new.store(true, Ordering::Relaxed);
