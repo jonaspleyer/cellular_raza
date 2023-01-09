@@ -5,6 +5,8 @@ use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
+use crate::database::io::{StorageIdent,store_cells_in_database};
+
 use std::collections::{HashMap};
 use std::marker::{Send,Sync};
 
@@ -159,7 +161,10 @@ where
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
-    pub database: sled::Db,
+    pub database: typed_sled::Tree<String, Vec<u8>>,
+
+    pub uuid_counter: u64,
+    pub mvc_id: u16,
 }
 
 
@@ -423,39 +428,34 @@ where
     }
 
 
-    pub fn save_cells_to_database(&self, t: &f64) -> Result<(), SimulationError> {
-        let cells_encoded: Vec<_> = self.voxel_cells
-            .iter()
-            .map(|(_, cells)| cells
-                .iter()
-                .map(|cell| (cell.get_uuid(), bincode::serialize(&cell).unwrap())))
+    pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError> {
+        let cells = self.voxel_cells.clone()
+            .into_iter()
+            .map(|(_, cells)| cells)
             .flatten()
-            .collect();
+            .collect::<Vec<_>>();
 
-        let tree = self.database.clone();
-        let time = t.clone();
-
-        async_std::task::spawn(async move {
-            // TODO use batches to write multiple entries at once
-            let mut batch = sled::Batch::default();
-
-            cells_encoded.into_iter().for_each(|(uuid, cell_enc)| {
-                // TODO Find another format to save cells in sled database
-                // TODO create features to use other databases
-                let name = format!("Time_{}_Cell_{}", time, uuid);
-                batch.insert(name.clone().as_bytes(), cell_enc);
-            });
-            match tree.apply_batch(batch) {
-                Ok(()) => (),
-                Err(error) => {
-                    println!("Database error: {}", error);
-                    println!("Continuing simulation anyway!");
-                },
-            }
-
-        });
+        store_cells_in_database(self.database.clone(), *iteration, cells)?;
 
         Ok(())
+    }
+
+    fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
+        match self.voxel_cells.get_mut(&self.domain.domain_raw.get_voxel_index(&cell)) {
+            Some(cells) => {
+                let cellagentbox = CellAgentBox::from((
+                    *iteration,
+                    StorageIdent::Cell.value(),
+                    self.mvc_id,
+                    self.uuid_counter,
+                    cell
+                ));
+                cells.push(cellagentbox);
+                self.uuid_counter += 1;
+                None
+            },
+            None => Some(cell),
+        }
     }
 
 
