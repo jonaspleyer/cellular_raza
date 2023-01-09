@@ -154,6 +154,40 @@ where
 }
 
 
+pub fn get_all_cell_histories<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+(
+    tree: &typed_sled::Tree<String, Vec<u8>>
+) -> Result<std::collections::HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, C>)>>, SimulationError>
+where
+    Pos: Position,
+    For: Force,
+    Vel: Velocity,
+    C: for<'a> Deserialize<'a>
+{
+    // Obtain all histories
+    let mut histories = tree
+        .iter()
+        .filter_map(|ret| ret.ok())
+        .fold(std::collections::HashMap::<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, C>)>>::new(), |mut acc, (key, val)| {
+            let cb_res: Result<CellAgentBox<Pos, For, Vel, C>, _> = bincode::deserialize(&val);
+            let entry_res = entry_to_iteration_uuid(&key);
+            match (cb_res, entry_res) {
+                (Ok(cb), Ok((iter, uuid))) => {
+                    let entries = acc.entry(uuid).or_insert_with(|| vec![(iter, cb.clone())]);
+                    entries.push((iter, cb));
+                },
+                _ => (),
+            }
+            acc
+        });
+
+    // Sort them
+    histories.iter_mut().for_each(|(_, entries)| entries.sort_by(|(it1, _), (it2, _)| it1.cmp(&it2)));
+
+    Ok(histories)
+}
+
+
 pub fn get_cell_uuids_at_iter<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,

@@ -4,7 +4,7 @@ use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::{CalcError,SimulationError};
 
-use crate::database::io::{StorageIdent,get_cell_history_from_database,get_cell_uuids_at_iter,get_cells_at_iter};
+use crate::database::io::{StorageIdent,get_cell_history_from_database,get_cell_uuids_at_iter,get_cells_at_iter,get_all_cell_histories};
 
 use std::thread;
 use std::collections::{HashMap};
@@ -507,5 +507,9 @@ where
 
     pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>, SimulationError> {
         get_cell_history_from_database(&self.tree, uuid)
+    }
+
+    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>>, SimulationError> {
+        get_all_cell_histories(&self.tree)
     }
 }
