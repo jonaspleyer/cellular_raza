@@ -8,7 +8,7 @@ use core::fmt::Debug;
 
 macro_rules! implement_custom_cell {
     ($d:expr, $name:ident) => {
-        #[derive(Clone,Debug,Serialize,Deserialize)]
+        #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]
         pub struct $name {
             pub pos: SVector<f64, $d>,
             pub velocity: SVector<f64, $d>,

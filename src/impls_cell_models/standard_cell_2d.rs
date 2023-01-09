@@ -6,7 +6,7 @@ use serde::{Serialize,Deserialize};
 use core::fmt::Debug;
 
 
-#[derive(Clone,Debug,Serialize,Deserialize)]
+#[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]
 pub struct StandardCell2D {
     pub pos: Vector2<f64>,
     pub velocity: Vector2<f64>,
