@@ -9,7 +9,7 @@ use cellular_raza::prelude::*;
 
 
 // Constants of the simulation
-pub const N_CELLS: u32 = 200_000;
+pub const N_CELLS: u32 = 20_000;
 
 pub const CELL_CYCLE_LIFETIME_LOW: f64 = 1000.0;
 pub const CELL_CYCLE_LIFETIME_HIGH: f64 = 1200.0;
@@ -22,10 +22,10 @@ pub const CELL_INITIAL_VELOCITY: f64 = 0.2;
 pub const CELL_VELOCITY_REDUCTION: f64 = 1.0;
 
 // Parameters for domain
-pub const N_VOXEL_X: usize = 100;
-pub const N_VOXEL_Y: usize = 100;
-pub const DOMAIN_SIZE_X: f64 = 16000.0;
-pub const DOMAIN_SIZE_Y: f64 = 16000.0;
+pub const N_VOXEL_X: usize = 30;
+pub const N_VOXEL_Y: usize = 30;
+pub const DOMAIN_SIZE_X: f64 = 1600.0;
+pub const DOMAIN_SIZE_Y: f64 = 1600.0;
 pub const DX_VOXEL_X: f64 = 2.0 * DOMAIN_SIZE_X / N_VOXEL_X as f64;
 pub const DX_VOXEL_Y: f64 = 2.0 * DOMAIN_SIZE_Y / N_VOXEL_Y as f64;
 
@@ -70,11 +70,11 @@ pub fn create_cells() -> Vec<StandardCell2D> {
 
 
 fn main() {
-    let averaging_runs = 20;
+    let averaging_runs = 5;
 
     let mut descr = vec![[0_u128, 1_u128, 2_u128, 3_u128]];
-    let mut times: Vec<_> = (1..18).map(|n_threads| {
-        (0..averaging_runs).map(move |_| {
+    let mut times: Vec<_> = (1..28).map(|n_threads| {
+        (0..averaging_runs).map(move |k| {
     
             let start = std::time::Instant::now();
             let cells = create_cells();
@@ -98,6 +98,9 @@ fn main() {
                 },
                 meta_params: SimulationMetaParams {
                     n_threads: n_threads
+                },
+                database: DataBaseConfig {
+                    name: format!("out/template_sim_{}", n_threads*averaging_runs + k),
                 }
             };
 
@@ -109,7 +112,7 @@ fn main() {
                 Err(error) => println!("{error}"),
             }
 
-            supervisor.end_simulation();
+            supervisor.end_simulation().unwrap();
             let total_sim_time = start.elapsed().as_millis();
             println!("======= [Threads {:2.0}] =======", n_threads);
             println!("[x] Creating cells        {} ms", cell_create_time);
