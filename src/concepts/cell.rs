@@ -118,17 +118,17 @@ where
 }
 
 
-impl<Pos, For, Vel, C> From<(u128, C)> for CellAgentBox<Pos, For, Vel, C>
+impl<Pos, For, Vel, C> From<(u32, u16, u16, u64, C)> for CellAgentBox<Pos, For, Vel, C>
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
     C: CellAgent<Pos, For, Vel>,
 {
-    fn from(comb: (u128, C)) -> CellAgentBox<Pos, For, Vel, C> {
+    fn from(comb: (u32, u16, u16, u64, C)) -> CellAgentBox<Pos, For, Vel, C> {
         CellAgentBox::<Pos, For, Vel, C> {
-            id: Uuid::from_u128(comb.0),
-            cell: comb.1,
+            id: Uuid::from_fields(comb.0, comb.1, comb.2, &comb.3.to_be_bytes()),
+            cell: comb.4,
 
             phantom_for: PhantomData,
             phantom_pos: PhantomData,
