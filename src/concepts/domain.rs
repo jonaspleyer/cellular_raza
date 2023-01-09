@@ -33,7 +33,7 @@ where
     I: Index,
     D: Domain<C, I, V>,
 {
-    domain: D,
+    domain_raw: D,
 
     phantom_cel: PhantomData<C>,
     phantom_ind: PhantomData<I>,
@@ -48,7 +48,7 @@ where
 {
     fn from(domain: D) -> DomainBox<C, I, V, D> {
         DomainBox {
-            domain: domain,
+            domain_raw: domain,
 
             phantom_cel: PhantomData,
             phantom_ind: PhantomData,
@@ -58,7 +58,7 @@ where
 }
 
 
-impl<Pos, For, Vel, C, I, V, D> Domain<CellAgentBox<Pos, For, Vel, C>, I, V> for DomainBox<CellAgentBox<Pos, For, Vel, C>, I, V, D>
+impl<Pos, For, Vel, C, I, V, D> Domain<CellAgentBox<Pos, For, Vel, C>, I, V> for DomainBox<C, I, V, D>
 where
     Pos: Position,
     For: Force,
@@ -66,22 +66,22 @@ where
     I: Index,
     V: Voxel<I, Pos, For>,
     C: CellAgent<Pos, For, Vel>,
-    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>
+    D: Domain<C, I, V>
 {
     fn apply_boundary(&self, cbox: &mut CellAgentBox<Pos, For, Vel, C>) -> Result<(), BoundaryError> {
-        self.domain.apply_boundary(cbox)
+        self.domain_raw.apply_boundary(&mut cbox.cell)
     }
 
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I> {
-        self.domain.get_neighbor_voxel_indices(index)
+        self.domain_raw.get_neighbor_voxel_indices(index)
     }
 
     fn get_voxel_index(&self, cbox: &CellAgentBox<Pos, For, Vel, C>) -> I {
-        self.domain.get_voxel_index(cbox)
+        self.domain_raw.get_voxel_index(&cbox.cell)
     }
 
     fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError> {
-        self.domain.generate_contiguous_multi_voxel_regions(n_regions)
+        self.domain_raw.generate_contiguous_multi_voxel_regions(n_regions)
     }
 }
 
@@ -125,7 +125,7 @@ where
     Vel: Velocity,
     V: Voxel<I, Pos, For>,
     C: CellAgent<Pos, For, Vel>,
-    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>,
+    D: Domain<C, I, V>,
 {
     pub voxels: HashMap<I, V>,
     pub voxel_cells: HashMap<I, Vec<CellAgentBox<Pos, For, Vel, C>>>,
@@ -139,7 +139,7 @@ where
     // And then automatically have the ability to change cell positions if the domain shrinks/grows for example
     // but then we might also want to change the number of voxels and redistribute cells accordingly
     // This needs much more though!
-    pub domain: D,
+    pub domain: DomainBox<C, I, V, D>,
 
     // Where do we want to send cells, positions and forces
     pub senders_cell: HashMap<I, Sender<CellAgentBox<Pos, For, Vel, C>>>,
@@ -170,7 +170,7 @@ where
     // (eg. mechanics, interaction, etc...)
     I: Index,
     V: Voxel<I, Pos, For>,
-    D: Domain<CellAgentBox<Pos, For, Vel, C>, I, V>,
+    D: Domain<C, I, V>,
     Vel: Velocity,
     For: Force,
     Pos: Position,

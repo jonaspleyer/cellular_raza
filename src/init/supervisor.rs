@@ -35,17 +35,16 @@ where
     Vel: Velocity,
     Vox: Voxel<Ind, Pos, For>,
     Cel: CellAgent<Pos, For, Vel>,
-    Dom: Domain<CellAgentBox<Pos, For, Vel, Cel>, Ind, Vox>,
+    Dom: Domain<Cel, Ind, Vox>,
 {
     worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>>,
     multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>,
 
     time: TimeSetup,
 
-    domain: DomainBox<CellAgentBox<Pos, For, Vel, Cel>, Ind, Vox, Dom>,
+    domain: DomainBox<Cel, Ind, Vox, Dom>,
 
     // Variables controlling simulation flow
-    save_now: Arc<AtomicBool>,
     stop_now: Arc<AtomicBool>,
 
     // Tree of database
@@ -91,7 +90,7 @@ pub struct SimulationSetup<Dom, C>
 
 impl<Pos, For, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for Result<SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>, Box<dyn Error>>
 where
-    Dom: Domain<CellAgentBox<Pos, For, Vel, Cel>, Ind, Vox> + Clone + 'static,
+    Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Position + 'static + std::fmt::Debug,
     For: Force + 'static,
@@ -105,11 +104,6 @@ where
 
         // Create MultiVelContainer from voxel chunks
         let multivoxelcontainers;
-        let cells = setup.cells
-            .into_par_iter()
-            .enumerate()
-            .map(|(i, c)| CellAgentBox::<Pos, For, Vel, Cel>::from((i as u128, c)))
-            .collect::<Vec<CellAgentBox<Pos, For, Vel, Cel>>>();
 
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Pos, For, Vel, Cel>>, Receiver<CellAgentBox::<Pos, For, Vel, Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
@@ -129,12 +123,12 @@ where
         }
 
         let n_chunks = voxel_chunks.len();
-        let chunk_size = (cells.len() as f64/ n_threads as f64).ceil() as usize;
-        let mut sorted_cells = cells
+        let chunk_size = (setup.cells.len() as f64/ n_threads as f64).ceil() as usize;
+        let mut sorted_cells = setup.cells
             .into_par_iter()
             .chunks(chunk_size)
             .map(|cell_chunk| {
-                let mut cs = HashMap::<usize, HashMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>>::new();
+                let mut cs = HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new();
                 for cell in cell_chunk.into_iter() {
                     let index = setup.domain.get_voxel_index(&cell);
                     let id_thread = index_to_thread[&index];
@@ -149,7 +143,7 @@ where
                 cs
             })
             // .reduce(|| HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new(), |mut acc, x| {
-            .reduce(|| (0..n_chunks).map(|i| (i, HashMap::new())).collect::<HashMap<usize, HashMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>>>(), |mut acc, x| {
+            .reduce(|| (0..n_chunks).map(|i| (i, HashMap::new())).collect::<HashMap<usize, HashMap<Ind, Vec<Cel>>>>(), |mut acc, x| {
                 for (id_thread, idc) in x.into_iter() {
                     for (index, mut cells) in idc.into_iter() {
                         match acc.get_mut(&id_thread) {
@@ -164,17 +158,43 @@ where
                 return acc;
             });
 
-        let voxel_and_cells: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_chunks
+        let voxel_and_raw_cells: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<Cel>>)> = voxel_chunks
             .into_iter()
             .enumerate()
             .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
+            .collect();
+
+        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_and_raw_cells
+            .into_iter()
+            .enumerate()
+            .map(|(n_chunk, (chunk, sorted_cells))| {
+                let mut cell_count = 0;
+
+                (chunk, sorted_cells
+                    .into_iter()
+                    .map(|(ind, cells)|
+                        (ind, cells.into_iter().map(|cell| {
+                            let cb = CellAgentBox::from((
+                                0 as u32,
+                                StorageIdent::Cell.value(),
+                                n_chunk as u16,
+                                (cell_count as u64),
+                                cell
+                            ));
+                            cell_count += 1;
+                            cb
+                        },
+                        ).collect()
+                    )
+                ).collect())
+            })
             .collect();
 
         // Create an instance to communicate with the database
         let db = sled::Config::new().path(std::path::Path::new(&setup.database.name)).open().unwrap();
         let tree = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
 
-        multivoxelcontainers = voxel_and_cells.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
+        multivoxelcontainers = voxel_and_cell_boxes.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
             let voxels: HashMap<Ind,Vox> = chunk.clone().into_iter().collect();
 
@@ -229,7 +249,7 @@ where
                 voxels: voxels,
                 voxel_cells: index_to_cells,
                 
-                domain: setup.domain.clone(),
+                domain: DomainBox::from(setup.domain.clone()),
 
                 senders_cell: senders_cell,
                 senders_pos: senders_pos,
@@ -245,6 +265,9 @@ where
                 barrier: barrier.clone(),
 
                 database: tree_new,
+
+                uuid_counter: 0,
+                mvc_id: i as u16,
             };
 
             // multivoxelcontainers.push(cont);
@@ -377,7 +400,7 @@ macro_rules! create_sim_supervisor {
 
 impl<Pos, For, Vel, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>
 where
-    Dom: Domain<CellAgentBox<Pos, For, Vel, Cel>, Ind, Vox> + Clone + 'static,
+    Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Position + 'static,
     For: Force + 'static,
