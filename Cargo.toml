@@ -31,6 +31,7 @@ uuid = { version="1.2" , features=["serde"] }
 bincode = "1.3"
 serde = "1.0"
 sled = { version="0.34", optional=true }
+typed-sled = { version="0.2", optional=true }
 async-std = "1.12"
 
 # Implementation dependencies
@@ -47,7 +48,7 @@ ndarray = { version="0.15" }
 default = ["db_sled"]
 
 # Database
-db_sled = ["dep:sled"]
+db_sled = ["dep:sled", "dep:typed-sled"]
 
 # Testing
 test_exhaustive = []

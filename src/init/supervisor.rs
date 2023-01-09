@@ -4,6 +4,8 @@ use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::{CalcError,SimulationError};
 
+use crate::database::io::{StorageIdent,get_cell_history_from_database,get_cell_uuids_at_iter,get_cells_at_iter};
+
 use std::thread;
 use std::collections::{HashMap};
 use std::error::Error;
@@ -45,6 +47,9 @@ where
     // Variables controlling simulation flow
     save_now: Arc<AtomicBool>,
     stop_now: Arc<AtomicBool>,
+
+    // Tree of database
+    pub tree: typed_sled::Tree<String, Vec<u8>>,
 
     // PhantomData for template arguments
     phantom_cell: PhantomData<CellAgentBox<Pos, For, Vel, Cel>>,
@@ -166,7 +171,8 @@ where
             .collect();
 
         // Create an instance to communicate with the database
-        let tree = sled::open(setup.database.name).unwrap();
+        let db = sled::Config::new().path(std::path::Path::new(&setup.database.name)).open().unwrap();
+        let tree = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
 
         multivoxelcontainers = voxel_and_cells.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
@@ -259,6 +265,8 @@ where
             // Variables controlling simulation flow
             save_now: save_now,
             stop_now: stop_now,
+
+            tree: tree,
 
             phantom_cell: PhantomData,
             phantom_index: PhantomData,
@@ -398,6 +406,7 @@ where
                 new_start_barrier.wait();
 
                 let mut time = t_start;
+                let mut iteration = 0u32;
                 for (t, save) in t_eval {
                     let dt = t - time;
                     time = t;
@@ -413,17 +422,8 @@ where
 
                     // if save_now_new.load(Ordering::Relaxed) {
                     if save {
-                        // let mut all_cells: Vec<Cel> = cont.voxel_cells.iter().map(|(_, cells)| cells.clone()).flatten().collect();
-                        // for cell in all_cells.drain(..) {
-                        //     // TODO do not unwrap but catch nicely
-                        //     // sender_plots_new.send(cell).unwrap();
-                        // }
-                        // if l==0 {
-                        //     println!("Saving Simulation at time {}", t);
-                        // }
-
                         // Save cells to database
-                        cont.save_cells_to_database(&t).unwrap();
+                        cont.save_cells_to_database(&iteration).unwrap();
                     }
 
                     // Check if we are stopping the simulation now
@@ -431,12 +431,9 @@ where
                         // new_barrier.wait();
                         break;
                     }
+                    iteration += 1;
                 }
                 return cont;
-
-                // println!("thread {} stopping with voxels {} and cells {}", l, cont.voxel_cells.len(), cont.voxel_cells.iter().map(|(_, cells)| cells.len()).sum::<usize>());
-
-                // new_barrier.wait();
             })?;
             handles.push(handle);
         }
@@ -477,5 +474,17 @@ where
             self.multivoxelcontainers.push(thread.join().unwrap());
         }
         Ok(())
+    }
+
+    pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
+        get_cell_uuids_at_iter::<Pos, For, Vel, Cel>(&self.tree, iter)
+    }
+
+    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Pos, For, Vel, Cel>>, SimulationError> {
+        get_cells_at_iter::<Pos, For, Vel, Cel>(&self.tree, iter)
+    }
+
+    pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>, SimulationError> {
+        get_cell_history_from_database(&self.tree, uuid)
     }
 }
