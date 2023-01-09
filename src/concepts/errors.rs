@@ -73,6 +73,14 @@ pub enum SimulationError {
     // Very likely to be user errors
     CalcError(CalcError),
     BoundaryError(BoundaryError),
+    #[cfg(feature="db_sled")]
+    DataBaseError(sled::Error),
+    SerializeError(Box<bincode::ErrorKind>),
+    UuidError(uuid::Error),
+    ParseIntError(std::num::ParseIntError),
+    // #[cfg(feature="db_mongodb")]
+    // TODO
+    // DataBaseError,
 
     // Less likely but possible to be user errors
     SendError(String),
@@ -84,8 +92,29 @@ pub enum SimulationError {
 }
 
 
-impl_from_error!(SimulationError, (ReceiveError, RecvError), (CalcError, CalcError), (BoundaryError, BoundaryError), (IndexError, IndexError), (IOError, std::io::Error));
-impl_error_variant!(SimulationError, SendError, ReceiveError, CalcError, BoundaryError, IndexError, IOError);
+impl_from_error!(SimulationError,
+    (ReceiveError, RecvError),
+    (CalcError, CalcError),
+    (BoundaryError, BoundaryError),
+    (IndexError, IndexError),
+    (IOError, std::io::Error),
+    (DataBaseError, sled::Error),
+    (SerializeError, Box<bincode::ErrorKind>),
+    (UuidError, uuid::Error),
+    (ParseIntError, std::num::ParseIntError)
+);
+impl_error_variant!(SimulationError,
+    SendError,
+    ReceiveError,
+    CalcError,
+    BoundaryError,
+    IndexError,
+    IOError,
+    DataBaseError,
+    SerializeError,
+    UuidError,
+    ParseIntError
+);
 
 
 // Implement conversion from Sending error manually
