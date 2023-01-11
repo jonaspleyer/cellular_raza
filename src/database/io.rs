@@ -43,7 +43,7 @@ fn entry_to_iteration_uuid(entry: &String) -> Result<(u32, Uuid), SimulationErro
 
 pub fn store_cell_in_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
 (
-    tree: &sled::Db,
+    tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: &u32,
     cell: &CellAgentBox<Pos, For, Vel, C>
 ) -> Result<(), SimulationError>
@@ -53,7 +53,7 @@ where
     Vel: Velocity,
 {
     let serialized = bincode::serialize(cell)?;
-    tree.insert(iteration_uuid_to_entry(iteration, &cell.get_uuid()), serialized)?;
+    tree.insert(&iteration_uuid_to_entry(iteration, &cell.get_uuid()), &serialized)?;
     Ok(())
 }
 
@@ -99,7 +99,7 @@ where
 
 pub fn get_cell_from_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
 (
-    tree: &sled::Db,
+    tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: &u32,
     uuid: &Uuid
 ) -> Result<Option<CellAgentBox<Pos, For, Vel, C>>, SimulationError>
@@ -109,7 +109,7 @@ where
     Vel: Velocity,
     C: for<'a> Deserialize<'a>,
 {
-    let retr = tree.get(iteration_uuid_to_entry(iteration, uuid))?;
+    let retr = tree.get(&iteration_uuid_to_entry(iteration, uuid))?;
     match retr {
         Some(retrieved) => {
             let cell = bincode::deserialize(&retrieved)?;
@@ -266,7 +266,8 @@ mod test {
 
     #[test]
     fn test_sled_read_write() {
-        let tree = sled::open("test_sled_db").unwrap();
+        let db = sled::Config::new().temporary(true).open().unwrap();
+        let tree = typed_sled::Tree::<String, Vec<u8>>::open(&db, "test");
 
         let mut cellboxes = Vec::new();
 
@@ -299,8 +300,6 @@ mod test {
         let res: CellAgentBox<Vector2<f64>, Vector2<f64>, Vector2<f64>, StandardCell2D> = get_cell_from_database(&tree, &0, &cellboxes[0].get_uuid()).unwrap().unwrap();
 
         assert_eq!(cellboxes[0].cell, res.cell);
-
-        tree.drop_tree("test_sled_db").unwrap();
     }
 
 

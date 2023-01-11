@@ -161,7 +161,7 @@ where
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
-    pub database: typed_sled::Tree<String, Vec<u8>>,
+    pub database_cells: typed_sled::Tree<String, Vec<u8>>,
 
     pub uuid_counter: u64,
     pub mvc_id: u16,
@@ -435,12 +435,13 @@ where
             .flatten()
             .collect::<Vec<_>>();
 
-        store_cells_in_database(self.database.clone(), *iteration, cells)?;
+        store_cells_in_database(self.database_cells.clone(), *iteration, cells)?;
 
         Ok(())
     }
 
-    fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
+
+    pub fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
         match self.voxel_cells.get_mut(&self.domain.domain_raw.get_voxel_index(&cell)) {
             Some(cells) => {
                 let cellagentbox = CellAgentBox::from((

@@ -4,7 +4,7 @@ use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::{CalcError,SimulationError};
 
-use crate::database::io::{StorageIdent,get_cell_history_from_database,get_cell_uuids_at_iter,get_cells_at_iter,get_all_cell_histories};
+use crate::database::io::StorageIdent;
 
 use std::thread;
 use std::collections::{HashMap};
@@ -48,7 +48,8 @@ where
     stop_now: Arc<AtomicBool>,
 
     // Tree of database
-    pub tree: typed_sled::Tree<String, Vec<u8>>,
+    tree_cells: typed_sled::Tree<String, Vec<u8>>,
+    meta_infos: typed_sled::Tree<String, Vec<u8>>,
 
     // PhantomData for template arguments
     phantom_cell: PhantomData<CellAgentBox<Pos, For, Vel, Cel>>,
@@ -192,7 +193,8 @@ where
 
         // Create an instance to communicate with the database
         let db = sled::Config::new().path(std::path::Path::new(&setup.database.name)).open().unwrap();
-        let tree = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
+        let tree_cells = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
+        let meta_infos = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
 
         multivoxelcontainers = voxel_and_cell_boxes.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
@@ -226,7 +228,7 @@ where
             let senders_force = create_senders!(sender_receiver_pairs_force);
 
             // Clone database instance
-            let tree_new = tree.clone();
+            let tree_cells_new = tree_cells.clone();
 
             // Get all cells which belong into this voxel_chunk
             // let cells_filt: Vec<Cel> = cells.drain_filter(|c| any(chunk.iter(), |(i, _)| *i==setup.domain.get_voxel_index(&c))).collect();
@@ -264,7 +266,7 @@ where
 
                 barrier: barrier.clone(),
 
-                database: tree_new,
+                database_cells: tree_cells_new,
 
                 uuid_counter: 0,
                 mvc_id: i as u16,
@@ -287,7 +289,8 @@ where
             // Variables controlling simulation flow
             stop_now: stop_now,
 
-            tree: tree,
+            tree_cells,
+            meta_infos,
 
             phantom_cell: PhantomData,
             phantom_index: PhantomData,
@@ -479,10 +482,27 @@ where
         Ok(())
     }
 
-    /* TODO figure this out
-    pub fn get_current_cells(&self) -> Result<Vec<Cel>, SimulationError> {
+    pub fn save_current_setup(&self, iteration: &Option<u32>) -> Result<(), SimulationError> {
+        let db_name = self.tree_cells.name();
+        let database_name = std::str::from_utf8(&db_name)?;
 
-    }*/
+        let setup_current = SimulationSetup {
+            domain: self.domain.clone(),
+            cells: Vec::<Cel>::new(),
+            time: TimeSetup { t_start: 0.0, t_eval: Vec::new() },
+            meta_params: SimulationMetaParams { n_threads: self.worker_threads.len() },
+            database: DataBaseConfig { name: database_name.to_owned() }
+        };
+
+        let setup_serialized = bincode::serialize(&setup_current)?;
+        let key;
+        match iteration {
+            Some(iter) => key = format!("setup_{:10.0}", iter),
+            None => key = "setup_last".to_owned(),
+        };
+        self.meta_infos.insert(&key, &setup_serialized)?;
+        Ok(())
+    }
 
     // TODO find a way to pause the simulation without destroying the threads and
     // send/retrieve information to from the threads to the main thread where
@@ -494,22 +514,23 @@ where
             // Do not use unwrap anymore
             self.multivoxelcontainers.push(thread.join().unwrap());
         }
+        self.save_current_setup(&None)?;
         Ok(())
     }
 
     pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
-        get_cell_uuids_at_iter::<Pos, For, Vel, Cel>(&self.tree, iter)
+        crate::database::io::get_cell_uuids_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
     }
 
     pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Pos, For, Vel, Cel>>, SimulationError> {
-        get_cells_at_iter::<Pos, For, Vel, Cel>(&self.tree, iter)
+        crate::database::io::get_cells_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
     }
 
     pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>, SimulationError> {
-        get_cell_history_from_database(&self.tree, uuid)
+        crate::database::io::get_cell_history_from_database(&self.tree_cells, uuid)
     }
 
     pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>>, SimulationError> {
-        get_all_cell_histories(&self.tree)
+        crate::database::io::get_all_cell_histories(&self.tree_cells)
     }
 }
