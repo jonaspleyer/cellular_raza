@@ -24,6 +24,8 @@ use uuid::Uuid;
 
 use rayon::prelude::*;
 
+use serde::{Serialize,Deserialize};
+
 
 /// # Supervisor controlling simulation execution
 /// 
@@ -62,23 +64,30 @@ where
 
 
 /// # Store meta parameters for simulation
+#[derive(Clone,Serialize,Deserialize)]
 pub struct SimulationMetaParams {
     pub n_threads: usize,
 }
 
 
+// TODO rethink how to specify time points to save
+// we need to frequently save cells and environment
+// Sometimes we need full snapshots for recovery purposes
+#[derive(Clone,Serialize,Deserialize)]
 pub struct TimeSetup {
     pub t_start: f64,
     pub t_eval: Vec<(f64, bool)>,
 }
 
 
+#[derive(Clone,Serialize,Deserialize)]
 pub struct DataBaseConfig  {
     pub name: String,
 }
 
 
 /// # Complete Set of parameters controlling execution flow of simulation
+#[derive(Clone,Serialize,Deserialize)]
 pub struct SimulationSetup<Dom, C>
 {
     pub domain: Dom,

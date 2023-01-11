@@ -19,8 +19,10 @@ use hurdles::Barrier;
 
 use uuid::Uuid;
 
+use serde::{Serialize,Deserialize};
 
-pub trait Domain<C, I, V>: Send + Sync
+
+pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a>
 {
     fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
@@ -29,12 +31,13 @@ pub trait Domain<C, I, V>: Send + Sync
 }
 
 
-#[derive(Clone)]
+#[derive(Clone,Serialize,Deserialize)]
 pub struct DomainBox<C, I, V, D>
 where
     I: Index,
     D: Domain<C, I, V>,
 {
+    #[serde(bound = "")]
     domain_raw: D,
 
     phantom_cel: PhantomData<C>,
@@ -88,10 +91,10 @@ where
 }
 
 
-pub trait Index = Hash + Eq + Clone + Send + Sync + std::fmt::Debug;
+pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
 
 
-pub trait Voxel<I, Pos, Force>: Send + Sync + Clone
+pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 where
     I: Index,
 {

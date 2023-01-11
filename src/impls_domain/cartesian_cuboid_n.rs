@@ -10,6 +10,8 @@ use core::cmp::{min,max};
 use nalgebra::SVector;
 use itertools::Itertools;
 
+use serde::{Serialize,Deserialize};
+
 
 
 /// Helper function to calculate the decomposition of a large number N into n as evenly-sized chunks as possible
@@ -69,7 +71,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
-        #[derive(Clone,Debug)]
+        #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct $name {
             pub min: [f64; $d],
             pub max: [f64; $d],
@@ -83,7 +85,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = "` in `"]
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
-        #[derive(Clone,Debug)]
+        #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct $voxel_name {
                 pub min: [f64; $d],
                 pub max: [f64; $d],
