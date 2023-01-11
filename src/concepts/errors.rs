@@ -78,6 +78,7 @@ pub enum SimulationError {
     SerializeError(Box<bincode::ErrorKind>),
     UuidError(uuid::Error),
     ParseIntError(std::num::ParseIntError),
+    Utf8Error(std::str::Utf8Error),
     // #[cfg(feature="db_mongodb")]
     // TODO
     // DataBaseError,
@@ -101,8 +102,10 @@ impl_from_error!(SimulationError,
     (DataBaseError, sled::Error),
     (SerializeError, Box<bincode::ErrorKind>),
     (UuidError, uuid::Error),
-    (ParseIntError, std::num::ParseIntError)
+    (ParseIntError, std::num::ParseIntError),
+    (Utf8Error, std::str::Utf8Error)
 );
+
 impl_error_variant!(SimulationError,
     SendError,
     ReceiveError,
@@ -113,7 +116,8 @@ impl_error_variant!(SimulationError,
     DataBaseError,
     SerializeError,
     UuidError,
-    ParseIntError
+    ParseIntError,
+    Utf8Error
 );
 
 
