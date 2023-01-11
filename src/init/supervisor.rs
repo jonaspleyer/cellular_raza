@@ -305,7 +305,7 @@ macro_rules! implement_cell_types {
     ($pos:ty, $force:ty, $velocity:ty, [$($celltype:ident),+]) => {
         use serde::{Serialize,Deserialize};
 
-        #[derive(Debug,Clone,Serialize,Deserialize)]
+        #[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
         pub enum CellAgentType {
             $($celltype($celltype)),+
         }

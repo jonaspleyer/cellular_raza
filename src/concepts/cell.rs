@@ -31,7 +31,7 @@ pub trait Id {
 /// Some variables such as Uuid are not required and not desired to be
 /// initialized by the user. This CellAgentBox acts as a container around the cell
 /// to hold these variables.
-#[derive(Serialize,Deserialize,Debug,Clone)]
+#[derive(Serialize,Deserialize,Debug,Clone,PartialEq)]
 pub struct CellAgentBox<Pos, For, Vel, A>
 where
     Pos: Position,
