@@ -7,7 +7,7 @@ use crate::concepts::mechanics::{Position,Force,Velocity};
 
 use crate::database::io::{StorageIdent,store_cells_in_database};
 
-use std::collections::{HashMap};
+use std::collections::{HashMap,BTreeMap};
 use std::marker::{Send,Sync};
 
 use core::marker::PhantomData;
@@ -132,8 +132,8 @@ where
     C: CellAgent<Pos, For, Vel>,
     D: Domain<C, I, V>,
 {
-    pub voxels: HashMap<I, V>,
-    pub voxel_cells: HashMap<I, Vec<CellAgentBox<Pos, For, Vel, C>>>,
+    pub voxels: BTreeMap<I, V>,
+    pub voxel_cells: BTreeMap<I, Vec<CellAgentBox<Pos, For, Vel, C>>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -159,7 +159,7 @@ where
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
     pub cell_forces: HashMap<Uuid, Vec<Result<For, CalcError>>>,
-    pub neighbor_indices: HashMap<I, Vec<I>>,
+    pub neighbor_indices: BTreeMap<I, Vec<I>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,

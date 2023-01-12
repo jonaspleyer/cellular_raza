@@ -7,7 +7,7 @@ use crate::concepts::errors::{CalcError,SimulationError};
 use crate::database::io::StorageIdent;
 
 use std::thread;
-use std::collections::{HashMap};
+use std::collections::{HashMap,BTreeMap};
 use std::error::Error;
 
 use core::marker::PhantomData;
@@ -125,7 +125,7 @@ where
 
         // Create an intermediate mapping just for this setup
         // Map voxel index to thread number
-        let mut index_to_thread: HashMap<Ind,usize> = HashMap::new();
+        let mut index_to_thread: BTreeMap<Ind,usize> = BTreeMap::new();
         for (i, chunk) in voxel_chunks.iter().enumerate() {
             for (index, _) in chunk {
                 index_to_thread.insert(index.clone(), i);
@@ -138,7 +138,7 @@ where
             .into_par_iter()
             .chunks(chunk_size)
             .map(|cell_chunk| {
-                let mut cs = HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new();
+                let mut cs = BTreeMap::<usize, BTreeMap<Ind, Vec<Cel>>>::new();
                 for cell in cell_chunk.into_iter() {
                     let index = setup.domain.get_voxel_index(&cell);
                     let id_thread = index_to_thread[&index];
@@ -147,13 +147,12 @@ where
                             Some(cs) => cs.push(cell),
                             None => {index_to_cells.insert(index, vec![cell]);},
                         },
-                        None => {cs.insert(id_thread, HashMap::from([(index, vec![cell])]));},
+                        None => {cs.insert(id_thread, BTreeMap::from([(index, vec![cell])]));},
                     }
                 }
                 cs
             })
-            // .reduce(|| HashMap::<usize, HashMap<Ind, Vec<Cel>>>::new(), |mut acc, x| {
-            .reduce(|| (0..n_chunks).map(|i| (i, HashMap::new())).collect::<HashMap<usize, HashMap<Ind, Vec<Cel>>>>(), |mut acc, x| {
+            .reduce(|| (0..n_chunks).map(|i| (i, BTreeMap::new())).collect::<BTreeMap<usize, BTreeMap<Ind, Vec<(usize, Cel)>>>>(), |mut acc, x| {
                 for (id_thread, idc) in x.into_iter() {
                     for (index, mut cells) in idc.into_iter() {
                         match acc.get_mut(&id_thread) {
@@ -161,20 +160,19 @@ where
                                 Some(cs) => cs.append(&mut cells),
                                 None => {index_to_cells.insert(index, cells);},
                             },
-                            None => {acc.insert(id_thread, HashMap::from([(index, cells)]));},
+                            None => {acc.insert(id_thread, BTreeMap::from([(index, cells)]));},
                         }
                     }
                 }
                 return acc;
             });
-
-        let voxel_and_raw_cells: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<Cel>>)> = voxel_chunks
+        let voxel_and_raw_cells: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<(usize, Cel)>>)> = voxel_chunks
             .into_iter()
             .enumerate()
             .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
             .collect();
 
-        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, HashMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_and_raw_cells
+        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_and_raw_cells
             .into_iter()
             .enumerate()
             .map(|(n_chunk, (chunk, sorted_cells))| {
@@ -207,7 +205,7 @@ where
 
         multivoxelcontainers = voxel_and_cell_boxes.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let voxels: HashMap<Ind,Vox> = chunk.clone().into_iter().collect();
+            let voxels: BTreeMap<Ind,Vox> = chunk.clone().into_iter().collect();
 
             // Fill index_to_cells with non-occupied indices of voxels
             for (ind, _) in voxels.iter() {
@@ -249,7 +247,7 @@ where
                 ).flatten()
                 .collect();
 
-            let neighbor_indices: HashMap<Ind, Vec<Ind>> = chunk
+            let neighbor_indices: BTreeMap<Ind, Vec<Ind>> = chunk
                 .clone()
                 .into_iter()
                 .map(|(i, _)| (i.clone(), setup.domain.get_neighbor_voxel_indices(&i)))
