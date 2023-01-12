@@ -1,7 +1,7 @@
 use crate::concepts::errors::SimulationError;
-use crate::concepts::cell::{CellAgent,Id};
+use crate::concepts::cell::{CellAgent,Id,CellAgentBox};
+use crate::concepts::domain::Index;
 use crate::concepts::mechanics::{Position,Force,Velocity};
-use crate::prelude::CellAgentBox;
 
 use serde::{Deserialize};
 
