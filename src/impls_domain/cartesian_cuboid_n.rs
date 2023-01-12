@@ -276,6 +276,8 @@ macro_rules! define_and_implement_cartesian_cuboid {
                     })
                     .collect();
                 
+                // TODO optimize this!
+                // Currently we are not splitting the voxels apart efficiently
                 let mut ind_n: Vec<Vec<_>> = index_voxel_combinations
                     .drain(0..(average_len*n) as usize)    
                     .into_iter()
