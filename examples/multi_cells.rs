@@ -34,7 +34,7 @@ pub const T_START: f64 = 0.0;
 
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 2;
+pub const N_THREADS: usize = 4;
 
 
 define_simulation_types!(
@@ -90,11 +90,11 @@ fn main() {
     };
 
     let setup = SimulationSetup {
-        domain: domain,
-        cells: cells,
+        domain,
+        cells,
         time: TimeSetup {
             t_start: 0.0,
-            t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, i % 20 == 0)).collect::<Vec<(f64, bool)>>(),
+            t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, i % 10 == 0, i % 10 == 0)).collect::<Vec<(f64, bool, bool)>>(),
         },
         meta_params: SimulationMetaParams {
             n_threads: N_THREADS
