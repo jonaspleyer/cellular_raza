@@ -132,15 +132,18 @@ where
             }
         }
 
+        // Sort cells into correct voxels
         let n_chunks = voxel_chunks.len();
         let chunk_size = (setup.cells.len() as f64/ n_threads as f64).ceil() as usize;
+
         let mut sorted_cells = setup.cells
             .into_par_iter()
+            .enumerate()
             .chunks(chunk_size)
             .map(|cell_chunk| {
-                let mut cs = BTreeMap::<usize, BTreeMap<Ind, Vec<Cel>>>::new();
+                let mut cs = BTreeMap::<usize, BTreeMap<Ind, Vec<(usize, Cel)>>>::new();
                 for cell in cell_chunk.into_iter() {
-                    let index = setup.domain.get_voxel_index(&cell);
+                    let index = setup.domain.get_voxel_index(&cell.1);
                     let id_thread = index_to_thread[&index];
                     match cs.get_mut(&id_thread) {
                         Some(index_to_cells) => match index_to_cells.get_mut(&index) {
@@ -172,16 +175,20 @@ where
             .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
             .collect();
 
+        // Store the counted cells per each multivoxelcontainer
+        let mut cell_counts = HashMap::new();
+
         let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_and_raw_cells
             .into_iter()
             .enumerate()
             .map(|(n_chunk, (chunk, sorted_cells))| {
                 let mut cell_count = 0;
 
-                (chunk, sorted_cells
+                let res = (chunk, sorted_cells
                     .into_iter()
-                    .map(|(ind, cells)|
-                        (ind, cells.into_iter().map(|cell| {
+                    .map(|(ind, mut cells)| {
+                        cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
+                        (ind, cells.into_iter().map(|(_, cell)| {
                             let cb = CellAgentBox::from((
                                 0 as u32,
                                 StorageIdent::Cell.value(),
@@ -194,7 +201,10 @@ where
                         },
                         ).collect()
                     )
-                ).collect())
+                }).collect());
+
+                cell_counts.insert(n_chunk, cell_count);
+                res
             })
             .collect();
 
@@ -203,7 +213,8 @@ where
         let tree_cells = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
         let meta_infos = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
 
-        multivoxelcontainers = voxel_and_cell_boxes.into_par_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
+        // Create all multivoxelcontainers
+        multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
             let voxels: BTreeMap<Ind,Vox> = chunk.clone().into_iter().collect();
 
@@ -275,7 +286,7 @@ where
 
                 database_cells: tree_cells_new,
 
-                uuid_counter: 0,
+                uuid_counter: cell_counts[&i],
                 mvc_id: i as u16,
             };
 
