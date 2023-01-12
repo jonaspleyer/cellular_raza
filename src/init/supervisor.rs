@@ -76,7 +76,7 @@ pub struct SimulationMetaParams {
 #[derive(Clone,Serialize,Deserialize)]
 pub struct TimeSetup {
     pub t_start: f64,
-    pub t_eval: Vec<(f64, bool)>,
+    pub t_eval: Vec<(f64, bool, bool)>,
 }
 
 
@@ -437,7 +437,7 @@ where
 
                 let mut time = t_start;
                 let mut iteration = 0u32;
-                for (t, save) in t_eval {
+                for (t, save, save_full) in t_eval {
                     let dt = t - time;
                     time = t;
 
@@ -484,7 +484,7 @@ where
     }
 
     pub fn run_until(&mut self, end_time: f64) -> Result<(), SimulationError> {
-        self.time.t_eval.drain_filter(|(t, _)| *t <= end_time);
+        self.time.t_eval.drain_filter(|(t, _, _)| *t <= end_time);
         self.run_full_sim()?;
         Ok(())
     }

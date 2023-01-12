@@ -94,7 +94,7 @@ fn main() {
                 cells: cells,
                 time: TimeSetup {
                     t_start: 0.0,
-                    t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, true)).collect::<Vec<(f64, bool)>>(),
+                    t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, true, true)).collect::<Vec<(f64, bool, bool)>>(),
                 },
                 meta_params: SimulationMetaParams {
                     n_threads: n_threads
