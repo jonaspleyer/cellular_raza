@@ -56,6 +56,8 @@ pub fn create_cells() -> Vec<StandardCell2D> {
             cell_radius: 3.0,
             potential_strength: 0.01,
 
+            velocity_reduction: 0.0,
+
             maximum_age: 1000.0,
 
             remove: false,
