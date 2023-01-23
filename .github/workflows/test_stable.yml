@@ -6,7 +6,7 @@
 
 on: [push, pull_request]
 
-name: Test-Suite
+name: Test-Suite Stable
 
 jobs:
   check:
