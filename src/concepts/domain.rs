@@ -5,7 +5,10 @@ use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
-use crate::database::io::{StorageIdent,store_cells_in_database};
+#[cfg(not(feature = "no_db"))]
+use crate::storage::concepts::StorageIdent;
+#[cfg(feature = "db_sled")]
+use crate::storage::sled_database::io::store_cells_in_database;
 
 use std::collections::{HashMap,BTreeMap};
 use std::marker::{Send,Sync};
@@ -164,6 +167,7 @@ where
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
+    #[cfg(not(feature = "no_db"))]
     pub database_cells: typed_sled::Tree<String, Vec<u8>>,
 
     pub uuid_counter: u64,
@@ -431,6 +435,7 @@ where
     }
 
 
+    #[cfg(not(feature = "no_db"))]
     pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError> {
         let cells = self.voxel_cells.clone()
             .into_iter()
@@ -438,12 +443,14 @@ where
             .flatten()
             .collect::<Vec<_>>();
 
+        #[cfg(feature = "db_sled")]
         store_cells_in_database(self.database_cells.clone(), *iteration, cells)?;
 
         Ok(())
     }
 
 
+    #[cfg(not(feature = "no_db"))]
     pub fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
         match self.voxel_cells.get_mut(&self.domain.domain_raw.get_voxel_index(&cell)) {
             Some(cells) => {

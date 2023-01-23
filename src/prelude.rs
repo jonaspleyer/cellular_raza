@@ -7,8 +7,10 @@ pub use crate::concepts::interaction::*;
 pub use crate::concepts::mechanics::*;
 
 // Database
-pub use crate::database::io::*;
-pub use crate::database::restart_sim::*;
+#[cfg(not(feature = "no_db"))]
+pub use crate::storage::sled_database::io::*;
+#[cfg(not(feature = "no_db"))]
+pub use crate::storage::sled_database::restart_sim::*;
 
 // Cell Properties
 pub use crate::impls_cell_properties::cell_model::*;

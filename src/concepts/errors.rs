@@ -62,8 +62,15 @@ macro_rules! impl_from_error {
 define_errors!(
     (CalcError, "General Calculation Error"),
     (IndexError, "Can occur internally when information is not present at expected place"),
-    (BoundaryError, "Can occur during boundary calculation")
+    (BoundaryError, "Can occur during boundary calculation"),
+    (GenericDataBaseError, "Placeholder for when Database is not compiled.")
 );
+
+
+#[cfg(feature = "db_sled")]
+type DataBaseError = sled::Error;
+#[cfg(feature = "no_db")]
+type DataBaseError = GenericDataBaseError;
 
 
 /// Covers all errors that can occur in this Simulation
@@ -73,8 +80,7 @@ pub enum SimulationError {
     // Very likely to be user errors
     CalcError(CalcError),
     BoundaryError(BoundaryError),
-    #[cfg(feature="db_sled")]
-    DataBaseError(sled::Error),
+    DataBaseError(DataBaseError),
     SerializeError(Box<bincode::ErrorKind>),
     UuidError(uuid::Error),
     ParseIntError(std::num::ParseIntError),
@@ -93,20 +99,20 @@ pub enum SimulationError {
 }
 
 
-impl_from_error!(SimulationError,
+impl_from_error!{SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
     (IOError, std::io::Error),
-    (DataBaseError, sled::Error),
+    (DataBaseError, DataBaseError),
     (SerializeError, Box<bincode::ErrorKind>),
     (UuidError, uuid::Error),
     (ParseIntError, std::num::ParseIntError),
     (Utf8Error, std::str::Utf8Error)
-);
+}
 
-impl_error_variant!(SimulationError,
+impl_error_variant!{SimulationError,
     SendError,
     ReceiveError,
     CalcError,
@@ -118,7 +124,7 @@ impl_error_variant!(SimulationError,
     UuidError,
     ParseIntError,
     Utf8Error
-);
+}
 
 
 // Implement conversion from Sending error manually

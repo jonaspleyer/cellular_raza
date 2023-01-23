@@ -37,6 +37,11 @@
 // TODO
 //! - Efficient Cache-Usage
 
+
+#[cfg(all(feature = "no_db", any(feature = "db_sled", feature = "db_mongodb")))]
+compile_error!("feature \"no_db\" and database feature cannot be enabled at the same time");
+
+
 /// Semi-Abstract concepts for cells and simulation engine
 pub mod concepts;
 /// Database interface

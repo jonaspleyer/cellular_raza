@@ -45,7 +45,9 @@ ndarray = { version="0.15" }
 default = ["db_sled"]
 
 # Database
+no_db = []
 db_sled = ["dep:sled", "dep:typed-sled"]
+db_json_dump = []
 
 # Testing
 test_exhaustive = []
