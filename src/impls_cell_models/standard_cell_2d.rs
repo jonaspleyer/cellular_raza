@@ -14,6 +14,8 @@ pub struct StandardCell2D {
     pub cell_radius: f64,
     pub potential_strength: f64,
 
+    pub velocity_reduction: f64,
+
     pub maximum_age: f64,
 
     pub remove: bool,
@@ -58,7 +60,7 @@ impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for StandardCell2D {
 
     fn calculate_increment(&self, force: Vector2<f64>) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         let dx = self.velocity;
-        let dv = force;
+        let dv = force - self.velocity_reduction * self.velocity;
         Ok((dx, dv))
     }
 }

@@ -16,6 +16,8 @@ macro_rules! implement_custom_cell {
             pub cell_radius: f64,
             pub potential_strength: f64,
 
+            pub velocity_reduction: f64,
+
             pub maximum_age: f64,
 
             pub remove: bool,
@@ -60,7 +62,7 @@ macro_rules! implement_custom_cell {
 
             fn calculate_increment(&self, force: SVector<f64, $d>) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
                 let dx = self.velocity;
-                let dv = force;
+                let dv = force - self.velocity_reduction * self.velocity;
                 Ok((dx, dv))
             }
         }
