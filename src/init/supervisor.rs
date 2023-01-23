@@ -94,11 +94,12 @@ pub struct SimulationSetup<Dom, C>
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
+    #[cfg(not(feature = "no_db"))]
     pub database: DataBaseConfig,
 }
 
 
-impl<Pos, For, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for Result<SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>, Box<dyn Error>>
+impl<Pos, For, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
@@ -108,7 +109,7 @@ where
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Vel> + 'static,
 {
-    fn from(setup: SimulationSetup<Dom, Cel>) -> Result<SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>, Box<dyn Error>> {
+    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom> {
         // Create groups of voxels to put into our MultiVelContainers
         let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
 
@@ -296,7 +297,7 @@ where
 
         let stop_now = Arc::new(AtomicBool::new(false));
 
-        Ok(SimulationSupervisor {
+        SimulationSupervisor {
             worker_threads: Vec::new(),
             multivoxelcontainers: multivoxelcontainers,
 
@@ -316,7 +317,7 @@ where
             phantom_pos: PhantomData,
             phantom_force: PhantomData,
             phantom_velocity: PhantomData,
-        })
+        }
     }
 }
 

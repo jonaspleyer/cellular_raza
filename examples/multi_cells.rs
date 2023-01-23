@@ -104,7 +104,8 @@ fn main() {
         }
     };
 
-    let mut supervisor = create_sim_supervisor!(setup);
+    // let mut supervisor = create_sim_supervisor!(setup);
+    let mut supervisor = SimulationSupervisor::from(setup);
 
     let now = std::time::Instant::now();
     match supervisor.run_full_sim() {

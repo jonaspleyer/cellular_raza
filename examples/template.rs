@@ -104,7 +104,7 @@ fn main() {
                 }
             };
 
-            let mut supervisor = Result::<SimulationSupervisor::<Vector2<f64>, Vector2<f64>, Vector2<f64>, StandardCell2D, [usize; 2], CartesianCuboidVoxel2, CartesianCuboid2>, Box<dyn std::error::Error>>::from(setup).unwrap();
+            let mut supervisor = SimulationSupervisor::from(setup);
             let supervisor_create_time = start.elapsed().as_millis();
 
             match supervisor.run_full_sim() {
