@@ -13,7 +13,6 @@ pub use crate::storage::sled_database::io::*;
 pub use crate::storage::sled_database::restart_sim::*;
 
 // Cell Properties
-pub use crate::impls_cell_properties::cell_model::*;
 pub use crate::impls_cell_properties::cycle::*;
 pub use crate::impls_cell_properties::death::*;
 pub use crate::impls_cell_properties::flags::*;
