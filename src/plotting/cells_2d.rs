@@ -1,12 +1,69 @@
-use crate::impls_cell_properties::cell_model::*;
-use crate::concepts::mechanics::*;
-
-use plotters::prelude::*;
+use crate::plotting::spatial::PlotSelf;
 
 
+use plotters::{
+    backend::DrawingBackend,
+    coord::Shift,
+    prelude::{
+        DrawingArea,
+        Circle},
+    style::ShapeStyle,
+};
+
+
+macro_rules! implement_draw_cell_2d (
+    ($cell:ty, $domain:ty, $index:ty, $voxel:ty, $($ni:tt),+) => {
+        impl<Db, E> PlotSelf<Db, E, $domain, $cell, $index, $voxel> for $cell
+        where
+            Db: DrawingBackend<ErrorType=E>,
+            E: std::error::Error + std::marker::Sync + std::marker::Send,
+        {
+            fn plot_self(&self, domain: &$domain, root: &mut DrawingArea<Db, Shift>) -> Result<(), E> {
+                let cell_border_color = plotters::prelude::BLACK;
+                let cell_inside_color = plotters::prelude::full_palette::PURPLE;
+                // Get size of backend
+                let size = root.dim_in_pixel();
+                let offset = root.get_base_pixel();
+                
+                // Get position of cell
+                let domain_size = [
+                    $(domain.max[$ni] - domain.min[$ni],)+
+                ];
+                let relative_pos = [
+                    $((self.pos[$ni] - domain.min[$ni])/domain_size[$ni],)+
+                ];
+                let draw_middle = (
+                    $((relative_pos[$ni] * size.0 as f64).round() as i32 + offset.$ni,)+
+                );
+                
+                let cell_border = Circle::new(
+                    draw_middle,
+                    (self.cell_radius as f64).round() as i32,
+                    Into::<ShapeStyle>::into(&cell_border_color).filled(),
+                );
+                root.draw(&cell_border).unwrap();
+
+                let cell_inside = Circle::new(
+                    draw_middle,
+                    ((self.cell_radius as f64) * 0.6).round() as i32,
+                    Into::<ShapeStyle>::into(&cell_inside_color).filled(),
+                );
+                root.draw(&cell_inside).unwrap();
+                Ok(())
+            }
+        }
+    }
+);
+
+
+implement_draw_cell_2d!(crate::impls_cell_models::custom_cell_nd::CustomCell2D, crate::impls_domain::cartesian_cuboid_n::CartesianCuboid2, [usize; 2], crate::impls_domain::cartesian_cuboid_n::CartesianCuboidVoxel2, 0, 1);
+implement_draw_cell_2d!(crate::impls_cell_models::standard_cell_2d::StandardCell2D, crate::impls_domain::cartesian_cuboid_n::CartesianCuboid2, [usize; 2], crate::impls_domain::cartesian_cuboid_n::CartesianCuboidVoxel2, 0, 1);
+
+
+/*
 pub fn plot_current_cells_2d(
     time: f64,
-    cells: Vec<CellModel>,
+    cells: Vec<CellModel2D>,
     domain_size: [f64; 2],
     n_voxel: [usize; 2],
     cell_radius: f64,
@@ -86,3 +143,4 @@ pub fn plot_current_cells_2d(
     root.present()?;
     Ok(())
 }
+*/
