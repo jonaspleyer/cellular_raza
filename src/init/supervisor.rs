@@ -4,7 +4,7 @@ use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::{CalcError,SimulationError};
 
-use crate::database::io::StorageIdent;
+use crate::storage::concepts::StorageIdent;
 
 use std::thread;
 use std::collections::{HashMap,BTreeMap};
@@ -333,7 +333,7 @@ where
 
 #[macro_export]
 macro_rules! implement_cell_types {
-    ($pos:ty, $force:ty, $velocity:ty, [$($celltype:ident),+]) => {
+    ($pos:ty, $force:ty, $velocity:ty, $voxel:ty, $index:ty, $domain:ty, [$($celltype:ident),+]) => {
         use serde::{Serialize,Deserialize};
 
         #[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
@@ -389,6 +389,18 @@ macro_rules! implement_cell_types {
             }
         }
 
+        impl<DB, E> crate::plotting::spatial::PlotSelf<DB, E, $domain, CellAgentType, $index, $voxel> for CellAgentType
+        where
+            DB: plotters::backend::DrawingBackend<ErrorType=E>,
+            E: std::error::Error + std::marker::Sync + std::marker::Send,
+        {
+            fn plot_self(&self, domain: &$domain, root: &mut plotters::prelude::DrawingArea<DB, plotters::coord::Shift>) -> Result<(), E> {
+                match self {
+                    $(CellAgentType::$celltype(cell) => cell.plot_self(domain, root),)+
+                }
+            }
+        }
+
         unsafe impl Send for CellAgentType {}
         unsafe impl Sync for CellAgentType {}
     }
@@ -407,7 +419,7 @@ macro_rules! define_simulation_types {
         Domain:     $domain:ty,
     ) => {
         // Create an enum containing all cell types
-        implement_cell_types!($position, $force, $velocity, [$($celltype),+]);
+        implement_cell_types!($position, $force, $velocity, $voxel, $index, $domain, [$($celltype),+]);
 
         pub type SimTypePosition = $position;
         pub type SimTypeForce = $force;

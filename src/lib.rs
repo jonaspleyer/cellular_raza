@@ -45,7 +45,7 @@ compile_error!("feature \"no_db\" and database feature cannot be enabled at the 
 /// Semi-Abstract concepts for cells and simulation engine
 pub mod concepts;
 /// Database interface
-pub mod database;
+pub mod storage;
 /// Example implementations of cell models
 pub mod impls_cell_models;
 /// Implementations of individual cell properties
