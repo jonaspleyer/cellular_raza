@@ -38,7 +38,7 @@ where
     D: Domain<C, I, V>,
 {
     #[serde(bound = "")]
-    domain_raw: D,
+    pub domain_raw: D,
 
     phantom_cel: PhantomData<C>,
     phantom_ind: PhantomData<I>,
