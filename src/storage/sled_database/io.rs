@@ -3,27 +3,9 @@ use crate::concepts::cell::{CellAgent,Id,CellAgentBox};
 use crate::concepts::domain::Index;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
-use serde::{Deserialize};
+use serde::Deserialize;
 
 use uuid::Uuid;
-
-
-pub enum StorageIdent {
-    Cell,
-    Voxel,
-    MultiVoxel,
-}
-
-
-impl StorageIdent {
-    pub const fn value(self) -> u16 {
-        match self {
-            StorageIdent::Cell => 1,
-            StorageIdent::Voxel => 2,
-            StorageIdent::MultiVoxel => 3,
-        }
-    }
-}
 
 
 fn iteration_uuid_to_entry(iteration: &u32, uuid: &Uuid) -> String
@@ -258,6 +240,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::storage::concepts::StorageIdent;
     use crate::impls_cell_models::standard_cell_2d::StandardCell2D;
     use crate::concepts::cell::{Id,CellAgentBox};
 
@@ -279,6 +262,7 @@ mod test {
                 velocity: Vector2::<f64>::from([0.0, 0.0]),
                 cell_radius: 4.0,
                 potential_strength: 3.0,
+                velocity_reduction: 0.0,
                 maximum_age: 1000.0,
                 remove: false,
                 current_age: 0.0,
