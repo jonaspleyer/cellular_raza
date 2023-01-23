@@ -3,9 +3,21 @@ use crate::concepts::interaction::*;
 
 
 use nalgebra::Vector3;
+use serde::{Serialize,Deserialize};
 
 
-#[derive(Clone)]
+#[derive(Clone,Debug,Serialize,Deserialize)]
+pub struct NoInteraction {}
+
+impl<Pos, For> Interaction<Pos, For> for NoInteraction {
+    fn force(&self, _: &Pos, _: &Pos) -> Option<Result<For, CalcError>> {
+        return None;
+    }
+}
+
+
+
+#[derive(Clone,Debug,Serialize,Deserialize)]
 pub struct LennardJones {
     pub epsilon: f64,
     pub sigma: f64,

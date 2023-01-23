@@ -1,50 +1,47 @@
 use crate::concepts::errors::CalcError;
 use crate::concepts::mechanics::Mechanics;
 
+use nalgebra::SVector;
 
-use nalgebra::{Vector3,Vector6};
-
-
-#[derive(Clone,Debug)]
-pub struct MechanicsModel {
-    pos_vel: Vector6<f64>,
-    pub dampening_constant: f64,
-}
+use serde::{Serialize,Deserialize};
 
 
-impl From<(&Vector3<f64>, &Vector3<f64>, f64)> for MechanicsModel {
-    fn from(pv: (&Vector3<f64>, &Vector3<f64>, f64)) -> Self {
-        let p = pv.0;
-        let v = pv.1;
-        let x = Vector6::<f64>::new(p[0], p[1], p[2], v[0], v[1], v[2]);
-        MechanicsModel {
-            pos_vel: x,
-            dampening_constant: pv.2,
+macro_rules! implement_mechanics_model_nd(
+    ($model_name:ident, $dim:literal) => {
+        #[derive(Clone,Debug,Serialize,Deserialize)]
+        pub struct $model_name {
+            pub pos: SVector<f64, $dim>,
+            pub vel: SVector<f64, $dim>,
+            pub dampening_constant: f64,
+        }
+
+        impl Mechanics<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for $model_name {
+            fn pos(&self) -> SVector<f64, $dim> {
+                self.pos
+            }
+
+            fn velocity(&self) -> SVector<f64, $dim> {
+                self.vel
+            }
+
+            fn set_pos(&mut self, p: &SVector<f64, $dim>) {
+                self.pos = *p;
+            }
+
+            fn set_velocity(&mut self, v: &SVector<f64, $dim>) {
+                self.vel = *v;
+            }
+
+            fn calculate_increment(&self, force: SVector<f64, $dim>) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
+                let dx = self.vel;
+                let dv = force - self.dampening_constant * self.vel;
+                Ok((dx, dv))
+            }
         }
     }
-}
+);
 
 
-impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MechanicsModel {
-    fn pos(&self) -> Vector3<f64> {
-        return Vector3::<f64>::from(self.pos_vel.fixed_rows::<3>(0));
-    }
-
-    fn velocity(&self) -> Vector3<f64> {
-        return Vector3::<f64>::from(self.pos_vel.fixed_rows::<3>(3));
-    }
-
-    fn set_pos(&mut self, p: &Vector3<f64>) {
-        self.pos_vel.fixed_rows_mut::<3>(0).set_column(0, p);
-    }
-
-    fn set_velocity(&mut self, v: &Vector3<f64>) {
-        self.pos_vel.fixed_rows_mut::<3>(3).set_column(0, v);
-    }
-
-    fn calculate_increment(&self, force: Vector3<f64>) -> Result<(Vector3<f64>, Vector3<f64>), CalcError> {
-        let dx = self.velocity();
-        let dv = force - self.dampening_constant * self.velocity();
-        Ok((dx, dv))
-    }
-}
+implement_mechanics_model_nd!(MechanicsModel1D, 1);
+implement_mechanics_model_nd!(MechanicsModel2D, 2);
+implement_mechanics_model_nd!(MechanicsModel3D, 3);
