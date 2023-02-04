@@ -38,8 +38,13 @@ macro_rules! implement_custom_cell {
             fn force(&self, own_pos: &SVector<f64, $d>, ext_pos: &SVector<f64, $d>) -> Option<Result<SVector<f64, $d>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
+                let sigma = 2.0 * self.cell_radius;
+                let spatial_cutoff = (1.0 + (2.0*sigma-r).signum())*0.5;
                 let dir = z/r;
-                Some(Ok(dir * 0.0_f64.max(self.potential_strength * (self.cell_radius - r))))
+                let bound = 4.0 + sigma/r;
+                Some(Ok(
+                    dir * self.potential_strength * ((sigma/r).powf(2.0) - (sigma/r).powf(4.0)).min(bound).max(-bound) * spatial_cutoff
+                ))
             }
         }
 
