@@ -243,7 +243,7 @@ where
         // println!("Thread: {} Senders indices: {:?} Sender Index: {:?} Receiver Index {:?}", std::thread::current().name().unwrap(), self.senders_force.iter().map(|(i, _)| i.clone()).collect::<Vec<I>>(), pos_info.index_sender, pos_info.index_receiver);
         self.senders_force[&pos_info.index_sender].send(
             ForceInformation{
-                forces: forces,
+                forces,
                 uuid: pos_info.uuid
             }
         )?;
