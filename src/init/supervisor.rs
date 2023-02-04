@@ -333,7 +333,7 @@ where
 
 #[macro_export]
 macro_rules! implement_cell_types {
-    ($pos:ty, $force:ty, $velocity:ty, $voxel:ty, $index:ty, $domain:ty, [$($celltype:ident),+]) => {
+    ($pos:ty, $force:ty, $velocity:ty, $voxel:ty, $index:ty, [$($celltype:ident),+]) => {
         use serde::{Serialize,Deserialize};
 
         #[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
@@ -389,14 +389,14 @@ macro_rules! implement_cell_types {
             }
         }
 
-        impl<DB, E> crate::plotting::spatial::PlotSelf<DB, E, $domain, CellAgentType, $index, $voxel> for CellAgentType
+        impl<DB, E> crate::plotting::spatial::PlotSelf<DB, E> for CellAgentType
         where
             DB: plotters::backend::DrawingBackend<ErrorType=E>,
             E: std::error::Error + std::marker::Sync + std::marker::Send,
         {
-            fn plot_self(&self, domain: &$domain, root: &mut plotters::prelude::DrawingArea<DB, plotters::coord::Shift>) -> Result<(), E> {
+            fn plot_self(&self, root: &mut plotters::prelude::DrawingArea<DB, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), E> {
                 match self {
-                    $(CellAgentType::$celltype(cell) => cell.plot_self(domain, root),)+
+                    $(CellAgentType::$celltype(cell) => cell.plot_self(root),)+
                 }
             }
         }
@@ -419,7 +419,7 @@ macro_rules! define_simulation_types {
         Domain:     $domain:ty,
     ) => {
         // Create an enum containing all cell types
-        implement_cell_types!($position, $force, $velocity, $voxel, $index, $domain, [$($celltype),+]);
+        implement_cell_types!($position, $force, $velocity, $voxel, $index, [$($celltype),+]);
 
         pub type SimTypePosition = $position;
         pub type SimTypeForce = $force;
