@@ -198,12 +198,10 @@ where
     }
 
     fn apply_boundaries(&mut self) -> Result<(), BoundaryError> {
-        self.voxel_cells
-            .iter_mut()
-            .map(|(_, cells)| cells.iter_mut())
-            .flatten()
-            .map(|cell| self.domain.apply_boundary(cell))// TODO catch this error
-            .collect()
+        for cell in self.voxel_cells.iter_mut().map(|(_, cells)| cells.iter_mut()).flatten() {
+            self.domain.apply_boundary(cell)?;
+        }
+        Ok(())
     }
 
     pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<CellAgentBox<Pos, For, Vel, C>>) -> Result<(), CalcError>
