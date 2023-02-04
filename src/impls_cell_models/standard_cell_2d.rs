@@ -36,8 +36,13 @@ impl Interaction<Vector2<f64>, Vector2<f64>> for StandardCell2D {
     fn force(&self, own_pos: &Vector2<f64>, ext_pos: &Vector2<f64>) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = own_pos - ext_pos;
         let r = z.norm();
+        let sigma = 2.0 * self.cell_radius;
+        let spatial_cutoff = (1.0 + (2.0*sigma-r).signum())*0.5;
         let dir = z/r;
-        Some(Ok(dir * 0.0_f64.max(self.potential_strength * (self.cell_radius - r))))
+        let bound = 4.0 + sigma/r;
+        Some(Ok(
+            dir * self.potential_strength * ((sigma/r).powf(2.0) - (sigma/r).powf(4.0)).min(bound).max(-bound) * spatial_cutoff
+        ))
     }
 }
 
