@@ -3,7 +3,8 @@ use crate::plotting::spatial::PlotSelf;
 
 use plotters::{
     backend::DrawingBackend,
-    coord::Shift,
+    coord::cartesian::Cartesian2d,
+    coord::types::RangedCoordf64,
     prelude::{
         DrawingArea,
         Circle},
@@ -12,40 +13,35 @@ use plotters::{
 
 
 macro_rules! implement_draw_cell_2d (
-    ($cell:ty, $domain:ty, $index:ty, $voxel:ty, $($ni:tt),+) => {
-        impl<Db, E> PlotSelf<Db, E, $domain, $cell, $index, $voxel> for $cell
+    ($cell:ty, $($ni:tt),+) => {
+        impl<Db, E> PlotSelf<Db, E> for $cell
         where
             Db: DrawingBackend<ErrorType=E>,
             E: std::error::Error + std::marker::Sync + std::marker::Send,
         {
-            fn plot_self(&self, domain: &$domain, root: &mut DrawingArea<Db, Shift>) -> Result<(), E> {
+            fn plot_self(&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), E> {
                 let cell_border_color = plotters::prelude::BLACK;
                 let cell_inside_color = plotters::prelude::full_palette::PURPLE;
-                // Get size of backend
-                let size = root.dim_in_pixel();
-                let offset = root.get_base_pixel();
-                
-                // Get position of cell
-                let domain_size = [
-                    $(domain.max[$ni] - domain.min[$ni],)+
-                ];
-                let relative_pos = [
-                    $((self.pos[$ni] - domain.min[$ni])/domain_size[$ni],)+
-                ];
-                let draw_middle = (
-                    $((relative_pos[$ni] * size.0 as f64).round() as i32 + offset.$ni,)+
-                );
-                
+
+                // Plot the cell border
+                let dx = root.get_x_range().end - root.get_x_range().start;
+                // let dy = root.get_y_range().end - root.get_y_range().start;
+                let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
+                // let dy_pix = root.get_y_axis_pixel_range().end - root.get_y_axis_pixel_range().start;
+
+                let s = self.cell_radius / dx * dx_pix as f64;
+                // println!("{:?} {:?} {}", root.get_x_range(), root.get_x_axis_pixel_range(), s);
                 let cell_border = Circle::new(
-                    draw_middle,
-                    (self.cell_radius as f64).round() as i32,
+                    (self.pos.x, self.pos.y),
+                    s,
                     Into::<ShapeStyle>::into(&cell_border_color).filled(),
                 );
                 root.draw(&cell_border).unwrap();
 
+                // Plot the inside of the cell
                 let cell_inside = Circle::new(
-                    draw_middle,
-                    ((self.cell_radius as f64) * 0.6).round() as i32,
+                    (self.pos.x, self.pos.y),
+                    s*0.6,
                     Into::<ShapeStyle>::into(&cell_inside_color).filled(),
                 );
                 root.draw(&cell_inside).unwrap();
@@ -56,8 +52,8 @@ macro_rules! implement_draw_cell_2d (
 );
 
 
-implement_draw_cell_2d!(crate::impls_cell_models::custom_cell_nd::CustomCell2D, crate::impls_domain::cartesian_cuboid_n::CartesianCuboid2, [usize; 2], crate::impls_domain::cartesian_cuboid_n::CartesianCuboidVoxel2, 0, 1);
-implement_draw_cell_2d!(crate::impls_cell_models::standard_cell_2d::StandardCell2D, crate::impls_domain::cartesian_cuboid_n::CartesianCuboid2, [usize; 2], crate::impls_domain::cartesian_cuboid_n::CartesianCuboidVoxel2, 0, 1);
+implement_draw_cell_2d!(crate::impls_cell_models::custom_cell_nd::CustomCell2D, 0, 1);
+implement_draw_cell_2d!(crate::impls_cell_models::standard_cell_2d::StandardCell2D, 0, 1);
 
 
 /*
