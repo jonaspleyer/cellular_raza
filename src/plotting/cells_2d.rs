@@ -14,12 +14,14 @@ use plotters::{
 
 macro_rules! implement_draw_cell_2d (
     ($cell:ty, $($ni:tt),+) => {
-        impl<Db, E> PlotSelf<Db, E> for $cell
-        where
-            Db: DrawingBackend<ErrorType=E>,
-            E: std::error::Error + std::marker::Sync + std::marker::Send,
+        impl PlotSelf for $cell
         {
-            fn plot_self(&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), E> {
+            fn plot_self<Db, E>
+            (&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), E>
+            where
+                Db: DrawingBackend<ErrorType=E>,
+                E: std::error::Error + std::marker::Sync + std::marker::Send,
+            {
                 let cell_border_color = plotters::prelude::BLACK;
                 let cell_inside_color = plotters::prelude::full_palette::PURPLE;
 
