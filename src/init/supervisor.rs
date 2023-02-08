@@ -46,7 +46,7 @@ where
     #[cfg(feature = "db_sled")]
     database: SledDataBaseConfig,
 
-    pub domain: DomainBox<Cel, Ind, Vox, Dom>,
+    domain: DomainBox<Cel, Ind, Vox, Dom>,
 
     // Variables controlling simulation flow
     stop_now: Arc<AtomicBool>,
