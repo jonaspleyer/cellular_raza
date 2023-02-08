@@ -101,8 +101,8 @@ fn main() {
         meta_params: SimulationMetaParams {
             n_threads: N_THREADS
         },
-        database: DataBaseConfig {
-            name: "out/simulation_multi_cells".to_owned(),
+        database: SledDataBaseConfig {
+            name: "out/simulation_multi_cells".to_owned().into(),
         }
     };
 

@@ -42,6 +42,9 @@ where
     multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>,
 
     time: TimeSetup,
+    meta_params: SimulationMetaParams,
+    #[cfg(feature = "db_sled")]
+    database: SledDataBaseConfig,
 
     pub domain: DomainBox<Cel, Ind, Vox, Dom>,
 
@@ -81,10 +84,10 @@ pub struct TimeSetup {
 }
 
 
-#[cfg(not(feature = "no_db"))]
+#[cfg(feature = "db_sled")]
 #[derive(Clone,Serialize,Deserialize)]
-pub struct DataBaseConfig  {
-    pub name: String,
+pub struct SledDataBaseConfig  {
+    pub name: std::path::PathBuf,
 }
 
 
@@ -96,8 +99,9 @@ pub struct SimulationSetup<Dom, C>
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
-    #[cfg(not(feature = "no_db"))]
-    pub database: DataBaseConfig,
+    #[cfg(feature = "db_sled")]
+    pub database: SledDataBaseConfig,
+    // pub save_folder: std::path::Path,
 }
 
 
@@ -309,6 +313,9 @@ where
             multivoxelcontainers: multivoxelcontainers,
 
             time: setup.time,
+            meta_params: setup.meta_params,
+            #[cfg(feature = "db_sled")]
+            database: setup.database,
 
             domain: setup.domain.into(),
 
@@ -528,15 +535,13 @@ where
 
     #[cfg(not(feature = "no_db"))]
     pub fn save_current_setup(&self, iteration: &Option<u32>) -> Result<(), SimulationError> {
-        let db_name = self.tree_cells.name();
-        let database_name = std::str::from_utf8(&db_name)?;
-
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
             cells: Vec::<Cel>::new(),
             time: TimeSetup { t_start: 0.0, t_eval: Vec::new() },
             meta_params: SimulationMetaParams { n_threads: self.worker_threads.len() },
-            database: DataBaseConfig { name: database_name.to_owned() }
+            #[cfg(feature = "db_sled")]
+            database: self.database.clone(),
         };
 
         let setup_serialized = bincode::serialize(&setup_current)?;
@@ -564,22 +569,22 @@ where
         Ok(())
     }
 
-    #[cfg(not(feature = "no_db"))]
+    #[cfg(feature = "db_sled")]
     pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
         crate::storage::sled_database::io::get_cell_uuids_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
     }
 
-    #[cfg(not(feature = "no_db"))]
+    #[cfg(feature = "db_sled")]
     pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Pos, For, Vel, Cel>>, SimulationError> {
         crate::storage::sled_database::io::get_cells_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
     }
 
-    #[cfg(not(feature = "no_db"))]
+    #[cfg(feature = "db_sled")]
     pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>, SimulationError> {
         crate::storage::sled_database::io::get_cell_history_from_database(&self.tree_cells, uuid)
     }
 
-    #[cfg(not(feature = "no_db"))]
+    #[cfg(feature = "db_sled")]
     pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>>, SimulationError> {
         crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
     }
