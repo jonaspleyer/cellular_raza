@@ -38,6 +38,9 @@ pub const T_START: f64 = 0.0;
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
 
+// Runs over which to calculate the average
+pub const AVERAGING_RUNS: usize = 5;
+
 
 pub fn create_cells() -> Vec<StandardCell2D> {
     // Seed the rng
@@ -72,11 +75,9 @@ pub fn create_cells() -> Vec<StandardCell2D> {
 
 
 fn main() {
-    let averaging_runs = 5;
-
     let mut descr = vec![[0_u128, 1_u128, 2_u128, 3_u128]];
-    let mut times: Vec<_> = (1..28).map(|n_threads| {
-        (0..averaging_runs).map(move |k| {
+    let mut times: Vec<_> = (1..20).map(|n_threads| {
+        (0..AVERAGING_RUNS).map(move |k| {
     
             let start = std::time::Instant::now();
             let cells = create_cells();
@@ -92,14 +93,14 @@ fn main() {
             // TODO use this to build the threads automatically with the implemented method
             // TODO also find good interface for main function
             let setup = SimulationSetup {
-                domain: domain,
-                cells: cells,
+                domain,
+                cells,
                 time: TimeSetup {
                     t_start: 0.0,
                     t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, true, true)).collect::<Vec<(f64, bool, bool)>>(),
                 },
                 meta_params: SimulationMetaParams {
-                    n_threads: n_threads
+                    n_threads
                 },
                 database: SledDataBaseConfig {
                     name: format!("out/template_sim_{}", n_threads*AVERAGING_RUNS + k).into(),
