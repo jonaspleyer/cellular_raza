@@ -396,12 +396,13 @@ macro_rules! implement_cell_types {
             }
         }
 
-        impl<DB, E> crate::plotting::spatial::PlotSelf<DB, E> for CellAgentType
-        where
-            DB: plotters::backend::DrawingBackend<ErrorType=E>,
-            E: std::error::Error + std::marker::Sync + std::marker::Send,
+        impl crate::plotting::spatial::PlotSelf for CellAgentType
         {
-            fn plot_self(&self, root: &mut plotters::prelude::DrawingArea<DB, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), E> {
+            fn plot_self<Db, E>(&self, root: &mut plotters::prelude::DrawingArea<Db, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), E>
+            where
+                Db: plotters::backend::DrawingBackend<ErrorType=E>,
+                E: std::error::Error + std::marker::Sync + std::marker::Send,
+            {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.plot_self(root),)+
                 }
@@ -587,5 +588,47 @@ where
     #[cfg(feature = "db_sled")]
     pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>>, SimulationError> {
         crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
+    }
+
+    #[cfg(not(feature = "no_db"))]
+    pub fn plot_cells_at_iter_bitmap(&self, iteration: u32) -> Result<(), SimulationError>
+    where
+        Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Cel: crate::plotting::spatial::PlotSelf,
+    {
+        let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
+
+        // Create a plotting root
+        let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+        let image_size = 1000;
+
+        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename);
+
+        use crate::plotting::spatial::*;
+        for cell in current_cells {
+            // TODO catch this error
+            cell.plot_self(&mut chart).unwrap();
+        }
+
+        // TODO catch this error
+        chart.present().unwrap();
+        Ok(())
+    }
+
+    #[cfg(not(feature = "no_db"))]
+    pub fn plot_cells_at_every_iter_bitmap(&self) -> Result<(), SimulationError>
+    where
+        Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Cel: crate::plotting::spatial::PlotSelf,
+        // E: std::error::Error + std::marker::Sync + std::marker::Send,
+    {
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
+        pool.install(|| -> Result<(), SimulationError> {
+            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
+                self.plot_cells_at_iter_bitmap(iteration as u32)
+            }).collect::<Result<Vec<_>, SimulationError>>()?;
+            Ok(())
+        })?;
+        Ok(())
     }
 }

@@ -119,14 +119,12 @@ fn main() {
 
     println!("Simulation took {}ms", now.elapsed().as_millis());
 
-    // Get cells from database
-    use uuid::uuid;
-    let hist = supervisor.get_cell_history_from_database(&uuid!("00000000-0001-0000-0000-000000000000")).unwrap();
-
-    for (iter, cell) in hist {
-        println!("{:4.0} {} {:8.3?}", iter, cell.get_uuid(), cell.pos());
+    // Plot the results
+    let hist = supervisor.get_all_cell_histories().unwrap();
+    let cell_hist = hist.iter().next().unwrap().1;
+    for (iter, cell_state) in cell_hist.iter() {
+        println!("{:?} {:12.6?}", iter, cell_state.pos());
     }
-
-    let initial_cells = supervisor.get_cells_at_iter(&0).unwrap();
-    println!("{}", initial_cells.len());
+    supervisor.plot_cells_at_every_iter_bitmap().unwrap();
+    println!("Generating images took {}ms", now.elapsed().as_millis());
 }

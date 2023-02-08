@@ -311,9 +311,9 @@ define_and_implement_cartesian_cuboid!(2, CartesianCuboid2, CartesianCuboidVoxel
 define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, CartesianCuboidVoxel3, 0, 1, 2);
 
 
-impl<'a> CreatePlottingRoot<'a, BitMapBackend<'a>> for CartesianCuboid2
+impl CreatePlottingRoot for CartesianCuboid2
 {
-    fn create_plotting_root(&self, image_size: u32, filename: &'a String) -> DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>> {
+    fn create_bitmap_root<'a>(&self, image_size: u32, filename: &'a String) -> DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>> {
         use plotters::drawing::IntoDrawingArea;
         // let root = plotters::backend::BitMapBackend::new(filename, (image_size, image_size)).into_drawing_area();
         let dx = (self.max[0]-self.min[0]).abs();
