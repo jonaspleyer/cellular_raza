@@ -24,16 +24,12 @@ pub trait PlotSelf {
 
 
 use crate::concepts::cell::CellAgentBox;
-use crate::concepts::cell::CellAgent;
-use crate::concepts::mechanics::{Position,Force,Velocity};
+use serde::{Serialize,Deserialize};
 
 
-impl<Pos, For, Vel, C> PlotSelf for CellAgentBox<Pos, For, Vel, C>
+impl<C> PlotSelf for CellAgentBox<C>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: CellAgent<Pos, For, Vel> + PlotSelf,
+    C: PlotSelf + Serialize + for<'a> Deserialize<'a>,
 {
     fn plot_self<Db, E>
     (&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), E>

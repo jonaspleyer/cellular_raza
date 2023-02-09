@@ -38,15 +38,15 @@ where
     Cel: CellAgent<Pos, For, Vel>,
     Dom: Domain<Cel, Ind, Vox>,
 {
-    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>>,
-    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vel, Vox, Dom, Cel>>,
+    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Vox, Dom, Cel>>>,
+    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vox, Dom, Cel>>,
 
     time: TimeSetup,
     meta_params: SimulationMetaParams,
     #[cfg(feature = "db_sled")]
     database: SledDataBaseConfig,
 
-    domain: DomainBox<Cel, Ind, Vox, Dom>,
+    domain: DomainBox<Dom>,
 
     // Variables controlling simulation flow
     stop_now: Arc<AtomicBool>,
@@ -58,7 +58,7 @@ where
     meta_infos: typed_sled::Tree<String, Vec<u8>>,
 
     // PhantomData for template arguments
-    phantom_cell: PhantomData<CellAgentBox<Pos, For, Vel, Cel>>,
+    phantom_cell: PhantomData<CellAgentBox<Cel>>,
     phantom_index: PhantomData<Ind>,
     phantom_voxel: PhantomData<Vox>,
     phantom_pos: PhantomData<Pos>,
@@ -123,7 +123,7 @@ where
         let multivoxelcontainers;
 
         // Create sender receiver pairs for all threads
-        let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Pos, For, Vel, Cel>>, Receiver<CellAgentBox::<Pos, For, Vel, Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Cel>>, Receiver<CellAgentBox::<Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Ind, Pos>>, Receiver<PosInformation<Ind, Pos>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
@@ -185,7 +185,7 @@ where
         // Store the counted cells per each multivoxelcontainer
         let mut cell_counts = HashMap::new();
 
-        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<CellAgentBox<Pos, For, Vel, Cel>>>)> = voxel_and_raw_cells
+        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<CellAgentBox<Cel>>>)> = voxel_and_raw_cells
             .into_iter()
             .enumerate()
             .map(|(n_chunk, (chunk, sorted_cells))| {
@@ -572,21 +572,21 @@ where
 
     #[cfg(feature = "db_sled")]
     pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
-        crate::storage::sled_database::io::get_cell_uuids_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
+        crate::storage::sled_database::io::get_cell_uuids_at_iter::<Cel>(&self.tree_cells, iter)
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Pos, For, Vel, Cel>>, SimulationError> {
-        crate::storage::sled_database::io::get_cells_at_iter::<Pos, For, Vel, Cel>(&self.tree_cells, iter)
+    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Cel>>, SimulationError> {
+        crate::storage::sled_database::io::get_cells_at_iter::<Cel>(&self.tree_cells, iter)
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>, SimulationError> {
+    pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Cel>)>, SimulationError> {
         crate::storage::sled_database::io::get_cell_history_from_database(&self.tree_cells, uuid)
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, Cel>)>>, SimulationError> {
+    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Cel>)>>, SimulationError> {
         crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
     }
 

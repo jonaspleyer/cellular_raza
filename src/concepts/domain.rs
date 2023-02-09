@@ -13,7 +13,6 @@ use crate::storage::sled_database::io::store_cells_in_database;
 use std::collections::{HashMap,BTreeMap};
 use std::marker::{Send,Sync};
 
-use core::marker::PhantomData;
 use core::hash::Hash;
 use core::cmp::Eq;
 
@@ -35,48 +34,35 @@ pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a>
 
 
 #[derive(Clone,Serialize,Deserialize)]
-pub struct DomainBox<C, I, V, D>
+pub struct DomainBox<D>
 where
-    I: Index,
-    D: Domain<C, I, V>,
+    D: Serialize + for<'a>Deserialize<'a>,
 {
     #[serde(bound = "")]
     pub domain_raw: D,
-
-    phantom_cel: PhantomData<C>,
-    phantom_ind: PhantomData<I>,
-    phantom_vox: PhantomData<V>,
 }
 
 
-impl<C, I, V, D> From<D> for DomainBox<C, I, V, D>
+impl<D> From<D> for DomainBox<D>
 where
-    I: Index,
-    D: Domain<C, I, V>,
+    D: Serialize + for<'a>Deserialize<'a>,
 {
-    fn from(domain: D) -> DomainBox<C, I, V, D> {
+    fn from(domain: D) -> DomainBox<D> {
         DomainBox {
             domain_raw: domain,
-
-            phantom_cel: PhantomData,
-            phantom_ind: PhantomData,
-            phantom_vox: PhantomData,
         }
     }
 }
 
 
-impl<Pos, For, Vel, C, I, V, D> Domain<CellAgentBox<Pos, For, Vel, C>, I, V> for DomainBox<C, I, V, D>
+impl<C, I, V, D> Domain<CellAgentBox<C>, I, V> for DomainBox<D>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
     I: Index,
-    V: Voxel<I, Pos, For>,
-    C: CellAgent<Pos, For, Vel>,
-    D: Domain<C, I, V>
+    D: Domain<C, I, V>,
+    V: Send + Sync,
+    C: Serialize + for<'a> Deserialize<'a> + Send + Sync
 {
-    fn apply_boundary(&self, cbox: &mut CellAgentBox<Pos, For, Vel, C>) -> Result<(), BoundaryError> {
+    fn apply_boundary(&self, cbox: &mut CellAgentBox<C>) -> Result<(), BoundaryError> {
         self.domain_raw.apply_boundary(&mut cbox.cell)
     }
 
@@ -84,7 +70,7 @@ where
         self.domain_raw.get_neighbor_voxel_indices(index)
     }
 
-    fn get_voxel_index(&self, cbox: &CellAgentBox<Pos, For, Vel, C>) -> I {
+    fn get_voxel_index(&self, cbox: &CellAgentBox<C>) -> I {
         self.domain_raw.get_voxel_index(&cbox.cell)
     }
 
@@ -125,18 +111,17 @@ pub struct ForceInformation<Force> {
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub struct MultiVoxelContainer<I, Pos, For, Vel, V, D, C>
+pub struct MultiVoxelContainer<I, Pos, For, V, D, C>
 where
     I: Index,
     Pos: Position,
     For: Force,
-    Vel: Velocity,
     V: Voxel<I, Pos, For>,
-    C: CellAgent<Pos, For, Vel>,
+    C: Serialize + for<'a> Deserialize<'a> + Send + Sync,
     D: Domain<C, I, V>,
 {
     pub voxels: BTreeMap<I, V>,
-    pub voxel_cells: BTreeMap<I, Vec<CellAgentBox<Pos, For, Vel, C>>>,
+    pub voxel_cells: BTreeMap<I, Vec<CellAgentBox<C>>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -147,15 +132,17 @@ where
     // And then automatically have the ability to change cell positions if the domain shrinks/grows for example
     // but then we might also want to change the number of voxels and redistribute cells accordingly
     // This needs much more though!
-    pub domain: DomainBox<C, I, V, D>,
+    pub domain: DomainBox<D>,
 
     // Where do we want to send cells, positions and forces
-    pub senders_cell: HashMap<I, Sender<CellAgentBox<Pos, For, Vel, C>>>,
+    // TODO use Vector of pointers in each voxel to get all neighbors.
+    // Also store cells in this way.
+    pub senders_cell: HashMap<I, Sender<CellAgentBox<C>>>,
     pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos>>>,
     pub senders_force: HashMap<I, Sender<ForceInformation<For>>>,
 
     // Same for receiving
-    pub receiver_cell: Receiver<CellAgentBox<Pos, For, Vel, C>>,
+    pub receiver_cell: Receiver<CellAgentBox<C>>,
     pub receiver_pos: Receiver<PosInformation<I,Pos>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
@@ -175,7 +162,7 @@ where
 }
 
 
-impl<I, Pos, For, Vel, V, D, C> MultiVoxelContainer<I, Pos, For, Vel, V, D, C>
+impl<I, Pos, For, V, D, C> MultiVoxelContainer<I, Pos, For, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
@@ -183,17 +170,20 @@ where
     I: Index,
     V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
-    Vel: Velocity,
     For: Force,
     Pos: Position,
-    C: CellAgent<Pos, For, Vel>,
+    // C: CellAgent<Pos, For, Vel>,
+    C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
 {
-    fn update_cell_cycle(&mut self, dt: &f64) {
+    fn update_cell_cycle(&mut self, dt: &f64)
+    where
+        C: Cycle<C>,
+    {
         self.voxel_cells
             .iter_mut()
             .for_each(|(_, cs)| cs
                 .iter_mut()
-                .for_each(|c| CellAgentBox::<Pos, For, Vel, C>::update_cycle(dt, c))
+                .for_each(|c| CellAgentBox::<C>::update_cycle(dt, c))
             );
     }
 
@@ -204,7 +194,7 @@ where
         Ok(())
     }
 
-    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<CellAgentBox<Pos, For, Vel, C>>) -> Result<(), CalcError>
+    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<CellAgentBox<C>>) -> Result<(), CalcError>
     {
         self.voxel_cells.get_mut(index)
             .ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?
@@ -213,7 +203,7 @@ where
     }
 
     // TODO add functionality
-    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<Pos, For, Vel, C>) -> Result<(), SimulationError>
+    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<C>) -> Result<(), SimulationError>
     {
         let index = self.domain.get_voxel_index(&cell);
 
@@ -229,10 +219,15 @@ where
         Ok(())
     }
 
-    fn calculate_forces_for_external_cells(&self, pos_info: PosInformation<I, Pos>) -> Result<(), SimulationError> {
+    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<I, Pos>) -> Result<(), SimulationError>
+    where
+        Vel: Velocity,
+        C: Interaction<Pos, For> + Mechanics<Pos, For, Vel>,
+    {
         // Calculate force from cells in voxel
         let mut forces = Vec::new();
         for cell in self.voxel_cells[&pos_info.index_receiver].iter() {
+            // TODO in which order do we need to insert these positions?
             match cell.force(&cell.pos(), &pos_info.pos) {
                 Some(force) => forces.push(force),
                 None => (),
@@ -250,7 +245,12 @@ where
         Ok(())
     }
 
-    pub fn update_mechanics(&mut self, dt: &f64) -> Result<(), SimulationError> {
+    pub fn update_mechanics<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
+    where
+        Vel: Velocity,
+        C: Interaction<Pos, For> + Mechanics<Pos, For, Vel>,
+        CellAgentBox<C>: Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Clone,
+    {
         // General Idea of this function
         // for each cell
         //      for each neighbor_voxel in neighbors of voxel containing cell
@@ -271,7 +271,7 @@ where
         //      Simultanously
 
         // Define to calculate forces on a cell from external cells in a voxel with a certain index
-        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &CellAgentBox<Pos, For, Vel, C>| -> Result<(), SimulationError> {
+        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &CellAgentBox<C>| -> Result<(), SimulationError> {
             // Iterate over all cells which are in the voxel of interest
             match self.voxel_cells.get(voxel_index) {
 
@@ -434,7 +434,10 @@ where
 
 
     #[cfg(not(feature = "no_db"))]
-    pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError> {
+    pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
+    where
+        CellAgentBox<C>: Clone,
+    {
         let cells = self.voxel_cells.clone()
             .into_iter()
             .map(|(_, cells)| cells)
@@ -468,7 +471,11 @@ where
     }
 
 
-    pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError> {
+    pub fn run_full_update<Vel>(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
+    where
+        Vel: Velocity,
+        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For> + Clone,
+    {
         self.update_cell_cycle(dt);
 
         self.update_mechanics(dt)?;

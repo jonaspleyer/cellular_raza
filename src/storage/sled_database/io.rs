@@ -3,7 +3,7 @@ use crate::concepts::cell::{CellAgent,Id,CellAgentBox};
 use crate::concepts::domain::Index;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
-use serde::Deserialize;
+use serde::{Serialize,Deserialize};
 
 use uuid::Uuid;
 
@@ -23,16 +23,13 @@ fn entry_to_iteration_uuid(entry: &String) -> Result<(u32, Uuid), SimulationErro
 }
 
 
-pub fn store_cell_in_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
-(
+pub fn store_cell_in_database<C>(
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: &u32,
-    cell: &CellAgentBox<Pos, For, Vel, C>
+    cell: &CellAgentBox<C>
 ) -> Result<(), SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
+    C: Serialize + for<'a>Deserialize<'a>,
 {
     let serialized = bincode::serialize(cell)?;
     tree.insert(&iteration_uuid_to_entry(iteration, &cell.get_uuid()), &serialized)?;
@@ -40,16 +37,14 @@ where
 }
 
 
-pub fn store_cells_in_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn store_cells_in_database<C>
 (
     tree: typed_sled::Tree<String, Vec<u8>>,
     iteration: u32,
-    cells: Vec<CellAgentBox<Pos, For, Vel, C>>
+    cells: Vec<CellAgentBox<C>>
 ) -> Result<(), SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
+    C: Serialize + for<'a>Deserialize<'a>,
 {
     let cells_encoded: Vec<_> = cells
         .iter()
@@ -84,7 +79,7 @@ pub fn get_cell_from_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: &u32,
     uuid: &Uuid
-) -> Result<Option<CellAgentBox<Pos, For, Vel, C>>, SimulationError>
+) -> Result<Option<CellAgentBox<C>>, SimulationError>
 where
     Pos: Position,
     For: Force,
@@ -106,7 +101,7 @@ pub fn get_cell_history_from_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     uuid: &Uuid
-) -> Result<Vec<(u32, CellAgentBox<Pos, For, Vel, C>)>, SimulationError>
+) -> Result<Vec<(u32, CellAgentBox<C>)>, SimulationError>
 where
     Pos: Position,
     For: Force,
@@ -118,7 +113,7 @@ where
         .map(|ret| {
             match ret {
                 Ok((key, value)) => {
-                    let val_des = bincode::deserialize::<CellAgentBox<Pos, For, Vel, C>>(&value);
+                    let val_des = bincode::deserialize::<CellAgentBox<C>>(&value);
                     match (entry_to_iteration_uuid(&key), val_des) {
                         (Ok((iter, _)), Ok(val)) => Some((iter, val)),
                         _ => None,
@@ -136,22 +131,19 @@ where
 }
 
 
-pub fn get_all_cell_histories<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn get_all_cell_histories<C>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>
-) -> Result<std::collections::HashMap<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, C>)>>, SimulationError>
+) -> Result<std::collections::HashMap<Uuid, Vec<(u32, CellAgentBox<C>)>>, SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: for<'a> Deserialize<'a>
+    C: Serialize + for<'a> Deserialize<'a> + Clone,
 {
     // Obtain all histories
     let mut histories = tree
         .iter()
         .filter_map(|ret| ret.ok())
-        .fold(std::collections::HashMap::<Uuid, Vec<(u32, CellAgentBox<Pos, For, Vel, C>)>>::new(), |mut acc, (key, val)| {
-            let cb_res: Result<CellAgentBox<Pos, For, Vel, C>, _> = bincode::deserialize(&val);
+        .fold(std::collections::HashMap::<Uuid, Vec<(u32, CellAgentBox<C>)>>::new(), |mut acc, (key, val)| {
+            let cb_res: Result<CellAgentBox<C>, _> = bincode::deserialize(&val);
             let entry_res = entry_to_iteration_uuid(&key);
             match (cb_res, entry_res) {
                 (Ok(cb), Ok((iter, uuid))) => {
@@ -170,16 +162,13 @@ where
 }
 
 
-pub fn get_cell_uuids_at_iter<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn get_cell_uuids_at_iter<C>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iter: &u32,
 ) -> Result<Vec<Uuid>, SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
 {
     let res = tree
         .iter()
@@ -202,22 +191,19 @@ where
 }
 
 
-pub fn get_cells_at_iter<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn get_cells_at_iter<C>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iter: &u32,
-) -> Result<Vec<CellAgentBox<Pos, For, Vel, C>>, SimulationError>
+) -> Result<Vec<CellAgentBox<C>>, SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
 {
     let res = tree
         .iter()
         .filter_map(|opt| opt.ok())
         .map(|(key, value)| {
-            let cb: Option<CellAgentBox<Pos, For, Vel, C>> = bincode::deserialize(&value).ok();
+            let cb: Option<CellAgentBox<C>> = bincode::deserialize(&value).ok();
             let res = entry_to_iteration_uuid(&key).ok();
             match (cb, res) {
                 (Some(cab), Some((it, _))) => Some((it, cab)),
@@ -281,7 +267,7 @@ mod test {
             cellboxes.push(cellbox);
         }
 
-        let res: CellAgentBox<Vector2<f64>, Vector2<f64>, Vector2<f64>, StandardCell2D> = get_cell_from_database(&tree, &0, &cellboxes[0].get_uuid()).unwrap().unwrap();
+        let res: CellAgentBox<StandardCell2D> = get_cell_from_database(&tree, &0, &cellboxes[0].get_uuid()).unwrap().unwrap();
 
         assert_eq!(cellboxes[0].cell, res.cell);
     }

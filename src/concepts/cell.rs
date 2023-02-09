@@ -3,7 +3,7 @@ use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 use crate::concepts::interaction::*;
 use crate::concepts::errors::CalcError;
 
-use std::marker::{Send,Sync, PhantomData};
+use std::marker::{Send,Sync};
 
 use uuid::Uuid;
 
@@ -32,29 +32,19 @@ pub trait Id {
 /// initialized by the user. This CellAgentBox acts as a container around the cell
 /// to hold these variables.
 #[derive(Serialize,Deserialize,Debug,Clone,PartialEq)]
-pub struct CellAgentBox<Pos, For, Vel, A>
+pub struct CellAgentBox<A>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    A: CellAgent<Pos, For, Vel>,
+    A: Serialize + for<'a> Deserialize<'a>
 {
     id: Uuid,
     #[serde(bound = "")]
     pub cell: A,
-
-    phantom_pos: PhantomData<Pos>,
-    phantom_for: PhantomData<For>,
-    phantom_vel: PhantomData<Vel>,
 }
 
 
-impl<Pos, For, Vel, A> Id for CellAgentBox<Pos, For, Vel, A>
+impl<A> Id for CellAgentBox<A>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    A: CellAgent<Pos, For, Vel>,
+    A: Serialize + for<'a> Deserialize<'a>
 {
     fn get_uuid(&self) -> Uuid {
         self.id
@@ -63,25 +53,21 @@ where
 
 
 // Auto-implement traits for CellAgentBox which where also implemented for CellAgent
-impl<Pos, For, Vel, A> Cycle<CellAgentBox<Pos, For, Vel, A>> for CellAgentBox<Pos, For, Vel, A>
+impl<A> Cycle<CellAgentBox<A>> for CellAgentBox<A>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    A: CellAgent<Pos, For, Vel>
+    A: Cycle<A> + Serialize + for<'a> Deserialize<'a>
 {
-    fn update_cycle(dt: &f64, c: &mut CellAgentBox<Pos, For, Vel, A>) {
+    fn update_cycle(dt: &f64, c: &mut CellAgentBox<A>) {
         A::update_cycle(dt, &mut c.cell);
     }
 }
 
 
-impl<Pos, For, Vel, A> Interaction<Pos, For> for CellAgentBox<Pos, For, Vel, A>
+impl<Pos, For, A> Interaction<Pos, For> for CellAgentBox<A>
 where
     Pos: Position,
     For: Force,
-    Vel: Velocity,
-    A: CellAgent<Pos, For, Vel>
+    A: Interaction<Pos, For> + Serialize + for<'a> Deserialize<'a>
 {
     fn force(&self, own_pos: &Pos, ext_pos: &Pos) -> Option<Result<For, CalcError>> {
         self.cell.force(own_pos, ext_pos)
@@ -89,12 +75,12 @@ where
 }
 
 
-impl<Pos, For, Vel, A> Mechanics<Pos, For, Vel> for CellAgentBox<Pos, For, Vel, A>
+impl<Pos, For, Vel, A> Mechanics<Pos, For, Vel> for CellAgentBox<A>
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: CellAgent<Pos, For, Vel>
+    A: Mechanics<Pos, For, Vel> + Serialize + for<'a>Deserialize<'a>,
 {
     fn pos(&self) -> Pos {
         self.cell.pos()
@@ -118,21 +104,14 @@ where
 }
 
 
-impl<Pos, For, Vel, C> From<(u32, u16, u16, u64, C)> for CellAgentBox<Pos, For, Vel, C>
+impl<C> From<(u32, u16, u16, u64, C)> for CellAgentBox<C>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: CellAgent<Pos, For, Vel>,
+    C: Serialize + for<'a> Deserialize<'a>
 {
-    fn from(comb: (u32, u16, u16, u64, C)) -> CellAgentBox<Pos, For, Vel, C> {
-        CellAgentBox::<Pos, For, Vel, C> {
+    fn from(comb: (u32, u16, u16, u64, C)) -> CellAgentBox<C> {
+        CellAgentBox::<C> {
             id: Uuid::from_fields(comb.0, comb.1, comb.2, &comb.3.to_be_bytes()),
             cell: comb.4,
-
-            phantom_for: PhantomData,
-            phantom_pos: PhantomData,
-            phantom_vel: PhantomData,
         }
     }
 }
