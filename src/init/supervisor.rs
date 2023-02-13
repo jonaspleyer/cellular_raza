@@ -211,11 +211,16 @@ where
             .collect();
 
         // Create an instance to communicate with the database
-        #[cfg(not(feature = "no_db"))]
-        let db = sled::Config::new().path(std::path::Path::new(&setup.database.name)).open().unwrap();
-        #[cfg(not(feature = "no_db"))]
+        #[cfg(not(feature = "no_db"))]// TODO fix this if feature "no_db" is active!
+        let date = chrono::Local::now().format("%Y-%m-%d:%H-%M-%S");
+        let filename = match setup.database.name.file_name() {
+            Some(name) => format!("{}_{}", date, name.to_str().unwrap()),
+            None => format!("{}", date),
+        };
+        let mut complete_path = setup.database.name.clone();
+        complete_path.set_file_name(filename);
+        let db = sled::Config::new().path(std::path::Path::new(&complete_path)).open().unwrap();
         let tree_cells = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
-        #[cfg(not(feature = "no_db"))]
         let meta_infos = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
 
         // Create all multivoxelcontainers
