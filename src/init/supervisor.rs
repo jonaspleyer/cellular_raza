@@ -58,11 +58,6 @@ where
     meta_infos: typed_sled::Tree<String, Vec<u8>>,
 
     // PhantomData for template arguments
-    phantom_cell: PhantomData<CellAgentBox<Cel>>,
-    phantom_index: PhantomData<Ind>,
-    phantom_voxel: PhantomData<Vox>,
-    phantom_pos: PhantomData<Pos>,
-    phantom_force: PhantomData<For>,
     phantom_velocity: PhantomData<Vel>,
 }
 
@@ -327,11 +322,6 @@ where
             #[cfg(not(feature = "no_db"))]
             meta_infos,
 
-            phantom_cell: PhantomData,
-            phantom_index: PhantomData,
-            phantom_voxel: PhantomData,
-            phantom_pos: PhantomData,
-            phantom_force: PhantomData,
             phantom_velocity: PhantomData,
         }
     }

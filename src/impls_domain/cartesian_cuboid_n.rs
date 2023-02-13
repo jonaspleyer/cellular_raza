@@ -1,7 +1,6 @@
 // Imports from this crate
 use crate::concepts::errors::*;
 use crate::concepts::domain::*;
-use crate::concepts::cell::*;
 
 use crate::plotting::spatial::CreatePlottingRoot;
 
@@ -109,7 +108,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         // Index is an array of size 3 with elements of type usize
         impl<C> Domain<C, [usize; $d], $voxel_name> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where C: CellAgent<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+        where C: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
             fn apply_boundary(&self, cell: &mut C) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();
@@ -345,20 +344,25 @@ impl CreatePlottingRoot for CartesianCuboid2
             )
         };
 
-        for i in 0..self.n_vox[0]+1 {
+        let step_x = ((self.n_vox[0]+1) as f64 / 10.0).floor() as usize;
+        let step_y = ((self.n_vox[1]+1) as f64 / 10.0).floor() as usize;
+        // Draw descriptions along x axis
+        (0..self.n_vox[0]+1).filter(|i| i % step_x == 0).for_each(|i| {
             let element_top = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x,                       xy0));
             let element_bot = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x, image_size_y as i32 - xy0));
 
             root.draw(&element_top).unwrap();
             root.draw(&element_bot).unwrap();
-        }
-        for j in 0..self.n_vox[1]+1 {
+        });
+
+        // Draw descriptions along y axis
+        (0..self.n_vox[1]+1).filter(|j| j % step_y==0).for_each(|j| {
             let element_left  = create_element(1, j, (                      xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
             let element_right = create_element(1, j, (image_size_x as i32 - xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
 
             root.draw(&element_left).unwrap();
             root.draw(&element_right).unwrap();
-        }
+        });
 
         let mut chart = plotters::prelude::ChartBuilder::on(&root)
             .margin(label_space)
