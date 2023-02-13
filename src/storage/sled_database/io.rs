@@ -74,7 +74,7 @@ where
 }
 
 
-pub fn get_cell_from_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn get_cell_from_database<Pos, For, Inf, Vel, C: CellAgent<Pos, For, Inf, Vel>>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: &u32,
@@ -97,7 +97,7 @@ where
 }
 
 
-pub fn get_cell_history_from_database<Pos, For, Vel, C: CellAgent<Pos, For, Vel>>
+pub fn get_cell_history_from_database<Pos, For, Inf, Vel, C: CellAgent<Pos, For, Inf, Vel>>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     uuid: &Uuid
