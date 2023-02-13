@@ -452,7 +452,6 @@ where
     }
 
 
-    #[cfg(not(feature = "no_db"))]
     pub fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
         match self.voxel_cells.get_mut(&self.domain.domain_raw.get_voxel_index(&cell)) {
             Some(cells) => {
