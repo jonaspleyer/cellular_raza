@@ -29,6 +29,7 @@ bincode = "1.3"
 serde = "1.0"
 sled = { version="0.34", optional=true }
 typed-sled = { version="0.2", optional=true }
+chrono = "0.4"
 async-std = "1.12"
 
 # Implementation dependencies
