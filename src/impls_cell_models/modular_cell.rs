@@ -2,27 +2,15 @@ use crate::concepts::cycle::Cycle;
 use crate::concepts::interaction::Interaction;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 
-use std::marker::PhantomData;
-
 use serde::{Serialize,Deserialize};
 
 
 #[derive(Clone,Debug,Serialize,Deserialize)]
-pub struct ModularCell<Pos, For, Vel, Mec, Int, Cyc>
-where
-    Mec: Mechanics<Pos, For, Vel>,
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    Int: Interaction<Pos, For>,
-    Cyc: Cycle<Self>,
+pub struct ModularCell<Pos, Mec, Int, Cyc>
 {
     pub mechanics: MechanicsOptions<Mec, Pos>,
     pub interaction: Int,
     pub cycle: Cyc,
-
-    pub for_phantom: PhantomData<For>,
-    pub vel_phantom: PhantomData<Vel>,
 }
 
 
@@ -39,14 +27,12 @@ pub enum MechanicsOptions<Mec, Pos> {
 }
 
 
-impl<Pos, For, Vel, Mec, Int, Cyc> Mechanics<Pos, For, Vel> for ModularCell<Pos, For, Vel, Mec, Int, Cyc>
+impl<Pos, For, Vel, Mec, Int, Cyc> Mechanics<Pos, For, Vel> for ModularCell<Pos, Mec, Int, Cyc>
 where
     Mec: Mechanics<Pos, For, Vel>,
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    Int: Interaction<Pos, For>,
-    Cyc: Cycle<Self>,
 {
     fn set_pos(&mut self, pos: &Pos) {
         match &mut self.mechanics {
@@ -85,14 +71,11 @@ where
 }
 
 
-impl<Pos, For, Vel, Mec, Int, Cyc> Interaction<Pos, For> for ModularCell<Pos, For, Vel, Mec, Int, Cyc>
+impl<Pos, For, Inf, Mec, Int, Cyc> Interaction<Pos, For, Inf> for ModularCell<Pos, Mec, Int, Cyc>
 where
-    Mec: Mechanics<Pos, For, Vel>,
     Pos: Position,
     For: Force,
-    Vel: Velocity,
-    Int: Interaction<Pos, For>,
-    Cyc: Cycle<Self>,
+    Int: Interaction<Pos, For, Inf>,
 {
     fn get_interaction_information(&self) -> Option<Inf> {
         self.interaction.get_interaction_information()
@@ -104,13 +87,8 @@ where
 }
 
 
-impl<Pos, For, Vel, Mec, Int, Cyc> Cycle<Self> for ModularCell<Pos, For, Vel, Mec, Int, Cyc>
+impl<Pos, Mec, Int, Cyc> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc>
 where
-    Mec: Mechanics<Pos, For, Vel>,
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    Int: Interaction<Pos, For>,
     Cyc: Cycle<Self>,
 {
     fn update_cycle(dt: &f64, c: &mut Self) {
