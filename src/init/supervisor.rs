@@ -28,18 +28,18 @@ use serde::{Serialize,Deserialize};
 
 /// # Supervisor controlling simulation execution
 /// 
-pub struct SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>
+pub struct SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
     Ind: Index,
     Pos: Position,
     For: Force,
     Vel: Velocity,
     Vox: Voxel<Ind, Pos, For>,
-    Cel: CellAgent<Pos, For, Vel>,
+    Cel: CellAgent<Pos, For, Inf, Vel>,
     Dom: Domain<Cel, Ind, Vox>,
 {
-    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Vox, Dom, Cel>>>,
-    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Vox, Dom, Cel>>,
+    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>>>,
+    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>>,
 
     time: TimeSetup,
     meta_params: SimulationMetaParams,
@@ -105,7 +105,7 @@ pub struct SimulationSetup<Dom, C>
 }
 
 
-impl<Pos, For, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
@@ -113,9 +113,9 @@ where
     For: Force + 'static,
     Vel: Velocity + 'static,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
-    Cel: CellAgent<Pos, For, Vel> + 'static,
+    Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
-    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom> {
+    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> {
         // Create groups of voxels to put into our MultiVelContainers
         let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
 
@@ -124,7 +124,7 @@ where
 
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Cel>>, Receiver<CellAgentBox::<Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
-        let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Ind, Pos>>, Receiver<PosInformation<Ind, Pos>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Ind, Pos, Inf>>, Receiver<PosInformation<Ind, Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
         // Create a barrier to synchronize all threads
@@ -340,7 +340,7 @@ where
 
 #[macro_export]
 macro_rules! implement_cell_types {
-    ($pos:ty, $force:ty, $velocity:ty, $voxel:ty, $index:ty, [$($celltype:ident),+]) => {
+    ($pos:ty, $force:ty, $information:ty, $velocity:ty, $voxel:ty, $index:ty, [$($celltype:ident),+]) => {
         use serde::{Serialize,Deserialize};
 
         #[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
@@ -348,10 +348,16 @@ macro_rules! implement_cell_types {
             $($celltype($celltype)),+
         }
 
-        impl Interaction<$pos, $force> for CellAgentType {
-            fn force(&self, own_pos: &$pos, ext_pos: &$pos) -> Option<Result<$force, CalcError>> {
+        impl Interaction<$pos, $force, $information> for CellAgentType {
+            fn get_interaction_information(&self) -> Option<$information> {
                 match self {
-                    $(CellAgentType::$celltype(cell) => cell.force(own_pos, ext_pos),)+
+                    $(CellAgentType::$celltype(cell) => cell.get_interaction_information(),)+
+                }
+            }
+
+            fn calculate_force_on(&self, own_pos: &$pos, ext_pos: &$pos, ext_information: &Option<$information>) -> Option<Result<$force, CalcError>> {
+                match self {
+                    $(CellAgentType::$celltype(cell) => cell.calculate_force_on(own_pos, ext_pos, ext_information),)+
                 }
             }
         }
@@ -420,6 +426,7 @@ macro_rules! define_simulation_types {
     (
         Position:   $position:ty,
         Force:      $force:ty,
+        Information:$information:ty,
         Velocity:   $velocity:ty,
         CellTypes:  [$($celltype:ident),+],
         Voxel:      $voxel:ty,
@@ -427,7 +434,7 @@ macro_rules! define_simulation_types {
         Domain:     $domain:ty,
     ) => {
         // Create an enum containing all cell types
-        implement_cell_types!($position, $force, $velocity, $voxel, $index, [$($celltype),+]);
+        implement_cell_types!($position, $force, $information, $velocity, $voxel, $index, [$($celltype),+]);
 
         pub type SimTypePosition = $position;
         pub type SimTypeForce = $force;
@@ -447,15 +454,16 @@ macro_rules! create_sim_supervisor {
 }
 
 
-impl<Pos, For, Vel, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Vel, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Position + 'static,
     For: Force + 'static,
+    Inf: crate::concepts::interaction::InteractionInformation + 'static,
     Vel: Velocity + 'static,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
-    Cel: CellAgent<Pos, For, Vel> + 'static,
+    Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
     fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), SimulationError> {
         let mut handles = Vec::new();

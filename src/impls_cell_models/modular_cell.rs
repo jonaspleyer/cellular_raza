@@ -94,8 +94,12 @@ where
     Int: Interaction<Pos, For>,
     Cyc: Cycle<Self>,
 {
-    fn force(&self, own_pos: &Pos, ext_pos: &Pos) -> Option<Result<For, crate::prelude::CalcError>> {
-        self.interaction.force(own_pos, ext_pos)
+    fn get_interaction_information(&self) -> Option<Inf> {
+        self.interaction.get_interaction_information()
+    }
+
+    fn calculate_force_on(&self, own_pos: &Pos, ext_pos: &Pos, ext_information: &Option<Inf>) -> Option<Result<For, crate::prelude::CalcError>> {
+        self.interaction.calculate_force_on(own_pos, ext_pos, ext_information)
     }
 }
 

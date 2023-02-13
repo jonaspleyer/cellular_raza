@@ -1,7 +1,7 @@
 use crate::concepts::cycle::*;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 use crate::concepts::interaction::*;
-use crate::concepts::errors::CalcError;
+use crate::concepts::errors::{CalcError,SimulationError};
 
 use std::marker::{Send,Sync};
 
@@ -11,13 +11,13 @@ use serde::{Serialize,Deserialize};
 
 
 // pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity> = Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Id + Send + Sync + Clone;
-pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity>: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize + for<'a> serde::Deserialize<'a>{}
-impl<Pos, For, Vel, A> CellAgent<Pos, For, Vel> for A
+pub trait CellAgent<Pos: Position, For: Force, Inf, Vel: Velocity>: Cycle<Self> + Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize + for<'a> serde::Deserialize<'a>{}
+impl<Pos, For, Inf, Vel, A> CellAgent<Pos, For, Inf, Vel> for A
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize + for<'a> serde::Deserialize<'a>,
+    A: Cycle<Self> + Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize + for<'a> serde::Deserialize<'a>,
 {}
 
 
@@ -63,14 +63,18 @@ where
 }
 
 
-impl<Pos, For, A> Interaction<Pos, For> for CellAgentBox<A>
+impl<Pos, For, Inf, A> Interaction<Pos, For, Inf> for CellAgentBox<A>
 where
     Pos: Position,
     For: Force,
-    A: Interaction<Pos, For> + Serialize + for<'a> Deserialize<'a>
+    A: Interaction<Pos, For, Inf> + Serialize + for<'a> Deserialize<'a>
 {
-    fn force(&self, own_pos: &Pos, ext_pos: &Pos) -> Option<Result<For, CalcError>> {
-        self.cell.force(own_pos, ext_pos)
+    fn get_interaction_information(&self) -> Option<Inf> {
+        self.cell.get_interaction_information()
+    }
+
+    fn calculate_force_on(&self, own_pos: &Pos, ext_pos: &Pos, ext_information: &Option<Inf>) -> Option<Result<For, CalcError>> {
+        self.cell.calculate_force_on(own_pos, ext_pos, ext_information)
     }
 }
 

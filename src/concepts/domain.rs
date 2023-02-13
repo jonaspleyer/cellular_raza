@@ -95,15 +95,16 @@ where
 }
 
 
-pub struct PosInformation<I, Pos> {
+pub(crate) struct PosInformation<I, Pos, Inf> {
     pub pos: Pos,
+    pub info: Option<Inf>,
     pub uuid: Uuid,
     pub index_sender: I,
     pub index_receiver: I,
 }
 
 
-pub struct ForceInformation<Force> {
+pub(crate) struct ForceInformation<Force> {
     pub forces: Vec<Result<Force, CalcError>>,
     pub uuid: Uuid,
 }
@@ -111,7 +112,7 @@ pub struct ForceInformation<Force> {
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub struct MultiVoxelContainer<I, Pos, For, V, D, C>
+pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, V, D, C>
 where
     I: Index,
     Pos: Position,
@@ -138,12 +139,12 @@ where
     // TODO use Vector of pointers in each voxel to get all neighbors.
     // Also store cells in this way.
     pub senders_cell: HashMap<I, Sender<CellAgentBox<C>>>,
-    pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos>>>,
+    pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos, Inf>>>,
     pub senders_force: HashMap<I, Sender<ForceInformation<For>>>,
 
     // Same for receiving
     pub receiver_cell: Receiver<CellAgentBox<C>>,
-    pub receiver_pos: Receiver<PosInformation<I,Pos>>,
+    pub receiver_pos: Receiver<PosInformation<I,Pos, Inf>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
@@ -162,7 +163,7 @@ where
 }
 
 
-impl<I, Pos, For, V, D, C> MultiVoxelContainer<I, Pos, For, V, D, C>
+impl<I, Pos, For, Inf, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
@@ -219,16 +220,16 @@ where
         Ok(())
     }
 
-    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<I, Pos>) -> Result<(), SimulationError>
+    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<I, Pos, Inf>) -> Result<(), SimulationError>
     where
         Vel: Velocity,
-        C: Interaction<Pos, For> + Mechanics<Pos, For, Vel>,
+        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
     {
         // Calculate force from cells in voxel
         let mut forces = Vec::new();
         for cell in self.voxel_cells[&pos_info.index_receiver].iter() {
             // TODO in which order do we need to insert these positions?
-            match cell.force(&cell.pos(), &pos_info.pos) {
+            match cell.calculate_force_on(&cell.pos(), &pos_info.pos, &pos_info.info) {
                 Some(force) => forces.push(force),
                 None => (),
             }
@@ -248,8 +249,7 @@ where
     pub fn update_mechanics<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Vel: Velocity,
-        C: Interaction<Pos, For> + Mechanics<Pos, For, Vel>,
-        CellAgentBox<C>: Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Clone,
+        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
     {
         // General Idea of this function
         // for each cell
@@ -279,7 +279,7 @@ where
                 Some(ext_cells) => {
                     for ext_cell in ext_cells.iter().filter(|c| c.get_uuid()!=cell.get_uuid()) {
                         // Calculate the force and store the raw Result
-                        match ext_cell.force(&ext_cell.pos(), &cell.pos()) {
+                        match ext_cell.calculate_force_on(&ext_cell.pos(), &cell.pos(), &cell.get_interaction_information()) {
                             Some(force) => {
                                 match self.cell_forces.get_mut(&cell.get_uuid()) {
                                     // We need to check if there is already an entry for the cell if this is the case, we can simply append there
@@ -305,6 +305,7 @@ where
                         index_sender: self.domain.get_voxel_index(cell),
                         index_receiver: voxel_index.clone(),
                         pos: cell.pos(),
+                        info: cell.get_interaction_information(),
                         uuid: cell.get_uuid(),
                     }),
             }?;
@@ -474,7 +475,7 @@ where
     pub fn run_full_update<Vel>(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
     where
         Vel: Velocity,
-        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For> + Clone,
+        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + Clone,
     {
         self.update_cell_cycle(dt);
 

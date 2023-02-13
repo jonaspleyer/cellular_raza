@@ -10,7 +10,7 @@ use serde::{Serialize,Deserialize};
 pub struct NoInteraction {}
 
 impl<Pos, For> Interaction<Pos, For> for NoInteraction {
-    fn force(&self, _: &Pos, _: &Pos) -> Option<Result<For, CalcError>> {
+    fn calculate_force_on(&self, _: &Pos, _: &Pos, _ext_information: &Option<()>) -> Option<Result<For, CalcError>> {
         return None;
     }
 }
@@ -26,7 +26,7 @@ pub struct LennardJones {
 macro_rules! implement_lennard_jones_nd(
     ($dim:literal) =>  {
         impl Interaction<SVector<f64, $dim>,SVector<f64, $dim>> for LennardJones {
-            fn force(&self, own_pos: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
+            fn calculate_force_on(&self, own_pos: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let dir = z/r;

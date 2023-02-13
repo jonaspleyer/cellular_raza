@@ -34,8 +34,12 @@ macro_rules! implement_custom_cell {
             }
         }
 
-        impl Interaction<SVector<f64, $d>, SVector<f64, $d>> for $name {
-            fn force(&self, own_pos: &SVector<f64, $d>, ext_pos: &SVector<f64, $d>) -> Option<Result<SVector<f64, $d>, CalcError>> {
+        impl Interaction<SVector<f64, $d>, SVector<f64, $d>, ()> for $name {
+            fn get_interaction_information(&self) -> Option<()> {
+                None
+            }
+
+            fn calculate_force_on(&self, own_pos: &SVector<f64, $d>, ext_pos: &SVector<f64, $d>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $d>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let sigma = 2.0 * self.cell_radius;
