@@ -25,6 +25,8 @@ use rayon::prelude::*;
 
 use serde::{Serialize,Deserialize};
 
+use indicatif::{MultiProgress,ProgressBar,ProgressStyle};
+
 
 /// # Supervisor controlling simulation execution
 /// 
@@ -441,6 +443,9 @@ macro_rules! define_simulation_types {
 }
 
 
+pub const PROGRESS_BAR_STYLE: &str = "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
+
+
 #[macro_export]
 macro_rules! create_sim_supervisor {
     ($setup:expr) => {
@@ -464,9 +469,14 @@ where
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
 
+        // Create progress bar and define style
+        println!("Running Simulation");
+        let multi_bar = MultiProgress::new();
+
         for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
             // Clone barriers to use them for synchronization in threads
             let mut new_start_barrier = start_barrier.clone();
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
 
             // See if we need to save
             let stop_now_new = Arc::clone(&self.stop_now);
@@ -474,6 +484,11 @@ where
             // Copy time evaluation points
             let t_start = self.time.t_start;
             let t_eval = self.time.t_eval.clone();
+
+            // Add bars
+            let bar = ProgressBar::new(t_eval.len() as u64);
+            let thread_bar = multi_bar.insert(l, bar);
+            thread_bar.set_style(style);
 
             // Spawn a thread for each multivoxelcontainer that is running
             let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || {
@@ -496,6 +511,8 @@ where
                         },
                     }
 
+                    thread_bar.inc(1);
+
                     // if save_now_new.load(Ordering::Relaxed) {
                     #[cfg(not(feature = "no_db"))]
                     if _save {
@@ -512,6 +529,7 @@ where
                     }
                     iteration += 1;
                 }
+                thread_bar.finish();
                 return cont;
             })?;
             handles.push(handle);
