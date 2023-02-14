@@ -53,3 +53,7 @@ db_json_dump = []
 
 # Testing
 test_exhaustive = []
+
+
+[profile.release]
+debug = 1
