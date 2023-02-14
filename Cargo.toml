@@ -22,7 +22,8 @@ num = { version="0.4" }
 ode_integrate = { version="0.0.2" }
 plotters = { version="0.3" }
 rayon = { version="1.6" }
-uuid = { version="1.2" , features=["serde"] }
+uuid = { version="1.2", features=["serde"] }
+indicatif = { version="0.17", features=["rayon"] }
 
 # Database
 bincode = "1.3"
