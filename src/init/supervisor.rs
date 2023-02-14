@@ -25,6 +25,11 @@ use rayon::prelude::*;
 
 use serde::{Serialize,Deserialize};
 
+use plotters::{
+    prelude::{BitMapBackend,Cartesian2d,DrawingArea},
+    coord::types::RangedCoordf64,
+};
+
 use indicatif::{MultiProgress,ProgressBar,ProgressStyle};
 
 
@@ -637,6 +642,30 @@ where
     }
 
     #[cfg(not(feature = "no_db"))]
+    pub fn plot_cells_at_iter_bitmap_with_plotting_func<Func>(&self, iteration: u32, plotting_function: &Func) -> Result<(), SimulationError>
+    where
+        Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Func: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
+    {
+        let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
+
+        // Create a plotting root
+        let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+        let image_size = 1000;
+
+        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename);
+
+        for cell in current_cells {
+            // TODO catch this error
+            plotting_function(&cell.cell, &mut chart).unwrap();
+        }
+
+        // TODO catch this error
+        chart.present().unwrap();
+        Ok(())
+    }
+
+    #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_every_iter_bitmap(&self) -> Result<(), SimulationError>
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
@@ -645,8 +674,28 @@ where
     {
         let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
         pool.install(|| -> Result<(), SimulationError> {
-            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
+            println!("Generating Images");
+            use indicatif::ParallelProgressIterator;
+            self.time.t_eval.par_iter().progress_with_style(ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap()).enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
                 self.plot_cells_at_iter_bitmap(iteration as u32)
+            }).collect::<Result<Vec<_>, SimulationError>>()?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
+    #[cfg(not(feature = "no_db"))]
+    pub fn plot_cells_at_every_iter_bitmap_with_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
+    where
+        Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
+    {
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
+        pool.install(|| -> Result<(), SimulationError> {
+            println!("Generating Images");
+            use indicatif::ParallelProgressIterator;
+            self.time.t_eval.par_iter().progress_with_style(ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap()).enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
+                self.plot_cells_at_iter_bitmap_with_plotting_func(iteration as u32, plotting_function)
             }).collect::<Result<Vec<_>, SimulationError>>()?;
             Ok(())
         })?;
