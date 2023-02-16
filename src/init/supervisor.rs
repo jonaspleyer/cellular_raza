@@ -28,7 +28,22 @@ use plotters::{
     coord::types::RangedCoordf64,
 };
 
-use indicatif::{MultiProgress,ProgressBar,ProgressStyle};
+use indicatif::{ProgressBar,ProgressStyle};
+
+
+#[derive(Serialize,Deserialize,Clone,Debug)]
+pub struct SimulationConfig {
+    pub show_progressbar: bool,
+}
+
+
+impl Default for SimulationConfig {
+    fn default() -> Self {
+        SimulationConfig {
+            show_progressbar: true,
+        }
+    }
+}
 
 
 /// # Supervisor controlling simulation execution
@@ -52,6 +67,8 @@ where
     database: SledDataBaseConfig,
 
     domain: DomainBox<Dom>,
+
+    pub config: SimulationConfig,
 
     // Variables controlling simulation flow
     stop_now: Arc<AtomicBool>,
@@ -475,12 +492,10 @@ where
 
         // Create progress bar and define style
         println!("Running Simulation");
-        let multi_bar = MultiProgress::new();
 
         for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
             // Clone barriers to use them for synchronization in threads
             let mut new_start_barrier = start_barrier.clone();
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
 
             // See if we need to save
             let stop_now_new = Arc::clone(&self.stop_now);
@@ -490,9 +505,11 @@ where
             let t_eval = self.time.t_eval.clone();
 
             // Add bars
+            // if self.config.show_progressbar && cont.mvc_id == 0 {
+            let show_progressbar = self.config.show_progressbar;
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
             let bar = ProgressBar::new(t_eval.len() as u64);
-            let thread_bar = multi_bar.insert(l, bar);
-            thread_bar.set_style(style);
+            bar.set_style(style);
 
             // Spawn a thread for each multivoxelcontainer that is running
             let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || {
@@ -515,7 +532,9 @@ where
                         },
                     }
 
-                    thread_bar.inc(1);
+                    if show_progressbar && cont.mvc_id == 0 {
+                        bar.inc(1);
+                    }
 
                     // if save_now_new.load(Ordering::Relaxed) {
                     #[cfg(not(feature = "no_db"))]
@@ -533,7 +552,9 @@ where
                     }
                     iteration += 1;
                 }
-                thread_bar.finish();
+                if show_progressbar && cont.mvc_id == 0 {
+                    bar.finish();
+                }
                 return cont;
             })?;
             handles.push(handle);
@@ -669,35 +690,53 @@ where
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Cel: crate::plotting::spatial::PlotSelf,
-        // E: std::error::Error + std::marker::Sync + std::marker::Send,
     {
+        // Create nice bar
+        let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
+        let bar = ProgressBar::new(self.time.t_eval.iter().fold(0, |counts, (_, save, _)| if *save == true {counts+1} else {counts}) as u64);
+        bar.set_style(style);
+
+        // Install the pool
         let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
         pool.install(|| -> Result<(), SimulationError> {
             println!("Generating Images");
-            use indicatif::ParallelProgressIterator;
-            self.time.t_eval.par_iter().progress_with_style(ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap()).enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
+            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
                 self.plot_cells_at_iter_bitmap(iteration as u32)
             }).collect::<Result<Vec<_>, SimulationError>>()?;
             Ok(())
         })?;
+        bar.finish();
         Ok(())
     }
 
+    // TODO rework this to accept a general configuration struct or something
+    // Idea: have different functions for when a plotting Trait was already implemented or when a configuration is supplied
+    // have the configuration provided override existing implementations of the domain
+    // ie: The domain has trait implementation how to plot it and Plotting config has a function with same functionality (but possibly different result)
+    // then use the provided function in the plotting config
     #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_every_iter_bitmap_with_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
     {
+        // Create nice bar
+        let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
+        let bar = ProgressBar::new(self.time.t_eval.iter().fold(0, |counts, (_, save, _)| if *save == true {counts+1} else {counts}) as u64);
+        bar.set_style(style);
+
+        // Install the pool
         let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
         pool.install(|| -> Result<(), SimulationError> {
             println!("Generating Images");
-            use indicatif::ParallelProgressIterator;
-            self.time.t_eval.par_iter().progress_with_style(ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap()).enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
-                self.plot_cells_at_iter_bitmap_with_plotting_func(iteration as u32, plotting_function)
+            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
+                let res = self.plot_cells_at_iter_bitmap_with_plotting_func(iteration as u32, plotting_function);
+                bar.inc(1);
+                res
             }).collect::<Result<Vec<_>, SimulationError>>()?;
             Ok(())
         })?;
+        bar.finish();
         Ok(())
     }
 }
