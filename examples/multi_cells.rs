@@ -40,6 +40,7 @@ pub const N_THREADS: usize = 4;
 define_simulation_types!(
     Position:   Vector2<f64>,
     Force:      Vector2<f64>,
+    Information:(),
     Velocity:   Vector2<f64>,
     CellTypes:  [StandardCell2D, CustomCell2D],
     Voxel:      CartesianCuboidVoxel2,
