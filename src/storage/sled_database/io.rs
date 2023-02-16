@@ -226,7 +226,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::storage::concepts::StorageIdent;
     use crate::impls_cell_models::standard_cell_2d::StandardCell2D;
     use crate::concepts::cell::{Id,CellAgentBox};
 
@@ -254,13 +253,7 @@ mod test {
                 current_age: 0.0,
             };
 
-            let cellbox = CellAgentBox::from((
-                0,
-                StorageIdent::Cell.value(),
-                0,
-                i,
-                cell
-            ));
+            let cellbox = CellAgentBox::new(0, 0, i, cell);
 
             store_cell_in_database(&tree, &0, &cellbox).unwrap();
 
