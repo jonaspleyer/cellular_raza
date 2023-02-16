@@ -146,6 +146,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
 
                 for i in 0..$d {
                     out[i] = ((p[i] - self.min[0]) / self.voxel_sizes[i]) as usize;
+                    out[i] = out[i].min(self.n_vox[i]-1).max(0);
                 }
                 return out;
             }
