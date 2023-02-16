@@ -149,6 +149,14 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 }
                 return out;
             }
+
+            fn get_all_indices(&self) -> Vec<[usize; $d]> {
+                [$($k),+].iter()
+                    .map(|i| (0..self.n_vox[*i]))
+                    .multi_cartesian_product()
+                    .map(|ind_v| [$(ind_v[$k]),+])
+                    .collect()
+            }
         
             fn get_neighbor_voxel_indices(&self, index: &[usize; $d]) -> Vec<[usize; $d]> {
                 // Create the bounds for the following creation of all the voxel indices

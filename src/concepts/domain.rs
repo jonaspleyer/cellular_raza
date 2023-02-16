@@ -19,8 +19,7 @@ use core::cmp::Eq;
 use crossbeam_channel::{Sender,Receiver,SendError};
 use hurdles::Barrier;
 
-use uuid::Uuid;
-
+use num::Zero;
 use serde::{Serialize,Deserialize};
 
 
@@ -29,6 +28,7 @@ pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a>
     fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
     fn get_voxel_index(&self, cell: &C) -> I;
+    fn get_all_indices(&self) -> Vec<I>;
     fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError>;
 }
 
@@ -72,6 +72,10 @@ where
 
     fn get_voxel_index(&self, cbox: &CellAgentBox<C>) -> I {
         self.domain_raw.get_voxel_index(&cbox.cell)
+    }
+
+    fn get_all_indices(&self) -> Vec<I> {
+        self.domain_raw.get_all_indices()
     }
 
     fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError> {
