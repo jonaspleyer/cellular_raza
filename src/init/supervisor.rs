@@ -1,10 +1,8 @@
-use crate::concepts::cell::{CellAgent,CellAgentBox,Id};
-use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation};
+use crate::concepts::cell::{CellAgent,CellAgentBox};
+use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex};
 use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
-use crate::concepts::errors::{CalcError,SimulationError};
-
-use crate::storage::concepts::StorageIdent;
+use crate::concepts::errors::SimulationError;
 
 use std::thread;
 use std::collections::{HashMap,BTreeMap};
@@ -126,7 +124,7 @@ where
 
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Cel>>, Receiver<CellAgentBox::<Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
-        let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Ind, Pos, Inf>>, Receiver<PosInformation<Ind, Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Pos, Inf>>, Receiver<PosInformation<Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
         // Create a barrier to synchronize all threads
@@ -289,6 +287,9 @@ where
                 
                 domain: DomainBox::from(setup.domain.clone()),
 
+                index_to_thread: index_to_thread.clone(),
+                plain_index_to_thread: plain_index_to_thread.clone(),
+
                 senders_cell,
                 senders_pos,
                 senders_force,
@@ -309,7 +310,6 @@ where
                 mvc_id: i as u16,
             };
 
-            // multivoxelcontainers.push(cont);
             return cont;
         }).collect();
 
@@ -317,7 +317,7 @@ where
 
         SimulationSupervisor {
             worker_threads: Vec::new(),
-            multivoxelcontainers: multivoxelcontainers,
+            multivoxelcontainers,
 
             time: setup.time,
             meta_params: setup.meta_params,
@@ -326,8 +326,10 @@ where
 
             domain: setup.domain.into(),
 
+            config: SimulationConfig::default(),
+
             // Variables controlling simulation flow
-            stop_now: stop_now,
+            stop_now,
 
             #[cfg(not(feature = "no_db"))]
             tree_cells,

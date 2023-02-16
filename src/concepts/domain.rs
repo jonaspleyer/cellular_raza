@@ -86,6 +86,7 @@ where
 
 pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
 
+pub(crate) type PlainIndex = u32;
 
 pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 where
@@ -99,18 +100,19 @@ where
 }
 
 
-pub(crate) struct PosInformation<I, Pos, Inf> {
+pub(crate) struct PosInformation<Pos, Inf> {
     pub pos: Pos,
     pub info: Option<Inf>,
-    pub uuid: Uuid,
-    pub index_sender: I,
-    pub index_receiver: I,
+    pub count: usize,
+    pub index_sender: PlainIndex,
+    pub index_receiver: PlainIndex,
 }
 
 
 pub(crate) struct ForceInformation<Force> {
-    pub forces: Vec<Result<Force, CalcError>>,
-    pub uuid: Uuid,
+    pub force: Force,
+    pub count: usize,
+    pub index_sender: PlainIndex,
 }
 
 
@@ -125,8 +127,7 @@ where
     C: Serialize + for<'a> Deserialize<'a> + Send + Sync,
     D: Domain<C, I, V>,
 {
-    pub voxels: BTreeMap<I, V>,
-    pub voxel_cells: BTreeMap<I, Vec<CellAgentBox<C>>>,
+    pub voxels: BTreeMap<PlainIndex, VoxelBox<I,V,CellAgentBox<C>,For>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -138,23 +139,24 @@ where
     // but then we might also want to change the number of voxels and redistribute cells accordingly
     // This needs much more though!
     pub domain: DomainBox<D>,
+    pub index_to_plain_index: BTreeMap<I,PlainIndex>,
+    pub plain_index_to_thread: BTreeMap<PlainIndex, usize>,
+    pub index_to_thread: BTreeMap<I, usize>,
 
     // Where do we want to send cells, positions and forces
     // TODO use Vector of pointers in each voxel to get all neighbors.
     // Also store cells in this way.
-    pub senders_cell: HashMap<I, Sender<CellAgentBox<C>>>,
-    pub senders_pos: HashMap<I, Sender<PosInformation<I,Pos, Inf>>>,
-    pub senders_force: HashMap<I, Sender<ForceInformation<For>>>,
+    pub senders_cell: HashMap<usize, Sender<CellAgentBox<C>>>,
+    pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Inf>>>,
+    pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
     // Same for receiving
     pub receiver_cell: Receiver<CellAgentBox<C>>,
-    pub receiver_pos: Receiver<PosInformation<I,Pos, Inf>>,
+    pub receiver_pos: Receiver<PosInformation<Pos, Inf>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
-    pub cell_forces: HashMap<Uuid, Vec<Result<For, CalcError>>>,
-    pub neighbor_indices: BTreeMap<I, Vec<I>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
@@ -162,7 +164,6 @@ where
     #[cfg(not(feature = "no_db"))]
     pub database_cells: typed_sled::Tree<String, Vec<u8>>,
 
-    pub uuid_counter: u64,
     pub mvc_id: u16,
 }
 
@@ -253,7 +254,8 @@ where
     pub fn update_mechanics<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Vel: Velocity,
-        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
+        Inf: Clone,
+        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Clone,
     {
         // General Idea of this function
         // for each cell
