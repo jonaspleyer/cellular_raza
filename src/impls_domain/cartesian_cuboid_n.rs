@@ -353,8 +353,8 @@ impl CreatePlottingRoot for CartesianCuboid2
             )
         };
 
-        let step_x = ((self.n_vox[0]+1) as f64 / 10.0).floor() as usize;
-        let step_y = ((self.n_vox[1]+1) as f64 / 10.0).floor() as usize;
+        let step_x = max(1, ((self.n_vox[0]+1) as f64 / 10.0).floor() as usize);
+        let step_y = max(1, ((self.n_vox[1]+1) as f64 / 10.0).floor() as usize);
         // Draw descriptions along x axis
         (0..self.n_vox[0]+1).filter(|i| i % step_x == 0).for_each(|i| {
             let element_top = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x,                       xy0));
@@ -365,7 +365,7 @@ impl CreatePlottingRoot for CartesianCuboid2
         });
 
         // Draw descriptions along y axis
-        (0..self.n_vox[1]+1).filter(|j| j % step_y==0).for_each(|j| {
+        (0..self.n_vox[1]+1).filter(|j| j % step_y == 0).for_each(|j| {
             let element_left  = create_element(1, j, (                      xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
             let element_right = create_element(1, j, (image_size_x as i32 - xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
 
