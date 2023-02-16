@@ -1,6 +1,6 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox};
 use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex};
-use crate::concepts::domain::{DomainBox,Index};
+use crate::concepts::domain::{AuxiliaryCellPropertyStorage,DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::SimulationError;
 
@@ -119,6 +119,18 @@ where
         // Create groups of voxels to put into our MultiVelContainers
         let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
 
+        let convert_to_plain_index: BTreeMap<Ind, PlainIndex> = setup.domain.get_all_indices().into_iter().enumerate().map(|(count, ind)| (ind, count as PlainIndex)).collect();
+        let convert_to_index: BTreeMap<PlainIndex, Ind> = convert_to_plain_index.iter().map(|(i, j)| (j.clone(), i.clone())).collect();
+
+        let mut index_to_thread = BTreeMap::<Ind, usize>::new();
+        let mut plain_index_to_thread = BTreeMap::<PlainIndex, usize>::new();
+        for (n_thread, chunk) in voxel_chunks.iter().enumerate() {
+            for (ind, _) in chunk.iter() {
+                index_to_thread.insert(ind.clone(), n_thread);
+                plain_index_to_thread.insert(convert_to_plain_index[&ind], n_thread);
+            }
+        }
+
         // Create MultiVelContainer from voxel chunks
         let multivoxelcontainers;
 
@@ -132,10 +144,10 @@ where
 
         // Create an intermediate mapping just for this setup
         // Map voxel index to thread number
-        let mut index_to_thread: BTreeMap<Ind,usize> = BTreeMap::new();
+        let mut plain_index_to_thread: BTreeMap<PlainIndex,usize> = BTreeMap::new();
         for (i, chunk) in voxel_chunks.iter().enumerate() {
             for (index, _) in chunk {
-                index_to_thread.insert(index.clone(), i);
+                plain_index_to_thread.insert(convert_to_plain_index[&index], i);
             }
         }
 
@@ -148,21 +160,22 @@ where
             .enumerate()
             .chunks(chunk_size)
             .map(|cell_chunk| {
-                let mut cs = BTreeMap::<usize, BTreeMap<Ind, Vec<(usize, Cel)>>>::new();
+                let mut cs = BTreeMap::<usize, BTreeMap<PlainIndex, Vec<(usize, Cel)>>>::new();
                 for cell in cell_chunk.into_iter() {
                     let index = setup.domain.get_voxel_index(&cell.1);
-                    let id_thread = index_to_thread[&index];
+                    let plain_index = convert_to_plain_index[&index];
+                    let id_thread = plain_index_to_thread[&plain_index];
                     match cs.get_mut(&id_thread) {
-                        Some(index_to_cells) => match index_to_cells.get_mut(&index) {
+                        Some(index_to_cells) => match index_to_cells.get_mut(&plain_index) {
                             Some(cs) => cs.push(cell),
-                            None => {index_to_cells.insert(index, vec![cell]);},
+                            None => {index_to_cells.insert(plain_index, vec![cell]);},
                         },
-                        None => {cs.insert(id_thread, BTreeMap::from([(index, vec![cell])]));},
+                        None => {cs.insert(id_thread, BTreeMap::from([(plain_index, vec![cell])]));},
                     }
                 }
                 cs
             })
-            .reduce(|| (0..n_chunks).map(|i| (i, BTreeMap::new())).collect::<BTreeMap<usize, BTreeMap<Ind, Vec<(usize, Cel)>>>>(), |mut acc, x| {
+            .reduce(|| (0..n_chunks).map(|i| (i, BTreeMap::new())).collect::<BTreeMap<usize, BTreeMap<PlainIndex, Vec<(usize, Cel)>>>>(), |mut acc, x| {
                 for (id_thread, idc) in x.into_iter() {
                     for (index, mut cells) in idc.into_iter() {
                         match acc.get_mut(&id_thread) {
@@ -176,41 +189,27 @@ where
                 }
                 return acc;
             });
-        let voxel_and_raw_cells: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<(usize, Cel)>>)> = voxel_chunks
+
+        let voxel_and_raw_cells: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<(usize, Cel)>>)> = voxel_chunks
             .into_iter()
             .enumerate()
-            .map(|(i, chunk)| (chunk, sorted_cells.remove(&i).unwrap()))
+            .map(|(i, chunk)| (chunk.into_iter().map(|(ind, vox)| (convert_to_plain_index[&ind], vox)).collect(), sorted_cells.remove(&i).unwrap()))
             .collect();
 
-        // Store the counted cells per each multivoxelcontainer
-        let mut cell_counts = HashMap::new();
-
-        let voxel_and_cell_boxes: Vec<(Vec<(Ind, Vox)>, BTreeMap<Ind, Vec<CellAgentBox<Cel>>>)> = voxel_and_raw_cells
+        let voxel_and_cell_boxes: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<For>)>>)> = voxel_and_raw_cells
             .into_iter()
-            .enumerate()
-            .map(|(n_chunk, (chunk, sorted_cells))| {
-                let mut cell_count = 0;
-
+            .map(|(chunk, sorted_cells)| {
                 let res = (chunk, sorted_cells
                     .into_iter()
                     .map(|(ind, mut cells)| {
                         cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
-                        (ind, cells.into_iter().map(|(_, cell)| {
-                            let cb = CellAgentBox::from((
-                                0 as u32,
-                                StorageIdent::Cell.value(),
-                                n_chunk as u16,
-                                (cell_count as u64),
-                                cell
-                            ));
-                            cell_count += 1;
-                            cb
+                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| {
+                            let cb = CellAgentBox::new(0, ind, n_cell as u64, cell);
+                            (cb, AuxiliaryCellPropertyStorage::default())
                         },
                         ).collect()
                     )
                 }).collect());
-
-                cell_counts.insert(n_chunk, cell_count);
                 res
             })
             .collect();
@@ -231,9 +230,26 @@ where
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let voxels: BTreeMap<Ind,Vox> = chunk.clone().into_iter().collect();
+            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,CellAgentBox<Cel>,For>> = chunk.clone()
+                .into_iter()
+                .map(|(plain_index, voxel)| {
+                    let cells = match index_to_cells.remove(&plain_index) {
+                        Some(cs) => cs,
+                        None => Vec::new(),
+                    };
+                    let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
+                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,CellAgentBox<Cel>,For> {
+                        index: convert_to_index[&plain_index].clone(),
+                        plain_index,
+                        voxel,
+                        neighbors,
+                        cells,
+                        uuid_counter: 0,
+                    };
+                    (plain_index, vbox)
+                }).collect();
 
-            // Fill index_to_cells with non-occupied indices of voxels
+            // Create non-occupied voxels
             for (ind, _) in voxels.iter() {
                 match index_to_cells.get(&ind) {
                     Some(_) => (),
@@ -246,13 +262,14 @@ where
                 ($sr_pairs: expr) => {
                     chunk.clone()
                         .into_iter()
-                        .map(|(index, _)| setup.domain
-                            .get_neighbor_voxel_indices(&index)
-                            .into_iter()
-                            .map(|ind| 
-                                (ind.clone(), $sr_pairs[index_to_thread[&ind]].0.clone())))
+                        .map(|(plain_index, _)| {
+                            setup.domain
+                                .get_neighbor_voxel_indices(&convert_to_index[&plain_index])
+                                .into_iter()
+                                .map(|ind| (index_to_thread[&ind], $sr_pairs[index_to_thread[&ind]].0.clone()))
+                        })
                         .flatten()
-                        .collect::<HashMap<Ind,_>>()
+                        .collect::<HashMap<usize,_>>()
                 }
             }
 
@@ -264,26 +281,10 @@ where
             #[cfg(not(feature = "no_db"))]
             let tree_cells_new = tree_cells.clone();
 
-            // Get all cells which belong into this voxel_chunk
-            // let cells_filt: Vec<Cel> = cells.drain_filter(|c| any(chunk.iter(), |(i, _)| *i==setup.domain.get_voxel_index(&c))).collect();
-            let cell_forces_empty: HashMap<Uuid, Vec<Result<For, CalcError>>> = index_to_cells
-                .iter()
-                .map(|(_, cs)| cs
-                    .iter()
-                    .map(|c| (c.get_uuid(), Vec::new()))
-                ).flatten()
-                .collect();
-
-            let neighbor_indices: BTreeMap<Ind, Vec<Ind>> = chunk
-                .clone()
-                .into_iter()
-                .map(|(i, _)| (i.clone(), setup.domain.get_neighbor_voxel_indices(&i)))
-                .collect();
-
             // Define the container for many voxels
             let cont = MultiVoxelContainer {
                 voxels,
-                voxel_cells: index_to_cells,
+                index_to_plain_index: convert_to_plain_index.clone(),
                 
                 domain: DomainBox::from(setup.domain.clone()),
 
@@ -298,15 +299,11 @@ where
                 receiver_pos: sender_receiver_pairs_pos[i].1.clone(),
                 receiver_force: sender_receiver_pairs_force[i].1.clone(),
 
-                cell_forces: cell_forces_empty,
-                neighbor_indices,
-
                 barrier: barrier.clone(),
 
                 #[cfg(not(feature = "no_db"))]
                 database_cells: tree_cells_new,
 
-                uuid_counter: cell_counts[&i],
                 mvc_id: i as u16,
             };
 

@@ -1,7 +1,7 @@
 use crate::concepts::cycle::*;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 use crate::concepts::interaction::*;
-use crate::concepts::errors::{CalcError,SimulationError};
+use crate::concepts::errors::CalcError;
 
 use std::marker::{Send,Sync};
 
@@ -36,6 +36,7 @@ pub struct CellAgentBox<A>
 where
     A: Serialize + for<'a> Deserialize<'a>
 {
+    created_at_ind: crate::concepts::domain::PlainIndex,
     id: Uuid,
     #[serde(bound = "")]
     pub cell: A,
@@ -108,14 +109,19 @@ where
 }
 
 
-impl<C> From<(u32, u16, u16, u64, C)> for CellAgentBox<C>
+impl<C> CellAgentBox<C>
 where
     C: Serialize + for<'a> Deserialize<'a>
 {
-    fn from(comb: (u32, u16, u16, u64, C)) -> CellAgentBox<C> {
+    pub fn new(ind: u32, iter: u32, n_cell: u64, cell: C) -> CellAgentBox<C> {
         CellAgentBox::<C> {
-            id: Uuid::from_fields(comb.0, comb.1, comb.2, &comb.3.to_be_bytes()),
-            cell: comb.4,
+            created_at_ind: ind,
+            id: Uuid::from_fields(
+                iter,
+                crate::storage::concepts::StorageIdent::Cell.value(),
+                0,
+                &n_cell.to_be_bytes()),
+            cell,
         }
     }
 }

@@ -291,8 +291,9 @@ where
     I: Index,
     V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
-    For: Force,
     Pos: Position,
+    For: Force,
+    Inf: Clone,
     // C: CellAgent<Pos, For, Vel>,
     C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
 {
@@ -300,38 +301,42 @@ where
     where
         C: Cycle<C>,
     {
-        self.voxel_cells
+        self.voxels
             .iter_mut()
-            .for_each(|(_, cs)| cs
+            .for_each(|(_, vox)| vox.cells
                 .iter_mut()
-                .for_each(|c| CellAgentBox::<C>::update_cycle(dt, c))
+                .for_each(|(c, _)| CellAgentBox::<C>::update_cycle(dt, c))
             );
     }
 
     fn apply_boundaries(&mut self) -> Result<(), BoundaryError> {
-        for cell in self.voxel_cells.iter_mut().map(|(_, cells)| cells.iter_mut()).flatten() {
-            self.domain.apply_boundary(cell)?;
-        }
-        Ok(())
+        self.voxels
+            .iter_mut()
+            .map(|(_, vox)| vox.cells.iter_mut())
+            .flatten()
+            .map(|(c, _)| self.domain.apply_boundary(c))
+            .collect::<Result<(), BoundaryError>>()
     }
 
-    pub fn insert_cells(&mut self, index: &I, new_cells: &mut Vec<CellAgentBox<C>>) -> Result<(), CalcError>
+    pub fn insert_cells(&mut self, index: &I, new_cells: Vec<CellAgentBox<C>>) -> Result<(), CalcError>
     {
-        self.voxel_cells.get_mut(index)
-            .ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?
-            .append(new_cells);
+        let vox = self.voxels.get_mut(&self.index_to_plain_index[&index]).ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?;
+        let mut cells_with_storage = new_cells.into_iter().map(|c| (c, AuxiliaryCellPropertyStorage{ force: For::zero() })).collect::<Vec<_>>();
+        vox.cells.append(&mut cells_with_storage);
         Ok(())
     }
 
     // TODO add functionality
     pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<C>) -> Result<(), SimulationError>
     {
-        let index = self.domain.get_voxel_index(&cell);
+        let index = self.index_to_plain_index[&self.domain.get_voxel_index(&cell)];
+        let aux_storage = AuxiliaryCellPropertyStorage { force: For::zero() };
 
-        match self.voxel_cells.get_mut(&index) {
-            Some(cells) => cells.push(cell),
+        match self.voxels.get_mut(&index) {
+            Some(vox) => vox.cells.push((cell, aux_storage)),
             None => {
-                match self.senders_cell.get(&index) {
+                let thread_index = self.plain_index_to_thread[&index];
+                match self.senders_cell.get(&thread_index) {
                     Some(sender) => sender.send(cell),
                     None => Err(SendError(cell)),
                 }?;
@@ -340,27 +345,22 @@ where
         Ok(())
     }
 
-    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<I, Pos, Inf>) -> Result<(), SimulationError>
+    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<Pos, Inf>) -> Result<(), SimulationError>
     where
         Vel: Velocity,
         C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
     {
+        let vox = self.voxels.get(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
         // Calculate force from cells in voxel
-        let mut forces = Vec::new();
-        for cell in self.voxel_cells[&pos_info.index_receiver].iter() {
-            // TODO in which order do we need to insert these positions?
-            match cell.calculate_force_on(&cell.pos(), &pos_info.pos, &pos_info.info) {
-                Some(force) => forces.push(force),
-                None => (),
-            }
-        }
+        let force = vox.calculate_force_from_cells_on_other_cell(&pos_info.pos, &pos_info.info)?;
 
         // Send back force information
-        // println!("Thread: {} Senders indices: {:?} Sender Index: {:?} Receiver Index {:?}", std::thread::current().name().unwrap(), self.senders_force.iter().map(|(i, _)| i.clone()).collect::<Vec<I>>(), pos_info.index_sender, pos_info.index_receiver);
-        self.senders_force[&pos_info.index_sender].send(
+        let thread_index = self.plain_index_to_thread[&pos_info.index_sender];
+        self.senders_force[&thread_index].send(
             ForceInformation{
-                forces,
-                uuid: pos_info.uuid
+                force,
+                count: pos_info.count,
+                index_sender: pos_info.index_sender,
             }
         )?;
         Ok(())
@@ -391,77 +391,37 @@ where
         //      update pos and velocity with all forces obtained
         //      Simultanously
 
-        // Define to calculate forces on a cell from external cells in a voxel with a certain index
-        let mut calculate_force_from_cells_on_cell_and_store_or_send = |voxel_index: &I, cell: &CellAgentBox<C>| -> Result<(), SimulationError> {
-            // Iterate over all cells which are in the voxel of interest
-            match self.voxel_cells.get(voxel_index) {
-
-                // If cells are present (which means the voxel is in this multivoxelcontainer), we can calculate the result immediately
-                Some(ext_cells) => {
-                    for ext_cell in ext_cells.iter().filter(|c| c.get_uuid()!=cell.get_uuid()) {
-                        // Calculate the force and store the raw Result
-                        match ext_cell.calculate_force_on(&ext_cell.pos(), &cell.pos(), &cell.get_interaction_information()) {
-                            Some(force) => {
-                                match self.cell_forces.get_mut(&cell.get_uuid()) {
-                                    // We need to check if there is already an entry for the cell if this is the case, we can simply append there
-                                    Some(forces) => {
-                                        forces.push(force);
-                                    },
-                                    // If not then we create a new entry
-                                    None => {
-                                        self.cell_forces.insert(cell.get_uuid(), Vec::from([force]));
-                                    },
-                                };
-                            },
-                            None => (),
-                        }
-                    }
-                    Ok(())
-                },
-
-                // If the voxel is not in this multicontainervoxel, we will send the required positional information to the corresponding container
-                // such that the force will be calculated there. We can then later receive the information and include it in our calculation.
-                None => self.senders_pos[voxel_index].send(
-                    PosInformation {
-                        index_sender: self.domain.get_voxel_index(cell),
-                        index_receiver: voxel_index.clone(),
-                        pos: cell.pos(),
-                        info: cell.get_interaction_information(),
-                        uuid: cell.get_uuid(),
-                    }),
-            }?;
-            Ok(())
-        };
+        // Calculate forces between cells of own voxel
+        self.voxels.iter_mut().map(|(_, vox)| vox.calculate_force_between_cells_internally()).collect::<Result<(),CalcError>>()?;
 
         // Calculate forces for all cells from neighbors
-        for (voxel_index, cells) in self.voxel_cells.iter() {
-            
-            for cell in cells.iter() {
-                // Calculate force from own voxel
-                calculate_force_from_cells_on_cell_and_store_or_send(&voxel_index, cell)?;
-                
-                
-                // Calculate force from neighbors
-                for neighbor_index in self.neighbor_indices[voxel_index].iter() {
-                    calculate_force_from_cells_on_cell_and_store_or_send(&neighbor_index, cell)?;
+        // TODO can we do this without memory allocation?
+        let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+
+        for voxel_index in key_iterator {
+            for cell_count in 0..self.voxels[&voxel_index].cells.len() {
+                let cell_pos = self.voxels[&voxel_index].cells[cell_count].0.pos();
+                let cell_inf = self.voxels[&voxel_index].cells[cell_count].0.get_interaction_information();
+                let mut force = For::zero();
+                for neighbor_index in self.voxels[&voxel_index].neighbors.iter() {
+                    match self.voxels.get(&neighbor_index) {
+                        Some(vox) => Ok::<(), CalcError>(force += vox.calculate_force_from_cells_on_other_cell(&cell_pos, &cell_inf)?),
+                        None => Ok(self.senders_pos[&self.plain_index_to_thread[&neighbor_index]].send(
+                            PosInformation {
+                                index_sender: voxel_index,
+                                index_receiver: neighbor_index.clone(),
+                                pos: cell_pos.clone(),
+                                info: cell_inf.clone(),
+                                count: cell_count,
+                        })?),
+                    }?;
                 }
+                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_count].1.force += force;
             }
         }
 
         // Calculate custom force of voxel on cell
-        for (voxel_index, cells) in self.voxel_cells.iter() {
-            for cell in cells.iter() {
-                match self.voxels[voxel_index].custom_force_on_cell(&cell.pos()) {
-                    Some(force) => {
-                        match self.cell_forces.get_mut(&cell.get_uuid()) {
-                            Some(forces) => forces.push(force),
-                            None => {self.cell_forces.insert(cell.get_uuid(), Vec::from([force]));},
-                        }
-                    },
-                    None => (),
-                }
-            }
-        }
+        self.voxels.iter_mut().map(|(_, vox)| vox.calculate_custom_force_on_cells()).collect::<Result<(),CalcError>>()?;
 
         // Wait for all threads to send PositionInformation
         self.barrier.wait();
@@ -475,36 +435,22 @@ where
         self.barrier.wait();
         
         // Update position and velocity of all cells with new information
-        for mut obt_forces in self.receiver_force.try_iter() {
-            match self.cell_forces.get_mut(&obt_forces.uuid) {
-                Some(saved_forces) => {
-                    saved_forces.append(&mut obt_forces.forces);
-                },
-                None => (),
-            };
+        for obt_forces in self.receiver_force.try_iter() {
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)})?;
+            match vox.cells.get_mut(obt_forces.count) {
+                Some((_, aux_storage)) => Ok(aux_storage.force+=obt_forces.force),
+                None => Err(IndexError { message: format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count)}),
+            }?;
         }
 
         // Update position and velocity of cells
-        for (_, cells) in self.voxel_cells.iter_mut() {
-            for cell in cells.iter_mut() {
-                let mut force = For::zero();
-                match self.cell_forces.get_mut(&cell.get_uuid()) {
-                    Some(new_forces) => {
-                        for new_force in new_forces.drain(..) {
-                            match new_force {
-                                Ok(n_force) => {
-                                    force += n_force;
-                                    Ok(())
-                                },
-                                Err(error) => Err(error),
-                            }?;
-                        }
-                    }
-                    None => (),
-                }
-
+        for (_, vox) in self.voxels.iter_mut() {
+            for (cell, aux_storage) in vox.cells.iter_mut() {
                 // Update cell position and velocity
-                let (dx, dv) = cell.calculate_increment(force)?;
+                let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
+                // Afterwards set force to 0.0 again
+                aux_storage.force = For::zero();
+                // TODO This is currently an Euler Stepper only. We should be able to use something like Verlet Integration instead: https://en.wikipedia.org/wiki/Verlet_integration
                 cell.set_pos(&(cell.pos() + dx * *dt));
                 cell.set_velocity(&(cell.velocity() + dv * *dt));
             }
@@ -516,28 +462,37 @@ where
         // Store all cells which need to find a new home in this variable
         let mut find_new_home_cells = Vec::<_>::new();
         
-        for (voxel_index, cells) in self.voxel_cells.iter_mut() {
+        for (voxel_index, vox) in self.voxels.iter_mut() {
             // Drain every cell which is currently not in the correct voxel
-            let new_voxel_cells = cells.drain_filter(|c| &self.domain.get_voxel_index(&c)!=voxel_index);
+            let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
+                Some(ind) => ind,
+                None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
+            }!=voxel_index);
             // Check if the cell needs to be sent to another multivoxelcontainer
             find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());
         }
 
         // Send cells to other multivoxelcontainer or keep them here
-        for cell in find_new_home_cells {
-            let cell_index = self.domain.get_voxel_index(&cell);
-            match self.voxel_cells.get_mut(&cell_index) {
-                Some(cells) => {
-                    cells.push(cell);
+        for (cell, aux_storage) in find_new_home_cells {
+            let ind = self.domain.get_voxel_index(&cell);
+            let new_thread_index = self.index_to_thread[&ind];
+            let cell_index = self.index_to_plain_index[&ind];
+            match self.voxels.get_mut(&cell_index) {
+                // If new voxel is in current multivoxelcontainer then save them there
+                Some(vox) => {
+                    vox.cells.push((cell, aux_storage));
                     Ok(())
                 },
+                // Otherwise send them to the correct other multivoxelcontainer
                 None => {
-                    match self.senders_cell.get(&cell_index) {
+                    match self.senders_cell.get(&new_thread_index) {
                         Some(sender) => {
+                            // println!("Everything fine: Old: {:?} New: {:?}", self.mvc_id, new_thread_index);
+                            // println!("Other threads {:?}", self.senders_cell.keys());
                             sender.send(cell)?;
                             Ok(())
                         }
-                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())}),
+                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())})
                     }
                 }
             }?;
@@ -560,9 +515,7 @@ where
     where
         CellAgentBox<C>: Clone,
     {
-        let cells = self.voxel_cells.clone()
-            .into_iter()
-            .map(|(_, cells)| cells)
+        let cells = self.voxels.iter().map(|(_, vox)| vox.cells.clone().into_iter().map(|(c, _)| c))
             .flatten()
             .collect::<Vec<_>>();
 
@@ -574,17 +527,11 @@ where
 
 
     pub fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
-        match self.voxel_cells.get_mut(&self.domain.domain_raw.get_voxel_index(&cell)) {
-            Some(cells) => {
-                let cellagentbox = CellAgentBox::from((
-                    *iteration,
-                    StorageIdent::Cell.value(),
-                    self.mvc_id,
-                    self.uuid_counter,
-                    cell
-                ));
-                cells.push(cellagentbox);
-                self.uuid_counter += 1;
+        match self.voxels.get_mut(&self.index_to_plain_index[&self.domain.domain_raw.get_voxel_index(&cell)]) {
+            Some(vox) => {
+                let cellagentbox = CellAgentBox::new(*iteration, vox.plain_index, vox.uuid_counter, cell);
+                vox.cells.push((cellagentbox, AuxiliaryCellPropertyStorage::default()));
+                vox.uuid_counter += 1;
                 None
             },
             None => Some(cell),
