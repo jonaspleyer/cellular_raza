@@ -677,7 +677,7 @@ where
 
         for cell in current_cells {
             // TODO catch this error
-            plotting_function(&cell.cell, &mut chart).unwrap();
+            plotting_function(&cell.cell, &mut chart)?;
         }
 
         // TODO catch this error
