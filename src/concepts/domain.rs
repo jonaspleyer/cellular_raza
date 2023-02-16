@@ -5,8 +5,6 @@ use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
-#[cfg(not(feature = "no_db"))]
-use crate::storage::concepts::StorageIdent;
 #[cfg(feature = "db_sled")]
 use crate::storage::sled_database::io::store_cells_in_database;
 
@@ -114,6 +112,123 @@ pub(crate) struct ForceInformation<Force> {
     pub count: usize,
     pub index_sender: PlainIndex,
 }
+
+
+#[derive(Serialize,Deserialize,Clone)]
+pub(crate) struct VoxelBox<I, V,C,For> {
+    pub plain_index: PlainIndex,
+    pub index: I,
+    pub voxel: V,
+    pub neighbors: Vec<PlainIndex>,
+    pub cells: Vec<(C, AuxiliaryCellPropertyStorage<For>)>,
+    pub uuid_counter: u64,
+}
+
+
+#[derive(Serialize,Deserialize,Clone)]
+pub(crate) struct AuxiliaryCellPropertyStorage<For> {
+    force: For,
+}
+
+
+impl<For> Default for AuxiliaryCellPropertyStorage<For>
+where
+    For: Zero,
+{
+    fn default() -> AuxiliaryCellPropertyStorage<For> {
+        AuxiliaryCellPropertyStorage { force: For::zero() }
+    }
+}
+
+
+impl<I,V,C,For> VoxelBox<I,V,C,For> {
+    fn calculate_custom_force_on_cells<Pos,Vel>(&mut self) -> Result<(), CalcError>
+    where
+        V: Voxel<I,Pos,For>,
+        I: Index,
+        Pos: Position,
+        For: Force,
+        Vel: Velocity,
+        C: Mechanics<Pos,For,Vel>,
+    {
+        for (cell, aux_storage) in self.cells.iter_mut() {
+            match self.voxel.custom_force_on_cell(&cell.pos()) {
+                Some(Ok(force)) => Ok(aux_storage.force += force),
+                Some(Err(e))    => Err(e),
+                None            => Ok(()),
+            }?;
+        }
+        Ok(())
+    }
+
+    fn calculate_force_between_cells_internally<Pos,Inf,Vel>(&mut self) -> Result<(), CalcError>
+    where
+        V: Voxel<I,Pos,For>,
+        I: Index,
+        Pos: Position,
+        For: Force,
+        Vel: Velocity,
+        C: Interaction<Pos,For,Inf> + Mechanics<Pos,For,Vel> + Clone,
+    {
+        for n in 0..self.cells.len() {
+            for m in 0..self.cells.len() {
+                if n != m {
+                    // Calculate the force which is exerted on
+                    let pos_other = self.cells[m].0.pos();
+                    let inf_other = self.cells[m].0.get_interaction_information();
+                    let (cell, _) = self.cells.get_mut(n).unwrap();
+                    match cell.calculate_force_on(&cell.pos(), &pos_other, &inf_other) {
+                        Some(Ok(force)) => {
+                            let (_, aux_storage) = self.cells.get_mut(m).unwrap();
+                            Ok(aux_storage.force += force)
+                        },
+                        Some(Err(e))    => Err(e),
+                        None            => Ok(()),
+                    }?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn calculate_force_from_cells_on_other_cell<Pos,Inf,Vel>(&self, ext_pos: &Pos, ext_inf: &Option<Inf>) -> Result<For, CalcError>
+    where
+        V: Voxel<I,Pos,For>,
+        I: Index,
+        Pos: Position,
+        For: Force,
+        Vel: Velocity,
+        C: Interaction<Pos,For,Inf> + Mechanics<Pos,For,Vel>,
+    {
+        let mut force = For::zero();
+        for (cell, _) in self.cells.iter() {
+            match cell.calculate_force_on(&cell.pos(), &ext_pos, &ext_inf) {
+                Some(Ok(f))     => Ok(force+=f),
+                Some(Err(e))    => Err(e),
+                None            => Ok(()),
+            }?;
+        }
+        Ok(force)
+    }
+}
+
+
+/* impl<I,V,C,Pos,For> Voxel<PlainIndex,Pos,For> for VoxelBox<I, V,C,For>
+where
+    C: Clone + Serialize + for<'a> Deserialize<'a> + Send + Sync,
+    Pos: Serialize + for<'a> Deserialize<'a> + Send + Sync,
+    For: Clone + Serialize + for<'a> Deserialize<'a> + Send + Sync,
+    I: Serialize + for<'a> Deserialize<'a> + Index,
+    V: Serialize + for<'a> Deserialize<'a> + Voxel<I,Pos,For>,
+{
+    fn custom_force_on_cell(&self, cell: &Pos) -> Option<Result<For, CalcError>> {
+        self.voxel.custom_force_on_cell(cell)
+    }
+
+    fn get_index(&self) -> PlainIndex {
+        self.plain_index
+    }
+}*/
 
 
 // This object has multiple voxels and runs on a single thread.
