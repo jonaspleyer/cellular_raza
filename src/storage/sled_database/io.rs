@@ -191,6 +191,44 @@ where
 }
 
 
+pub fn deserialize_tree<C>(tree: &typed_sled::Tree<String, Vec<u8>>, progress_style: Option<indicatif::ProgressStyle>) -> Result<std::collections::HashMap<u32, Vec<CellAgentBox<C>>>, SimulationError>
+where
+    C: Serialize + for<'a>Deserialize<'a>,
+{
+    let bar = indicatif::ProgressBar::new(tree.len() as u64);
+    match progress_style {
+        Some(s) => bar.set_style(s),
+        None => (),
+    }
+    println!("Reading from Database");
+    let res = tree
+        .iter()
+        .filter_map(|opt| opt.ok())
+        .filter_map(|(key, value)| {
+            let cb: Option<CellAgentBox<C>> = bincode::deserialize(&value).ok();
+            let res = entry_to_iteration_uuid(&key).ok();
+            match (cb, res) {
+                (Some(cab), Some((it, _))) => Some((it, cab)),
+                _ => None,
+            }
+        },)
+        .fold(std::collections::HashMap::<u32, Vec<CellAgentBox<C>>>::new(), |mut acc, (it, cab)| -> std::collections::HashMap<u32, Vec<CellAgentBox<C>>> {
+            match acc.get_mut(&it) {
+                Some(cells) => cells.push(cab),
+                None => {acc.insert(it, vec![cab]);},
+            };
+            bar.inc(1);
+            acc
+        });
+    bar.finish();
+    Ok(res)
+}
+
+
+
+// TODO This is deserializing the complete tree before filtering at every time step.
+// This can be made much more efficient!
+// Possibly introduce buffer to store deserialized tree in memory
 pub fn get_cells_at_iter<C>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,

@@ -69,6 +69,7 @@ where
     domain: DomainBox<Dom>,
 
     pub config: SimulationConfig,
+    pub plotting_config: PlottingConfig,
 
     // Variables controlling simulation flow
     stop_now: Arc<AtomicBool>,
@@ -341,6 +342,7 @@ where
             domain: setup.domain.into(),
 
             config: SimulationConfig::default(),
+            plotting_config: PlottingConfig::default(),
 
             // Variables controlling simulation flow
             stop_now,
@@ -470,6 +472,24 @@ pub const PROGRESS_BAR_STYLE: &str = "[{elapsed_precise}] {bar:40.cyan/blue} {po
 macro_rules! create_sim_supervisor {
     ($setup:expr) => {
         Result::<SimulationSupervisor::<SimTypePosition, SimTypeForce, SimTypeVelocity, CellAgentType, SimTypeIndex, SimTypeVoxel, SimTypeDomain>, Box<dyn std::error::Error>>::from($setup).unwrap()
+    }
+}
+
+
+pub struct PlottingConfig//<PlotCellsFunc, PlotDomainFunc, Cel, Dom>
+{
+    pub image_size: u32,
+    pub n_threads: Option<usize>,
+}
+
+
+impl Default for PlottingConfig
+{
+    fn default() -> Self {
+        PlottingConfig {
+            image_size: 1000,
+            n_threads: None,
+        }
     }
 }
 
@@ -615,6 +635,9 @@ where
         Ok(())
     }
 
+    // ########################################
+    // #### DATABASE RELATED FUNCTIONALITY ####
+    // ########################################
     #[cfg(feature = "db_sled")]
     pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
         crate::storage::sled_database::io::get_cell_uuids_at_iter::<Cel>(&self.tree_cells, iter)
@@ -635,6 +658,9 @@ where
         crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
     }
 
+    // ########################################
+    // #### PLOTTING RELATED FUNCTIONALITY ####
+    // ########################################
     #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_iter_bitmap(&self, iteration: u32) -> Result<(), SimulationError>
     where
@@ -670,9 +696,8 @@ where
 
         // Create a plotting root
         let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
-        let image_size = 1000;
 
-        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename)?;
+        let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
 
         current_cells.iter().map(|cell| cell_plotting_func(&cell.cell, &mut chart)).collect::<Result<(), SimulationError>>()?;
 
@@ -686,21 +711,41 @@ where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Cel: crate::plotting::spatial::PlotSelf,
     {
-        // Create nice bar
-        let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
-        let bar = ProgressBar::new(self.time.t_eval.iter().fold(0, |counts, (_, save, _)| if *save == true {counts+1} else {counts}) as u64);
-        bar.set_style(style);
-
         // Install the pool
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
+        let n_threads = match self.plotting_config.n_threads {
+            Some(threads) => threads,
+            None => self.meta_params.n_threads,
+        };
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
         pool.install(|| -> Result<(), SimulationError> {
+            // Create progress bar for tree deserialization
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
+
+            // Create progress bar for image generation
+            let bar = ProgressBar::new(cells_at_iter.len() as u64);
+            bar.set_style(style);
+
             println!("Generating Images");
-            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
-                self.plot_cells_at_iter_bitmap(iteration as u32)
+            cells_at_iter.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
+                // Create a plotting root
+                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+
+                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
+
+                current_cells
+                    .iter()
+                    .map(|cell| cell.cell.plot_self(&mut chart))
+                    .collect::<Result<(), _>>()?;
+
+                chart.present()?;
+                bar.inc(1);
+                Ok(())
             }).collect::<Result<Vec<_>, SimulationError>>()?;
+
+            bar.finish();
             Ok(())
         })?;
-        bar.finish();
         Ok(())
     }
 
@@ -710,28 +755,46 @@ where
     // ie: The domain has trait implementation how to plot it and Plotting config has a function with same functionality (but possibly different result)
     // then use the provided function in the plotting config
     #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_every_iter_bitmap_with_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
+    pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
     {
-        // Create nice bar
-        let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
-        let bar = ProgressBar::new(self.time.t_eval.iter().fold(0, |counts, (_, save, _)| if *save == true {counts+1} else {counts}) as u64);
-        bar.set_style(style);
-
         // Install the pool
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(self.meta_params.n_threads).build().unwrap();
+        let n_threads = match self.plotting_config.n_threads {
+            Some(threads) => threads,
+            None => self.meta_params.n_threads,
+        };
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
         pool.install(|| -> Result<(), SimulationError> {
+            // Create progress bar for tree deserialization
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
+
+            // Create progress bar for image generation
+            let bar = ProgressBar::new(cells_at_iter.len() as u64);
+            bar.set_style(style);
+
             println!("Generating Images");
-            self.time.t_eval.par_iter().enumerate().filter(|(_, (_, save, _))| *save == true).map(|(iteration, _)| -> Result<(), SimulationError> {
-                let res = self.plot_cells_at_iter_bitmap_with_plotting_func(iteration as u32, plotting_function);
+            cells_at_iter.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
+                // Create a plotting root
+                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+
+                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
+
+                current_cells
+                    .iter()
+                    .map(|cell| plotting_function(&cell.cell, &mut chart))
+                    .collect::<Result<(), SimulationError>>()?;
+
+                chart.present()?;
                 bar.inc(1);
-                res
+                Ok(())
             }).collect::<Result<Vec<_>, SimulationError>>()?;
+
+            bar.finish();
             Ok(())
         })?;
-        bar.finish();
         Ok(())
     }
 }
