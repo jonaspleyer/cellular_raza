@@ -628,7 +628,8 @@ where
         for thread in self.worker_threads.drain(..) {
             // TODO introduce new error type to gain a error message here!
             // Do not use unwrap anymore
-            self.multivoxelcontainers.push(thread.join().unwrap());
+            let t = thread.join().unwrap()?;
+            self.multivoxelcontainers.push(t);
         }
         #[cfg(not(feature = "no_db"))]
         self.save_current_setup(&None)?;
