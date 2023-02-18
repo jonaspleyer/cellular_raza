@@ -63,7 +63,8 @@ define_errors!(
     (CalcError, "General Calculation Error"),
     (IndexError, "Can occur internally when information is not present at expected place"),
     (BoundaryError, "Can occur during boundary calculation"),
-    (GenericDataBaseError, "Placeholder for when Database is not compiled.")
+    (GenericDataBaseError, "Placeholder for when Database is not compiled."),
+    (DrawingError, "Used to catch errors related to plotting")
 );
 
 
@@ -85,6 +86,7 @@ pub enum SimulationError {
     UuidError(uuid::Error),
     ParseIntError(std::num::ParseIntError),
     Utf8Error(std::str::Utf8Error),
+    DrawingError(DrawingError),
     // #[cfg(feature="db_mongodb")]
     // TODO
     // DataBaseError,
@@ -96,6 +98,8 @@ pub enum SimulationError {
     // Highly unlikely to be user errors
     IndexError(IndexError),
     IOError(std::io::Error),
+    ThreadingError(rayon::ThreadPoolBuildError),
+    ConsoleLogError(indicatif::style::TemplateError),
 }
 
 
@@ -109,7 +113,10 @@ impl_from_error!{SimulationError,
     (SerializeError, Box<bincode::ErrorKind>),
     (UuidError, uuid::Error),
     (ParseIntError, std::num::ParseIntError),
-    (Utf8Error, std::str::Utf8Error)
+    (Utf8Error, std::str::Utf8Error),
+    (DrawingError, DrawingError),
+    (ThreadingError, rayon::ThreadPoolBuildError),
+    (ConsoleLogError, indicatif::style::TemplateError)
 }
 
 impl_error_variant!{SimulationError,
@@ -123,7 +130,10 @@ impl_error_variant!{SimulationError,
     SerializeError,
     UuidError,
     ParseIntError,
-    Utf8Error
+    Utf8Error,
+    DrawingError,
+    ThreadingError,
+    ConsoleLogError
 }
 
 
@@ -131,5 +141,24 @@ impl_error_variant!{SimulationError,
 impl<T> From<SendError<T>> for SimulationError {
     fn from(_err: SendError<T>) -> Self {
         SimulationError::SendError(format!("Error receiving object of type {}", type_name::<SendError<T>>()))
+    }
+}
+
+
+impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for DrawingError
+where
+    E: Error + Send + Sync,
+{
+    fn from(drawing_error: plotters::drawing::DrawingAreaErrorKind<E>) -> DrawingError {
+        DrawingError { message: drawing_error.to_string() }
+    }
+}
+
+impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for SimulationError
+where
+    E: Error + Send + Sync,
+{
+    fn from(drawing_error: plotters::drawing::DrawingAreaErrorKind<E>) -> SimulationError {
+        SimulationError::DrawingError(DrawingError::from(drawing_error))
     }
 }
