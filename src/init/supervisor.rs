@@ -58,7 +58,7 @@ where
     Cel: CellAgent<Pos, For, Inf, Vel>,
     Dom: Domain<Cel, Ind, Vox>,
 {
-    worker_threads: Vec<thread::JoinHandle<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>>>,
+    worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>, SimulationError>>>,
     multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>>,
 
     time: TimeSetup,
@@ -422,10 +422,9 @@ macro_rules! implement_cell_types {
 
         impl crate::plotting::spatial::PlotSelf for CellAgentType
         {
-            fn plot_self<Db, E>(&self, root: &mut plotters::prelude::DrawingArea<Db, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), E>
+            fn plot_self<Db>(&self, root: &mut plotters::prelude::DrawingArea<Db, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), DrawingError>
             where
-                Db: plotters::backend::DrawingBackend<ErrorType=E>,
-                E: std::error::Error + std::marker::Sync + std::marker::Send,
+                Db: plotters::backend::DrawingBackend,
             {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.plot_self(root),)+
@@ -507,12 +506,12 @@ where
             // Add bars
             // if self.config.show_progressbar && cont.mvc_id == 0 {
             let show_progressbar = self.config.show_progressbar;
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE).unwrap();
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             let bar = ProgressBar::new(t_eval.len() as u64);
             bar.set_style(style);
 
             // Spawn a thread for each multivoxelcontainer that is running
-            let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || {
+            let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || -> Result<_, SimulationError> {
                 new_start_barrier.wait();
 
                 let mut time = t_start;
@@ -540,7 +539,7 @@ where
                     #[cfg(not(feature = "no_db"))]
                     if _save {
                         // Save cells to database
-                        cont.save_cells_to_database(&iteration).unwrap();
+                        cont.save_cells_to_database(&iteration)?;
                     }
 
                     if save_full {}
@@ -555,7 +554,7 @@ where
                 if show_progressbar && cont.mvc_id == 0 {
                     bar.finish();
                 }
-                return cont;
+                return Ok(cont);
             })?;
             handles.push(handle);
         }
@@ -648,24 +647,24 @@ where
         let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
         let image_size = 1000;
 
-        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename);
+        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename)?;
 
         use crate::plotting::spatial::*;
         for cell in current_cells {
             // TODO catch this error
-            cell.plot_self(&mut chart).unwrap();
+            cell.plot_self(&mut chart)?;
         }
 
         // TODO catch this error
-        chart.present().unwrap();
+        chart.present()?;
         Ok(())
     }
 
     #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_iter_bitmap_with_plotting_func<Func>(&self, iteration: u32, plotting_function: &Func) -> Result<(), SimulationError>
+    pub fn plot_cells_at_iter_bitmap_with_cell_plotting_func<PlotCellsFunc>(&self, iteration: u32, cell_plotting_func: PlotCellsFunc) -> Result<(), SimulationError>
     where
+        PlotCellsFunc: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
         Dom: crate::plotting::spatial::CreatePlottingRoot,
-        Func: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
     {
         let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
 
@@ -673,15 +672,11 @@ where
         let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
         let image_size = 1000;
 
-        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename);
+        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename)?;
 
-        for cell in current_cells {
-            // TODO catch this error
-            plotting_function(&cell.cell, &mut chart)?;
-        }
+        current_cells.iter().map(|cell| cell_plotting_func(&cell.cell, &mut chart)).collect::<Result<(), SimulationError>>()?;
 
-        // TODO catch this error
-        chart.present().unwrap();
+        chart.present()?;
         Ok(())
     }
 

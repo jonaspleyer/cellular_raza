@@ -1,3 +1,4 @@
+use crate::concepts::errors::DrawingError;
 use crate::plotting::spatial::PlotSelf;
 
 
@@ -16,11 +17,10 @@ macro_rules! implement_draw_cell_2d (
     ($cell:ty, $($ni:tt),+) => {
         impl PlotSelf for $cell
         {
-            fn plot_self<Db, E>
-            (&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), E>
+            fn plot_self<Db>
+            (&self, root: &mut DrawingArea<Db, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), DrawingError>
             where
-                Db: DrawingBackend<ErrorType=E>,
-                E: std::error::Error + std::marker::Sync + std::marker::Send,
+                Db: DrawingBackend,
             {
                 let cell_border_color = plotters::prelude::BLACK;
                 let cell_inside_color = plotters::prelude::full_palette::PURPLE;
