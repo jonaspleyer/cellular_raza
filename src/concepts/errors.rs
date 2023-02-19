@@ -61,6 +61,7 @@ macro_rules! impl_from_error {
 
 define_errors!(
     (CalcError, "General Calculation Error"),
+    (DivisionError, "Errors related to a cell dividing process"),
     (IndexError, "Can occur internally when information is not present at expected place"),
     (BoundaryError, "Can occur during boundary calculation"),
     (GenericDataBaseError, "Placeholder for when Database is not compiled."),
@@ -80,6 +81,7 @@ type DataBaseError = GenericDataBaseError;
 pub enum SimulationError {
     // Very likely to be user errors
     CalcError(CalcError),
+    DivisionError(DivisionError),
     BoundaryError(BoundaryError),
     DataBaseError(DataBaseError),
     SerializeError(Box<bincode::ErrorKind>),
@@ -106,6 +108,7 @@ pub enum SimulationError {
 impl_from_error!{SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
+    (DivisionError, DivisionError),
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
     (IOError, std::io::Error),
@@ -123,6 +126,7 @@ impl_error_variant!{SimulationError,
     SendError,
     ReceiveError,
     CalcError,
+    DivisionError,
     BoundaryError,
     IndexError,
     IOError,
