@@ -54,16 +54,6 @@ where
 
 
 // Auto-implement traits for CellAgentBox which where also implemented for CellAgent
-impl<A> Cycle<CellAgentBox<A>> for CellAgentBox<A>
-where
-    A: Cycle<A> + Serialize + for<'a> Deserialize<'a>
-{
-    fn update_cycle(dt: &f64, c: &mut CellAgentBox<A>) {
-        A::update_cycle(dt, &mut c.cell);
-    }
-}
-
-
 impl<Pos, For, Inf, A> Interaction<Pos, For, Inf> for CellAgentBox<A>
 where
     Pos: Position,
