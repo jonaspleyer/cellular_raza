@@ -221,11 +221,7 @@ where
                     .into_iter()
                     .map(|(ind, mut cells)| {
                         cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
-                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| {
-                            let cb = CellAgentBox::new(0, ind, n_cell as u64, cell);
-                            (cb, AuxiliaryCellPropertyStorage::default())
-                        },
-                        ).collect()
+                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| CellAgentBox::new(ind, 0, n_cell as u64, cell)).collect()
                     )
                 }).collect());
                 res
@@ -256,14 +252,13 @@ where
                         None => Vec::new(),
                     };
                     let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
-                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,CellAgentBox<Cel>,For> {
-                        index: convert_to_index[&plain_index].clone(),
+                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,For>::new(
                         plain_index,
+                        convert_to_index[&plain_index].clone(),
                         voxel,
                         neighbors,
                         cells,
-                        uuid_counter: 0,
-                    };
+                    );
                     (plain_index, vbox)
                 }).collect();
 

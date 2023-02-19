@@ -103,13 +103,13 @@ impl<C> CellAgentBox<C>
 where
     C: Serialize + for<'a> Deserialize<'a>
 {
-    pub fn new(ind: u32, iter: u32, n_cell: u64, cell: C) -> CellAgentBox<C> {
+    pub fn new(ind: u32, generation: u16, n_cell: u64, cell: C) -> CellAgentBox<C> {
         CellAgentBox::<C> {
             created_at_ind: ind,
             id: Uuid::from_fields(
-                iter,
+                ind,
                 crate::storage::concepts::StorageIdent::Cell.value(),
-                0,
+                generation,
                 &n_cell.to_be_bytes()),
             cell,
         }
