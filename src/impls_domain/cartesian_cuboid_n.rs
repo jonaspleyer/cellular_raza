@@ -119,12 +119,12 @@ macro_rules! define_and_implement_cartesian_cuboid {
                     // Check if the particle is below lower edge
                     if pos[i] < self.min[i] {
                         pos[i] = 2.0 * self.min[i] - pos[i];
-                        velocity[i] *= -1.0;
+                        velocity[i] = velocity[i].abs();
                     }
                     // Check if the particle is over the edge
                     if pos[i] > self.max[i] {
                         pos[i] = 2.0 * self.max[i] - pos[i];
-                        velocity[i] *= -1.0;
+                        velocity[i] = - velocity[i].abs();
                     }
                 }
                 // Set new position and velocity of particle
