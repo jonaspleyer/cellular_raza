@@ -36,7 +36,7 @@ async-std = "1.12"
 # Implementation dependencies
 nalgebra = { version="0.32", features=["serde-serialize"]}
 rand = { version="0.8", features = ["small_rng"] }
-rand_chacha = { version="0.3.1" }
+rand_chacha = { version="0.3.1", features=["serde1"]}
 ndarray = { version="0.15" }
 
 
