@@ -3,4 +3,6 @@
 out
 *.csv
 *.mp4
+*.png
+*.txt
 ffmpeg*
