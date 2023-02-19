@@ -9,14 +9,11 @@ use rand::Rng;
 // Constants of the simulation
 pub const N_CELLS: u32 = 200;
 
-pub const CELL_CYCLE_LIFETIME_LOW: f64 = 1000.0;
-pub const CELL_CYCLE_LIFETIME_HIGH: f64 = 1200.0;
+pub const CELL_MAXIMUM_AGE: f64 = 1000.0;
 
 pub const CELL_RADIUS: f64 = 3.0;
-pub const CELL_LENNARD_JONES_STRENGTH: f64 = 0.5;
-
+pub const CELL_LENNARD_JONES_STRENGTH: f64 = 3.0;
 pub const CELL_INITIAL_VELOCITY: f64 = 0.2;
-
 pub const CELL_VELOCITY_REDUCTION: f64 = 1.0;
 
 // Parameters for domain
@@ -61,10 +58,10 @@ fn main() {
             rng.gen_range(-DOMAIN_SIZE_X..DOMAIN_SIZE_X),
             rng.gen_range(-DOMAIN_SIZE_Y..DOMAIN_SIZE_Y)]),
         velocity: Vector2::<f64>::from([0.0, 0.0]),
-        cell_radius: 4.0,
-        potential_strength: 3.0,
+        cell_radius: CELL_RADIUS,
+        potential_strength: CELL_LENNARD_JONES_STRENGTH,
         velocity_reduction: CELL_VELOCITY_REDUCTION,
-        maximum_age: 1000.0,
+        maximum_age: CELL_MAXIMUM_AGE,
         remove: false,
         current_age: 0.0,
     })).collect();
@@ -74,10 +71,10 @@ fn main() {
             rng.gen_range(-DOMAIN_SIZE_X..DOMAIN_SIZE_X),
             rng.gen_range(-DOMAIN_SIZE_Y..DOMAIN_SIZE_Y)]),
         velocity: Vector2::<f64>::from([0.0, 0.0]),
-        cell_radius: 4.0,
-        potential_strength: 3.0,
+        cell_radius: CELL_RADIUS,
+        potential_strength: CELL_LENNARD_JONES_STRENGTH,
         velocity_reduction: CELL_VELOCITY_REDUCTION,
-        maximum_age: 1000.0,
+        maximum_age: CELL_MAXIMUM_AGE,
         remove: false,
         current_age: 0.0,
     })).collect();
@@ -110,7 +107,6 @@ fn main() {
     // let mut supervisor = create_sim_supervisor!(setup);
     let mut supervisor = SimulationSupervisor::from(setup);
 
-    let now = std::time::Instant::now();
     match supervisor.run_full_sim() {
         Ok(()) => (),
         Err(error) => println!("{error}"),
@@ -118,14 +114,5 @@ fn main() {
 
     supervisor.end_simulation().unwrap();
 
-    println!("Simulation took {}ms", now.elapsed().as_millis());
-
-    // Plot the results
-    let hist = supervisor.get_all_cell_histories().unwrap();
-    let cell_hist = hist.iter().next().unwrap().1;
-    for (iter, cell_state) in cell_hist.iter() {
-        println!("{:?} {:12.6?}", iter, cell_state.pos());
-    }
     supervisor.plot_cells_at_every_iter_bitmap().unwrap();
-    println!("Generating images took {}ms", now.elapsed().as_millis());
 }
