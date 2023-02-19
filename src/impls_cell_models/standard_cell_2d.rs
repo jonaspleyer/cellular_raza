@@ -24,11 +24,16 @@ pub struct StandardCell2D {
 
 
 impl Cycle<StandardCell2D> for StandardCell2D {
-    fn update_cycle(dt: &f64, cell: &mut StandardCell2D) {
+    fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, cell: &mut StandardCell2D) -> Option<CycleEvent> {
         cell.current_age += dt;
         if cell.current_age > cell.maximum_age {
             cell.remove = true;
         }
+        None
+    }
+
+    fn divide(_rng: &mut rand_chacha::ChaCha8Rng, _c: &mut StandardCell2D) -> Result<Option<StandardCell2D>, crate::concepts::errors::DivisionError> {
+        panic!("This function should never be called");
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::concepts::cycle::Cycle;
+use crate::concepts::cycle::{Cycle,CycleEvent};
 use crate::concepts::interaction::Interaction;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 
@@ -91,7 +91,11 @@ impl<Pos, Mec, Int, Cyc> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc>
 where
     Cyc: Cycle<Self>,
 {
-    fn update_cycle(dt: &f64, c: &mut Self) {
-        Cyc::update_cycle(dt, c);
+    fn update_cycle(rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut Self) -> Option<CycleEvent> {
+        Cyc::update_cycle(rng, dt, c)
+    }
+
+    fn divide(rng: &mut rand_chacha::ChaCha8Rng, c: &mut Self) -> Result<Option<Self>, crate::concepts::errors::DivisionError> {
+        Cyc::divide(rng, c)
     }
 }

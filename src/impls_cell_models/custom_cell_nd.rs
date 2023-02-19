@@ -1,4 +1,9 @@
-use crate::prelude::*;
+use crate::concepts::{
+    errors::{DivisionError,CalcError},
+    cycle::{Cycle,CycleEvent},
+    interaction::Interaction,
+    mechanics::Mechanics
+};
 
 use nalgebra::SVector;
 use serde::{Serialize,Deserialize};
@@ -18,6 +23,7 @@ macro_rules! implement_custom_cell {
 
             pub velocity_reduction: f64,
 
+            // Cell cycle, division and death
             pub maximum_age: f64,
 
             pub remove: bool,
@@ -26,11 +32,16 @@ macro_rules! implement_custom_cell {
 
 
         impl Cycle<$name> for $name {
-            fn update_cycle(dt: &f64, cell: &mut $name) {
+            fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, cell: &mut $name) -> Option<CycleEvent> {
                 cell.current_age += dt;
                 if cell.current_age > cell.maximum_age {
                     cell.remove = true;
                 }
+                None
+            }
+
+            fn divide(_rng: &mut rand_chacha::ChaCha8Rng, _c: &mut $name) -> Result<Option<$name>, DivisionError> {
+                panic!("This function should never be called!");
             }
         }
 
