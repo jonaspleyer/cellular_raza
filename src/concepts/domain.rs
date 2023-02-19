@@ -20,6 +20,8 @@ use hurdles::Barrier;
 use num::Zero;
 use serde::{Serialize,Deserialize};
 
+use rand_chacha::ChaCha8Rng;
+
 
 pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a>
 {
@@ -115,19 +117,28 @@ pub(crate) struct ForceInformation<Force> {
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub(crate) struct VoxelBox<I, V,C,For> {
+pub(crate) struct VoxelBox<I, V, C, For>
+where
+    For: Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
+{
     pub plain_index: PlainIndex,
     pub index: I,
     pub voxel: V,
     pub neighbors: Vec<PlainIndex>,
-    pub cells: Vec<(C, AuxiliaryCellPropertyStorage<For>)>,
+    #[serde(bound = "")]
+    pub cells: Vec<(CellAgentBox<C>, AuxiliaryCellPropertyStorage<For>)>,
+    #[serde(bound = "")]
+    pub new_cells: Vec<C>,
     pub uuid_counter: u64,
+    pub rng: ChaCha8Rng,
 }
 
 
 #[derive(Serialize,Deserialize,Clone)]
 pub(crate) struct AuxiliaryCellPropertyStorage<For> {
     force: For,
+    cycle_event: bool,
 }
 
 
@@ -136,12 +147,41 @@ where
     For: Zero,
 {
     fn default() -> AuxiliaryCellPropertyStorage<For> {
-        AuxiliaryCellPropertyStorage { force: For::zero() }
+        AuxiliaryCellPropertyStorage {
+            force: For::zero(),
+            cycle_event: false,
+        }
     }
 }
 
 
-impl<I,V,C,For> VoxelBox<I,V,C,For> {
+impl<I, V, C, For> VoxelBox<I, V, C, For>
+where
+    For: num::Zero + Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
+{
+    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, For> {
+        use rand::SeedableRng;
+        let n_cells = cells.len() as u64;
+        VoxelBox {
+            plain_index,
+            index,
+            voxel,
+            neighbors,
+            cells: cells.into_iter().map(|cell| (cell, AuxiliaryCellPropertyStorage::default())).collect(),
+            new_cells: Vec::new(),
+            uuid_counter: n_cells,
+            rng: ChaCha8Rng::seed_from_u64(plain_index as u64 * 10),
+        }
+    }
+}
+
+
+impl<I,V,C,For> VoxelBox<I,V,C,For>
+where
+    For: Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
+{
     fn calculate_custom_force_on_cells<Pos,Vel>(&mut self) -> Result<(), CalcError>
     where
         V: Voxel<I,Pos,For>,
@@ -210,6 +250,50 @@ impl<I,V,C,For> VoxelBox<I,V,C,For> {
         }
         Ok(force)
     }
+
+    fn update_local_functions<Pos, Inf, Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
+    where
+        Pos: Position,
+        For: Force + core::fmt::Debug,
+        Inf: InteractionInformation,
+        Vel: Velocity,
+        C: Serialize + for<'a> Deserialize<'a> + CellAgent<Pos, For, Inf, Vel>,
+    {
+        // Update the cell individual cells
+        self.cells
+            .iter_mut()
+            .map(|(cbox, aux_storage)| {
+                // Check for cycle events and do update if necessary
+                match aux_storage.cycle_event {
+                    true => match C::divide(&mut self.rng, &mut cbox.cell)? {
+                        Some(new_cell) => self.new_cells.push(new_cell),
+                        None => (),
+                    },
+                    false => (),
+                }
+                aux_storage.cycle_event = false;
+
+                // Update the cell cycle
+                match C::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
+                    Some(CycleEvent::Division) => aux_storage.cycle_event = true,
+                    None => (),
+                }
+                Ok(())
+        }).collect::<Result<(), SimulationError>>()?;
+
+        // Include new cells
+        self.cells.extend(self.new_cells.drain(..).map(|cell| {
+            self.uuid_counter += 1;
+            (CellAgentBox::new(
+                self.plain_index,
+                1,
+                self.uuid_counter,
+                cell
+            ),
+            AuxiliaryCellPropertyStorage::default())
+        }));
+        Ok(())
+    }
 }
 
 
@@ -237,12 +321,12 @@ pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, V, D, C>
 where
     I: Index,
     Pos: Position,
-    For: Force,
+    For: Force + Serialize + for<'a> Deserialize<'a>,
     V: Voxel<I, Pos, For>,
     C: Serialize + for<'a> Deserialize<'a> + Send + Sync,
     D: Domain<C, I, V>,
 {
-    pub voxels: BTreeMap<PlainIndex, VoxelBox<I,V,CellAgentBox<C>,For>>,
+    pub voxels: BTreeMap<PlainIndex, VoxelBox<I,V,C,For>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -292,30 +376,34 @@ where
     V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
     Pos: Position,
-    For: Force,
+    For: Force + Serialize + for<'a> Deserialize<'a>,
     Inf: Clone,
-    // C: CellAgent<Pos, For, Vel>,
     C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
 {
-    fn update_cell_cycle(&mut self, dt: &f64)
+    fn update_local_functions<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
-        C: Cycle<C>,
+        Pos: Position,
+        For: Force,
+        Inf: InteractionInformation,
+        Vel: Velocity,
+        C: CellAgent<Pos, For, Inf, Vel>,
     {
         self.voxels
             .iter_mut()
-            .for_each(|(_, vox)| vox.cells
-                .iter_mut()
-                .for_each(|(c, _)| CellAgentBox::<C>::update_cycle(dt, c))
-            );
-    }
+            .map(|(_, vox)| {
+                // Update all local functions inside the voxel
+                vox.update_local_functions(dt)?;
 
-    fn apply_boundaries(&mut self) -> Result<(), BoundaryError> {
-        self.voxels
-            .iter_mut()
-            .map(|(_, vox)| vox.cells.iter_mut())
-            .flatten()
-            .map(|(c, _)| self.domain.apply_boundary(c))
-            .collect::<Result<(), BoundaryError>>()
+                // TODO every voxel should apply its own boundary conditions
+                // This is now a global rule but we do not want this
+                // This should not be dependent on the domain
+                // Apply boundary conditions to the cells in the respective voxels
+                vox.cells.iter_mut()
+                    .map(|(cell, _)| self.domain.apply_boundary(cell))
+                    .collect::<Result<(), BoundaryError>>()?;
+                Ok(())
+            })
+            .collect::<Result<(), SimulationError>>()
     }
 
     pub fn insert_cells(&mut self, index: &I, new_cells: Vec<CellAgentBox<C>>) -> Result<(), CalcError>
@@ -330,7 +418,7 @@ where
     pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<C>) -> Result<(), SimulationError>
     {
         let index = self.index_to_plain_index[&self.domain.get_voxel_index(&cell)];
-        let aux_storage = AuxiliaryCellPropertyStorage { force: For::zero() };
+        let aux_storage = AuxiliaryCellPropertyStorage::default();
 
         match self.voxels.get_mut(&index) {
             Some(vox) => vox.cells.push((cell, aux_storage)),
@@ -370,6 +458,7 @@ where
     where
         Vel: Velocity,
         Inf: Clone,
+        For: std::fmt::Debug,
         C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Clone,
     {
         // General Idea of this function
@@ -448,17 +537,23 @@ where
             for (cell, aux_storage) in vox.cells.iter_mut() {
                 // Update cell position and velocity
                 let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
+
                 // Afterwards set force to 0.0 again
                 aux_storage.force = For::zero();
+
                 // TODO This is currently an Euler Stepper only. We should be able to use something like Verlet Integration instead: https://en.wikipedia.org/wiki/Verlet_integration
                 cell.set_pos(&(cell.pos() + dx * *dt));
-                cell.set_velocity(&(cell.velocity() + dv * *dt));
+                cell.set_velocity(&(cell.velocity() + dv.clone() * *dt));
             }
         }
         Ok(())
     }
 
-    pub fn sort_cells_in_voxels(&mut self) -> Result<(), SimulationError> {
+    pub fn sort_cells_in_voxels<Vel>(&mut self) -> Result<(), SimulationError>
+    where
+        Vel: Velocity,
+        C: Mechanics<Pos, For, Vel>,
+    {
         // Store all cells which need to find a new home in this variable
         let mut find_new_home_cells = Vec::<_>::new();
         
@@ -536,19 +631,18 @@ where
             },
             None => Some(cell),
         }
-    }
+    }*/
 
 
     pub fn run_full_update<Vel>(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
     where
+        Inf: Send + Sync + core::fmt::Debug,
         Vel: Velocity,
         C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + Clone,
     {
-        self.update_cell_cycle(dt);
-
         self.update_mechanics(dt)?;
 
-        self.apply_boundaries()?;
+        self.update_local_functions(dt)?;
 
         self.sort_cells_in_voxels()?;
         Ok(())

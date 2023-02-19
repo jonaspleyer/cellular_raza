@@ -1,6 +1,6 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox};
 use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex};
-use crate::concepts::domain::{AuxiliaryCellPropertyStorage,DomainBox,Index};
+use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::SimulationError;
 
@@ -52,7 +52,7 @@ pub struct SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
     Ind: Index,
     Pos: Position,
-    For: Force,
+    For: Force + Serialize + for<'a> Deserialize<'a>,
     Vel: Velocity,
     Vox: Voxel<Ind, Pos, For>,
     Cel: CellAgent<Pos, For, Inf, Vel>,
@@ -128,7 +128,7 @@ where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Position + 'static + std::fmt::Debug,
-    For: Force + 'static,
+    For: Force + Serialize + for<'a> Deserialize<'a> + 'static,
     Vel: Velocity + 'static,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
@@ -214,7 +214,7 @@ where
             .map(|(i, chunk)| (chunk.into_iter().map(|(ind, vox)| (convert_to_plain_index[&ind], vox)).collect(), sorted_cells.remove(&i).unwrap()))
             .collect();
 
-        let voxel_and_cell_boxes: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<For>)>>)> = voxel_and_raw_cells
+        let voxel_and_cell_boxes: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<CellAgentBox<Cel>>>)> = voxel_and_raw_cells
             .into_iter()
             .map(|(chunk, sorted_cells)| {
                 let res = (chunk, sorted_cells
@@ -244,7 +244,7 @@ where
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,CellAgentBox<Cel>,For>> = chunk.clone()
+            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,For>> = chunk.clone()
                 .into_iter()
                 .map(|(plain_index, voxel)| {
                     let cells = match index_to_cells.remove(&plain_index) {
@@ -494,7 +494,7 @@ where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Position + 'static,
-    For: Force + 'static,
+    For: Force + Serialize + for<'a> Deserialize<'a> + 'static,
     Inf: crate::concepts::interaction::InteractionInformation + 'static,
     Vel: Velocity + 'static,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
