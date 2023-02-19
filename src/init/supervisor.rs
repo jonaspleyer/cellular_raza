@@ -549,7 +549,7 @@ where
                         Ok(()) => (),
                         Err(error) => {
                             // TODO this is not always an error in update_mechanics!
-                            println!("Encountered error in update_mechanics: {}. Stopping simulation.", error);
+                            println!("Encountered error in update_mechanics: {:?}. Stopping simulation.", error);
                             // Make sure to stop all threads after this iteration.
                             stop_now_new.store(true, Ordering::Relaxed);
                         },
@@ -774,6 +774,7 @@ where
         pool.install(|| -> Result<(), SimulationError> {
             // Create progress bar for tree deserialization
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            // Deserialize the database tree
             let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
 
             // Create progress bar for image generation
