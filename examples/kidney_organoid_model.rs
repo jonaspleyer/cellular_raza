@@ -116,15 +116,6 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, CellType, Unit<Vector2<f64>>)
                 let attracting_force = dir * self.attraction_multiplier * attraction_orientation_modifier * strength.max(0.0) * spatial_cutoff;
                 let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-                if attracting_force.iter().any(|e| e.is_nan()) {
-                    println!("{:8.4?} {:8.4?} {:?}", own_pos, ext_pos, ext_info);
-                    println!("{}", own_pos==ext_pos);
-                }
-                if repelling_force.iter().any(|e| e.is_nan()) {
-                    println!("{:8.4?} {:8.4?} {:?}", own_pos, ext_pos, ext_info);
-                    println!("{}", own_pos==ext_pos);
-                }
-                
                 if *celltype == self.celltype {
                     Some(Ok(repelling_force + attracting_force))
                 } else {
@@ -199,7 +190,6 @@ impl cellular_raza::concepts::cycle::Cycle<ModularCell<Vector2<f64>, MechanicsMo
         // New cell is completely new so set age to 0
         c2.cycle.age = 0.0;
 
-        // println!("Division succeeded! new positions: {:5.1?} {:5.1?}", c1.pos(), c2.pos());
         Ok(Some(c2))
     }
 }
