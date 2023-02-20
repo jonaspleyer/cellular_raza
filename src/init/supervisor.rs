@@ -50,16 +50,16 @@ impl Default for SimulationConfig {
 /// 
 pub struct SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
-    Ind: Index,
-    Pos: Position,
-    For: Force + Serialize + for<'a> Deserialize<'a>,
-    Vel: Velocity,
-    Vox: Voxel<Ind, Pos, For>,
-    Cel: CellAgent<Pos, For, Inf, Vel>,
-    Dom: Domain<Cel, Ind, Vox>,
+    Ind: ,
+    Pos: Serialize + for<'a> Deserialize<'a>,
+    For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
+    Vox: ,
+    Dom: Serialize + for<'a> Deserialize<'a>,
 {
-    worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>, SimulationError>>>,
-    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vox, Dom, Cel>>,
+    worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Vox, Dom, Cel>, SimulationError>>>,
+    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Vox, Dom, Cel>>,
 
     time: TimeSetup,
     meta_params: SimulationMetaParams,
@@ -127,13 +127,16 @@ impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
-    Pos: Position + 'static + std::fmt::Debug,
-    For: Force + Serialize + for<'a> Deserialize<'a> + 'static,
-    Vel: Velocity + 'static,
+    Pos: Serialize + for<'a> Deserialize<'a> + Position + 'static + std::fmt::Debug,
+    For: Serialize + for<'a> Deserialize<'a> + Force + 'static,
+    Vel: Serialize + for<'a> Deserialize<'a> + Velocity + 'static,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
-    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> {
+    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
+    where
+        Cel: Sized,
+    {
         // Create groups of voxels to put into our MultiVelContainers
         let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
 
@@ -244,7 +247,7 @@ where
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,For>> = chunk.clone()
+            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,Pos,For,Vel>> = chunk.clone()
                 .into_iter()
                 .map(|(plain_index, voxel)| {
                     let cells = match index_to_cells.remove(&plain_index) {
@@ -252,7 +255,7 @@ where
                         None => Vec::new(),
                     };
                     let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
-                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,For>::new(
+                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,Pos,For,Vel>::new(
                         plain_index,
                         convert_to_index[&plain_index].clone(),
                         voxel,
@@ -500,16 +503,23 @@ impl Default for PlottingConfig
 
 impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
 where
-    Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
-    Ind: Index + 'static,
-    Pos: Position + 'static,
-    For: Force + Serialize + for<'a> Deserialize<'a> + 'static,
-    Inf: crate::concepts::interaction::InteractionInformation + 'static,
-    Vel: Velocity + 'static,
-    Vox: Voxel<Ind, Pos, For> + Clone + 'static,
-    Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
+    Dom: Serialize + for<'a> Deserialize<'a> + Clone,
+    Pos: Serialize + for<'a> Deserialize<'a>,
+    For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
 {
-    fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), SimulationError> {
+    fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), SimulationError>
+    where
+        Dom: 'static + Domain<Cel, Ind, Vox>,
+        Pos: 'static + Position,
+        For: 'static + Force,
+        Inf: 'static + crate::concepts::interaction::InteractionInformation,
+        Vel: 'static + Velocity,
+        Ind: 'static + Index,
+        Vox: 'static + Voxel<Ind, Pos, For>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+    {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
 
@@ -591,13 +601,33 @@ where
         Ok(())
     }
 
-    pub fn run_full_sim(&mut self) -> Result<(), SimulationError> {
+    pub fn run_full_sim(&mut self) -> Result<(), SimulationError>
+    where
+        Dom: 'static + Domain<Cel, Ind, Vox>,
+        Pos: 'static + Position,
+        For: 'static + Force,
+        Inf: 'static + crate::concepts::interaction::InteractionInformation,
+        Vel: 'static + Velocity,
+        Ind: 'static + Index,
+        Vox: 'static + Voxel<Ind, Pos, For>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+    {
         self.spawn_worker_threads_and_run_sim()?;
         
         Ok(())
     }
 
-    pub fn run_until(&mut self, end_time: f64) -> Result<(), SimulationError> {
+    pub fn run_until(&mut self, end_time: f64) -> Result<(), SimulationError>
+    where
+        Dom: 'static + Domain<Cel, Ind, Vox>,
+        Pos: 'static + Position,
+        For: 'static + Force,
+        Inf: 'static + crate::concepts::interaction::InteractionInformation,
+        Vel: 'static + Velocity,
+        Ind: 'static + Index,
+        Vox: 'static + Voxel<Ind, Pos, For>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+    {
         self.time.t_eval.drain_filter(|(t, _, _)| *t <= end_time);
         self.run_full_sim()?;
         Ok(())
@@ -659,7 +689,10 @@ where
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Cel>)>>, SimulationError> {
+    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Cel>)>>, SimulationError>
+    where
+        Cel: Clone,
+    {
         crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
     }
 
@@ -713,8 +746,15 @@ where
     #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_every_iter_bitmap(&self) -> Result<(), SimulationError>
     where
-        Dom: crate::plotting::spatial::CreatePlottingRoot,
-        Cel: crate::plotting::spatial::PlotSelf,
+        Pos: Send + Sync,
+        For: Send + Sync,
+        Inf: Send + Sync,
+        Vel: Send + Sync,
+        Ind: Send + Sync,
+        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
+        Vox: Send + Sync,
+        Cel: crate::plotting::spatial::PlotSelf + Send + Sync,
+        CellAgentBox<Cel>: Send + Sync,
     {
         // Install the pool
         let n_threads = match self.plotting_config.n_threads {
@@ -762,7 +802,15 @@ where
     #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
     where
-        Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Pos: Send + Sync,
+        For: Send + Sync,
+        Inf: Send + Sync,
+        Vel: Send + Sync,
+        Ind: Send + Sync,
+        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
+        Vox: Send + Sync,
+        Cel: Send + Sync,
+        CellAgentBox<Cel>: Send + Sync,
         Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
     {
         // Install the pool
