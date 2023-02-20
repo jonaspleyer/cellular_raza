@@ -424,14 +424,6 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    pub fn insert_cells(&mut self, index: &I, new_cells: Vec<CellAgentBox<C>>) -> Result<(), CalcError>
-    {
-        let vox = self.voxels.get_mut(&self.index_to_plain_index[&index]).ok_or(CalcError{ message: "New cell has incorrect index".to_owned()})?;
-        let mut cells_with_storage = new_cells.into_iter().map(|c| (c, AuxiliaryCellPropertyStorage{ force: For::zero() })).collect::<Vec<_>>();
-        vox.cells.append(&mut cells_with_storage);
-        Ok(())
-    }
-
     // TODO add functionality
     pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<C>) -> Result<(), SimulationError>
     {
@@ -661,19 +653,6 @@ where
 
         Ok(())
     }
-
-
-    pub fn insert_cell(&mut self, iteration: &u32, cell: C) -> Option<C> {
-        match self.voxels.get_mut(&self.index_to_plain_index[&self.domain.domain_raw.get_voxel_index(&cell)]) {
-            Some(vox) => {
-                let cellagentbox = CellAgentBox::new(*iteration, vox.plain_index, vox.uuid_counter, cell);
-                vox.cells.push((cellagentbox, AuxiliaryCellPropertyStorage::default()));
-                vox.uuid_counter += 1;
-                None
-            },
-            None => Some(cell),
-        }
-    }*/
 
 
     pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
