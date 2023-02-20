@@ -97,16 +97,13 @@ where
 }
 
 
-pub fn get_cell_history_from_database<Pos, For, Inf, Vel, C: CellAgent<Pos, For, Inf, Vel>>
+pub fn get_cell_history_from_database<C>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     uuid: &Uuid
 ) -> Result<Vec<(u32, CellAgentBox<C>)>, SimulationError>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    C: for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
 {
     let mut res: Vec<_> = tree
         .iter()
