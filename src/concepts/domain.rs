@@ -117,9 +117,11 @@ pub(crate) struct ForceInformation<Force> {
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub(crate) struct VoxelBox<I, V, C, For>
+pub(crate) struct VoxelBox<I, V, C, Pos, For, Vel>
 where
+    Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
 {
     pub plain_index: PlainIndex,
@@ -127,7 +129,7 @@ where
     pub voxel: V,
     pub neighbors: Vec<PlainIndex>,
     #[serde(bound = "")]
-    pub cells: Vec<(CellAgentBox<C>, AuxiliaryCellPropertyStorage<For>)>,
+    pub cells: Vec<(CellAgentBox<C>, AuxiliaryCellPropertyStorage<Pos,For,Vel>)>,
     #[serde(bound = "")]
     pub new_cells: Vec<C>,
     pub uuid_counter: u64,
@@ -136,31 +138,43 @@ where
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub(crate) struct AuxiliaryCellPropertyStorage<For> {
+pub(crate) struct AuxiliaryCellPropertyStorage<Pos,For,Vel> {
     force: For,
     cycle_event: bool,
+
+    inc_pos_back_1: Option<Pos>,
+    inc_pos_back_2: Option<Pos>,
+    inc_vel_back_1: Option<Vel>,
+    inc_vel_back_2: Option<Vel>,
 }
 
 
-impl<For> Default for AuxiliaryCellPropertyStorage<For>
+impl<Pos,For,Vel> Default for AuxiliaryCellPropertyStorage<Pos,For,Vel>
 where
     For: Zero,
 {
-    fn default() -> AuxiliaryCellPropertyStorage<For> {
+    fn default() -> AuxiliaryCellPropertyStorage<Pos,For,Vel> {
         AuxiliaryCellPropertyStorage {
             force: For::zero(),
             cycle_event: false,
+
+            inc_pos_back_1: None,
+            inc_pos_back_2: None,
+            inc_vel_back_1: None,
+            inc_vel_back_2: None,
         }
     }
 }
 
 
-impl<I, V, C, For> VoxelBox<I, V, C, For>
+impl<I, V, C, Pos, For, Vel> VoxelBox<I, V, C, Pos, For, Vel>
 where
+    Pos: Serialize + for<'a> Deserialize<'a>,
     For: num::Zero + Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
 {
-    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, For> {
+    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, Pos, For, Vel> {
         use rand::SeedableRng;
         let n_cells = cells.len() as u64;
         VoxelBox {
@@ -177,12 +191,14 @@ where
 }
 
 
-impl<I,V,C,For> VoxelBox<I,V,C,For>
+impl<I, V, C, Pos, For, Vel> VoxelBox<I, V, C, Pos, For, Vel>
 where
+    Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
 {
-    fn calculate_custom_force_on_cells<Pos,Vel>(&mut self) -> Result<(), CalcError>
+    fn calculate_custom_force_on_cells(&mut self) -> Result<(), CalcError>
     where
         V: Voxel<I,Pos,For>,
         I: Index,
@@ -201,7 +217,7 @@ where
         Ok(())
     }
 
-    fn calculate_force_between_cells_internally<Pos,Inf,Vel>(&mut self) -> Result<(), CalcError>
+    fn calculate_force_between_cells_internally<Inf>(&mut self) -> Result<(), CalcError>
     where
         V: Voxel<I,Pos,For>,
         I: Index,
@@ -231,7 +247,7 @@ where
         Ok(())
     }
 
-    fn calculate_force_from_cells_on_other_cell<Pos,Inf,Vel>(&self, ext_pos: &Pos, ext_inf: &Option<Inf>) -> Result<For, CalcError>
+    fn calculate_force_from_cells_on_other_cell<Inf>(&self, ext_pos: &Pos, ext_inf: &Option<Inf>) -> Result<For, CalcError>
     where
         V: Voxel<I,Pos,For>,
         I: Index,
@@ -251,7 +267,7 @@ where
         Ok(force)
     }
 
-    fn update_local_functions<Pos, Inf, Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
+    fn update_local_functions<Inf>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Pos: Position,
         For: Force + core::fmt::Debug,
@@ -317,16 +333,17 @@ where
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, V, D, C>
+pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, Vel, V, D, C>
 where
-    I: Index,
-    Pos: Position,
-    For: Force + Serialize + for<'a> Deserialize<'a>,
-    V: Voxel<I, Pos, For>,
-    C: Serialize + for<'a> Deserialize<'a> + Send + Sync,
-    D: Domain<C, I, V>,
+    I: ,
+    Pos: Serialize + for<'a> Deserialize<'a>,
+    For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
+    V: ,
+    C: Serialize + for<'a> Deserialize<'a>,
+    D: Serialize + for<'a> Deserialize<'a>,
 {
-    pub voxels: BTreeMap<PlainIndex, VoxelBox<I,V,C,For>>,
+    pub voxels: BTreeMap<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -367,7 +384,7 @@ where
 }
 
 
-impl<I, Pos, For, Inf, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, V, D, C>
+impl<I, Pos, For, Inf, Vel, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, Vel, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
@@ -375,12 +392,13 @@ where
     I: Index,
     V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
-    Pos: Position,
+    Pos: Serialize + for<'a> Deserialize<'a>,
     For: Force + Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
     Inf: Clone,
     C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
 {
-    fn update_local_functions<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
+    fn update_local_functions(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Pos: Position,
         For: Force,
@@ -433,8 +451,10 @@ where
         Ok(())
     }
 
-    fn calculate_forces_for_external_cells<Vel>(&self, pos_info: PosInformation<Pos, Inf>) -> Result<(), SimulationError>
+    fn calculate_forces_for_external_cells(&self, pos_info: PosInformation<Pos, Inf>) -> Result<(), SimulationError>
     where
+        Pos: Position,
+        Vel: Velocity,
         Vel: Velocity,
         C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
     {
@@ -454,8 +474,9 @@ where
         Ok(())
     }
 
-    pub fn update_mechanics<Vel>(&mut self, dt: &f64) -> Result<(), SimulationError>
+    pub fn update_mechanics(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
+        Pos: Position,
         Vel: Velocity,
         Inf: Clone,
         For: std::fmt::Debug,
@@ -535,22 +556,42 @@ where
         // Update position and velocity of cells
         for (_, vox) in self.voxels.iter_mut() {
             for (cell, aux_storage) in vox.cells.iter_mut() {
-                // Update cell position and velocity
+                // Calculate the current increment
                 let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
 
-                // Afterwards set force to 0.0 again
-                aux_storage.force = For::zero();
+                // Use the two-step Adams-Bashforth method. See also: https://en.wikipedia.org/wiki/Linear_multistep_method
+                // TODO We should be able to implement arbitrary steppers here
+                match (aux_storage.inc_pos_back_1.clone(), aux_storage.inc_pos_back_2.clone(), aux_storage.inc_vel_back_1.clone(), aux_storage.inc_vel_back_2.clone()) {
+                    // If all values are present, use the Adams-Bashforth 3rd order
+                    (Some(inc_pos_back_1), Some(inc_pos_back_2), Some(inc_vel_back_1), Some(inc_vel_back_2)) => {
+                        cell.set_pos(&(         cell.pos()      + dx.clone() * (23.0/12.0) * *dt - inc_pos_back_1 * (16.0/12.0) * *dt + inc_pos_back_2 * (5.0/12.0) * *dt));
+                        cell.set_velocity(&(    cell.velocity() + dv.clone() * (23.0/12.0) * *dt - inc_vel_back_1 * (16.0/12.0) * *dt + inc_vel_back_2 * (5.0/12.0) * *dt));
+                    },
+                    // Otherwise check and use the 2nd order
+                    (Some(inc_pos_back_1), None, Some(inc_vel_back_1), None) => {
+                        cell.set_pos(&(         cell.pos()      + dx.clone() * (3.0/2.0) * *dt - inc_pos_back_1 * (1.0/2.0) * *dt));
+                        cell.set_velocity(&(    cell.velocity() + dv.clone() * (3.0/2.0) * *dt - inc_vel_back_1 * (1.0/2.0) * *dt));
+                    },
+                    // This case should only exists in the beginning of the simulation
+                    // Then use the Euler Method
+                    _ => {
+                        cell.set_pos(&(         cell.pos()      + dx.clone() * *dt));
+                        cell.set_velocity(&(    cell.velocity() + dv.clone() * *dt));
+                    }
+                }
 
-                // TODO This is currently an Euler Stepper only. We should be able to use something like Verlet Integration instead: https://en.wikipedia.org/wiki/Verlet_integration
-                cell.set_pos(&(cell.pos() + dx * *dt));
-                cell.set_velocity(&(cell.velocity() + dv.clone() * *dt));
+                // Afterwards update values in auxiliary storage
+                aux_storage.force = For::zero();
+                aux_storage.inc_pos_back_1 = Some(dx);
+                aux_storage.inc_vel_back_1 = Some(dv);
             }
         }
         Ok(())
     }
 
-    pub fn sort_cells_in_voxels<Vel>(&mut self) -> Result<(), SimulationError>
+    pub fn sort_cells_in_voxels(&mut self) -> Result<(), SimulationError>
     where
+        Pos: Position,
         Vel: Velocity,
         C: Mechanics<Pos, For, Vel>,
     {
@@ -609,6 +650,7 @@ where
     pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
     where
         CellAgentBox<C>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel>: Clone
     {
         let cells = self.voxels.iter().map(|(_, vox)| vox.cells.clone().into_iter().map(|(c, _)| c))
             .flatten()
@@ -634,9 +676,10 @@ where
     }*/
 
 
-    pub fn run_full_update<Vel>(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
+    pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
     where
         Inf: Send + Sync + core::fmt::Debug,
+        Pos: Position,
         Vel: Velocity,
         C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + Clone,
     {
