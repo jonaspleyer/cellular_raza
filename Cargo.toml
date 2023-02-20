@@ -57,3 +57,8 @@ test_exhaustive = []
 
 [profile.release]
 debug = 1
+
+
+[[example]]
+name = "kidney_organoid_model"
+path = "examples/kidney_organoid_model/src/main.rs"

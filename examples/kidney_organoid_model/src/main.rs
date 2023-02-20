@@ -29,11 +29,12 @@ pub const CELL_VELOCITY_REDUCTION_RATE: f64 = 5e-4;
 pub const ATTRACTION_MULTIPLIER: f64 = 2.0;
 
 // Parameters for cell cycle
-pub const DIVISION_AGE: f64 = 100.0;
+pub const DIVISION_AGE: f64 = 300.0;
+pub const CELL_GROWTH_RATE: f64 = 0.3;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 6000.0;
-pub const DOMAIN_SIZE_Y: f64 = 6000.0;
+pub const DOMAIN_SIZE_X: f64 = 3000.0;
+pub const DOMAIN_SIZE_Y: f64 = 3000.0;
 
 // Where will the cells be placed initially
 pub const STARTING_DOMAIN_X_LOW:  f64 = 0.5*DOMAIN_SIZE_X - 0.02*DOMAIN_SIZE_X;
@@ -150,7 +151,7 @@ impl OwnCycle {
 impl cellular_raza::concepts::cycle::Cycle<ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle>> for OwnCycle {
     fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle>) -> Option<CycleEvent> {
         if c.interaction.cell_radius < CELL_RADIUS {
-            c.interaction.cell_radius += 2.0 * CELL_RADIUS * dt / DIVISION_AGE;
+            c.interaction.cell_radius += (CELL_RADIUS * CELL_GROWTH_RATE * dt / DIVISION_AGE).min(CELL_RADIUS - c.interaction.cell_radius);
         }
         c.cycle.age += dt;
         if c.cycle.age >= c.cycle.division_age && c.cycle.has_divided == false {
