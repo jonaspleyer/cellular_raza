@@ -16,11 +16,12 @@ use plotters::{
 
 
 // Constants of the simulation
-pub const N_CELLS_1: u32 = 30;
+pub const N_CELLS_1: u32 = 4;
 pub const N_CELLS_2: u32 = 0;
 
 // Mechanical parameters
 pub const CELL_RADIUS: f64 = 20.0;
+pub const CELL_RELATIVE_INTERACTION_RANGE: f64 = 1.5;
 pub const CELL_POTENTIAL_STRENGTH: f64 = 0.5;
 pub const CELL_VELOCITY_REDUCTION: f64 = 2.0;
 pub const CELL_VELOCITY_REDUCTION_MAX: f64 = 20.0;
@@ -28,24 +29,26 @@ pub const CELL_VELOCITY_REDUCTION_RATE: f64 = 5e-4;
 pub const ATTRACTION_MULTIPLIER: f64 = 2.0;
 
 // Parameters for cell cycle
-pub const DIVISION_AGE: f64 = 250.0;
+pub const DIVISION_AGE: f64 = 100.0;
 
 // Parameters for domain
-pub const N_VOXEL_X: usize = 15;
-pub const N_VOXEL_Y: usize = 15;
-pub const DOMAIN_SIZE_X: f64 = 3000.0;
-pub const DOMAIN_SIZE_Y: f64 = 3000.0;
-pub const DX_VOXEL_X: f64 = DOMAIN_SIZE_X / N_VOXEL_X as f64;
-pub const DX_VOXEL_Y: f64 = DOMAIN_SIZE_Y / N_VOXEL_Y as f64;
+pub const DOMAIN_SIZE_X: f64 = 6000.0;
+pub const DOMAIN_SIZE_Y: f64 = 6000.0;
+
+// Where will the cells be placed initially
+pub const STARTING_DOMAIN_X_LOW:  f64 = 0.5*DOMAIN_SIZE_X - 0.02*DOMAIN_SIZE_X;
+pub const STARTING_DOMAIN_X_HIGH: f64 = 0.5*DOMAIN_SIZE_X + 0.02*DOMAIN_SIZE_X;
+pub const STARTING_DOMAIN_Y_LOW:  f64 = 0.0*DOMAIN_SIZE_Y;
+pub const STARTING_DOMAIN_Y_HIGH: f64 = 0.02*DOMAIN_SIZE_Y;
 
 // Time parameters
-pub const N_TIMES: usize = 50_001;
-pub const DT: f64 = 1.0;
+pub const N_TIMES: usize = 30_001;
+pub const DT: f64 = 0.5;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 14;
+pub const N_THREADS: usize = 15;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug,std::cmp::PartialEq)]
@@ -80,7 +83,8 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, CellType, Unit<Vector2<f64>>)
     }
 
     fn calculate_force_on(&self, own_pos: &Vector2<f64>, ext_pos: &Vector2<f64>, ext_info: &Option<(f64, CellType, Unit<Vector2<f64>>)>) -> Option<Result<Vector2<f64>, CalcError>> {
-        let (r, dir) = match (own_pos-ext_pos).norm() < self.cell_radius/10.0 {
+        let min_relative_distance_to_center = 0.3162277660168379;
+        let (r, dir) = match (own_pos-ext_pos).norm() < self.cell_radius*min_relative_distance_to_center {
             false => {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
@@ -91,7 +95,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, CellType, Unit<Vector2<f64>>)
                     true => self.orientation.into_inner(),
                     false => (own_pos - ext_pos).normalize(),
                 };
-                let r = self.cell_radius/10.0;
+                let r = self.cell_radius*min_relative_distance_to_center;
                 (r, dir)
             }
         };
@@ -100,7 +104,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, CellType, Unit<Vector2<f64>>)
                 // Introduce Non-dimensional length variable
                 let sigma = r/(self.cell_radius + ext_radius);
                 let bound = 4.0 + 1.0/sigma;
-                let spatial_cutoff = (1.0+(1.5*(self.cell_radius+ext_radius)-r).signum())*0.5;
+                let spatial_cutoff = (1.0+(CELL_RELATIVE_INTERACTION_RANGE*(self.cell_radius+ext_radius)-r).signum())*0.5;
                 
                 // Calculate the strength of the interaction with correct bounds
                 let strength = self.potential_strength*((1.0/sigma).powf(2.0) - (1.0/sigma).powf(4.0)).min(bound).max(-bound);
@@ -171,8 +175,10 @@ impl cellular_raza::concepts::cycle::Cycle<ModularCell<Vector2<f64>, MechanicsMo
         let r = c1.interaction.cell_radius;
 
         // Make both cells smaller
-        c1.interaction.cell_radius /= std::f64::consts::SQRT_2;
-        c2.interaction.cell_radius /= std::f64::consts::SQRT_2;
+        // ALso keep old cell larger
+        let relative_size_difference = 0.2;
+        c1.interaction.cell_radius *= (1.0+relative_size_difference)/std::f64::consts::SQRT_2;
+        c2.interaction.cell_radius *= (1.0-relative_size_difference)/std::f64::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
         let angle_1 = std::f64::consts::FRAC_PI_2 + rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
@@ -180,7 +186,7 @@ impl cellular_raza::concepts::cycle::Cycle<ModularCell<Vector2<f64>, MechanicsMo
 
         // Define new positions for cells
         // It is randomly chosen if the old cell is left or right
-        let sign = rng.gen_range(-1.0_f64..1.0_f64).signum();
+        let sign = -1.0;//rng.gen_range(-1.0_f64..1.0_f64).signum();
         let offset = sign*dir_vec.into_inner()*r*0.5;
         let old_pos = c1.pos();
 
@@ -260,11 +266,10 @@ fn main() {
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     // Cells of Type 1
-    let relative_outer_border = 0.3;
     let mut cells = (0..N_CELLS_1).map(|_| {
         let pos = Vector2::<f64>::from([
-            rng.gen_range(relative_outer_border*DOMAIN_SIZE_X..(1.0-relative_outer_border)*DOMAIN_SIZE_X),
-            rng.gen_range(relative_outer_border*DOMAIN_SIZE_Y..(1.0-relative_outer_border)*DOMAIN_SIZE_Y)]);
+            rng.gen_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH),
+            rng.gen_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH)]);
         ModularCell {
         mechanics: cellular_raza::impls_cell_models::modular_cell::MechanicsOptions::Mechanics(MechanicsModel2D {
             pos,
@@ -325,7 +330,7 @@ fn main() {
 
     supervisor.plotting_config = PlottingConfig {
         n_threads: Some(16),
-        image_size: 2000,
+        image_size: 3000,
     };
 
     // ###################################### PLOT THE RESULTS ######################################
