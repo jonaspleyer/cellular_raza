@@ -82,12 +82,11 @@ fn main() {
     cells.append(&mut c2);
 
     // Define the Simulation Domain itself
-    let domain = CartesianCuboid2 {
-        min: [-DOMAIN_SIZE_X, -DOMAIN_SIZE_Y],
-        max: [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        n_vox: [N_VOXEL_X, N_VOXEL_Y],
-        voxel_sizes: [DX_VOXEL_X, DX_VOXEL_Y],
-    };
+    let domain = CartesianCuboid2::from_boundaries_and_n_voxels(
+        [-DOMAIN_SIZE_X, -DOMAIN_SIZE_Y],
+        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
+        [N_VOXEL_X, N_VOXEL_Y]
+    ).unwrap();
 
     let setup = SimulationSetup {
         domain,

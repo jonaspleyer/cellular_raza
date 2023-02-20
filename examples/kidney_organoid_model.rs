@@ -252,12 +252,11 @@ fn main() {
 
     // ###################################### DEFINE SIMULATION DOMAIN ######################################
     // Define the simulation domain
-    let domain = CartesianCuboid2 {
-        min: [0.0; 2],
-        max: [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        n_vox: [N_VOXEL_X, N_VOXEL_Y],
-        voxel_sizes: [DX_VOXEL_X, DX_VOXEL_Y],
-    };
+    let domain = CartesianCuboid2::from_boundaries_and_interaction_ranges(
+        [0.0; 2],
+        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
+        [CELL_RELATIVE_INTERACTION_RANGE * CELL_RADIUS; 2]
+    ).unwrap();
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     // Cells of Type 1
