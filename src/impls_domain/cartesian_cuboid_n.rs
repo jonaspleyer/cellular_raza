@@ -78,11 +78,76 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = "` dimensions"]
         #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct $name {
-            pub min: [f64; $d],
-            pub max: [f64; $d],
-            pub n_vox: [usize; $d],
-            pub voxel_sizes: [f64; $d],
+            min: [f64; $d],
+            max: [f64; $d],
+            n_vox: [usize; $d],
+            voxel_sizes: [f64; $d],
         }
+
+
+        impl $name {
+            fn check_min_max(min: [f64; $d], max: [f64; $d]) -> Result<(), CalcError> {
+                for i in 0..$d {
+                    match max[i] > min[i] {
+                        false => Err(CalcError { message: format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max)}),
+                        true => Ok(()),
+                    }?;
+                }
+                Ok(())
+            }
+
+            fn check_positive<F>(interaction_ranges: [F; $d]) -> Result<(), CalcError>
+            where
+                F: PartialOrd + num::Zero + core::fmt::Debug,
+            {
+                for i in 0..$d {
+                    match interaction_ranges[i] > F::zero() {
+                        false => Err(CalcError { message: format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i])}),
+                        true => Ok(())
+                    }?;
+                }
+                Ok(())
+            }
+
+            #[doc = "Builds a new `"]
+            #[doc = stringify!($name)]
+            #[doc = "` from given boundaries and maximum interaction ranges of the containing cells."]
+            pub fn from_boundaries_and_interaction_ranges(min: [f64; $d], max: [f64; $d], interaction_ranges: [f64; $d]) -> Result<$name, CalcError> {
+                $name::check_min_max(min, max)?;
+                $name::check_positive(interaction_ranges)?;
+                let mut n_vox = [0; $d];
+                let mut voxel_sizes = [0.0; $d];
+                for i in 0..$d {
+                    n_vox[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as usize;
+                    voxel_sizes[i] = (max[i]-min[i])/n_vox[i] as f64;
+                }
+                Ok($name {
+                    min,
+                    max,
+                    n_vox,
+                    voxel_sizes,
+                })
+            }
+
+            #[doc = "Builds a new `"]
+            #[doc = stringify!($name)]
+            #[doc = "` from given boundaries and the number of voxels per dimension specified."]
+            pub fn from_boundaries_and_n_voxels(min: [f64; $d], max: [f64; $d], n_vox: [usize; $d]) -> Result<$name, CalcError> {
+                $name::check_min_max(min, max)?;
+                $name::check_positive(n_vox)?;
+                let mut voxel_sizes = [0.0; $d];
+                for i in 0..$d {
+                    voxel_sizes[i] = (max[i] - min[i]) / n_vox[i] as f64;
+                }
+                Ok($name {
+                    min,
+                    max,
+                    n_vox,
+                    voxel_sizes,
+                })
+            }
+        }
+
 
         // Define the struct for the voxel
         #[doc = "Cuboid Voxel for `"]
