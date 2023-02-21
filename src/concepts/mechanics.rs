@@ -12,10 +12,6 @@ pub trait Velocity = Sized + Add<Self,Output=Self> + AddAssign + Sub<Output=Self
 
 
 pub trait Mechanics<Pos, For, Vel>
-where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
 {
     fn pos(&self) -> Pos;
     fn velocity(&self) -> Vel;
