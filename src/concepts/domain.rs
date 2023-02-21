@@ -13,6 +13,7 @@ use std::marker::{Send,Sync};
 
 use core::hash::Hash;
 use core::cmp::Eq;
+use std::ops::{Add,Mul};
 
 use crossbeam_channel::{Sender,Receiver,SendError};
 use hurdles::Barrier;
@@ -57,7 +58,6 @@ where
 
 impl<C, I, V, D> Domain<CellAgentBox<C>, I, V> for DomainBox<D>
 where
-    I: Index,
     D: Domain<C, I, V>,
     V: Send + Sync,
     C: Serialize + for<'a> Deserialize<'a> + Send + Sync
@@ -84,19 +84,67 @@ where
 }
 
 
-pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
+/// The different types of boundary conditions in a PDE system
+/// One has to be careful, since the neumann condition is strictly speaking
+/// not of the same type since its units are multiplied by 1/time compared to the others.
+/// The Value variant is not a boundary condition in the traditional sense but 
+/// here used as the value which is present in another voxel.
+#[derive(Serialize,Deserialize,Clone,Debug)]
+pub enum BoundaryCondition<Conc> {
+    Neumann(Conc),
+    Dirichlet(Conc),
+    Value(Conc),
+}
 
+
+pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
+pub trait Concentration = Sized + Add<Self,Output=Self> + Mul<f64,Output=Self> + Send + Sync;
+
+/// This is a purely implementational detail and should not be of any concern to the end user.
 pub(crate) type PlainIndex = u32;
 
-pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
-where
-    I: Index,
+pub trait Voxel<I, Pos, Force, Conc>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 {
-    fn custom_force_on_cell(&self, _cell: &Pos) -> Option<Result<Force, CalcError>> {
+    fn custom_force_on_cell(&self, _pos: &Pos) -> Option<Result<Force, CalcError>> {
         None
     }
 
     fn get_index(&self) -> I;
+
+    // TODO these functions do NOT capture possible implementations accurately
+    // In principle we should differentiate between 
+    //      - total concentrations everywhere in domain
+    //          - some kind of additive/iterable multi-dimensional array
+    //          - eg. in cartesian 2d: (n1,n2,m) array where n1,n2 are the number of sub-voxels and m the number of different concentrations
+    //      - concentrations at a certain point
+    //          - some kind of vector with entries corresponding to the individual concentrations
+    //          - should be a slice of the total type
+    //      - boundary conditions to adjacent voxels
+    //          - some kind of multi-dimensional array with one dimension less than the total concentrations
+    //          - should be a slice of the total type
+    // In the future we hope to use https://doc.rust-lang.org/std/slice/struct.ArrayChunks.html
+
+    // This is currently only a trait valid for n types of concentrations which are constant across the complete voxel
+    // Functions related to diffusion and fluid dynamics of extracellular reactants/ligands
+    fn get_extracellular_at_point(&self, pos: &Pos) -> Result<Conc, RequestError>;
+    fn get_total_extracellular(&self) -> Conc;
+    fn set_total_extracellular(&mut self, concentrations: Conc) -> Result<(), CalcError>;
+    fn calculate_increment(&mut self, dt: &f64, increments: &mut std::vec::Drain<(Pos, Conc)>, boundaries: &mut std::vec::Drain<(I, BoundaryCondition<Conc>)>) -> Result<Conc, CalcError>;
+    fn boundary_condition_to_neighbor_voxel(&self, neighbor_index: &I) -> Result<BoundaryCondition<Conc>, IndexError>;
+}
+
+
+pub (crate) struct IndexBoundaryInformation<I> {
+    pub index_original_sender: PlainIndex,
+    pub index_original_sender_raw: I,
+    pub index_original_receiver: PlainIndex,
+}
+
+
+pub (crate) struct ConcentrationBoundaryInformation<Conc, I> {
+    pub index_original_sender: PlainIndex,
+    pub concentration_boundary: BoundaryCondition<Conc>,
+    pub index_original_receiver_raw: I,
 }
 
 
@@ -117,12 +165,13 @@ pub(crate) struct ForceInformation<Force> {
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub(crate) struct VoxelBox<I, V, C, Pos, For, Vel>
+pub struct VoxelBox<I, V, C, Pos, For, Vel, Conc>
 where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a>,
 {
     pub plain_index: PlainIndex,
     pub index: I,
@@ -134,11 +183,15 @@ where
     pub new_cells: Vec<C>,
     pub uuid_counter: u64,
     pub rng: ChaCha8Rng,
+    #[serde(bound = "")]
+    pub concentration_increments: Vec<(Pos, Conc)>,
+    #[serde(bound = "")]
+    pub concentration_boundaries: Vec<(I,BoundaryCondition<Conc>)>,
 }
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub(crate) struct AuxiliaryCellPropertyStorage<Pos,For,Vel> {
+pub struct AuxiliaryCellPropertyStorage<Pos,For,Vel> {
     force: For,
     cycle_event: bool,
 
@@ -167,14 +220,16 @@ where
 }
 
 
-impl<I, V, C, Pos, For, Vel> VoxelBox<I, V, C, Pos, For, Vel>
+impl<I, V, C, Pos, For, Vel, Conc> VoxelBox<I, V, C, Pos, For, Vel, Conc>
 where
+    I: Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: num::Zero + Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a>,
 {
-    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, Pos, For, Vel> {
+    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, Pos, For, Vel, Conc> {
         use rand::SeedableRng;
         let n_cells = cells.len() as u64;
         VoxelBox {
@@ -186,21 +241,25 @@ where
             new_cells: Vec::new(),
             uuid_counter: n_cells,
             rng: ChaCha8Rng::seed_from_u64(plain_index as u64 * 10),
+            concentration_increments: Vec::new(),
+            concentration_boundaries: Vec::new(),
         }
     }
 }
 
 
-impl<I, V, C, Pos, For, Vel> VoxelBox<I, V, C, Pos, For, Vel>
+impl<I, V, C, Pos, For, Vel, Conc> VoxelBox<I, V, C, Pos, For, Vel, Conc>
 where
+    I: Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a>,
 {
     fn calculate_custom_force_on_cells(&mut self) -> Result<(), CalcError>
     where
-        V: Voxel<I,Pos,For>,
+        V: Voxel<I,Pos,For,Conc>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -219,7 +278,7 @@ where
 
     fn calculate_force_between_cells_internally<Inf>(&mut self) -> Result<(), CalcError>
     where
-        V: Voxel<I,Pos,For>,
+        V: Voxel<I,Pos,For,Conc>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -249,7 +308,7 @@ where
 
     fn calculate_force_from_cells_on_other_cell<Inf>(&self, ext_pos: &Pos, ext_inf: &Option<Inf>) -> Result<For, CalcError>
     where
-        V: Voxel<I,Pos,For>,
+        V: Voxel<I,Pos,For,Conc>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -333,17 +392,16 @@ where
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, Vel, V, D, C>
+pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, Vel, Conc, V, D, C>
 where
-    I: ,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    V: ,
     C: Serialize + for<'a> Deserialize<'a>,
     D: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a> + 'static,
 {
-    pub voxels: BTreeMap<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel>>,
+    pub voxels: BTreeMap<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel, Conc>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -366,10 +424,16 @@ where
     pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Inf>>>,
     pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
+    pub senders_boundary_index: HashMap<usize, Sender<IndexBoundaryInformation<I>>>,
+    pub senders_boundary_concentrations: HashMap<usize, Sender<ConcentrationBoundaryInformation<Conc,I>>>,
+
     // Same for receiving
     pub receiver_cell: Receiver<CellAgentBox<C>>,
     pub receiver_pos: Receiver<PosInformation<Pos, Inf>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
+
+    pub receiver_index: Receiver<IndexBoundaryInformation<I>>,
+    pub receiver_concentrations: Receiver<ConcentrationBoundaryInformation<Conc,I>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
@@ -379,24 +443,26 @@ where
 
     #[cfg(not(feature = "no_db"))]
     pub database_cells: typed_sled::Tree<String, Vec<u8>>,
+    pub database_voxels: typed_sled::Tree<String, Vec<u8>>,
 
     pub mvc_id: u16,
 }
 
 
-impl<I, Pos, For, Inf, Vel, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, Vel, V, D, C>
+impl<I, Pos, For, Inf, Vel, Conc, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, Vel, Conc, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
     // (eg. mechanics, interaction, etc...)
-    I: Index,
-    V: Voxel<I, Pos, For>,
+    I: Index + Serialize + for<'a> Deserialize<'a>,
+    V: Voxel<I, Pos, For, Conc>,
     D: Domain<C, I, V>,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Force + Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     Inf: Clone,
     C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
+    Conc: Serialize + for<'a> Deserialize<'a>,
 {
     fn update_local_functions(&mut self, dt: &f64) -> Result<(), SimulationError>
     where

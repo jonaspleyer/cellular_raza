@@ -80,7 +80,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
         pub struct $name {
             min: [f64; $d],
             max: [f64; $d],
-            n_vox: [usize; $d],
+            n_vox: [i64; $d],
             voxel_sizes: [f64; $d],
         }
 
@@ -118,7 +118,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 let mut n_vox = [0; $d];
                 let mut voxel_sizes = [0.0; $d];
                 for i in 0..$d {
-                    n_vox[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as usize;
+                    n_vox[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as i64;
                     voxel_sizes[i] = (max[i]-min[i])/n_vox[i] as f64;
                 }
                 Ok($name {
@@ -142,7 +142,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 Ok($name {
                     min,
                     max,
-                    n_vox,
+                    n_vox: [$(n_vox[$k] as i64),+],
                     voxel_sizes,
                 })
             }
@@ -159,19 +159,99 @@ macro_rules! define_and_implement_cartesian_cuboid {
         pub struct $voxel_name {
                 pub min: [f64; $d],
                 pub max: [f64; $d],
-                pub index: [usize; $d],
+                middle: [f64; $d],
+                dx: [f64; $d],
+                pub index: [i64; $d],
+
+                pub extracellular_concentrations: f64,
+                pub diffusion_constant: f64,
+                domain_boundaries: Vec<([i64; $d], BoundaryCondition<f64>)>,
+        }
+
+        impl $voxel_name {
+            pub fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], extracellular_concentrations: f64, diffusion_constant: f64, domain_boundaries: Vec<([i64; $d], BoundaryCondition<f64>)>) -> $voxel_name {
+                let middle = [$((max[$k] + min[$k])/2.0),+];
+                let dx = [$(max[$k]-min[$k]),+];
+                $voxel_name {
+                    min,
+                    max,
+                    middle,
+                    dx,
+                    index,
+                    extracellular_concentrations,
+                    diffusion_constant,
+                    domain_boundaries,
+                }
+            }
+
+            fn position_is_in_domain(&self, pos: &SVector<f64, $d>) -> Result<(), RequestError> {
+                match pos.iter().enumerate().any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i])) {
+                    true => Err(RequestError{ message: format!("point {:?} is not in requested voxel with boundaries {:?} {:?}", pos, self.min, self.max)}),
+                    false => Ok(()),
+                }
+            }
+
+            fn index_to_distance_squared(&self, index: &[i64; $d]) -> f64 {
+                let mut diffs = [0; $d];
+                for i in 0..$d {
+                    diffs[i] = (index[i] as i32 - self.index[i] as i32).abs()
+                }
+                diffs.iter().enumerate().map(|(i, d)| self.dx[i].powf(2.0)* (*d as f64)).sum::<f64>()
+            }
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl Voxel<[usize; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name {
-            fn get_index(&self) -> [usize; $d] {
+        impl Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>, f64> for $voxel_name {
+            fn get_index(&self) -> [i64; $d] {
                 self.index
+            }
+
+            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<f64, RequestError> {
+                self.position_is_in_domain(pos)?;
+                Ok(self.extracellular_concentrations)
+            }
+
+            fn get_total_extracellular(&self) -> f64 {
+                self.extracellular_concentrations
+            }
+
+            fn set_total_extracellular(&mut self, concentrations: f64) -> Result<(), CalcError> {
+                Ok(self.extracellular_concentrations = concentrations)
+            }
+
+            fn calculate_increment(&mut self, dt: &f64, increments: &mut std::vec::Drain<(SVector<f64, $d>, f64)>, boundaries: &mut std::vec::Drain<([i64; $d], BoundaryCondition<f64>)>) -> Result<f64, CalcError> {
+                let mut inc = 0.0;
+
+                self.domain_boundaries
+                    .iter()
+                    .for_each(|(index, boundary)| match boundary {
+                        BoundaryCondition::Neumann(value) => inc += dt * value / self.index_to_distance_squared(index),
+                        BoundaryCondition::Dirichlet(value) => inc += (value-self.extracellular_concentrations) / self.index_to_distance_squared(index),
+                        BoundaryCondition::Value(value) => inc += (value-self.extracellular_concentrations) / self.index_to_distance_squared(index),
+                    });
+
+                increments
+                    .for_each(|(_, value)| inc += value);
+
+                boundaries
+                    .for_each(|(index, boundary)| match boundary {
+                        BoundaryCondition::Neumann(value) => inc += dt * value / self.index_to_distance_squared(&index),
+                        BoundaryCondition::Dirichlet(value) => inc += (value-self.extracellular_concentrations) / self.index_to_distance_squared(&index),
+                        BoundaryCondition::Value(value) => inc += (value-self.extracellular_concentrations) / self.index_to_distance_squared(&index),
+                    });
+
+                inc *= dt * self.diffusion_constant;
+                Ok(inc)
+            }
+
+            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<f64>, IndexError> {
+                Ok(BoundaryCondition::Value(self.extracellular_concentrations))
             }
         }
 
         // Implement the cartesian cuboid
         // Index is an array of size 3 with elements of type usize
-        impl<C> Domain<C, [usize; $d], $voxel_name> for $name
+        impl<C> Domain<C, [i64; $d], $voxel_name> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
         where C: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
@@ -205,18 +285,18 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 Ok(())
             }
         
-            fn get_voxel_index(&self, cell: &C) -> [usize; $d] {
+            fn get_voxel_index(&self, cell: &C) -> [i64; $d] {
                 let p = cell.pos();
                 let mut out = [0; $d];
 
                 for i in 0..$d {
-                    out[i] = ((p[i] - self.min[0]) / self.voxel_sizes[i]) as usize;
+                    out[i] = ((p[i] - self.min[0]) / self.voxel_sizes[i]) as i64;
                     out[i] = out[i].min(self.n_vox[i]-1).max(0);
                 }
                 return out;
             }
 
-            fn get_all_indices(&self) -> Vec<[usize; $d]> {
+            fn get_all_indices(&self) -> Vec<[i64; $d]> {
                 [$($k),+].iter()
                     .map(|i| (0..self.n_vox[*i]))
                     .multi_cartesian_product()
@@ -224,17 +304,17 @@ macro_rules! define_and_implement_cartesian_cuboid {
                     .collect()
             }
         
-            fn get_neighbor_voxel_indices(&self, index: &[usize; $d]) -> Vec<[usize; $d]> {
+            fn get_neighbor_voxel_indices(&self, index: &[i64; $d]) -> Vec<[i64; $d]> {
                 // Create the bounds for the following creation of all the voxel indices
-                let bounds: [[usize; 2]; $d] = [$(
+                let bounds: [[i64; 2]; $d] = [$(
                     [
-                        max(index[$k] as i32 - 1, 0) as usize,
+                        max(index[$k] as i32 - 1, 0) as i64,
                         min(index[$k]+2, self.n_vox[$k])
                     ]
                 ),+];
 
                 // Create voxel indices
-                let v: Vec<[usize; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
+                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
                     .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
                     .multi_cartesian_product()                  // all possible combinations
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
@@ -325,9 +405,9 @@ macro_rules! define_and_implement_cartesian_cuboid {
             /// THIS ALGORITHM IS NOT WORKING AND NOT A GOOD IDEA! MAYBE WE NEED TO MODIFY IT.
             /// THE CURRENT IMPLEMENTATION IS VERY STUDPID AND SIMPLY PRODUCES AN ITERATOR OVER ALL
             /// AVAILABLE INDICES AND THEN YIELDS CHUNKS FOR THE VOXEL CONTAINERS
-            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([usize; $d], $voxel_name)>>), CalcError> {
+            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name)>>), CalcError> {
                 // Get all voxel indices
-                let indices: Vec<[usize; $d]> = [$($k),+]
+                let indices: Vec<[i64; $d]> = [$($k),+]
                     .iter()                                     // indices supplied in macro invokation
                     .map(|i| (0..self.n_vox[*i]))               // ranges from self.n_vox
                     .multi_cartesian_product()                  // all possible combinations
@@ -341,15 +421,21 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 };
 
                 // Now we drain the indices vector
-
-                let mut index_voxel_combinations: Vec<([usize; $d], $voxel_name)> = indices
+                let mut index_voxel_combinations: Vec<([i64; $d], $voxel_name)> = indices
                     .into_iter()
                     .map(|ind| {
-                        (ind, $voxel_name {
-                            min: [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+],
-                            max: [$(self.min[$k] + (1+ind[$k]) as f64*self.voxel_sizes[$k]),+],
-                            index: ind,
-                        })
+                        let min = [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+];
+                        let max = [$(self.min[$k] + (1+ind[$k]) as f64*self.voxel_sizes[$k]),+];
+                        // TODO FIXUP we need to insert boundary conditions here as last argument
+                        let domain_boundaries = (0..$d)
+                            .map(|_| (-1_i64..2_i64))
+                            .multi_cartesian_product()
+                            .map(|v| [$(ind[$k] + v[$k]),+])
+                            .filter(|new_index| *new_index != ind)
+                            .filter(|new_index| new_index.iter().zip(self.n_vox.iter()).any(|(i1, i2)| *i1<0 || i2<=i1))
+                            .map(|new_index| (new_index, BoundaryCondition::Neumann(0.0)))
+                            .collect::<Vec<_>>();
+                        (ind, $voxel_name::new(min, max, ind, min[0], 100.0, domain_boundaries))
                     })
                     .collect();
                 
@@ -421,7 +507,7 @@ impl CreatePlottingRoot for CartesianCuboid2
         let step_x = max(1, ((self.n_vox[0]+1) as f64 / 10.0).floor() as usize);
         let step_y = max(1, ((self.n_vox[1]+1) as f64 / 10.0).floor() as usize);
         // Draw descriptions along x axis
-        (0..self.n_vox[0]+1).filter(|i| i % step_x == 0).for_each(|i| {
+        (0..self.n_vox[0] as usize+1).filter(|i| i % step_x == 0).for_each(|i| {
             let element_top = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x,                       xy0));
             let element_bot = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x, image_size_y as i32 - xy0));
 
@@ -430,7 +516,7 @@ impl CreatePlottingRoot for CartesianCuboid2
         });
 
         // Draw descriptions along y axis
-        (0..self.n_vox[1]+1).filter(|j| j % step_y == 0).for_each(|j| {
+        (0..self.n_vox[1] as usize+1).filter(|j| j % step_y == 0).for_each(|j| {
             let element_left  = create_element(1, j, (                      xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
             let element_right = create_element(1, j, (image_size_x as i32 - xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
 
