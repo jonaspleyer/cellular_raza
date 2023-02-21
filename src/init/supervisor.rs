@@ -1,8 +1,9 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox};
-use crate::concepts::domain::{Domain,Voxel,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex};
+use crate::concepts::domain::{Domain,Voxel,Concentration,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex,ConcentrationBoundaryInformation,IndexBoundaryInformation};
 use crate::concepts::domain::{DomainBox,Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::SimulationError;
+use crate::prelude::VoxelBox;
 
 use std::thread;
 use std::collections::{HashMap,BTreeMap};
@@ -48,18 +49,17 @@ impl Default for SimulationConfig {
 
 /// # Supervisor controlling simulation execution
 /// 
-pub struct SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
+pub struct SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
 where
-    Ind: ,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a> + 'static,
     Cel: Serialize + for<'a> Deserialize<'a>,
-    Vox: ,
     Dom: Serialize + for<'a> Deserialize<'a>,
 {
-    worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Vox, Dom, Cel>, SimulationError>>>,
-    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Vox, Dom, Cel>>,
+    worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Conc, Vox, Dom, Cel>, SimulationError>>>,
+    multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, Conc, Vox, Dom, Cel>>,
 
     time: TimeSetup,
     meta_params: SimulationMetaParams,
@@ -123,17 +123,18 @@ pub struct SimulationSetup<Dom, C>
 }
 
 
-impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom> From<SimulationSetup<Dom, Cel>> for SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Serialize + for<'a> Deserialize<'a> + Position + 'static + std::fmt::Debug,
     For: Serialize + for<'a> Deserialize<'a> + Force + 'static,
     Vel: Serialize + for<'a> Deserialize<'a> + Velocity + 'static,
-    Vox: Voxel<Ind, Pos, For> + Clone + 'static,
+    Conc: Serialize + for<'a> Deserialize<'a> + num::Zero,
+    Vox: Voxel<Ind, Pos, For, Conc> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
-    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
+    fn from(setup: SimulationSetup<Dom, Cel>) -> SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
     where
         Cel: Sized,
     {
@@ -159,6 +160,9 @@ where
         let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Cel>>, Receiver<CellAgentBox::<Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Pos, Inf>>, Receiver<PosInformation<Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
+
+        let sender_receiver_pairs_boundary_concentrations: Vec<(Sender<ConcentrationBoundaryInformation<Conc,Ind>>, Receiver<ConcentrationBoundaryInformation<Conc,Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_boundary_index: Vec<(Sender<IndexBoundaryInformation<Ind>>, Receiver<IndexBoundaryInformation<Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
         // Create a barrier to synchronize all threads
         let barrier = Barrier::new(n_threads);
@@ -242,12 +246,13 @@ where
         complete_path.set_file_name(filename);
         let db = sled::Config::new().path(std::path::Path::new(&complete_path)).open().unwrap();
         let tree_cells = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
+        let tree_voxels = typed_sled::Tree::<String, Vec<u8>>::open(&db, "voxel_storage");
         let meta_infos = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
 
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,Pos,For,Vel>> = chunk.clone()
+            let voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,Pos,For,Vel,Conc>> = chunk.clone()
                 .into_iter()
                 .map(|(plain_index, voxel)| {
                     let cells = match index_to_cells.remove(&plain_index) {
@@ -255,7 +260,7 @@ where
                         None => Vec::new(),
                     };
                     let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
-                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,Pos,For,Vel>::new(
+                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,Pos,For,Vel,Conc>::new(
                         plain_index,
                         convert_to_index[&plain_index].clone(),
                         voxel,
@@ -292,6 +297,8 @@ where
             let senders_cell = create_senders!(sender_receiver_pairs_cell);
             let senders_pos = create_senders!(sender_receiver_pairs_pos);
             let senders_force = create_senders!(sender_receiver_pairs_force);
+            let senders_boundary_index = create_senders!(sender_receiver_pairs_boundary_index);
+            let senders_boundary_concentrations = create_senders!(sender_receiver_pairs_boundary_concentrations);
 
             // Clone database instance
             #[cfg(not(feature = "no_db"))]
@@ -310,10 +317,16 @@ where
                 senders_cell,
                 senders_pos,
                 senders_force,
+
+                senders_boundary_index,
+                senders_boundary_concentrations,
                 
                 receiver_cell: sender_receiver_pairs_cell[i].1.clone(),
                 receiver_pos: sender_receiver_pairs_pos[i].1.clone(),
                 receiver_force: sender_receiver_pairs_force[i].1.clone(),
+
+                receiver_index: sender_receiver_pairs_boundary_index[i].1.clone(),
+                receiver_concentrations: sender_receiver_pairs_boundary_concentrations[i].1.clone(),
 
                 barrier: barrier.clone(),
 
@@ -501,13 +514,16 @@ impl Default for PlottingConfig
 }
 
 
-impl<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
 where
     Dom: Serialize + for<'a> Deserialize<'a> + Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
+    Conc: Serialize + for<'a> Deserialize<'a>,
     Cel: Serialize + for<'a> Deserialize<'a>,
+    Ind: Serialize + for<'a> Deserialize<'a>,
+    Vox: Serialize + for<'a> Deserialize<'a>,
 {
     fn spawn_worker_threads_and_run_sim(&mut self) -> Result<(), SimulationError>
     where
@@ -516,9 +532,11 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
+        Conc: 'static + Concentration,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
         Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
     {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
@@ -555,7 +573,7 @@ where
                     let dt = t - time;
                     time = t;
 
-                    match cont.run_full_update(&t, &dt) {
+                    match cont.run_full_update(&dt) {
                         Ok(()) => (),
                         Err(error) => {
                             // TODO this is not always an error in update_mechanics!
@@ -608,9 +626,11 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
+        Conc: 'static + Concentration,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
         Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
     {
         self.spawn_worker_threads_and_run_sim()?;
         
@@ -624,9 +644,11 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
+        Conc: 'static + Concentration,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
         Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
     {
         self.time.t_eval.drain_filter(|(t, _, _)| *t <= end_time);
         self.run_full_sim()?;
@@ -750,6 +772,7 @@ where
         For: Send + Sync,
         Inf: Send + Sync,
         Vel: Send + Sync,
+        Conc: Send + Sync,
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,
@@ -806,6 +829,7 @@ where
         For: Send + Sync,
         Inf: Send + Sync,
         Vel: Send + Sync,
+        Conc: Send + Sync,
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,

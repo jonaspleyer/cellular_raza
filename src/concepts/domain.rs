@@ -509,30 +509,80 @@ where
         Ok(())
     }
 
-    fn calculate_forces_for_external_cells(&self, pos_info: PosInformation<Pos, Inf>) -> Result<(), SimulationError>
-    where
-        Pos: Position,
-        Vel: Velocity,
-        Vel: Velocity,
-        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel>,
+    pub fn update_fluid_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     {
-        let vox = self.voxels.get(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
-        // Calculate force from cells in voxel
-        let force = vox.calculate_force_from_cells_on_other_cell(&pos_info.pos, &pos_info.info)?;
-
-        // Send back force information
-        let thread_index = self.plain_index_to_thread[&pos_info.index_sender];
-        self.senders_force[&thread_index].send(
-            ForceInformation{
-                force,
-                count: pos_info.count,
-                index_sender: pos_info.index_sender,
+        let indices_iterator = self.voxels.iter().map(|(ind, vox)| (ind.clone(), vox.index.clone(), vox.neighbors.clone())).collect::<Vec<_>>();
+        for (voxel_plain_index, voxel_index, neighbor_indices) in indices_iterator.into_iter() {
+            for neighbor_index in neighbor_indices {
+                match self.voxels.get(&neighbor_index) {
+                    Some(neighbor_voxel) => {
+                        let neighbor_voxel_index_raw = neighbor_voxel.index.clone();
+                        let bc = neighbor_voxel.voxel.boundary_condition_to_neighbor_voxel(&voxel_index)?;
+                        let vox = self.voxels.get_mut(&voxel_plain_index).unwrap();
+                        vox.concentration_boundaries.push((neighbor_voxel_index_raw, bc));
+                        Ok(())
+                    },
+                    None => self.senders_boundary_index[&self.plain_index_to_thread[&neighbor_index]].send(
+                        IndexBoundaryInformation {
+                            index_original_sender: voxel_plain_index,
+                            index_original_receiver: neighbor_index,
+                            index_original_sender_raw: voxel_index.clone(),
+                        }),
+                }?;
             }
-        )?;
+        }
         Ok(())
     }
 
-    pub fn update_mechanics(&mut self, dt: &f64) -> Result<(), SimulationError>
+    pub fn update_fluid_mechanics_step_2(&mut self) -> Result<(), SimulationError>
+    {
+        // Receive IndexBoundaryInformation and send back BoundaryConcentrationInformation
+        for index_boundary_information in self.receiver_index.try_iter() {
+            let voxel_box = self.voxels.get(&index_boundary_information.index_original_receiver).ok_or(IndexError{message: format!("")})?;
+
+            // Obtain the boundary concentrations to this voxel
+            let concentration_boundary = voxel_box.voxel.boundary_condition_to_neighbor_voxel(&index_boundary_information.index_original_sender_raw)?;
+
+            // Send back the concentrations here
+            let thread_index = self.plain_index_to_thread[&index_boundary_information.index_original_sender];
+            self.senders_boundary_concentrations[&thread_index].send(
+                ConcentrationBoundaryInformation {
+                    index_original_sender: index_boundary_information.index_original_sender,
+                    index_original_receiver_raw: voxel_box.voxel.get_index(),
+                    concentration_boundary,
+                }
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_fluid_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
+    where
+        Conc: Concentration,
+    {
+        // TODO
+        // Update boundary conditions with new 
+        for concentration_boundary_information in self.receiver_concentrations.try_iter() {
+            let vox = self.voxels.get_mut(&concentration_boundary_information.index_original_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", concentration_boundary_information.index_original_sender)})?;
+            vox.concentration_boundaries.push((concentration_boundary_information.index_original_receiver_raw, concentration_boundary_information.concentration_boundary));
+        }
+
+        self.voxels.iter_mut()
+            .map(|(_, voxel_box)| -> Result<(), SimulationError> {
+                let mut drained_increments = voxel_box.concentration_increments.drain(..);
+                let mut drained_boundaries = voxel_box.concentration_boundaries.drain(..);
+                let concentration_increment = voxel_box.voxel.calculate_increment(dt, &mut drained_increments, &mut drained_boundaries)?;
+                assert_eq!(drained_increments.len(), 0);
+                let concentration_now = voxel_box.voxel.get_total_extracellular();
+                voxel_box.voxel.set_total_extracellular(concentration_now + concentration_increment * *dt)?;
+                Ok(())
+            }).collect::<Result<(), SimulationError>>()?;
+        Ok(())
+    }
+
+    // TODO the trait bounds here are too harsh. We should not be required to have Pos: Position or Vel: Velocity here at all!
+    pub fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -590,18 +640,40 @@ where
 
         // Calculate custom force of voxel on cell
         self.voxels.iter_mut().map(|(_, vox)| vox.calculate_custom_force_on_cells()).collect::<Result<(),CalcError>>()?;
+        Ok(())
+    }
 
-        // Wait for all threads to send PositionInformation
-        self.barrier.wait();
-
+    pub fn update_cellular_mechanics_step_2(&mut self) -> Result<(), SimulationError>
+    where
+        Pos: Position,
+        Vel: Velocity,
+        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Clone,
+    {
         // Receive PositionInformation and send back ForceInformation
-        for obt_pos in self.receiver_pos.try_iter() {
-            self.calculate_forces_for_external_cells(obt_pos)?;
-        }
+        for pos_info in self.receiver_pos.try_iter() {
+            let vox = self.voxels.get(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
+            // Calculate force from cells in voxel
+            let force = vox.calculate_force_from_cells_on_other_cell(&pos_info.pos, &pos_info.info)?;
 
-        // Synchronize again such that every message reaches its receiver
-        self.barrier.wait();
-        
+            // Send back force information
+            let thread_index = self.plain_index_to_thread[&pos_info.index_sender];
+            self.senders_force[&thread_index].send(
+                ForceInformation{
+                    force,
+                    count: pos_info.count,
+                    index_sender: pos_info.index_sender,
+                }
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
+    where
+        Pos: Position,
+        Vel: Velocity,
+        C: Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Clone,
+    {
         // Update position and velocity of all cells with new information
         for obt_forces in self.receiver_force.try_iter() {
             let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)})?;
@@ -630,7 +702,7 @@ where
                         cell.set_pos(&(         cell.pos()      + dx.clone() * (3.0/2.0) * *dt - inc_pos_back_1 * (1.0/2.0) * *dt));
                         cell.set_velocity(&(    cell.velocity() + dv.clone() * (3.0/2.0) * *dt - inc_vel_back_1 * (1.0/2.0) * *dt));
                     },
-                    // This case should only exists in the beginning of the simulation
+                    // This case should only exists when the cell was first created
                     // Then use the Euler Method
                     _ => {
                         cell.set_pos(&(         cell.pos()      + dx.clone() * *dt));
@@ -647,7 +719,7 @@ where
         Ok(())
     }
 
-    pub fn sort_cells_in_voxels(&mut self) -> Result<(), SimulationError>
+    pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -681,20 +753,18 @@ where
                 None => {
                     match self.senders_cell.get(&new_thread_index) {
                         Some(sender) => {
-                            // println!("Everything fine: Old: {:?} New: {:?}", self.mvc_id, new_thread_index);
-                            // println!("Other threads {:?}", self.senders_cell.keys());
                             sender.send(cell)?;
                             Ok(())
                         }
-                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())})
+                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())}),
                     }
                 }
             }?;
         }
+        Ok(())
+    }
 
-        // Wait until every cell has been sent
-        self.barrier.wait();
-
+    pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError> {
         // Now receive new cells and insert them
         let mut new_cells = self.receiver_cell.try_iter().collect::<Vec<_>>();
         for cell in new_cells.drain(..) {
@@ -721,18 +791,48 @@ where
     }
 
 
-    pub fn run_full_update(&mut self, _t: &f64, dt: &f64) -> Result<(), SimulationError>
+    pub fn run_full_update(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Inf: Send + Sync + core::fmt::Debug,
         Pos: Position,
         Vel: Velocity,
+        Conc: Concentration,
         C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + Clone,
     {
-        self.update_mechanics(dt)?;
+        // These methods are used for sending requests and gathering information in general
+        // This gathers information of forces acting between cells and send between threads
+        #[cfg(not(feature = "no_fluid_mechanics"))]
+        self.update_fluid_mechanics_step_1()?;
 
+        // Gather boundary conditions between voxels and domain boundaries and send between threads
+        self.update_cellular_mechanics_step_1()?;
+
+        // Wait for all threads to synchronize.
+        // The goal is to have as few as possible synchronizations
+        self.barrier.wait();
+
+        #[cfg(not(feature = "no_fluid_mechanics"))]
+        self.update_fluid_mechanics_step_2()?;
+
+        self.update_cellular_mechanics_step_2()?;
+
+        self.barrier.wait();
+
+        // These are the true update steps where cell agents are modified the order here may play a role!
+        #[cfg(not(feature = "no_fluid_mechanics"))]
+        self.update_fluid_mechanics_step_3(dt)?;
+
+        self.update_cellular_mechanics_step_3(dt)?;
+
+        // TODO this currently also does application of domain boundaries which is wrong in general!
         self.update_local_functions(dt)?;
 
-        self.sort_cells_in_voxels()?;
+        // This function needs an additional synchronization step which cannot be correctly be done in between the other ones
+        self.sort_cells_in_voxels_step_1()?;
+
+        self.barrier.wait();
+
+        self.sort_cells_in_voxels_step_2()?;
         Ok(())
     }
 }

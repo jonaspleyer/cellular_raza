@@ -50,6 +50,8 @@ default = ["db_sled"]
 no_db = []
 db_sled = ["dep:sled", "dep:typed-sled"]
 db_json_dump = []
+# Disable features
+no_fluid_mechanics = []
 
 # Testing
 test_exhaustive = []
