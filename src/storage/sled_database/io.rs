@@ -2,19 +2,20 @@ use crate::concepts::errors::SimulationError;
 use crate::concepts::cell::{CellAgent,Id,CellAgentBox};
 use crate::concepts::domain::Index;
 use crate::concepts::mechanics::{Position,Force,Velocity};
+use crate::prelude::VoxelBox;
 
 use serde::{Serialize,Deserialize};
 
 use uuid::Uuid;
 
 
-fn iteration_uuid_to_entry(iteration: &u32, uuid: &Uuid) -> String
+fn cell_iteration_uuid_to_entry(iteration: &u32, uuid: &Uuid) -> String
 {
     format!("{:010.0}_{}", iteration, uuid)
 }
 
 
-fn entry_to_iteration_uuid(entry: &String) -> Result<(u32, Uuid), SimulationError>
+fn cell_entry_to_iteration_uuid(entry: &String) -> Result<(u32, Uuid), SimulationError>
 {
     let mut res = entry.split("_");
     let iter: u32 = res.next().unwrap().parse()?;
@@ -32,7 +33,7 @@ where
     C: Serialize + for<'a>Deserialize<'a>,
 {
     let serialized = bincode::serialize(cell)?;
-    tree.insert(&iteration_uuid_to_entry(iteration, &cell.get_uuid()), &serialized)?;
+    tree.insert(&cell_iteration_uuid_to_entry(iteration, &cell.get_uuid()), &serialized)?;
     Ok(())
 }
 
@@ -58,7 +59,7 @@ where
         cells_encoded.into_iter().for_each(|(uuid, cell_enc)| {
             // TODO Find another format to save cells in sled database
             // TODO create features to use other databases
-            let name = iteration_uuid_to_entry(&iteration, &uuid);
+            let name = cell_iteration_uuid_to_entry(&iteration, &uuid);
             batch.insert(&name, &cell_enc);
         });
         match tree.apply_batch(batch) {
@@ -86,7 +87,7 @@ where
     Vel: Velocity,
     C: for<'a> Deserialize<'a>,
 {
-    let retr = tree.get(&iteration_uuid_to_entry(iteration, uuid))?;
+    let retr = tree.get(&cell_iteration_uuid_to_entry(iteration, uuid))?;
     match retr {
         Some(retrieved) => {
             let cell = bincode::deserialize(&retrieved)?;
@@ -111,7 +112,7 @@ where
             match ret {
                 Ok((key, value)) => {
                     let val_des = bincode::deserialize::<CellAgentBox<C>>(&value);
-                    match (entry_to_iteration_uuid(&key), val_des) {
+                    match (cell_entry_to_iteration_uuid(&key), val_des) {
                         (Ok((iter, _)), Ok(val)) => Some((iter, val)),
                         _ => None,
                     }
@@ -141,7 +142,7 @@ where
         .filter_map(|ret| ret.ok())
         .fold(std::collections::HashMap::<Uuid, Vec<(u32, CellAgentBox<C>)>>::new(), |mut acc, (key, val)| {
             let cb_res: Result<CellAgentBox<C>, _> = bincode::deserialize(&val);
-            let entry_res = entry_to_iteration_uuid(&key);
+            let entry_res = cell_entry_to_iteration_uuid(&key);
             match (cb_res, entry_res) {
                 (Ok(cb), Ok((iter, uuid))) => {
                     let entries = acc.entry(uuid).or_insert_with(|| vec![(iter, cb.clone())]);
@@ -171,7 +172,7 @@ where
         .iter()
         .map(|ret| {
             match ret {
-                Ok((key, _)) => Some(entry_to_iteration_uuid(&key).ok()),
+                Ok((key, _)) => Some(cell_entry_to_iteration_uuid(&key).ok()),
                 _ => None,
             }
             
@@ -203,7 +204,7 @@ where
         .filter_map(|opt| opt.ok())
         .filter_map(|(key, value)| {
             let cb: Option<CellAgentBox<C>> = bincode::deserialize(&value).ok();
-            let res = entry_to_iteration_uuid(&key).ok();
+            let res = cell_entry_to_iteration_uuid(&key).ok();
             match (cb, res) {
                 (Some(cab), Some((it, _))) => Some((it, cab)),
                 _ => None,
@@ -239,7 +240,7 @@ where
         .filter_map(|opt| opt.ok())
         .map(|(key, value)| {
             let cb: Option<CellAgentBox<C>> = bincode::deserialize(&value).ok();
-            let res = entry_to_iteration_uuid(&key).ok();
+            let res = cell_entry_to_iteration_uuid(&key).ok();
             match (cb, res) {
                 (Some(cab), Some((it, _))) => Some((it, cab)),
                 _ => None,
@@ -323,8 +324,8 @@ mod test {
         #[cfg(feature = "test_exhaustive")]
         uuids.into_par_iter().for_each(|uuid| {
             (0..N_ITERS).for_each(|iter| {
-                let entry = iteration_uuid_to_entry(&iter, &uuid);
-                let res = entry_to_iteration_uuid(&entry);
+                let entry = cell_iteration_uuid_to_entry(&iter, &uuid);
+                let res = cell_entry_to_iteration_uuid(&entry);
                 let (iter_new, uuid_new) = res.unwrap();
 
                 assert_eq!(uuid_new, uuid);
@@ -335,8 +336,8 @@ mod test {
         #[cfg(not(feature = "test_exhaustive"))]
         uuids.into_iter().for_each(|uuid| {
             (0..N_ITERS).for_each(|iter| {
-                let entry = iteration_uuid_to_entry(&iter, &uuid);
-                let res = entry_to_iteration_uuid(&entry);
+                let entry = cell_iteration_uuid_to_entry(&iter, &uuid);
+                let res = cell_entry_to_iteration_uuid(&entry);
                 let (iter_new, uuid_new) = res.unwrap();
 
                 assert_eq!(uuid_new, uuid);
@@ -344,4 +345,103 @@ mod test {
             })
         });
     }
+}
+
+
+use crate::concepts::domain::PlainIndex;
+
+
+fn voxel_iteration_plain_index_to_entry(iteration: &u32, plain_index: &PlainIndex) -> String {
+    format!("{:010.0}_{:010.0}", iteration, plain_index)
+}
+
+
+fn voxel_entry_to_iteration_plain_index(entry: &String) -> Result<(u32, PlainIndex), SimulationError>
+{
+    let mut res = entry.split("_");
+    let iter: u32 = res.next().unwrap().parse()?;
+    let plain_index: PlainIndex = res.next().unwrap().parse()?;
+    Ok((iter, plain_index))
+}
+
+
+pub fn store_voxels_in_database<I, V, C, Pos, For, Vel, Conc>
+(
+    tree: typed_sled::Tree<String, Vec<u8>>,
+    iteration: u32,
+    voxels: Vec<VoxelBox<I, V, C, Pos, For, Vel, Conc>>,
+) -> Result<(), SimulationError>
+where
+    I: Serialize + for<'a>Deserialize<'a>,
+    V: Serialize + for<'a>Deserialize<'a>,
+    C: Serialize + for<'a>Deserialize<'a>,
+    Pos: Serialize + for<'a>Deserialize<'a>,
+    For: Serialize + for<'a>Deserialize<'a>,
+    Vel: Serialize + for<'a>Deserialize<'a>,
+    Conc: Serialize + for<'a>Deserialize<'a>,
+{
+    let voxels_encoded: Vec<_> = voxels
+        .iter()
+        .map(|voxel| (voxel.plain_index, bincode::serialize(&voxel).unwrap()))
+        .collect();
+
+    async_std::task::spawn(async move {
+        let mut batch = typed_sled::Batch::<String, Vec<u8>>::default();
+
+        voxels_encoded.into_iter().for_each(|(uuid, cell_enc)| {
+            // TODO Find another format to save voxels in sled database
+            // TODO create features to use other databases
+            let name = voxel_iteration_plain_index_to_entry(&iteration, &uuid);
+            batch.insert(&name, &cell_enc);
+        });
+        match tree.apply_batch(batch) {
+            Ok(()) => (),
+            Err(error) => {
+                print!("Storing cells: Database error: {}", error);
+                println!("Continuing simulation anyway!");
+            },
+        }
+    });
+    
+    Ok(())
+}
+
+
+pub fn voxels_deserialize_tree<I, V, C, Pos, For, Vel, Conc>(tree: &typed_sled::Tree<String, Vec<u8>>, progress_style: Option<indicatif::ProgressStyle>) -> Result<std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, Conc>>>, SimulationError>
+where
+    I: Serialize + for<'a>Deserialize<'a>,
+    V: Serialize + for<'a>Deserialize<'a>,
+    C: Serialize + for<'a>Deserialize<'a>,
+    Pos: Serialize + for<'a>Deserialize<'a>,
+    For: Serialize + for<'a>Deserialize<'a>,
+    Vel: Serialize + for<'a>Deserialize<'a>,
+    Conc: Serialize + for<'a>Deserialize<'a>,
+{
+    let bar = indicatif::ProgressBar::new(tree.len() as u64);
+    match progress_style {
+        Some(s) => bar.set_style(s),
+        None => (),
+    }
+    println!("Reading from Database");
+    let res = tree
+        .iter()
+        .filter_map(|opt| opt.ok())
+        .filter_map(|(key, value)| {
+            let cb: Option<VoxelBox<I, V, C, Pos, For, Vel, Conc>> = bincode::deserialize(&value).ok();
+            let res = voxel_entry_to_iteration_plain_index(&key).ok();
+            match (cb, res) {
+                (Some(voxelbox), Some((it, _))) => Some((it, voxelbox)),
+                _ => None,
+            }
+        },)
+        .fold(std::collections::HashMap::<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, Conc>>>::new(), |mut acc, (it, voxelbox)| -> std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, Conc>>> {
+            match acc.get_mut(&it) {
+                Some(voxels) => voxels.push(voxelbox),
+                None => {acc.insert(it, vec![voxelbox]);},
+            };
+            bar.inc(1);
+            acc
+        });
+    bar.finish();
+    Ok(res)
 }

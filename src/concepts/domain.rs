@@ -6,7 +6,7 @@ use crate::concepts::mechanics::*;
 use crate::concepts::mechanics::{Position,Force,Velocity};
 
 #[cfg(feature = "db_sled")]
-use crate::storage::sled_database::io::store_cells_in_database;
+use crate::storage::sled_database::io::{store_cells_in_database,store_voxels_in_database};
 
 use std::collections::{HashMap,BTreeMap};
 use std::marker::{Send,Sync};
@@ -788,6 +788,16 @@ where
         store_cells_in_database(self.database_cells.clone(), *iteration, cells)?;
 
         Ok(())
+    }
+
+    #[cfg(not(feature = "no_db"))]
+    pub fn save_voxels_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
+    where
+        VoxelBox<I, V, C, Pos, For, Vel, Conc>: Clone,
+    {
+        let voxels = self.voxels.iter().map(|(_, voxel)| voxel.clone()).collect::<Vec<_>>();
+
+        store_voxels_in_database(self.database_voxels.clone(), *iteration, voxels)
     }
 
 
