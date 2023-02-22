@@ -29,7 +29,7 @@ pub const CELL_VELOCITY_REDUCTION_RATE: f64 = 5e-4;
 pub const ATTRACTION_MULTIPLIER: f64 = 2.0;
 
 // Parameters for cell cycle
-pub const DIVISION_AGE: f64 = 300.0;
+pub const DIVISION_AGE: f64 = 150.0;
 pub const CELL_GROWTH_RATE: f64 = 0.3;
 
 // Parameters for domain
@@ -43,13 +43,13 @@ pub const STARTING_DOMAIN_Y_LOW:  f64 = 0.0*DOMAIN_SIZE_Y;
 pub const STARTING_DOMAIN_Y_HIGH: f64 = 0.02*DOMAIN_SIZE_Y;
 
 // Time parameters
-pub const N_TIMES: usize = 30_001;
+pub const N_TIMES: usize = 50_001;
 pub const DT: f64 = 0.5;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 15;
+pub const N_THREADS: usize = 8;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug,std::cmp::PartialEq)]
