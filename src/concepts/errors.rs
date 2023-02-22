@@ -63,6 +63,7 @@ define_errors!(
     (CalcError, "General Calculation Error"),
     (DivisionError, "Errors related to a cell dividing process"),
     (IndexError, "Can occur internally when information is not present at expected place"),
+    (RequestError, "Ask the wrong object for information and receive this error"),
     (BoundaryError, "Can occur during boundary calculation"),
     (GenericDataBaseError, "Placeholder for when Database is not compiled."),
     (DrawingError, "Used to catch errors related to plotting")
@@ -81,23 +82,24 @@ type DataBaseError = GenericDataBaseError;
 pub enum SimulationError {
     // Very likely to be user errors
     CalcError(CalcError),
+    RequestError(RequestError),
     DivisionError(DivisionError),
     BoundaryError(BoundaryError),
-    DataBaseError(DataBaseError),
-    SerializeError(Box<bincode::ErrorKind>),
-    UuidError(uuid::Error),
-    ParseIntError(std::num::ParseIntError),
-    Utf8Error(std::str::Utf8Error),
     DrawingError(DrawingError),
     // #[cfg(feature="db_mongodb")]
     // TODO
     // DataBaseError,
 
     // Less likely but possible to be user errors
+    DataBaseError(DataBaseError),
+    SerializeError(Box<bincode::ErrorKind>),
     SendError(String),
     ReceiveError(RecvError),
 
     // Highly unlikely to be user errors
+    UuidError(uuid::Error),
+    ParseIntError(std::num::ParseIntError),
+    Utf8Error(std::str::Utf8Error),
     IndexError(IndexError),
     IOError(std::io::Error),
     ThreadingError(rayon::ThreadPoolBuildError),
@@ -108,6 +110,7 @@ pub enum SimulationError {
 impl_from_error!{SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
+    (RequestError, RequestError),
     (DivisionError, DivisionError),
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
@@ -125,6 +128,7 @@ impl_from_error!{SimulationError,
 impl_error_variant!{SimulationError,
     SendError,
     ReceiveError,
+    RequestError,
     CalcError,
     DivisionError,
     BoundaryError,
