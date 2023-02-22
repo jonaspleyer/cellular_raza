@@ -218,7 +218,7 @@ fn plot_modular_cell
         s,
         Into::<ShapeStyle>::into(&cell_border_color).filled(),
     );
-    root.draw(&cell_border).unwrap();
+    root.draw(&cell_border)?;
 
     // Plot the inside of the cell
     let cell_inside = Circle::new(
@@ -226,7 +226,7 @@ fn plot_modular_cell
         s*(1.0 - relative_border_thickness),
         Into::<ShapeStyle>::into(&cell_inside_color).filled(),
     );
-    root.draw(&cell_inside).unwrap();
+    root.draw(&cell_inside)?;
 
     // Plot the orientation as a line in the cell
     let rotation = nalgebra::Rotation2::new(std::f64::consts::FRAC_PI_2);
@@ -238,7 +238,7 @@ fn plot_modular_cell
         (end.x, end.y)],
         Into::<ShapeStyle>::into(&cell_orientation_color).filled().stroke_width((s/5.0).ceil() as u32),
     );
-    root.draw(&orientation_pointer).unwrap();
+    root.draw(&orientation_pointer)?;
     Ok(())
 }
 
@@ -272,7 +272,7 @@ fn main() {
             attraction_multiplier: ATTRACTION_MULTIPLIER,
             cell_radius: CELL_RADIUS,
             celltype: CellType::One,
-            orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([1.0, 0.0])),//pos.y/DOMAIN_SIZE_Y - 1.0])),
+            orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([1.0, 0.0])),
         },
         cycle: OwnCycle::new(rng.gen_range(0.8*DIVISION_AGE..1.2*DIVISION_AGE)),
     }}).collect::<Vec<_>>();
