@@ -196,6 +196,30 @@ impl cellular_raza::concepts::cycle::Cycle<ModularCell<Vector2<f64>, MechanicsMo
 }
 
 
+fn plot_voxel
+    (voxel: &CartesianCuboidVoxel2, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+{
+    // Define lower and upper bounds for our values
+    let lower_bound = 0.0;
+    let upper_bound = 100.0;
+    let concentration = voxel.get_total_extracellular();
+    let h = ((upper_bound - concentration)/(upper_bound-lower_bound)).min(1.0).max(0.0);
+
+    // This should give a greyscale color palette
+    let voxel_color = plotters::prelude::HSLColor(0.0, 0.0, 0.3*(1.0-h));
+    let circle = plotters::prelude::Rectangle::new(
+        [(voxel.min[0], voxel.min[1]), (voxel.max[0], voxel.max[1])],
+        Into::<ShapeStyle>::into(&voxel_color).filled()
+    );
+
+    if voxel.index == [0; 2] {
+        println!("{:6.2} {:3.2}", concentration, h);
+    }
+    root.draw(&circle)?;
+    Ok(())
+}
+
+
 fn plot_modular_cell
     (modular_cell: &ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle>, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
@@ -321,9 +345,10 @@ fn main() {
 
     supervisor.plotting_config = PlottingConfig {
         n_threads: Some(16),
-        image_size: 3000,
+        image_size: 2000,
     };
 
     // ###################################### PLOT THE RESULTS ######################################
     supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func(&plot_modular_cell).unwrap();
+    // supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func(&plot_modular_cell, &plot_voxel).unwrap();
 }
