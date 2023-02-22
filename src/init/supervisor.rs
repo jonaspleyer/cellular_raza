@@ -78,6 +78,8 @@ where
     #[cfg(not(feature = "no_db"))]
     tree_cells: typed_sled::Tree<String, Vec<u8>>,
     #[cfg(not(feature = "no_db"))]
+    tree_voxels: typed_sled::Tree<String, Vec<u8>>,
+    #[cfg(not(feature = "no_db"))]
     meta_infos: typed_sled::Tree<String, Vec<u8>>,
 
     // PhantomData for template arguments
@@ -303,6 +305,7 @@ where
             // Clone database instance
             #[cfg(not(feature = "no_db"))]
             let tree_cells_new = tree_cells.clone();
+            let tree_voxels_new = tree_voxels.clone();
 
             // Define the container for many voxels
             let cont = MultiVoxelContainer {
@@ -332,6 +335,7 @@ where
 
                 #[cfg(not(feature = "no_db"))]
                 database_cells: tree_cells_new,
+                database_voxels: tree_voxels_new,
 
                 mvc_id: i as u16,
             };
@@ -360,6 +364,8 @@ where
 
             #[cfg(not(feature = "no_db"))]
             tree_cells,
+            #[cfg(not(feature = "no_db"))]
+            tree_voxels,
             #[cfg(not(feature = "no_db"))]
             meta_infos,
 
@@ -592,6 +598,7 @@ where
                     if _save {
                         // Save cells to database
                         cont.save_cells_to_database(&iteration)?;
+                        // cont.save_voxels_to_database(&iteration)?;
                     }
 
                     if save_full {}
@@ -863,6 +870,76 @@ where
                 current_cells
                     .iter()
                     .map(|cell| plotting_function(&cell.cell, &mut chart))
+                    .collect::<Result<(), SimulationError>>()?;
+
+                chart.present()?;
+                bar.inc(1);
+                Ok(())
+            }).collect::<Result<Vec<_>, SimulationError>>()?;
+
+            bar.finish();
+            Ok(())
+        })?;
+        Ok(())
+    }
+
+    #[cfg(not(feature = "no_db"))]
+    pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func<FuncCells,FuncVoxels>(&self, plotting_function_cells: &FuncCells, plotting_function_voxels: &FuncVoxels) -> Result<(), SimulationError>
+    where
+        Pos: Send + Sync,
+        For: Send + Sync,
+        Inf: Send + Sync,
+        Vel: Send + Sync,
+        Conc: Send + Sync,
+        Ind: Send + Sync,
+        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
+        Vox: Send + Sync,
+        Cel: Send + Sync,
+        CellAgentBox<Cel>: Send + Sync,
+        // VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Send + Sync,
+        FuncCells: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
+        FuncVoxels: Fn(&Vox, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
+    {
+        // Install the pool
+        let n_threads = match self.plotting_config.n_threads {
+            Some(threads) => threads,
+            None => self.meta_params.n_threads,
+        };
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
+        pool.install(|| -> Result<(), SimulationError> {
+            // Create progress bar for tree deserialization
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            // Deserialize the database tree
+            let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
+            let voxels_at_iter = crate::storage::sled_database::io::voxels_deserialize_tree::<Ind, Vox, Cel, Pos, For, Vel, Conc>(&self.tree_voxels, Some(style.clone()))?.into_iter().map(|(_, voxel)| voxel).collect::<Vec<_>>();
+
+            // Create progress bar for image generation
+            let bar = ProgressBar::new(cells_at_iter.len() as u64);
+            bar.set_style(style);
+
+            println!("Generating Images");
+            use rayon::prelude::*;
+
+            let mut r = vec![0; 3];
+            (&mut r, 1..10, 10..100, 100..1000).into_par_iter()
+                .for_each(|(r, x, y, z)| *r = x * y + z);
+
+            // TODO this is not a parallel iterator!
+            voxels_at_iter.into_iter().zip(cells_at_iter.into_iter())
+                .map(|(current_voxels, (iteration, current_cells))| -> Result<(), SimulationError> {
+                // Create a plotting root
+                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+
+                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
+
+                current_voxels
+                    .iter()
+                    .map(|voxel| plotting_function_voxels(&voxel.voxel, &mut chart))
+                    .collect::<Result<(), SimulationError>>()?;
+
+                current_cells
+                    .iter()
+                    .map(|cell| plotting_function_cells(&cell.cell, &mut chart))
                     .collect::<Result<(), SimulationError>>()?;
 
                 chart.present()?;
