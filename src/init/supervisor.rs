@@ -72,9 +72,6 @@ where
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    // Variables controlling simulation flow
-    stop_now: Arc<AtomicBool>,
-
     // Tree of database
     #[cfg(not(feature = "no_db"))]
     tree_cells: typed_sled::Tree<String, Vec<u8>>,
@@ -560,14 +557,13 @@ where
             let mut new_start_barrier = start_barrier.clone();
 
             // See if we need to save
-            let stop_now_new = Arc::clone(&self.stop_now);
+            let stop_now_new = Arc::new(AtomicBool::new(false));
 
             // Copy time evaluation points
             let t_start = self.time.t_start;
             let t_eval = self.time.t_eval.clone();
 
-            // Add bars
-            // if self.config.show_progressbar && cont.mvc_id == 0 {
+            // Add bar
             let show_progressbar = self.config.show_progressbar;
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             let bar = ProgressBar::new(t_eval.len() as u64);
@@ -603,10 +599,11 @@ where
                     if _save {
                         // Save cells to database
                         cont.save_cells_to_database(&iteration)?;
-                        // cont.save_voxels_to_database(&iteration)?;
                     }
 
-                    if save_full {}
+                    if save_full {
+                        cont.save_voxels_to_database(&iteration)?;
+                    }
 
                     // Check if we are stopping the simulation now
                     if stop_now_new.load(Ordering::Relaxed) {
