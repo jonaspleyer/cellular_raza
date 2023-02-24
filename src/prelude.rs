@@ -34,3 +34,4 @@ pub use crate::sim_flow::multiple_cell_types::*;
 
 // Plotting functions
 pub use crate::plotting::cells_2d::*;
+pub use crate::plotting::viridis_colormap::*;
