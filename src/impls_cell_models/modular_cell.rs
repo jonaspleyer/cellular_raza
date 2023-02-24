@@ -1,16 +1,18 @@
 use crate::concepts::cycle::{Cycle,CycleEvent};
 use crate::concepts::interaction::Interaction;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
+use crate::prelude::CellularReactions;
 
 use serde::{Serialize,Deserialize};
 
 
 #[derive(Clone,Debug,Serialize,Deserialize)]
-pub struct ModularCell<Pos, Mec, Int, Cyc>
+pub struct ModularCell<Pos, Mec, Int, Cyc, React>
 {
     pub mechanics: MechanicsOptions<Mec, Pos>,
     pub interaction: Int,
     pub cycle: Cyc,
+    pub cellular_reactions: React,
 }
 
 
@@ -27,7 +29,34 @@ pub enum MechanicsOptions<Mec, Pos> {
 }
 
 
-impl<Pos, For, Vel, Mec, Int, Cyc> Mechanics<Pos, For, Vel> for ModularCell<Pos, Mec, Int, Cyc>
+macro_rules! define_no_cellular_reactions{
+    ($conc_vec_intracellular:ty, $conc_vec_extracellular:ty) => {
+        #[derive(Clone,Debug,Serialize,Deserialize)]
+        pub struct NoCellularreactions {}
+
+        impl<Pos, Mec, Int, Cyc> CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular> for ModularCell<Pos, Mec, Int, Cyc, NoCellularreactions>
+        where
+            $conc_vec_intracellular: num::Zero,
+            $conc_vec_extracellular: num::Zero,
+        {
+            fn calculate_intra_and_extracellular_reaction_increment(&self, _internal_concentration_vector: &$conc_vec_intracellular, _external_concentration_vector: &$conc_vec_extracellular) -> Result<($conc_vec_intracellular, $conc_vec_extracellular), crate::concepts::errors::CalcError> {
+                Ok((<$conc_vec_intracellular>::zero(), <$conc_vec_extracellular>::zero()))
+            }
+
+            fn get_intracellular(&self) -> $conc_vec_intracellular {
+                <$conc_vec_intracellular>::zero()
+            }
+
+            fn set_intracellular(&mut self, _concentration_vector: $conc_vec_intracellular) {}
+        }
+
+    }
+}
+
+define_no_cellular_reactions!{f64, f64}
+
+
+impl<Pos, For, Vel, Mec, Int, Cyc, React> Mechanics<Pos, For, Vel> for ModularCell<Pos, Mec, Int, Cyc, React>
 where
     Mec: Mechanics<Pos, For, Vel>,
     Pos: Position,
@@ -71,7 +100,7 @@ where
 }
 
 
-impl<Pos, For, Inf, Mec, Int, Cyc> Interaction<Pos, For, Inf> for ModularCell<Pos, Mec, Int, Cyc>
+impl<Pos, For, Inf, Mec, Int, Cyc, React> Interaction<Pos, For, Inf> for ModularCell<Pos, Mec, Int, Cyc, React>
 where
     Pos: Position,
     For: Force,
@@ -87,7 +116,7 @@ where
 }
 
 
-impl<Pos, Mec, Int, Cyc> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc>
+impl<Pos, Mec, Int, Cyc, React> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc, React>
 where
     Cyc: Cycle<Self>,
 {
@@ -97,5 +126,23 @@ where
 
     fn divide(rng: &mut rand_chacha::ChaCha8Rng, c: &mut Self) -> Result<Option<Self>, crate::concepts::errors::DivisionError> {
         Cyc::divide(rng, c)
+    }
+}
+
+
+impl<Pos, ConcVecIntracellular, ConcVecExtracellular, Mec, Int, Cyc, React> CellularReactions<ConcVecIntracellular, ConcVecExtracellular> for ModularCell<Pos, Mec, Int, Cyc, React>
+where
+    React: CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
+{
+    fn calculate_intra_and_extracellular_reaction_increment(&self, internal_concentration_vector: &ConcVecIntracellular, external_concentration_vector: &ConcVecExtracellular) -> Result<(ConcVecIntracellular, ConcVecExtracellular), crate::prelude::CalcError> {
+        self.cellular_reactions.calculate_intra_and_extracellular_reaction_increment(internal_concentration_vector, external_concentration_vector)
+    }
+
+    fn get_intracellular(&self) -> ConcVecIntracellular {
+        self.cellular_reactions.get_intracellular()
+    }
+
+    fn set_intracellular(&mut self, concentration_vector: ConcVecIntracellular) {
+        self.cellular_reactions.set_intracellular(concentration_vector)
     }
 }
