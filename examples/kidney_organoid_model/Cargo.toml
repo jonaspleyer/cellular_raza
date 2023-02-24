@@ -9,5 +9,5 @@ serde = { version="1.0" }
 rand = { version="0.8", features = ["small_rng"] }
 rand_chacha = { version="0.3.1" }
 nalgebra = { version="0.32" }
-cellular_raza = { path="../../", features=["default", "no_fluid_mechanics"] }
+cellular_raza = { path="../../", features=["default"] }
 plotters = { version="0.3" }
