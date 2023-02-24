@@ -867,10 +867,10 @@ where
 
         self.update_cellular_mechanics_step_3(dt)?;
 
-        // TODO this currently also does application of domain boundaries which is wrong in general!
+        // TODO this currently also does application of domain boundaries and inclusion of new cells which is wrong in general!
         self.update_local_functions(dt)?;
 
-        // This function needs an additional synchronization step which cannot be correctly be done in between the other ones
+        // This function needs an additional synchronization step which cannot correctly be done in between the other ones
         self.sort_cells_in_voxels_step_1()?;
 
         self.barrier.wait();
