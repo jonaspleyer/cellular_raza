@@ -28,7 +28,9 @@ pub use crate::impls_cell_models::modular_cell::*;
 pub use crate::impls_domain::cartesian_cuboid_n::*;
 
 // Initalization of the Simulation
-pub use crate::init::supervisor::*;
+pub use crate::sim_flow::supervisor::*;
+pub use crate::sim_flow::config::*;
+pub use crate::sim_flow::multiple_cell_types::*;
 
 // Plotting functions
 pub use crate::plotting::cells_2d::*;

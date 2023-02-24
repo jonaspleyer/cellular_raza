@@ -37,7 +37,7 @@
 //!
 //! These statements must be taken with a grain of salt.
 //! While we strive for binary reproducability, one problem is non-associativity of floating point operations, meaning `a+(b+c)!=(a+b)+c` on the binary level of almost all of modern hardware.
-//! This situation is not a data-race! For more information look at the implementation inside the [init] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
+//! This situation is not a data-race! For more information look at the implementation inside the [sim_flow] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
 //! This situation can only be reliably circumvented when running on a single execution thread.
 //!
 //! ## Implementation Details
@@ -87,7 +87,7 @@ pub mod impls_cell_properties;
 /// Implementations of Domains
 pub mod impls_domain;
 /// Objects and Methods for initializing and controlling the simulation flow
-pub mod init;
+pub mod sim_flow;
 /// Methods for plotting simulation results
 pub mod plotting;
 /// Re-exports of all objects and methods
