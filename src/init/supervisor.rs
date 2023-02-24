@@ -49,12 +49,13 @@ impl Default for SimulationConfig {
 
 /// # Supervisor controlling simulation execution
 /// 
-pub struct SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
+pub struct SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
 where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    Conc: Serialize + for<'a> Deserialize<'a> + 'static,
+    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
+    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + 'static,
     Cel: Serialize + for<'a> Deserialize<'a>,
     Dom: Serialize + for<'a> Deserialize<'a>,
 {
@@ -520,13 +521,14 @@ impl Default for PlottingConfig
 }
 
 
-impl<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, Conc, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
 where
     Dom: Serialize + for<'a> Deserialize<'a> + Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    Conc: Serialize + for<'a> Deserialize<'a>,
+    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
     Cel: Serialize + for<'a> Deserialize<'a>,
     Ind: Serialize + for<'a> Deserialize<'a>,
     Vox: Serialize + for<'a> Deserialize<'a>,
@@ -538,11 +540,14 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
-        Conc: 'static + Concentration,
+        ConcVecExtracellular: 'static + Concentration,
+        ConcVecIntracellular: 'static + Concentration,
+        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
+        Vox: 'static + Voxel<Ind, Pos, For, ConcVecExtracellular>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
@@ -633,11 +638,14 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
-        Conc: 'static + Concentration,
+        ConcVecExtracellular: 'static + Concentration,
+        ConcVecIntracellular: 'static + Concentration,
+        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
+        Vox: 'static + Voxel<Ind, Pos, For, ConcVecExtracellular>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
         self.spawn_worker_threads_and_run_sim()?;
         
@@ -651,11 +659,14 @@ where
         For: 'static + Force,
         Inf: 'static + crate::concepts::interaction::InteractionInformation,
         Vel: 'static + Velocity,
-        Conc: 'static + Concentration,
+        ConcVecExtracellular: 'static + Concentration,
+        ConcVecIntracellular: 'static + Concentration,
+        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
         Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For, Conc>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Clone,
+        Vox: 'static + Voxel<Ind, Pos, For, ConcVecExtracellular>,
+        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>,
+        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
         self.time.t_eval.drain_filter(|(t, _, _)| *t <= end_time);
         self.run_full_sim()?;
@@ -779,7 +790,8 @@ where
         For: Send + Sync,
         Inf: Send + Sync,
         Vel: Send + Sync,
-        Conc: Send + Sync,
+        ConcVecExtracellular: Send + Sync,
+        ConcVecIntracellular: Send + Sync,
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,
@@ -836,7 +848,8 @@ where
         For: Send + Sync,
         Inf: Send + Sync,
         Vel: Send + Sync,
-        Conc: Send + Sync,
+        ConcVecExtracellular: Send + Sync,
+        ConcVecIntracellular: Send + Sync,
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,
@@ -890,7 +903,8 @@ where
         For: Send + Sync,
         Inf: Send + Sync,
         Vel: Send + Sync,
-        Conc: Send + Sync,
+        ConcVecExtracellular: Send + Sync,
+        ConcVecIntracellular: Send + Sync,
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,

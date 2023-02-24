@@ -14,3 +14,10 @@ pub trait Interaction<Pos, Force, Inf=()> {
     // TODO
     // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
 }
+
+
+pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular> {
+    fn get_intracellular(&self) -> ConcVecIntracellular;
+    fn set_intracellular(&mut self, concentration_vector: ConcVecIntracellular);
+    fn calculate_intra_and_extracellular_reaction_increment(&self, internal_concentration_vector: &ConcVecIntracellular, external_concentration_vector: &ConcVecExtracellular) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError>;
+}
