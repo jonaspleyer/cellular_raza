@@ -8,11 +8,11 @@ use rand::{SeedableRng,Rng};
 
 
 // Number of cells to put into simulation in the Beginning
-pub const N_CELLS: u32 = 10;
+pub const N_CELLS: u32 = 6;
 
 // Mechanical parameters
-pub const CELL_RADIUS: f64 = 20.0;
-pub const CELL_RELATIVE_INTERACTION_RANGE: f64 = 1.75;
+pub const CELL_RADIUS: f64 = 6.0;
+pub const CELL_RELATIVE_INTERACTION_RANGE: f64 = 1.25;
 pub const CELL_POTENTIAL_STRENGTH: f64 = 0.5;
 pub const CELL_VELOCITY_REDUCTION: f64 = 2.0;
 pub const CELL_VELOCITY_REDUCTION_MAX: f64 = 20.0;
@@ -26,28 +26,29 @@ pub const CELL_STUFF_SECRETION_RATE: f64 = 0.001;
 pub const CELL_STUFF_UPTAKE_RATE: f64 = 0.0;
 
 // Parameters for cell cycle
-pub const DIVISION_AGE_MIN: f64 = 45.0;
-pub const DIVISION_AGE_MAX: f64 = 55.0;
+pub const DIVISION_AGE_MIN: f64 = 190.0;
+pub const DIVISION_AGE_MAX: f64 = 210.0;
 pub const CELL_GROWTH_RATE: f64 = 0.3;
-pub const CELL_MAXIMUM_GENERATIONS: u8 = 2;
+pub const CELL_MAXIMUM_GENERATIONS: u8 = 1;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 5000.0;
-pub const DOMAIN_SIZE_Y: f64 = 5000.0;
+pub const DOMAIN_SIZE_X: f64 = 3000.0;
+pub const DOMAIN_SIZE_Y: f64 = 3000.0;
 
 // Where will the cells be placed initially
+// Define a polygon by points
 pub const STARTING_DOMAIN_X_LOW:  f64 = DOMAIN_SIZE_X/2.0 - 60.0;
 pub const STARTING_DOMAIN_X_HIGH: f64 = DOMAIN_SIZE_X/2.0 + 60.0;
-pub const STARTING_DOMAIN_Y_LOW:  f64 = 0.0;
-pub const STARTING_DOMAIN_Y_HIGH: f64 = 60.0;
+pub const STARTING_DOMAIN_Y_LOW:  f64 = DOMAIN_SIZE_Y/2.0 - 60.0;
+pub const STARTING_DOMAIN_Y_HIGH: f64 = DOMAIN_SIZE_Y/2.0 + 60.0;
 
 // Parameters for Voxel Reaction+Diffusion
 pub const VOXEL_DEGRADATION_RATE: f64 = 0.003;
-pub const VOXEL_DIFFUSION_CONSTANT: f64 = 100.0;
+pub const VOXEL_DIFFUSION_CONSTANT: f64 = 200.0;
 pub const VOXEL_INITIAL_CONCNENTRATION: f64 = 0.0;
 
 // Time parameters
-pub const N_TIMES: usize = 20_001;
+pub const N_TIMES: usize = 50_001;
 pub const DT: f64 = 0.5;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 40;
@@ -80,7 +81,7 @@ fn main() {
     let domain = CartesianCuboid2::from_boundaries_and_interaction_ranges(
         [0.0; 2],
         [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        [CELL_RELATIVE_INTERACTION_RANGE * CELL_RADIUS; 2],
+        [CELL_RELATIVE_INTERACTION_RANGE * CELL_RADIUS * 2.0; 2],
     ).unwrap();
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
