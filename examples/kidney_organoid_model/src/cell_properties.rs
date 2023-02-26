@@ -81,24 +81,24 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, Unit<Vector2<f64>>)> for Cell
 pub struct OwnCycle {
     age: f64,
     pub division_age: f64,
-    has_divided: bool,
-    generation: u16,
+    divisions: u8,
+    generation: u8,
     pub maximum_cell_radius: f64,
     pub growth_rate: f64,
-    cell_generation_branching_event: i32,
+    cell_maximum_divisions: u8,
 }
 
 
 impl OwnCycle {
-    pub fn new(division_age: f64, maximum_cell_radius: f64, growth_rate: f64, cell_generation_branching_event: i32) -> Self {
+    pub fn new(division_age: f64, maximum_cell_radius: f64, growth_rate: f64, cell_maximum_divisions: u8) -> Self {
         OwnCycle {
             age: 0.0,
             division_age,
-            has_divided: false,
+            divisions: 0,
             generation: 0,
             maximum_cell_radius,
             growth_rate,
-            cell_generation_branching_event,
+            cell_maximum_divisions,
         }
     }
 }
@@ -110,7 +110,7 @@ impl Cycle<MyCellType> for OwnCycle {
             c.interaction.cell_radius += (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt / c.cycle.division_age).min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
         }
         c.cycle.age += dt;
-        if c.cycle.age >= c.cycle.division_age && c.cycle.has_divided == false {
+        if c.cycle.age >= c.cycle.division_age && c.cycle.divisions<c.cycle.cell_maximum_divisions {
             Some(CycleEvent::Division)
         } else {
             None
@@ -143,15 +143,9 @@ impl Cycle<MyCellType> for OwnCycle {
         c2.set_pos(&(old_pos - offset));
 
         // If we reach a certain cell-generation in the simulation, we change the angle of our
-        if c2.cycle.generation as i32 % c2.cycle.cell_generation_branching_event == 0 {
-            let angle = std::f64::consts::FRAC_PI_8 * if c2.interaction.polarity % 2==0 {1.0} else {-1.0};
-            let rotation = nalgebra::Rotation2::new(angle);
-            c2.interaction.orientation = rotation*c2.interaction.orientation;
-            c2.interaction.polarity = ((c2.interaction.polarity + c2.interaction.polarity % 2) as f64 / 2.0).round() as i32;
-        }
 
-        // Set flag true that first cell has already divided
-        c1.cycle.has_divided = true;
+        // Increase the amount of divisions that this cell has done
+        c1.cycle.divisions += 1;
 
         // New cell is completely new so set age to 0
         c2.cycle.age = 0.0;

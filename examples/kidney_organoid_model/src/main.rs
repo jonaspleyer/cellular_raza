@@ -29,7 +29,7 @@ pub const CELL_STUFF_UPTAKE_RATE: f64 = 0.0;
 pub const DIVISION_AGE_MIN: f64 = 45.0;
 pub const DIVISION_AGE_MAX: f64 = 55.0;
 pub const CELL_GROWTH_RATE: f64 = 0.3;
-pub const CELL_GENERATION_BRANCHING_EVENT: i32 = 50;
+pub const CELL_MAXIMUM_GENERATIONS: u8 = 2;
 
 // Parameters for domain
 pub const DOMAIN_SIZE_X: f64 = 5000.0;
@@ -107,7 +107,7 @@ fn main() {
             rng.gen_range(DIVISION_AGE_MIN..DIVISION_AGE_MAX),
             CELL_RADIUS,
             CELL_GROWTH_RATE,
-            CELL_GENERATION_BRANCHING_EVENT
+            CELL_MAXIMUM_GENERATIONS
         ),
         cellular_reactions: OwnReactions {
             intracellular_concentrations: ReactionVector::from_element(CELL_STUFF_INITIAL_CONCENTRATION),
