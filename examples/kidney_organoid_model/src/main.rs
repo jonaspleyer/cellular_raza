@@ -100,7 +100,7 @@ fn main() {
             attraction_multiplier: ATTRACTION_MULTIPLIER,
             relative_interaction_range: CELL_RELATIVE_INTERACTION_RANGE,
             cell_radius: CELL_RADIUS,
-            orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([1.0, 0.0])),
+            orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([0.0, 1.0])),
             polarity: n_cell,
         },
         cycle: OwnCycle::new(

@@ -63,8 +63,7 @@ pub fn plot_modular_cell
     root.draw(&cell_inside)?;
 
     // Plot the orientation as a line in the cell
-    let rotation = nalgebra::Rotation2::new(std::f64::consts::FRAC_PI_2);
-    let directed_offset = (1.0 - 0.5*relative_border_thickness) * modular_cell.interaction.cell_radius * (rotation * modular_cell.interaction.orientation).into_inner();
+    let directed_offset = (1.0 - 0.5*relative_border_thickness) * modular_cell.interaction.cell_radius * modular_cell.interaction.orientation.into_inner();
     let start = modular_cell.pos() - directed_offset;
     let end = modular_cell.pos() + directed_offset;
     let orientation_pointer = plotters::element::PathElement::new(

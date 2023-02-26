@@ -130,7 +130,7 @@ impl Cycle<MyCellType> for OwnCycle {
         c2.interaction.cell_radius *= (1.0-relative_size_difference)/std::f64::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
-        let angle_1 = std::f64::consts::FRAC_PI_2 + rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
+        let angle_1 = rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
         let dir_vec = nalgebra::Rotation2::new(angle_1) * c1.interaction.orientation;
 
         // Define new positions for cells
