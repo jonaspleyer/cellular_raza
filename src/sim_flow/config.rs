@@ -98,19 +98,20 @@ where
 }
 
 
-impl<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
+impl<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Serialize + for<'a> Deserialize<'a> + Position + 'static + std::fmt::Debug,
     For: Serialize + for<'a> Deserialize<'a> + Force + 'static,
     Vel: Serialize + for<'a> Deserialize<'a> + Velocity + 'static,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,
+    ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,
-    Vox: Voxel<Ind, Pos, For, ConcVecExtracellular> + Clone + 'static,
+    Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
-    pub fn new_with_strategies(setup: SimulationSetup<Dom, Cel>, strategies: Strategies<Vox>) -> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
+    pub fn new_with_strategies(setup: SimulationSetup<Dom, Cel>, strategies: Strategies<Vox>) -> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
     where
         Cel: Sized,
     {
@@ -137,7 +138,7 @@ where
         let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Pos, Inf>>, Receiver<PosInformation<Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
-        let sender_receiver_pairs_boundary_concentrations: Vec<(Sender<ConcentrationBoundaryInformation<ConcVecExtracellular,Ind>>, Receiver<ConcentrationBoundaryInformation<ConcVecExtracellular,Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_boundary_concentrations: Vec<(Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,Ind>>, Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_boundary_index: Vec<(Sender<IndexBoundaryInformation<Ind>>, Receiver<IndexBoundaryInformation<Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
 
         // Create a barrier to synchronize all threads
@@ -228,7 +229,7 @@ where
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
             // TODO insert all variables correctly into this container here
-            let mut voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular,ConcVecIntracellular>> = chunk.clone()
+            let mut voxels: BTreeMap::<PlainIndex, crate::concepts::domain::VoxelBox<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular, ConcBoundaryExtracellular,ConcVecIntracellular>> = chunk.clone()
                 .into_iter()
                 .map(|(plain_index, voxel)| {
                     let cells = match index_to_cells.remove(&plain_index) {
@@ -236,7 +237,7 @@ where
                         None => Vec::new(),
                     };
                     let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
-                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular,ConcVecIntracellular>::new(
+                    let vbox = crate::concepts::domain::VoxelBox::<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular, ConcBoundaryExtracellular,ConcVecIntracellular>::new(
                         plain_index,
                         convert_to_index[&plain_index].clone(),
                         voxel,
