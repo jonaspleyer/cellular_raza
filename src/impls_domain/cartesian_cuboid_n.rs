@@ -168,15 +168,16 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 dx: [f64; $d],
                 index: [i64; $d],
 
-                pub extracellular_concentrations: nalgebra::SVector<f64, $n_reactions>,
-                pub diffusion_constant: nalgebra::SVector<f64, $n_reactions>,
-                pub production_rate: nalgebra::SVector<f64, $n_reactions>,
-                pub degradation_rate: nalgebra::SVector<f64, $n_reactions>,
-                domain_boundaries: Vec<([i64; $d], BoundaryCondition<nalgebra::SVector<f64, $n_reactions>>)>,
+                pub extracellular_concentrations: SVector<f64, $n_reactions>,
+                pub extracellular_gradient: SVector<SVector<f64, $d>, $n_reactions>,
+                pub diffusion_constant: SVector<f64, $n_reactions>,
+                pub production_rate: SVector<f64, $n_reactions>,
+                pub degradation_rate: SVector<f64, $n_reactions>,
+                domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>,
         }
 
         impl $voxel_name {
-            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<nalgebra::SVector<f64, $n_reactions>>)>) -> $voxel_name {
+            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>) -> $voxel_name {
                 let middle = [$((max[$k] + min[$k])/2.0),+];
                 let dx = [$(max[$k]-min[$k]),+];
                 $voxel_name {
@@ -185,10 +186,11 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                     middle,
                     dx,
                     index,
-                    extracellular_concentrations: nalgebra::SVector::<f64, $n_reactions>::from_element(0.0),
-                    diffusion_constant: nalgebra::SVector::<f64, $n_reactions>::from_element(0.0),
-                    production_rate: nalgebra::SVector::<f64, $n_reactions>::from_element(0.0),
-                    degradation_rate: nalgebra::SVector::<f64, $n_reactions>::from_element(0.0),
+                    extracellular_concentrations: SVector::<f64, $n_reactions>::from_element(0.0),
+                    extracellular_gradient: SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0)),
+                    diffusion_constant: SVector::<f64, $n_reactions>::from_element(0.0),
+                    production_rate: SVector::<f64, $n_reactions>::from_element(0.0),
+                    degradation_rate: SVector::<f64, $n_reactions>::from_element(0.0),
                     domain_boundaries,
                 }
             }
@@ -215,47 +217,68 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>, nalgebra::SVector<f64, $n_reactions>> for $voxel_name {
+        impl Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name {
             fn get_index(&self) -> [i64; $d] {
                 self.index
             }
+        }
 
-            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<nalgebra::SVector<f64, $n_reactions>, RequestError> {
+        impl ExtracellularMechanics<[i64; $d], SVector<f64, $d>, SVector<f64, $n_reactions>, SVector<SVector<f64, $d>, $n_reactions>, SVector<f64, $n_reactions>, SVector<f64, $n_reactions>> for $voxel_name {
+            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<SVector<f64, $n_reactions>, SimulationError> {
                 self.position_is_in_domain(pos)?;
                 Ok(self.extracellular_concentrations)
             }
 
-            fn get_total_extracellular(&self) -> nalgebra::SVector<f64, $n_reactions> {
+            fn get_total_extracellular(&self) -> SVector<f64, $n_reactions> {
                 self.extracellular_concentrations
             }
 
-            fn set_total_extracellular(&mut self, concentrations: nalgebra::SVector<f64, $n_reactions>) -> Result<(), CalcError> {
-                // if 26 < self.index[0] && self.index[0] < 30 && self.index[1] == 0 {
-                //     println!("Pos: {:7.1?} Index: {:2.0?} Current: {:9.8} <== Setting", self.middle, self.index, concentrations);
-                // }
-                Ok(self.extracellular_concentrations = concentrations)
+            fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<(), SimulationError> {
+                let mut new_gradient = SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0));
+                boundaries.iter()
+                    .for_each(|(index, boundary_condition)| {
+                        let extracellular_difference = match boundary_condition {
+                            BoundaryCondition::Neumann(value) => {*value},
+                            BoundaryCondition::Dirichlet(value) => {self.extracellular_concentrations-value},
+                            BoundaryCondition::Value(value) => {self.extracellular_concentrations-value},
+                        };
+                        let pointer = SVector::from([$(self.index[$k] as f64 - index[$k] as f64),+]);
+                        let dist = pointer.norm();
+                        let gradient = pointer.normalize()/dist;
+                        new_gradient.iter_mut().zip(extracellular_difference.into_iter()).for_each(|(component, diff)| *component += *diff*gradient);
+                        // let total_gradient = SVector::<SVector<f64,$d>,$n_reactions>::from_iterator(extracellular_difference.into_iter().map(|diff| *diff*gradient));
+                        // gradient += total_gradient;
+                    });
+                self.extracellular_gradient = new_gradient;
+                Ok(())
             }
 
-            fn calculate_increment(&self, dt: &f64, total_extracellular: &nalgebra::SVector<f64, $n_reactions>, increments: &[(SVector<f64, $d>, nalgebra::SVector<f64, $n_reactions>)], boundaries: &[([i64; $d], BoundaryCondition<nalgebra::SVector<f64, $n_reactions>>)]) -> Result<nalgebra::SVector<f64, $n_reactions>, CalcError> {
-                let mut inc = nalgebra::SVector::<f64, $n_reactions>::from_element(0.0);
-                // if self.index[0] == 28 && self.index[1] == 56 {
-                //     println!("{:?} {}", self.middle, total_extracellular);
-                // }
+            // TODO
+            fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, $n_reactions>, SimulationError> {
+                Ok(self.extracellular_gradient)
+            }
+
+            fn set_total_extracellular(&mut self, concentrations: &SVector<f64, $n_reactions>) -> Result<(), CalcError> {
+                Ok(self.extracellular_concentrations = *concentrations)
+            }
+
+            fn calculate_increment(&self, total_extracellular: &SVector<f64, $n_reactions>, point_sources: &[(SVector<f64, $d>, SVector<f64, $n_reactions>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<SVector<f64, $n_reactions>, CalcError> {
+                let mut inc = SVector::<f64, $n_reactions>::from_element(0.0);
 
                 self.domain_boundaries
                     .iter()
                     .for_each(|(index, boundary)| match boundary {
-                        BoundaryCondition::Neumann(value) => inc += *dt * value / self.index_to_distance_squared(index),
+                        BoundaryCondition::Neumann(value) => inc += value / self.index_to_distance_squared(index).sqrt(),
                         BoundaryCondition::Dirichlet(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(index),
                         BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(index),
                     });
 
-                increments.iter()
+                point_sources.iter()
                     .for_each(|(_, value)| inc += value);
 
                 boundaries.iter()
                     .for_each(|(index, boundary)| match boundary {
-                        BoundaryCondition::Neumann(value) => inc += *dt * value / self.index_to_distance_squared(&index),
+                        BoundaryCondition::Neumann(value) => inc += value / self.index_to_distance_squared(&index).sqrt(),
                         BoundaryCondition::Dirichlet(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(&index),
                         BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(&index),
                     });
@@ -266,7 +289,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 Ok(inc)
             }
 
-            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<nalgebra::SVector<f64, $n_reactions>>, IndexError> {
+            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<SVector<f64, $n_reactions>>, IndexError> {
                 Ok(BoundaryCondition::Value(self.extracellular_concentrations))
             }
         }
@@ -455,7 +478,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                             .map(|v| [$(ind[$k] + v[$k]),+])
                             .filter(|new_index| *new_index != ind)
                             .filter(|new_index| new_index.iter().zip(self.n_vox.iter()).any(|(i1, i2)| *i1<0 || i2<=i1))
-                            .map(|new_index| (new_index, BoundaryCondition::Neumann(nalgebra::SVector::<f64, $n_reactions>::from_element(0.0))))
+                            .map(|new_index| (new_index, BoundaryCondition::Neumann(SVector::<f64, $n_reactions>::from_element(0.0))))
                             .collect::<Vec<_>>();
                         (ind, $voxel_name::new(min, max, ind, domain_boundaries))
                     })
