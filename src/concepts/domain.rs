@@ -104,7 +104,7 @@ pub trait Concentration = Sized + Add<Self,Output=Self> + Mul<f64,Output=Self> +
 /// This is a purely implementational detail and should not be of any concern to the end user.
 pub(crate) type PlainIndex = u32;
 
-pub trait Voxel<I, Pos, Force, ConcVecExtracellular>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
+pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 {
     fn custom_force_on_cell(&self, _pos: &Pos) -> Option<Result<Force, CalcError>> {
         None
@@ -127,11 +127,18 @@ pub trait Voxel<I, Pos, Force, ConcVecExtracellular>: Send + Sync + Clone + Seri
 
     // This is currently only a trait valid for n types of concentrations which are constant across the complete voxel
     // Functions related to diffusion and fluid dynamics of extracellular reactants/ligands
-    fn get_extracellular_at_point(&self, pos: &Pos) -> Result<ConcVecExtracellular, RequestError>;
-    fn get_total_extracellular(&self) -> ConcVecExtracellular;
-    fn set_total_extracellular(&mut self, concentrations: ConcVecExtracellular) -> Result<(), CalcError>;
-    fn calculate_increment(&self, dt: &f64, total_extracellular: &ConcVecExtracellular, point_sources: &[(Pos, ConcVecExtracellular)], boundaries: &[(I, BoundaryCondition<ConcVecExtracellular>)]) -> Result<ConcVecExtracellular, CalcError>;
-    fn boundary_condition_to_neighbor_voxel(&self, neighbor_index: &I) -> Result<BoundaryCondition<ConcVecExtracellular>, IndexError>;
+}
+
+
+pub trait ExtracellularMechanics<Ind, Pos, ConcVec, ConcGradient, ConcTotal=ConcVec, ConcBoundary=ConcVec>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
+{
+    fn get_extracellular_at_point(&self, pos: &Pos) -> Result<ConcVec, SimulationError>;
+    fn get_total_extracellular(&self) -> ConcTotal;
+    fn update_extracellular_gradient(&mut self, boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)]) -> Result<(), SimulationError>;
+    fn get_extracellular_gradient_at_point(&self, pos: &Pos) -> Result<ConcGradient, SimulationError>;
+    fn set_total_extracellular(&mut self, concentration_total: &ConcTotal) -> Result<(), CalcError>;
+    fn calculate_increment(&self, total_extracellular: &ConcTotal, point_sources: &[(Pos, ConcVec)], boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)]) -> Result<ConcTotal, CalcError>;
+    fn boundary_condition_to_neighbor_voxel(&self, neighbor_index: &Ind) -> Result<BoundaryCondition<ConcBoundary>, IndexError>;
 }
 
 
@@ -166,13 +173,14 @@ pub(crate) struct ForceInformation<Force> {
 
 
 #[derive(Serialize,Deserialize,Clone)]
-pub struct VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>
+pub struct VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
 where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     pub plain_index: PlainIndex,
@@ -188,7 +196,7 @@ where
     #[serde(bound = "")]
     pub extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
     #[serde(bound = "")]
-    pub concentration_boundaries: Vec<(I,BoundaryCondition<ConcVecExtracellular>)>,
+    pub concentration_boundaries: Vec<(I,BoundaryCondition<ConcBoundaryExtracellular>)>,
 }
 
 
@@ -225,7 +233,7 @@ where
 }
 
 
-impl<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>
+impl<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
 where
     I: Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
@@ -233,9 +241,10 @@ where
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + Zero,
 {
-    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular> {
+    pub fn new(plain_index: PlainIndex, index: I, voxel: V, neighbors: Vec<PlainIndex>, cells: Vec<CellAgentBox<C>>) -> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular> {
         use rand::SeedableRng;
         let n_cells = cells.len() as u64;
         VoxelBox {
@@ -254,7 +263,7 @@ where
 }
 
 
-impl<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>
+impl<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular> VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
 where
     I: Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
@@ -262,11 +271,12 @@ where
     Vel: Serialize + for<'a> Deserialize<'a>,
     C: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     fn calculate_custom_force_on_cells(&mut self) -> Result<(), CalcError>
     where
-        V: Voxel<I,Pos,For,ConcVecExtracellular>,
+        V: Voxel<I,Pos,For>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -285,7 +295,7 @@ where
 
     fn calculate_force_between_cells_internally<Inf>(&mut self) -> Result<(), CalcError>
     where
-        V: Voxel<I,Pos,For,ConcVecExtracellular>,
+        V: Voxel<I,Pos,For>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -315,7 +325,7 @@ where
 
     fn calculate_force_from_cells_on_other_cell<Inf>(&self, ext_pos: &Pos, ext_inf: &Option<Inf>) -> Result<For, CalcError>
     where
-        V: Voxel<I,Pos,For,ConcVecExtracellular>,
+        V: Voxel<I,Pos,For>,
         I: Index,
         Pos: Position,
         For: Force,
@@ -396,7 +406,7 @@ where
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
-pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, V, D, C>
+pub(crate) struct MultiVoxelContainer<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, V, D, C>
 where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
@@ -404,9 +414,10 @@ where
     C: Serialize + for<'a> Deserialize<'a>,
     D: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
-    pub voxels: BTreeMap<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>>,
+    pub voxels: BTreeMap<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>,
 
     // TODO
     // Maybe we need to implement this somewhere else since
@@ -430,7 +441,7 @@ where
     pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
     pub senders_boundary_index: HashMap<usize, Sender<IndexBoundaryInformation<I>>>,
-    pub senders_boundary_concentrations: HashMap<usize, Sender<ConcentrationBoundaryInformation<ConcVecExtracellular,I>>>,
+    pub senders_boundary_concentrations: HashMap<usize, Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,I>>>,
 
     // Same for receiving
     pub receiver_cell: Receiver<CellAgentBox<C>>,
@@ -438,7 +449,7 @@ where
     pub receiver_force: Receiver<ForceInformation<For>>,
 
     pub receiver_index: Receiver<IndexBoundaryInformation<I>>,
-    pub receiver_concentrations: Receiver<ConcentrationBoundaryInformation<ConcVecExtracellular,I>>,
+    pub receiver_concentrations: Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,I>>,
 
     // TODO store datastructures for forces and neighboring voxels such that
     // memory allocation is minimized
@@ -454,13 +465,13 @@ where
 }
 
 
-impl<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcVecIntracellular, V, D, C>
+impl<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, V, D, C> MultiVoxelContainer<I, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, V, D, C>
 where
     // TODO abstract away these trait bounds to more abstract traits
     // these traits should be defined when specifying the individual cell components
     // (eg. mechanics, interaction, etc...)
     I: Index + Serialize + for<'a> Deserialize<'a>,
-    V: Voxel<I, Pos, For, ConcVecExtracellular>,
+    V: Voxel<I, Pos, For>,
     D: Domain<C, I, V>,
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Force + Serialize + for<'a> Deserialize<'a>,
@@ -468,15 +479,17 @@ where
     Inf: Clone,
     C: Serialize + for<'a>Deserialize<'a> + Send + Sync,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + Zero,
 {
-    fn update_local_functions(&mut self, dt: &f64) -> Result<(), SimulationError>
+    fn update_local_functions<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Pos: Position,
         For: Force,
         Inf: InteractionInformation,
         Vel: Velocity,
-        C: CellAgent<Pos, For, Inf, Vel>,
+        C: CellAgent<Pos, For, Inf, Vel> + InteractionExtracellularGRadient<C, ConcGradientExtracellular>,
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         self.voxels
             .iter_mut()
@@ -491,16 +504,24 @@ where
                 vox.cells.iter_mut()
                     .map(|(cell, _)| self.domain.apply_boundary(cell))
                     .collect::<Result<(), BoundaryError>>()?;
+
+                vox.cells.iter_mut()
+                    .map(|(cell, _)| {
+                        let gradient = vox.voxel.get_extracellular_gradient_at_point(&cell.cell.pos())?;
+                        C::sense_gradient(&mut cell.cell, &gradient)?;
+                        Ok(())
+                    }).collect::<Result<(), SimulationError>>()?;
                 Ok(())
             })
             .collect::<Result<(), SimulationError>>()
     }
 
-    // TODO correctly modify this functionality such that it permits sub-voxel resolution of diffusion processes
-    fn update_cellular_reactions(&mut self, dt: &f64) -> Result<(), SimulationError>
+    // TODO correctly add this functionality!
+    fn update_cellular_reactions<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         ConcVecIntracellular: std::ops::AddAssign + Mul<f64,Output=ConcVecIntracellular>,
         C: Mechanics<Pos, For, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>,
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         self.voxels.iter_mut()
             .map(|(_, voxelbox)| voxelbox.cells.iter_mut()
@@ -538,7 +559,9 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_1(&mut self) -> Result<(), SimulationError>
+    pub fn update_fluid_mechanics_step_1<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
+    where
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         let indices_iterator = self.voxels.iter().map(|(ind, vox)| (ind.clone(), vox.index.clone(), vox.neighbors.clone())).collect::<Vec<_>>();
         for (voxel_plain_index, voxel_index, neighbor_indices) in indices_iterator.into_iter() {
@@ -563,7 +586,9 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_2(&mut self) -> Result<(), SimulationError>
+    pub fn update_fluid_mechanics_step_2<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
+    where
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         // Receive IndexBoundaryInformation and send back BoundaryConcentrationInformation
         for index_boundary_information in self.receiver_index.try_iter() {
@@ -586,9 +611,11 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
+    pub fn update_fluid_mechanics_step_3<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         ConcVecExtracellular: Concentration,
+        ConcTotalExtracellular: Concentration,
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         // TODO
         // Update boundary conditions with new 
@@ -600,8 +627,10 @@ where
         self.voxels.iter_mut()
             .map(|(_, voxel_box)| -> Result<(), SimulationError> {
                 let total_extracellular = voxel_box.voxel.get_total_extracellular();
-                let concentration_increment = voxel_box.voxel.calculate_increment(dt, &total_extracellular, &voxel_box.extracellular_concentration_increments, &voxel_box.concentration_boundaries)?;
-                voxel_box.voxel.set_total_extracellular(total_extracellular + concentration_increment * *dt)?;
+                let concentration_increment = voxel_box.voxel.calculate_increment(&total_extracellular, &voxel_box.extracellular_concentration_increments, &voxel_box.concentration_boundaries[..])?;
+                // Update the gradients before we set new extracllular because otherwise it would be inaccurate. This way the gradients are "behind" the actual concentrations by one timestep
+                voxel_box.voxel.update_extracellular_gradient(&voxel_box.concentration_boundaries[..])?;
+                voxel_box.voxel.set_total_extracellular(&(total_extracellular + concentration_increment * *dt))?;
                 voxel_box.extracellular_concentration_increments.drain(..);
                 voxel_box.concentration_boundaries.drain(..);
                 Ok(())
@@ -821,7 +850,7 @@ where
     #[cfg(not(feature = "no_db"))]
     pub fn save_voxels_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
     where
-        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>: Clone,
+        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
     {
         let voxels = self.voxels.iter().map(|(_, voxel)| voxel.clone()).collect::<Vec<_>>();
 
@@ -831,14 +860,16 @@ where
 
     // TODO find better function signature to have multiple time-scales
     // or split into different functions
-    pub fn run_full_update(&mut self, dt: &f64) -> Result<(), SimulationError>
+    pub fn run_full_update<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Inf: Send + Sync + core::fmt::Debug,
         Pos: Position,
         Vel: Velocity,
         ConcVecExtracellular: Concentration,
+        ConcTotalExtracellular: Concentration,
         ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + Clone,
+        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<C, ConcGradientExtracellular> + Clone,
+        V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         // These methods are used for sending requests and gathering information in general
         // This gathers information of forces acting between cells and send between threads
