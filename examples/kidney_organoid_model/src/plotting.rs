@@ -1,5 +1,4 @@
 use cellular_raza::prelude::*;
-use cellular_raza::impls_cell_models::modular_cell::ModularCell;
 
 use plotters::{
     prelude::{DrawingArea,Cartesian2d,Circle,ShapeStyle},
@@ -35,7 +34,7 @@ pub fn plot_voxel
 
 
 pub fn plot_modular_cell
-    (modular_cell: &ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions>, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (modular_cell: &MyCellType, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     let cell_border_color = plotters::prelude::BLACK;
     let cell_inside_color = plotters::prelude::full_palette::GREEN;

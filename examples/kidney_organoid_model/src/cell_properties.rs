@@ -7,6 +7,7 @@ use rand::Rng;
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
+pub type MyCellType = ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
@@ -103,8 +104,8 @@ impl OwnCycle {
 }
 
 
-impl Cycle<ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions>> for OwnCycle {
-    fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions>) -> Option<CycleEvent> {
+impl Cycle<MyCellType> for OwnCycle {
+    fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut MyCellType) -> Option<CycleEvent> {
         if c.interaction.cell_radius < c.cycle.maximum_cell_radius {
             c.interaction.cell_radius += (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt / c.cycle.division_age).min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
         }
@@ -116,7 +117,7 @@ impl Cycle<ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, 
         }
     }
 
-    fn divide(rng: &mut rand_chacha::ChaCha8Rng, c1: &mut ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions>) -> Result<Option<ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions>>, DivisionError> {
+    fn divide(rng: &mut rand_chacha::ChaCha8Rng, c1: &mut MyCellType) -> Result<Option<MyCellType>, DivisionError> {
         // Clone existing cell
         c1.cycle.generation += 1;
         let mut c2 = c1.clone();
