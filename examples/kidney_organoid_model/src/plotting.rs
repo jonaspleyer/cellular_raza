@@ -18,17 +18,27 @@ pub fn plot_voxel
     let lower_bound = 0.0;
     let upper_bound = 1000.0;
     let concentration = voxel.get_total_extracellular()[0];
-    // println!("{}", concentration);
-    let h = ((concentration-lower_bound)/(upper_bound-lower_bound)).min(1.0).max(0.0);
 
-    // This should give a greyscale color palette
-    let voxel_color = create_viridis_color(h);
-    let circle = plotters::prelude::Rectangle::new(
+    // This should give a nice colormap
+    let voxel_color = ViridisRGB::get_color_normalized(concentration, lower_bound, upper_bound);
+    let rectangle = plotters::prelude::Rectangle::new(
         [(voxel.get_min()[0], voxel.get_min()[1]), (voxel.get_max()[0], voxel.get_max()[1])],
         Into::<ShapeStyle>::into(&voxel_color).filled()
     );
+    root.draw(&rectangle)?;
 
-    root.draw(&circle)?;
+    // Also plot the direction in which the current concentration is pointing
+    let gradient = voxel.extracellular_gradient[0];
+    let strength = gradient.norm();
+    let gradient_upper_bound = 100.0;
+    let start = Vector2::from(voxel.get_middle());
+    let end = if gradient!=Vector2::from([0.0; 2]) {start + (gradient/strength.max(gradient_upper_bound)).component_mul(&Vector2::from(voxel.get_dx()))/2.0} else {start};
+    let pointer = plotters::element::PathElement::new(
+        [(start.x, start.y),
+        (end.x, end.y)],
+        Into::<ShapeStyle>::into(&plotters::prelude::BLACK).filled().stroke_width(2),
+    );
+    root.draw(&pointer)?;
     Ok(())
 }
 
