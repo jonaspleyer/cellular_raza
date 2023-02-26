@@ -365,11 +365,11 @@ fn voxel_entry_to_iteration_plain_index(entry: &String) -> Result<(u32, PlainInd
 }
 
 
-pub fn store_voxels_in_database<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>
+pub fn store_voxels_in_database<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
 (
     tree: typed_sled::Tree<String, Vec<u8>>,
     iteration: u32,
-    voxels: Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>>,
+    voxels: Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>,
 ) -> Result<(), SimulationError>
 where
     I: Serialize + for<'a>Deserialize<'a>,
@@ -379,6 +379,7 @@ where
     For: Serialize + for<'a>Deserialize<'a>,
     Vel: Serialize + for<'a>Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a>Deserialize<'a>,
 {
     let voxels_encoded: Vec<_> = voxels
@@ -408,7 +409,11 @@ where
 }
 
 
-pub fn voxels_deserialize_tree<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>(tree: &typed_sled::Tree<String, Vec<u8>>, progress_style: Option<indicatif::ProgressStyle>) -> Result<std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>>>, SimulationError>
+pub fn voxels_deserialize_tree<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
+(
+    tree: &typed_sled::Tree<String, Vec<u8>>,
+    progress_style: Option<indicatif::ProgressStyle>
+) -> Result<std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>>, SimulationError>
 where
     I: Serialize + for<'a>Deserialize<'a>,
     V: Serialize + for<'a>Deserialize<'a>,
@@ -417,6 +422,7 @@ where
     For: Serialize + for<'a>Deserialize<'a>,
     Vel: Serialize + for<'a>Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a>Deserialize<'a>,
 {
     let bar = indicatif::ProgressBar::new(tree.len() as u64);
@@ -429,14 +435,14 @@ where
         .iter()
         .filter_map(|opt| opt.ok())
         .filter_map(|(key, value)| {
-            let cb: Option<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>> = bincode::deserialize(&value).ok();
+            let cb: Option<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>> = bincode::deserialize(&value).ok();
             let res = voxel_entry_to_iteration_plain_index(&key).ok();
             match (cb, res) {
                 (Some(voxelbox), Some((it, _))) => Some((it, voxelbox)),
                 _ => None,
             }
         },)
-        .fold(std::collections::HashMap::<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>>>::new(), |mut acc, (it, voxelbox)| -> std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcVecIntracellular>>> {
+        .fold(std::collections::HashMap::<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>>::new(), |mut acc, (it, voxelbox)| -> std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>> {
             match acc.get_mut(&it) {
                 Some(voxels) => voxels.push(voxelbox),
                 None => {acc.insert(it, vec![voxelbox]);},
