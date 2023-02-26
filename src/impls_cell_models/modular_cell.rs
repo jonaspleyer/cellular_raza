@@ -1,16 +1,16 @@
 use crate::concepts::cycle::{Cycle,CycleEvent};
-use crate::concepts::interaction::Interaction;
+use crate::concepts::interaction::{CellularReactions,Interaction,InteractionExtracellularGRadient};
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
-use crate::prelude::CellularReactions;
 
 use serde::{Serialize,Deserialize};
 
 
 #[derive(Clone,Debug,Serialize,Deserialize)]
-pub struct ModularCell<Pos, Mec, Int, Cyc, React>
+pub struct ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
 {
     pub mechanics: MechanicsOptions<Mec, Pos>,
     pub interaction: Int,
+    pub interaction_extracellular: IntExtracellular,
     pub cycle: Cyc,
     pub cellular_reactions: React,
 }
@@ -34,7 +34,7 @@ macro_rules! define_no_cellular_reactions{
         #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct NoCellularreactions {}
 
-        impl<Pos, Mec, Int, Cyc> CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular> for ModularCell<Pos, Mec, Int, Cyc, NoCellularreactions>
+        impl<Pos, Mec, Int, Cyc, IntExtracellular> CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular> for ModularCell<Pos, Mec, Int, Cyc, NoCellularreactions, IntExtracellular>
         where
             $conc_vec_intracellular: num::Zero,
             $conc_vec_extracellular: num::Zero,
@@ -56,7 +56,7 @@ macro_rules! define_no_cellular_reactions{
 define_no_cellular_reactions!{f64, f64}
 
 
-impl<Pos, For, Vel, Mec, Int, Cyc, React> Mechanics<Pos, For, Vel> for ModularCell<Pos, Mec, Int, Cyc, React>
+impl<Pos, For, Vel, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, For, Vel> for ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
 where
     Mec: Mechanics<Pos, For, Vel>,
     Pos: Position,
@@ -100,7 +100,7 @@ where
 }
 
 
-impl<Pos, For, Inf, Mec, Int, Cyc, React> Interaction<Pos, For, Inf> for ModularCell<Pos, Mec, Int, Cyc, React>
+impl<Pos, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, For, Inf> for ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
 where
     Pos: Position,
     For: Force,
@@ -116,7 +116,7 @@ where
 }
 
 
-impl<Pos, Mec, Int, Cyc, React> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc, React>
+impl<Pos, Mec, Int, Cyc, React, IntExtracellular> Cycle<Self> for ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
 where
     Cyc: Cycle<Self>,
 {
@@ -130,7 +130,7 @@ where
 }
 
 
-impl<Pos, ConcVecIntracellular, ConcVecExtracellular, Mec, Int, Cyc, React> CellularReactions<ConcVecIntracellular, ConcVecExtracellular> for ModularCell<Pos, Mec, Int, Cyc, React>
+impl<Pos, ConcVecIntracellular, ConcVecExtracellular, Mec, Int, Cyc, React, IntExtracellular> CellularReactions<ConcVecIntracellular, ConcVecExtracellular> for ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
 where
     React: CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
 {
@@ -144,5 +144,27 @@ where
 
     fn set_intracellular(&mut self, concentration_vector: ConcVecIntracellular) {
         self.cellular_reactions.set_intracellular(concentration_vector)
+    }
+}
+
+
+#[derive(Clone,Debug,Serialize,Deserialize)]
+pub struct NoExtracellularGradientSensing {}
+
+
+impl<C, ConcGradientExtracellular> InteractionExtracellularGRadient<C, ConcGradientExtracellular> for NoExtracellularGradientSensing
+{
+    fn sense_gradient(_cell: &mut C, _extracellular_gradient: &ConcGradientExtracellular) -> Result<(), crate::concepts::errors::CalcError> {
+        Ok(())
+    }
+}
+
+
+impl<Pos, Mec, Int, Cyc, React, IntExtracellular, ConcGradientExtracellular> InteractionExtracellularGRadient<ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>, ConcGradientExtracellular> for ModularCell<Pos, Mec, Int, Cyc, React, IntExtracellular>
+where
+    IntExtracellular: InteractionExtracellularGRadient<Self, ConcGradientExtracellular>,
+{
+    fn sense_gradient(cell: &mut Self, extracellular_gradient: &ConcGradientExtracellular) -> Result<(), crate::concepts::errors::CalcError> {
+        IntExtracellular::sense_gradient(cell, extracellular_gradient)
     }
 }
