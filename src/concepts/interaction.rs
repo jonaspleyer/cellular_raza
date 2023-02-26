@@ -16,6 +16,11 @@ pub trait Interaction<Pos, Force, Inf=()> {
 }
 
 
+pub trait InteractionExtracellularGRadient<Cell, ConcGradientExtracellular> {
+    fn sense_gradient(c: &mut Cell, gradient: &ConcGradientExtracellular) -> Result<(), CalcError>;
+}
+
+
 pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular> {
     fn get_intracellular(&self) -> ConcVecIntracellular;
     fn set_intracellular(&mut self, concentration_vector: ConcVecIntracellular);
