@@ -17,7 +17,7 @@ pub const CELL_POTENTIAL_STRENGTH: f64 = 0.5;
 pub const CELL_VELOCITY_REDUCTION: f64 = 2.0;
 pub const CELL_VELOCITY_REDUCTION_MAX: f64 = 20.0;
 pub const CELL_VELOCITY_REDUCTION_RATE: f64 = 5e-4;
-pub const ATTRACTION_MULTIPLIER: f64 = 2.0;
+pub const ATTRACTION_MULTIPLIER: f64 = 0.2;
 
 // Reactin parameters of the cell
 pub const CELL_STUFF_INITIAL_CONCENTRATION: f64 = 0.0;

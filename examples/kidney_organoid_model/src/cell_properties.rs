@@ -66,7 +66,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, (f64, Unit<Vector2<f64>>)> for Cell
                 let attraction_orientation_modifier = dir.dot(external_orientation).abs();
 
                 // Calculate only attracting and repelling forces
-                let attracting_force = dir * self.attraction_multiplier * attraction_orientation_modifier * strength.max(0.0) * spatial_cutoff;
+                let attracting_force = dir * (self.attraction_multiplier * attraction_orientation_modifier + 1.0) * strength.max(0.0) * spatial_cutoff;
                 let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
                 Some(Ok(repelling_force + attracting_force))
