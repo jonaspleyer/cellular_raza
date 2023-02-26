@@ -1,11 +1,11 @@
 # cellular_raza
-[![License: MPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/licenses/MPL-2.0)
-[![Test Nightly](https://github.com/jonaspleyer/cellular_raza/actions/workflows/test_nightly.yml/badge.svg?event=push)](https://github.com/jonaspleyer/cellular_raza/actions)
-[![Test Stable](https://github.com/jonaspleyer/cellular_raza/actions/workflows/test_stable.yml/badge.svg?event=push)](https://github.com/jonaspleyer/cellular_raza/actions)
+[![License: MPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/license/gpl-2-0/)
+[![Test Nightly](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly.yml?label=Test%20Nightly&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
+[![Test Stable](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable.yml?label=Test%20Stable&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.36+-lightgray.svg?style=flat-square)](https://github.com/jonaspleyer/cellular_raza#rust-version-requirements)
-[![Crate](https://img.shields.io/crates/v/cellular_raza.svg)](https://crates.io/crates/cellular_raza)
-[![API](https://docs.rs/cellular_raza/badge.svg)](https://docs.rs/cellular_raza)
-[![dependency status](https://deps.rs/crate/cellular_raza/0.0.1/status.svg)](https://deps.rs/crate/cellular_raza/0.0.1)
+[![Crate](https://img.shields.io/crates/v/cellular_raza.svg?style=flat-square)](https://crates.io/crates/cellular_raza)
+[![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
+[![dependency status](https://deps.rs/crate/cellular_raza/0.0.1/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
 
 A cellular Agent-Based modeling tool.
 
