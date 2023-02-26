@@ -179,3 +179,17 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         self.intracellular_concentrations = concentration_vector;
     }
 }
+
+
+#[derive(Clone,Debug,Serialize,Deserialize)]
+pub struct GradientSensing {}
+
+
+impl InteractionExtracellularGRadient<MyCellType, nalgebra::SVector<Vector2<f64>,1>> for GradientSensing {
+    fn sense_gradient(cell: &mut MyCellType<>, gradient: &nalgebra::SVector<Vector2<f64>,1>) -> Result<(), CalcError> {
+        if gradient[0].norm()!=0.0 {
+            cell.interaction.orientation = nalgebra::Unit::new_normalize(-gradient[0]);
+        }
+        Ok(())
+    }
+}

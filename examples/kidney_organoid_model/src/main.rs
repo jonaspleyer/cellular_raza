@@ -103,6 +103,7 @@ fn main() {
             orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([0.0, 1.0])),
             polarity: n_cell,
         },
+        interaction_extracellular: GradientSensing {},
         cycle: OwnCycle::new(
             rng.gen_range(DIVISION_AGE_MIN..DIVISION_AGE_MAX),
             CELL_RADIUS,
