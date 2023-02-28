@@ -119,6 +119,21 @@ define_linear_interpolation_color_scale!{
 
 
 define_linear_interpolation_color_scale!{
+    ViridisFading,
+    8,
+    RGBAColor,
+    ( 68,   1,  84, 0.5),
+    ( 70,  50, 127, 0.5),
+    ( 54,  92, 141, 0.5),
+    ( 39, 127, 143, 0.5),
+    ( 31, 162, 136, 0.5),
+    ( 74, 194, 110, 0.375),
+    (160, 219,  57, 0.25),
+    (254, 232,  37, 0.125)
+}
+
+
+define_linear_interpolation_color_scale!{
     ViridisRGB,
     8,
     RGBColor,
@@ -139,6 +154,51 @@ define_linear_interpolation_color_scale!{
     RGBColor,
     (  0,   0,   0),
     (255, 255,   255)
+}
+
+
+define_linear_interpolation_color_scale!{
+    Life,
+    4,
+    RGBColor,
+    (153,   0,   0),
+    (255, 153,  51),
+    (120, 255, 120),
+    ( 51, 255,  51)
+}
+
+
+define_linear_interpolation_color_scale!{
+    Dirt,
+    4,
+    RGBColor,
+    (140,  94,  14),
+    (199, 151,  68),
+    (217, 184, 128),
+    (212, 196, 169)
+}
+
+
+define_linear_interpolation_color_scale!{
+    Poison,
+    4,
+    RGBColor,
+    ( 11,  54,  38),
+    ( 10, 110,  73),
+    ( 63, 171, 104),
+    (141, 235, 113)
+}
+
+
+define_linear_interpolation_color_scale!{
+    Awesome,
+    5,
+    RGBColor,
+    (204, 229, 255),
+    (153, 153, 255),
+    (178, 102, 255),
+    (255,  51, 255),
+    (255,   0, 127)
 }
 
 
