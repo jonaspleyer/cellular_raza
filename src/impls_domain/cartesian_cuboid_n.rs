@@ -273,9 +273,6 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                         BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(index),
                     });
 
-                point_sources.iter()
-                    .for_each(|(_, value)| inc += value);
-
                 boundaries.iter()
                     .for_each(|(index, boundary)| match boundary {
                         BoundaryCondition::Neumann(value) => inc += value / self.index_to_distance_squared(&index).sqrt(),
@@ -283,6 +280,9 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                         BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(&index),
                     });
                 inc = inc.component_mul(&self.diffusion_constant);
+
+                point_sources.iter()
+                    .for_each(|(_, value)| inc += value);
 
                 // Also calculate internal reactions. Here it is very simple only given by degradation and production.
                 inc += self.production_rate - self.degradation_rate.component_mul(&total_extracellular);
