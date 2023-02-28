@@ -1,0 +1,5 @@
+target
+out
+*.png
+*.mp4
+Cargo.lock
