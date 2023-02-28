@@ -204,7 +204,7 @@ where
 pub struct AuxiliaryCellPropertyStorage<Pos,For,Vel,ConcVecIntracellular> {
     force: For,
     intracellular_concentration_increment: ConcVecIntracellular,
-    cycle_event: bool,
+    cycle_event: Option<CycleEvent>,
 
     inc_pos_back_1: Option<Pos>,
     inc_pos_back_2: Option<Pos>,
@@ -222,7 +222,7 @@ where
         AuxiliaryCellPropertyStorage {
             force: For::zero(),
             intracellular_concentration_increment: ConcVecIntracellular::zero(),
-            cycle_event: false,
+            cycle_event: None,
 
             inc_pos_back_1: None,
             inc_pos_back_2: None,
@@ -354,21 +354,27 @@ where
             .map(|(cbox, aux_storage)| {
                 // Check for cycle events and do update if necessary
                 match aux_storage.cycle_event {
-                    true => match C::divide(&mut self.rng, &mut cbox.cell)? {
-                        Some(new_cell) => self.new_cells.push(new_cell),
-                        None => (),
+                    Some(CycleEvent::Division) => {
+                        match C::divide(&mut self.rng, &mut cbox.cell)? {
+                            Some(new_cell) => self.new_cells.push(new_cell),
+                            None => (),
+                        };
+                        aux_storage.cycle_event = None;
                     },
-                    false => (),
-                }
-                aux_storage.cycle_event = false;
+                    Some(CycleEvent::Death) => (),
+                    None => (),
+                };
 
                 // Update the cell cycle
-                match C::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
-                    Some(CycleEvent::Division) => aux_storage.cycle_event = true,
-                    None => (),
-                }
+                aux_storage.cycle_event = C::update_cycle(&mut self.rng, dt, &mut cbox.cell);
                 Ok(())
         }).collect::<Result<(), SimulationError>>()?;
+
+        // Remove cells which are flagged for death
+        self.cells
+            .drain_filter(|(_, aux_storage)| aux_storage.cycle_event==Some(CycleEvent::Death))
+            .map(|(cbox, _)| C::die(&mut self.rng, cbox.cell))
+            .collect::<Result<(), DeathError>>()?;
 
         // Include new cells
         self.cells.extend(self.new_cells.drain(..).map(|cell| {
