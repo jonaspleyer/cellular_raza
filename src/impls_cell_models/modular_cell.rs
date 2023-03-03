@@ -1,4 +1,5 @@
 use crate::concepts::cycle::{Cycle,CycleEvent};
+use crate::concepts::errors::CalcError;
 use crate::concepts::interaction::{CellularReactions,Interaction,InteractionExtracellularGRadient};
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 
@@ -91,7 +92,7 @@ where
         }
     }
 
-    fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), crate::prelude::CalcError> {
+    fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {
         match &self.mechanics {
             MechanicsOptions::Mechanics(mech) => mech.calculate_increment(force),
             MechanicsOptions::FixedPos(mfp) => Ok((mfp.pos.clone() * 0.0, Vel::zero()))
@@ -110,7 +111,7 @@ where
         self.interaction.get_interaction_information()
     }
 
-    fn calculate_force_on(&self, own_pos: &Pos, ext_pos: &Pos, ext_information: &Option<Inf>) -> Option<Result<For, crate::prelude::CalcError>> {
+    fn calculate_force_on(&self, own_pos: &Pos, ext_pos: &Pos, ext_information: &Option<Inf>) -> Option<Result<For, CalcError>> {
         self.interaction.calculate_force_on(own_pos, ext_pos, ext_information)
     }
 }
@@ -134,7 +135,7 @@ impl<Pos, ConcVecIntracellular, ConcVecExtracellular, Mec, Int, Cyc, React, IntE
 where
     React: CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
 {
-    fn calculate_intra_and_extracellular_reaction_increment(&self, internal_concentration_vector: &ConcVecIntracellular, external_concentration_vector: &ConcVecExtracellular) -> Result<(ConcVecIntracellular, ConcVecExtracellular), crate::prelude::CalcError> {
+    fn calculate_intra_and_extracellular_reaction_increment(&self, internal_concentration_vector: &ConcVecIntracellular, external_concentration_vector: &ConcVecExtracellular) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError> {
         self.cellular_reactions.calculate_intra_and_extracellular_reaction_increment(internal_concentration_vector, external_concentration_vector)
     }
 

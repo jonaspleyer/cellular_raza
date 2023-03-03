@@ -8,21 +8,21 @@ macro_rules! implement_cell_types {
             $($celltype($celltype)),+
         }
 
-        impl Interaction<$pos, $force, $information> for CellAgentType {
+        impl crate::concepts::interaction::Interaction<$pos, $force, $information> for CellAgentType {
             fn get_interaction_information(&self) -> Option<$information> {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.get_interaction_information(),)+
                 }
             }
 
-            fn calculate_force_on(&self, own_pos: &$pos, ext_pos: &$pos, ext_information: &Option<$information>) -> Option<Result<$force, CalcError>> {
+            fn calculate_force_on(&self, own_pos: &$pos, ext_pos: &$pos, ext_information: &Option<$information>) -> Option<Result<$force, crate::concepts::errors::CalcError>> {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.calculate_force_on(own_pos, ext_pos, ext_information),)+
                 }
             }
         }
 
-        impl Cycle<CellAgentType> for CellAgentType {
+        impl crate::concepts::cycle::Cycle<CellAgentType> for CellAgentType {
             fn update_cycle(rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut CellAgentType) -> Option<crate::concepts::cycle::CycleEvent> {
                 match c {
                     $(CellAgentType::$celltype(cell) => $celltype::update_cycle(rng, dt, cell),)+
@@ -39,7 +39,7 @@ macro_rules! implement_cell_types {
             }
         }
 
-        impl Mechanics<$pos, $force, $velocity> for CellAgentType {
+        impl crate::concepts::mechanics::Mechanics<$pos, $force, $velocity> for CellAgentType {
             fn pos(&self) -> $pos {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.pos(),)+
@@ -64,7 +64,7 @@ macro_rules! implement_cell_types {
                 }
             }
 
-            fn calculate_increment(&self, force: $force) -> Result<($pos, $velocity), CalcError> {
+            fn calculate_increment(&self, force: $force) -> Result<($pos, $velocity), crate::concepts::errors::CalcError> {
                 match self {
                     $(CellAgentType::$celltype(cell) => cell.calculate_increment(force),)+
                 }
@@ -73,7 +73,7 @@ macro_rules! implement_cell_types {
 
         impl crate::plotting::spatial::PlotSelf for CellAgentType
         {
-            fn plot_self<Db>(&self, root: &mut plotters::prelude::DrawingArea<Db, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), DrawingError>
+            fn plot_self<Db>(&self, root: &mut plotters::prelude::DrawingArea<Db, plotters::coord::cartesian::Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>>) -> Result<(), crate::concepts::errors::DrawingError>
             where
                 Db: plotters::backend::DrawingBackend,
             {

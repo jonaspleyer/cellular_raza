@@ -109,9 +109,7 @@ pub mod impls_cell_models;
 pub mod impls_cell_properties;
 /// Implementations of Domains
 pub mod impls_domain;
-/// Objects and Methods for initializing and controlling the simulation flow
-pub mod sim_flow;
+/// The pipline controls the simulation flow. Multiple variants could be available.
+pub mod pipeline;
 /// Methods for plotting simulation results
 pub mod plotting;
-/// Re-exports of all objects and methods
-pub mod prelude;
