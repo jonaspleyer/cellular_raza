@@ -486,7 +486,7 @@ where
             // Create progress bar for tree deserialization
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             // Deserialize the database tree
-            let voxels_at_iter = crate::storage::sled_database::io::voxels_deserialize_tree::<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>(&self.tree_voxels, Some(style.clone()))?;
+            let voxels_at_iter = crate::storage::sled_database::io::voxels_deserialize_tree::<VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>(&self.tree_voxels, Some(style.clone()))?;
 
             // Create progress bar for image generation
             let bar = ProgressBar::new(voxels_at_iter.len() as u64);
