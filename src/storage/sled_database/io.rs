@@ -1,8 +1,7 @@
 use crate::concepts::errors::SimulationError;
 use crate::concepts::cell::{CellAgent,Id,CellAgentBox};
-use crate::concepts::domain::Index;
+use crate::concepts::domain::{Index,VoxelBox};
 use crate::concepts::mechanics::{Position,Force,Velocity};
-use crate::prelude::VoxelBox;
 
 use serde::{Serialize,Deserialize};
 
