@@ -2,6 +2,8 @@ use crate::concepts::cycle::*;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 use crate::concepts::interaction::*;
 use crate::concepts::errors::CalcError;
+use crate::concepts::domain::PlainIndex;
+use crate::storage::concepts::StorageIdent;
 
 use std::marker::{Send,Sync};
 
@@ -10,7 +12,6 @@ use uuid::Uuid;
 use serde::{Serialize,Deserialize};
 
 
-// pub trait CellAgent<Pos: Position, For: Force, Vel: Velocity> = Cycle<Self> + Interaction<Pos, For> + Mechanics<Pos, For, Vel> + Sized + Id + Send + Sync + Clone;
 pub trait CellAgent<Pos: Position, For: Force, Inf, Vel: Velocity>: Cycle<Self> + Interaction<Pos, For, Inf> + Mechanics<Pos, For, Vel> + Sized + Send + Sync + Clone + Serialize + for<'a> serde::Deserialize<'a>{}
 impl<Pos, For, Inf, Vel, A> CellAgent<Pos, For, Inf, Vel> for A
 where
@@ -36,7 +37,7 @@ pub struct CellAgentBox<A>
 where
     A: Serialize + for<'a> Deserialize<'a>
 {
-    created_at_ind: crate::concepts::domain::PlainIndex,
+    created_at_ind: PlainIndex,
     id: Uuid,
     #[serde(bound = "")]
     pub cell: A,
@@ -108,7 +109,7 @@ where
             created_at_ind: ind,
             id: Uuid::from_fields(
                 ind,
-                crate::storage::concepts::StorageIdent::Cell.value(),
+                StorageIdent::Cell.value(),
                 generation,
                 &n_cell.to_be_bytes()),
             cell,
