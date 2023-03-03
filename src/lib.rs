@@ -1,15 +1,21 @@
 #![feature(drain_filter)]
 #![feature(trait_alias)]
 
-//! This crate is an agent-based tool to simulate individual biological cells with a mechanistically driven mindset.
+//! An agent-based modeling tool to simulate individual biological cells with a mechanistically
+//! driven mindset.
 //! This means, properties of cells are thought to be individually driven by strictly local phenomena.
+//!
 //! # Simulating Cellular Biology
 //! This crate aims to provide interfaces to simulate the following mechanisms found in biological cells.
 //! - [x] Cellular mechanics via force interaction
-//! - [ ] Intra- and Extracellular Reactions by (Stochastic) ODEs and PDEs
-//! - [ ] Fluid Dynamics (Diffusion, etc.)
+//! - [ ] Intra- and Extracellular Reactions
+//!     - [x] ODEs
+//!     - [ ] Stochastic ODEs and PDEs
+//! - [ ] Fluid Dynamics
+//!     - [x] Diffusion
+//!     - [ ] ...
 //! - [x] Cell-Proliferation
-//! - [ ] Death
+//! - [x] Death
 //! - [ ] Differentiation
 //! - [ ] Contact functions
 //! - [ ] Custom (individual-only) rules
@@ -40,6 +46,13 @@
 //! This situation is not a data-race! For more information look at the implementation inside the [sim_flow] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
 //! This situation can only be reliably circumvented when running on a single execution thread.
 //!
+//! # Layers of Abstraction of this crate
+//! ## Concepts
+//! ## Cellular + Domain Implementations
+//! ## Pipeline
+// TODO where does plotting and storage fit in here?
+
+// TODO move this to the corresponding pipeline
 //! ## Implementation Details
 //! - Intrinsic parallelization over physical simulation domain
 //! - Strongly prefer static dispatch (frequent use of generics, avoid `Box<dyn Trait>`)
@@ -70,13 +83,23 @@
 //!     - we want to catch all errors
 //!     - Goal: evaluate error type and reduce step-size for solving (or solver altogether) and try again from last breakpoint
 
+//! # More Notes to include later
+//! - Since this is a scientific library, casts between different numeric types are necessary
+//!     - reduce them as much as possible
+//!     - try to only need to cast from integer to floating point types and when doing the other way around be really careful
+//! - Code Style/Guideline
 
+#[cfg(all(feature = "db_sled", feature = "db_mongodb"))]
+compile_error!("feature \"db_sled\" and feature \"db_mongodb\" cannot be enabled at the same time");
 
 #[cfg(all(feature = "no_db", any(feature = "db_sled", feature = "db_mongodb")))]
 compile_error!("feature \"no_db\" and database feature cannot be enabled at the same time");
 
 
-/// Semi-Abstract concepts for cells and simulation engine
+/// Abstract concepts to describe cell properties, the domain and possible errors
+///
+/// These concepts should be implemented by the user and then be used by a simulation
+/// [pipeline](crate::pipeline) which actually integrates the defined cellular properties.
 pub mod concepts;
 /// Database interface
 pub mod storage;
