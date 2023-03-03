@@ -28,9 +28,9 @@ pub use crate::implementations::cell_models::modular_cell::*;
 pub use crate::implementations::domains::cartesian_cuboid_n::*;
 
 // Initalization of the Simulation
-pub use crate::pipeline::cpu_os_threads::supervisor::*;
-pub use crate::pipeline::cpu_os_threads::config::*;
-pub use crate::pipeline::cpu_os_threads::multiple_cell_types::*;
+pub use crate::pipelines::cpu_os_threads::supervisor::*;
+pub use crate::pipelines::cpu_os_threads::config::*;
+pub use crate::pipelines::cpu_os_threads::multiple_cell_types::*;
 
 // Plotting functions
 pub use crate::plotting::cells_2d::*;

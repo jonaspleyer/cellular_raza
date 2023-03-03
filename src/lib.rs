@@ -110,6 +110,6 @@ pub mod storage;
 /// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
 pub mod implementations;
 /// The pipline controls the simulation flow. Multiple variants could be available.
-pub mod pipeline;
+pub mod pipelines;
 /// Methods for plotting simulation results
 pub mod plotting;
