@@ -364,6 +364,14 @@ fn voxel_entry_to_iteration_plain_index(entry: &String) -> Result<(u32, PlainInd
 }
 
 
+fn setup_entry_to_iteration(entry: &String) -> Result<u32, SimulationError>
+{
+    let mut res = entry.split("_");
+    let iter: u32 = res.nth(1).unwrap().parse()?;
+    Ok(iter)
+}
+
+
 pub fn store_voxels_in_database<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
 (
     tree: typed_sled::Tree<String, Vec<u8>>,
@@ -441,6 +449,38 @@ where
             bar.inc(1);
             acc
         });
+    bar.finish();
+    Ok(res)
+}
+
+
+pub fn setup_deserialize_tree<Setup>
+(
+    tree: &typed_sled::Tree<String, Vec<u8>>,
+    progress_style: Option<indicatif::ProgressStyle>
+) -> Result<std::collections::HashMap<u32, Setup>, SimulationError>
+where
+    Setup: Serialize + for<'a>Deserialize<'a>,
+{
+    let bar = indicatif::ProgressBar::new(tree.len() as u64);
+    match progress_style {
+        Some(s) => bar.set_style(s),
+        None => (),
+    }
+    println!("Reading Setups from Database");
+    let res = tree
+        .iter()
+        .filter_map(|opt| opt.ok())
+        .filter_map(|(key, value)| {
+            let setup: Option<Setup> = bincode::deserialize(&value).ok();
+            let res = setup_entry_to_iteration(&key).ok();
+            bar.inc(1);
+            match (res, setup) {
+                (Some(a), Some(b)) => Some((a, b)),
+                _ => None,
+            }
+        })
+        .collect::<std::collections::HashMap<u32, Setup>>();
     bar.finish();
     Ok(res)
 }

@@ -247,7 +247,7 @@ where
         let key;
         match iteration {
             Some(iter) => key = format!("setup_{:10.0}", iter),
-            None => key = "setup_last".to_owned(),
+            None => key = format!("setup_{:10.0}", std::u32::MAX),
         };
         self.meta_infos.insert(&key, &setup_serialized)?;
         Ok(())
