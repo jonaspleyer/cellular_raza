@@ -178,3 +178,21 @@ where
         SimulationError::DrawingError(DrawingError::from(drawing_error))
     }
 }
+
+
+/// Contains handling strategies for errors which can arise during the simulation process.
+///
+/// # Handling Strategies
+/// A handler has multiple options on how to approach a recovery in a simulation.
+///
+/// [RevertIncreaseAccuracy](HandlingStrategies::RevertChangeAccuracy)
+///
+/// One option is to revert to the last known full snapshot of the simulation, increase the
+/// accuracy of the solvers and try again from there. This requires that a working, deterministic
+/// and accurate serialization/deserialization of the whole simulation state is setup (see
+/// [storage](crate::storage) module for more details).
+// TODO implement more of this
+pub enum HandlingStrategies {
+    RevertChangeAccuracy,
+    AbortSimulation,
+}
