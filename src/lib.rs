@@ -1,9 +1,13 @@
 #![feature(drain_filter)]
 #![feature(trait_alias)]
 
-//! An agent-based modeling tool to simulate individual biological cells with a mechanistically
+//! > “What I cannot create, I do not understand.”
+//! >
+//! >  --- Richard P. Feynman 
+//!
+//! [cellular_raza](crate) is an agent-based modeling tool to simulate individual biological cells with a mechanistically
 //! driven mindset.
-//! This means, properties of cells are thought to be individually driven by strictly local phenomena.
+//! This means, properties of cells are individually driven by strictly local phenomena.
 //!
 //! # Simulating Cellular Biology
 //! This crate aims to provide interfaces to simulate the following mechanisms found in biological cells.
@@ -43,7 +47,7 @@
 //!
 //! These statements must be taken with a grain of salt.
 //! While we strive for binary reproducability, one problem is non-associativity of floating point operations, meaning `a+(b+c)!=(a+b)+c` on the binary level of almost all of modern hardware.
-//! This situation is not a data-race! For more information look at the implementation inside the [sim_flow] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
+//! This situation is not a data-race! For more information look at the implementation inside the [pipeline] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
 //! This situation can only be reliably circumvented when running on a single execution thread.
 //!
 //! # Layers of Abstraction of this crate
