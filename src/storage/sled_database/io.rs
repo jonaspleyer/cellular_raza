@@ -408,40 +408,32 @@ where
 }
 
 
-pub fn voxels_deserialize_tree<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>
+pub fn voxels_deserialize_tree<VoxelBox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     progress_style: Option<indicatif::ProgressStyle>
-) -> Result<std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>>, SimulationError>
+) -> Result<std::collections::HashMap<u32, Vec<VoxelBox>>, SimulationError>
 where
-    I: Serialize + for<'a>Deserialize<'a>,
-    V: Serialize + for<'a>Deserialize<'a>,
-    C: Serialize + for<'a>Deserialize<'a>,
-    Pos: Serialize + for<'a>Deserialize<'a>,
-    For: Serialize + for<'a>Deserialize<'a>,
-    Vel: Serialize + for<'a>Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a>Deserialize<'a>,
+    VoxelBox: Serialize + for<'a>Deserialize<'a>,
 {
     let bar = indicatif::ProgressBar::new(tree.len() as u64);
     match progress_style {
         Some(s) => bar.set_style(s),
         None => (),
     }
-    println!("Reading from Database");
+    println!("Reading Voxels from Database");
     let res = tree
         .iter()
         .filter_map(|opt| opt.ok())
         .filter_map(|(key, value)| {
-            let cb: Option<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>> = bincode::deserialize(&value).ok();
+            let cb: Option<VoxelBox> = bincode::deserialize(&value).ok();
             let res = voxel_entry_to_iteration_plain_index(&key).ok();
             match (cb, res) {
                 (Some(voxelbox), Some((it, _))) => Some((it, voxelbox)),
                 _ => None,
             }
         },)
-        .fold(std::collections::HashMap::<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>>::new(), |mut acc, (it, voxelbox)| -> std::collections::HashMap<u32, Vec<VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>> {
+        .fold(std::collections::HashMap::<u32, Vec<VoxelBox>>::new(), |mut acc, (it, voxelbox)| -> std::collections::HashMap<u32, Vec<VoxelBox>> {
             match acc.get_mut(&it) {
                 Some(voxels) => voxels.push(voxelbox),
                 None => {acc.insert(it, vec![voxelbox]);},
