@@ -13,19 +13,19 @@ pub use crate::storage::sled_database::io::*;
 pub use crate::storage::sled_database::restart_sim::*;
 
 // Cell Properties
-pub use crate::impls_cell_properties::cycle::*;
-pub use crate::impls_cell_properties::death::*;
-pub use crate::impls_cell_properties::flags::*;
-pub use crate::impls_cell_properties::interaction::*;
-pub use crate::impls_cell_properties::mechanics::*;
+pub use crate::implementations::cell_properties::cycle::*;
+pub use crate::implementations::cell_properties::death::*;
+pub use crate::implementations::cell_properties::flags::*;
+pub use crate::implementations::cell_properties::interaction::*;
+pub use crate::implementations::cell_properties::mechanics::*;
 
 // Complete Cell Models
-pub use crate::impls_cell_models::standard_cell_2d::*;
-pub use crate::impls_cell_models::custom_cell_nd::*;
-pub use crate::impls_cell_models::modular_cell::*;
+pub use crate::implementations::cell_models::standard_cell_2d::*;
+pub use crate::implementations::cell_models::custom_cell_nd::*;
+pub use crate::implementations::cell_models::modular_cell::*;
 
 // Domain Implementations
-pub use crate::impls_domain::cartesian_cuboid_n::*;
+pub use crate::implementations::domains::cartesian_cuboid_n::*;
 
 // Initalization of the Simulation
 pub use crate::pipeline::cpu_os_threads::supervisor::*;

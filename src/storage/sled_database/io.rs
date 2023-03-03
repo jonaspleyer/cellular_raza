@@ -262,7 +262,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::impls_cell_models::standard_cell_2d::StandardCell2D;
+    use crate::implementations::cell_models::standard_cell_2d::StandardCell2D;
     use crate::concepts::cell::{Id,CellAgentBox};
 
     use nalgebra::Vector2;

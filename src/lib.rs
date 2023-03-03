@@ -103,12 +103,8 @@ compile_error!("feature \"no_db\" and database feature cannot be enabled at the 
 pub mod concepts;
 /// Database interface
 pub mod storage;
-/// Example implementations of cell models
-pub mod impls_cell_models;
-/// Implementations of individual cell properties
-pub mod impls_cell_properties;
-/// Implementations of Domains
-pub mod impls_domain;
+/// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
+pub mod implementations;
 /// The pipline controls the simulation flow. Multiple variants could be available.
 pub mod pipeline;
 /// Methods for plotting simulation results

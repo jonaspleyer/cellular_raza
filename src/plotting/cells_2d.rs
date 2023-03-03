@@ -54,8 +54,8 @@ macro_rules! implement_draw_cell_2d (
 );
 
 
-implement_draw_cell_2d!(crate::impls_cell_models::custom_cell_nd::CustomCell2D, 0, 1);
-implement_draw_cell_2d!(crate::impls_cell_models::standard_cell_2d::StandardCell2D, 0, 1);
+implement_draw_cell_2d!(crate::implementations::cell_models::custom_cell_nd::CustomCell2D, 0, 1);
+implement_draw_cell_2d!(crate::implementations::cell_models::standard_cell_2d::StandardCell2D, 0, 1);
 
 
 /*

@@ -110,9 +110,20 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 Ok(())
             }
 
+            // TODO write this nicely!
             #[doc = "Builds a new `"]
             #[doc = stringify!($name)]
             #[doc = "` from given boundaries and maximum interaction ranges of the containing cells."]
+            /// ```
+            /// let domain = $name::from_boundaries_and_interaction_ranges(
+            #[doc = "let domain = "]
+            #[doc = stringify!($name)]
+            #[doc = "::from_boundaries_and_interaction_ranges"]
+            #[doc = stringify!("    [   0.0; ", $d, "],// minimum bounding point for cuboid")]
+            #[doc = stringify!("    [1000.0; ", $d, "],// maximum bounding point for cuboid")]
+            #[doc = stringify!("    [  30.0; ", $d, "],// interaction ranges of the cells")]
+            /// );
+            /// ```
             pub fn from_boundaries_and_interaction_ranges(min: [f64; $d], max: [f64; $d], interaction_ranges: [f64; $d]) -> Result<$name, CalcError> {
                 $name::check_min_max(min, max)?;
                 $name::check_positive(interaction_ranges)?;
