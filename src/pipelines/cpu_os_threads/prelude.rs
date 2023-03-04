@@ -15,7 +15,6 @@ pub use crate::storage::sled_database::restart_sim::*;
 // Cell Properties
 pub use crate::implementations::cell_properties::cycle::*;
 pub use crate::implementations::cell_properties::death::*;
-pub use crate::implementations::cell_properties::flags::*;
 pub use crate::implementations::cell_properties::interaction::*;
 pub use crate::implementations::cell_properties::mechanics::*;
 
