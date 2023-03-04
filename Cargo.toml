@@ -52,6 +52,7 @@ db_sled = ["dep:sled", "dep:typed-sled"]
 db_json_dump = []
 # Disable features
 no_fluid_mechanics = []
+no_gradients = []
 
 # Testing
 test_exhaustive = []
