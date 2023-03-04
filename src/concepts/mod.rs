@@ -26,7 +26,15 @@ pub mod cell;
 /// the cells are not overlapping ...
 ///
 /// ```
+/// use rand::Rng;
+/// use rand_chacha::ChaCha8Rng;
+/// use cellular_raza::concepts::{
+///     cycle::{Cycle,CycleEvent},
+///     errors::DivisionError
+/// };
+/// 
 /// // We define our cell struct with all parameters needed for this cell-agent.
+/// #[derive(Clone)]
 /// struct Cell {
 ///     // Size of the cell (spherical)
 ///     radius: f64,
@@ -37,35 +45,36 @@ pub mod cell;
 ///     // Just a dummy_parameter to remind that intracellular concentrations need to be halfed/adjusted when dividing cells.
 ///     intracellular_proteins: [f64; 5],
 ///     // The position of the cell. We cannot have two positions which are the same. Thus we need
-///     to update the position as well.
+///     // to update the position as well.
 ///     position: [f64; 2],
 /// }
 ///
-/// impl Cycle<Cell> {
+/// impl Cycle<Cell> for Cell {
 ///     fn update_cycle(rng: &mut ChaCha8Rng, dt: &f64, cell: &mut Cell) -> Option<CycleEvent> {
 ///         // Increase the current age of the cell
-///         cell.current_age +? dt;
+///         cell.current_age += dt;
 ///
 ///         // If the cell is older than the current age, return a division event
 ///         if cell.current_age > cell.maximum_age {
-///             return CycleEvent::Division
+///             return Some(CycleEvent::Division)
 ///         }
+///         None
 ///     }
 ///
-///     fn divide(rng: &mut ChaCHa8Rng, cell: &mut Cell) -> Result<Option<Cell>, DivisionError> {
+///     fn divide(rng: &mut ChaCha8Rng, cell: &mut Cell) -> Result<Option<Cell>, DivisionError> {
 ///         // Prepare the original cell for division.
 ///         // Set the radius of both cells to half of the original radius.
 ///         cell.radius *= 0.5;
 ///
 ///         // Also set intracellular proteins to half of previous value since both new cells now
 ///         // share the original content.
-///         cell.intracellular_proteins.iter_mut().for_each(|x| x*=0.5);
+///         cell.intracellular_proteins.iter_mut().for_each(|x| *x*=0.5);
 ///
 ///         // Also set the current age of the cell to zero again
 ///         cell.current_age = 0.0;
 ///
 ///         // Clone the existing cell
-///         let mut new_cell = c.clone();
+///         let mut new_cell = (*cell).clone();
 ///
 ///         // Define a new position for both cells
 ///         // To do this: Pick a random number as an angle.
@@ -82,11 +91,11 @@ pub mod cell;
 ///         ];
 ///
 ///         // Set new positions
-///         cell.pos = pos;
-///         new_cell.pos = new_pos;
+///         cell.position = pos;
+///         new_cell.position = new_pos;
 ///
 ///         // Finally return the new cell
-///         return new_cell;
+///         return Ok(Some(new_cell));
 ///     }
 /// }
 pub mod cycle;
