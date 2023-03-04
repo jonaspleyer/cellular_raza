@@ -47,13 +47,13 @@
 //!
 //! These statements must be taken with a grain of salt.
 //! While we strive for binary reproducability, one problem is non-associativity of floating point operations, meaning `a+(b+c)!=(a+b)+c` on the binary level of almost all of modern hardware.
-//! This situation is not a data-race! For more information look at the implementation inside the [pipeline] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
+//! This situation is not a data-race! For more information look at the implementation inside the [pipelines] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
 //! This situation can only be reliably circumvented when running on a single execution thread.
 //!
 //! # Layers of Abstraction of this crate
 //! ## Concepts
 //! ## Cellular + Domain Implementations
-//! ## Pipeline
+//! ## Pipelines
 // TODO where does plotting and storage fit in here?
 
 // TODO move this to the corresponding pipeline
@@ -103,7 +103,7 @@ compile_error!("feature \"no_db\" and database feature cannot be enabled at the 
 /// Abstract concepts to describe cell properties, the domain and possible errors
 ///
 /// These concepts should be implemented by the user and then be used by a simulation
-/// [pipeline](crate::pipeline) which actually integrates the defined cellular properties.
+/// [pipelines](crate::pipelines) which actually integrates the defined cellular properties.
 pub mod concepts;
 /// Database interface
 pub mod storage;
