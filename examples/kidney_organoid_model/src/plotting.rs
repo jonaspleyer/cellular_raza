@@ -1,4 +1,4 @@
-use cellular_raza::prelude::*;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use plotters::{
     prelude::{DrawingArea,Cartesian2d,Circle,ShapeStyle},
@@ -12,12 +12,12 @@ use crate::cell_properties::*;
 
 
 pub fn plot_voxel
-    (voxel: &CartesianCuboidVoxel2Reactions1, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (voxel: &CartesianCuboidVoxel2Reactions4, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
     let upper_bound = 1000.0;
-    let concentration = voxel.get_total_extracellular()[0];
+    let concentration = voxel.get_total_extracellular()[2];
 
     // This should give a nice colormap
     let voxel_color = ViridisRGB::get_color_normalized(concentration, lower_bound, upper_bound);
@@ -28,9 +28,9 @@ pub fn plot_voxel
     root.draw(&rectangle)?;
 
     // Also plot the direction in which the current concentration is pointing
-    let gradient = voxel.extracellular_gradient[0];
+    let gradient = voxel.extracellular_gradient[2];
     let strength = gradient.norm();
-    let gradient_upper_bound = 100.0;
+    let gradient_upper_bound = (upper_bound-lower_bound)/voxel.get_dx().iter().sum::<f64>()*2.0;
     let start = Vector2::from(voxel.get_middle());
     let end = if gradient!=Vector2::from([0.0; 2]) {start + (gradient/strength.max(gradient_upper_bound)).component_mul(&Vector2::from(voxel.get_dx()))/2.0} else {start};
     let pointer = plotters::element::PathElement::new(
@@ -47,7 +47,6 @@ pub fn plot_modular_cell
     (modular_cell: &MyCellType, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     let cell_border_color = plotters::prelude::BLACK;
-    let cell_inside_color = plotters::prelude::full_palette::GREEN;
     let cell_orientation_color = plotters::prelude::full_palette::BLACK;
 
     let relative_border_thickness = 0.25;
@@ -65,6 +64,7 @@ pub fn plot_modular_cell
     root.draw(&cell_border)?;
 
     // Plot the inside of the cell
+    let cell_inside_color = Life::get_color_normalized(modular_cell.get_intracellular()[1], 0.0, modular_cell.cellular_reactions.intracellular_concentrations_saturation_level[1]);
     let cell_inside = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
         s*(1.0 - relative_border_thickness),
