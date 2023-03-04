@@ -1,4 +1,4 @@
-use cellular_raza::prelude::*;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use plotters::{
     prelude::{DrawingArea,Cartesian2d,Circle,ShapeStyle},
@@ -12,18 +12,18 @@ use crate::cell_properties::*;
 
 
 pub fn plot_voxel
-    (voxel: &CartesianCuboidVoxel2Reactions2, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (voxel: &CartesianCuboidVoxel2Reactions3, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
     let upper_bound = 5.0;
-    let concentration = voxel.get_total_extracellular()[0];
+    let concentration = voxel.get_total_extracellular()[2];
 
     // if voxel.get_index()[1] == 22 {println!("{} {}", voxel.get_index()[0], voxel.get_total_extracellular()[0]);}
     // if voxel.get_index() == [43, 43] {println!("\n\n");}
 
     // This should give a nice colormap
-    let voxel_color = ViridisFading::get_color_normalized(concentration, lower_bound, upper_bound);
+    let voxel_color = ViridisRGB::get_color_normalized(concentration, lower_bound, upper_bound);
     let rectangle = plotters::prelude::Rectangle::new(
         [(voxel.get_min()[0], voxel.get_min()[1]), (voxel.get_max()[0], voxel.get_max()[1])],
         Into::<ShapeStyle>::into(&voxel_color).filled()

@@ -1,5 +1,5 @@
-use cellular_raza::prelude::*;
-use cellular_raza::impls_cell_models::modular_cell::ModularCell;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+use cellular_raza::implementations::cell_models::modular_cell::{ModularCell,MechanicsOptions::*};
 
 use nalgebra::Vector2;
 
@@ -73,7 +73,7 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 1.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 30.0;
 
 // Time parameters
-pub const N_TIMES: usize = 30_001;
+pub const N_TIMES: usize = 3_001;
 pub const DT: f64 = 0.02;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 40;
@@ -90,23 +90,36 @@ use plotting::*;
 use cell_properties::*;
 
 
-fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2Reactions2) {
+fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2Reactions3) {
     voxel.diffusion_constant = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DIFFUSION_CONSTANT,
         VOXEL_FOOD_DIFFUSION_CONSTANT,
+        300.0,
     ]);
     voxel.extracellular_concentrations = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCNENTRATION,
         VOXEL_FOOD_INITIAL_CONCENTRATION,
+        0.0,
     ]);
     voxel.degradation_rate = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
         VOXEL_FOOD_DEGRADATION_RATE,
+        0.02,
     ]);
     voxel.production_rate = ReactionVector::from([
         0.0,
         VOXEL_FOOD_PRODUCTION_RATE,
+        0.0,
     ]);
+}
+
+
+fn create_domain() -> Result<CartesianCuboid2, CalcError> {
+    CartesianCuboid2::from_boundaries_and_interaction_ranges(
+        [0.0; 2],
+        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
+        [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_MECHANICS_RADIUS * 2.0; 2],
+    )
 }
 
 
@@ -116,11 +129,7 @@ fn main() {
 
     // ###################################### DEFINE SIMULATION DOMAIN ######################################
     // Define the simulation domain
-    let domain = CartesianCuboid2::from_boundaries_and_interaction_ranges(
-        [0.0; 2],
-        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_MECHANICS_RADIUS * 2.0; 2],
-    ).unwrap();
+    let domain = create_domain().unwrap();
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     // Cells of Type 1
@@ -130,7 +139,7 @@ fn main() {
             rng.gen_range(STARTING_DOMAIN_1_X_LOW..STARTING_DOMAIN_1_X_HIGH),
             rng.gen_range(STARTING_DOMAIN_1_Y_LOW..STARTING_DOMAIN_1_Y_HIGH)]);
         ModularCell {
-        mechanics: cellular_raza::impls_cell_models::modular_cell::MechanicsOptions::Mechanics(MechanicsModel2D {
+        mechanics: Mechanics(MechanicsModel2D {
             pos,
             vel: Vector2::from([0.0, 0.0]),
             dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
@@ -154,26 +163,32 @@ fn main() {
             intracellular_concentrations: ReactionVector::from([
                 CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION,
                 CELL_FOOD_INITIAL_CONCENTRATION,
+                0.0,
             ]),
             intracellular_concentrations_saturation_level: ReactionVector::from([
                 CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
                 CELL_FOOD_SATURATION,
+                0.0,
             ]),
             production_term: ReactionVector::from([
                 CELL_SPATIAL_SIGNALLING_MOLECULE_PRODUCTION_RATE,
                 -CELL_FOOD_CONSUMPTION_RATE,
+                if DOMAIN_SIZE_Y/4.0 > pos.y {0.05} else {0.0},
             ]),
             degradation_rate: ReactionVector::from([
                 CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
+                0.0,
                 0.0,
             ]),
             secretion_rate: ReactionVector::from([
                 CELL_SPATIAL_SIGNALLING_MOLECULE_SECRETION_RATE,
                 CELL_FOOD_SECRETION_RATE,
+                0.1,
             ]),
             uptake_rate: ReactionVector::from([
                 0.0,
                 CELL_FOOD_UPTAKE_RATE,
+                0.0,
             ]),
             // shared_concentration: shared_concentrations.clone(),
             // uuid: uuid::Uuid::new_v4(),
@@ -187,12 +202,12 @@ fn main() {
     }}).collect::<Vec<_>>();
 
     // Copy cells to right hand side
-    let mut cells1_right = cells.clone();
-    cells1_right.iter_mut().for_each(|cell| {
-        let current_position = cell.pos();
-        let new_position = Vector2::from([DOMAIN_SIZE_X-current_position.x, current_position.y]);
-        cell.set_pos(&new_position);
-    });
+    // let mut cells1_right = cells.clone();
+    // cells1_right.iter_mut().for_each(|cell| {
+    //     let current_position = cell.pos();
+    //     let new_position = Vector2::from([DOMAIN_SIZE_X-current_position.x, current_position.y]);
+    //     cell.set_pos(&new_position);
+    // });
     // 
     // let mut cells1_bottom = cells1_right.clone();
     // cells1_bottom.iter_mut().for_each(|cell| {
@@ -203,7 +218,7 @@ fn main() {
     //     cell.set_pos(&new_position);
     // });
     // 
-    cells.extend(cells1_right);
+    // cells.extend(cells1_right);
     // cells.extend(cells1_bottom);
 
     let cells2 = (0..N_CELLS_2 as i32).map(|_| {
@@ -212,7 +227,7 @@ fn main() {
         let x = rng.gen_range(STARTING_DOMAIN_2_X_LOW..STARTING_DOMAIN_2_X_HIGH) + h*(STARTING_DOMAIN_2_X_HIGH-STARTING_DOMAIN_2_X_LOW)*STARTING_DOMAIN_2_X_TILT;
         let pos = Vector2::from([x, y]);
         ModularCell {
-            mechanics: cellular_raza::impls_cell_models::modular_cell::MechanicsOptions::Mechanics(MechanicsModel2D {
+            mechanics: Mechanics(MechanicsModel2D {
                 pos,
                 vel: Vector2::from([0.0, 0.0]),
                 dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
@@ -236,26 +251,32 @@ fn main() {
                 intracellular_concentrations: ReactionVector::from([
                     0.0,
                     CELL_FOOD_INITIAL_CONCENTRATION,
+                    0.0,
                 ]),
                 intracellular_concentrations_saturation_level: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
                     CELL_FOOD_SATURATION,
+                    0.0,
                 ]),
                 production_term: ReactionVector::from([
                     0.0,
                     -CELL_FOOD_CONSUMPTION_RATE,
+                    0.0,
                 ]),
                 degradation_rate: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
                     0.0,
+                    0.01,
                 ]),
                 secretion_rate: ReactionVector::from([
                     0.0,
                     CELL_FOOD_SECRETION_RATE,
+                    0.0,
                 ]),
                 uptake_rate: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_UPTAKE_RATE,
                     CELL_FOOD_UPTAKE_RATE,
+                    0.01,
                 ]),
                 // shared_concentration: shared_concentrations.clone(),
                 // uuid: uuid::Uuid::new_v4(),
@@ -281,7 +302,7 @@ fn main() {
             n_threads: N_THREADS
         },
         database: SledDataBaseConfig {
-            name: "out/simulation_custom_cells".to_owned().into(),
+            name: "out/ureter_signalling".to_owned().into(),
         }
     };
 

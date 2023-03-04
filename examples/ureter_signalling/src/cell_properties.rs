@@ -1,21 +1,15 @@
-use cellular_raza::prelude::*;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use serde::{Serialize,Deserialize};
 use nalgebra::Vector2;
 
 use rand::Rng;
 
-pub const NUMBER_OF_REACTION_COMPONENTS: usize = 2;
+pub const NUMBER_OF_REACTION_COMPONENTS: usize = 3;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType = ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
-
-
-#[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
-pub struct DirectedSphericalMechanics {
-    pub pos: Vector2<f64>,
-    pub vel: Vector2<f64>,
-}
-
+pub type MyVoxelType = CartesianCuboidVoxel2Reactions3;
+pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>, Vector2<f64>, Vector2<f64>, ReactionVector, ReactionVector, ReactionVector>;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
@@ -221,6 +215,11 @@ impl Cycle<MyCellType> for OwnCycle {
             // concs.remove(&c.cellular_reactions.uuid);
             return Some(CycleEvent::Death);
         }
+        let relative_death_morphogen_level = ((0.3-c.get_intracellular()[2])/0.3).clamp(0.0, 1.0);
+        if c.cellular_reactions.get_intracellular()[2] > 0.1 && c.cycle.is_ureter==true && rng.gen_range(0.0..1.0) < relative_death_morphogen_level {
+            println!("Killing cell {}", c.cellular_reactions.get_intracellular()[2]);
+            return Some(CycleEvent::Death);
+        }
         None
     }
 
@@ -297,7 +296,7 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         // we are far away from the saturation level and 0.0 if we have reached it.
         let mut increment_extracellular = ReactionVector::zero();
         let mut increment_intracellular = ReactionVector::zero();
-        for i in 0..2 {
+        for i in 0..NUMBER_OF_REACTION_COMPONENTS {
             let uptake = self.uptake_rate[i]*external_concentration_vector[i];
             let secretion = self.secretion_rate[i]*internal_concentration_vector[i];
             increment_extracellular[i] = secretion - uptake;
