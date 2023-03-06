@@ -5,7 +5,7 @@ use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 
 // Imports from this crate
-use cellular_raza::prelude::*;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 
 // Constants of the simulation
@@ -106,7 +106,7 @@ fn main() {
                 }
             };
 
-            let mut supervisor = SimulationSupervisor::from(setup);
+            let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, Strategies {voxel_definition_strategies: None});
             let supervisor_create_time = start.elapsed().as_millis();
 
             match supervisor.run_full_sim() {

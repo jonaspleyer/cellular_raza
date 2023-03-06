@@ -1,4 +1,4 @@
-use cellular_raza::prelude::*;
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 use cellular_raza::*;
 
 use nalgebra::Vector2;

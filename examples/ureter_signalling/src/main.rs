@@ -293,7 +293,7 @@ fn main() {
         voxel_definition_strategies: Some(voxel_definition_strategy),
     };
 
-    let mut supervisor = SimulationSupervisor::new_with_strategies(setup, strategies);
+    let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
 
     supervisor.run_full_sim().unwrap();
 
