@@ -1,1 +1,26 @@
 # Getting Started
+To create a new project from scratch, initialize an empty project with cargo and change to this directory.
+```bash
+cargo init my-new-project
+cd my-new-project
+```
+
+Afterwards add `cellular_raza` as a dependency.
+```bash
+cargo add cellular_raza
+```
+
+We can now begin to write the main function of our program.
+To do this, open the file `src/main.rs` with your favourite text-editor.
+`cellular_raza` is divided into different [layers](AbstractionLayers.md) which are combined within a [pipeline](Pipelines.md).
+By default, we use the `cpu_os_threads` pipeline.
+We begin by importing the needed functionality from the `prelude.rs` file.
+```rust
+use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+
+fn main() {
+    println!("Hello World!");
+}
+```
+
+<!-- TODO -->

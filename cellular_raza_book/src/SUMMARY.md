@@ -1,6 +1,6 @@
 # Summary
 
-- [Introduction to Agent-Based Models](IntroductionABMS.md)
+- [About cellular_raza](about_cellular_raza.md)
 - [Getting Started](GettingStarted.md)
 - [User Guides](UserGuides.md)
     - [Running my First Simulation](UserGuidesFirstSim.md)
