@@ -90,7 +90,7 @@ where
 
 fn iteration_id_to_db_key(iteration: u64, id: &CellularIdentifier) -> String
 {
-    format!("{:010.0}_{}_{}", iteration, id.0, id.1)
+    format!("{:020.0}_{:020.0}_{:020.0}", iteration, id.0, id.1)
 }
 
 

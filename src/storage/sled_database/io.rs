@@ -16,20 +16,18 @@ where
     Element: Serialize + Send + Sync + 'static,
     Func: Fn(u64, &Element) -> String + Send + 'static,
 {
-    async_std::task::spawn(async move {
-        let name = element_iteration_to_database_key(iteration, &element);
-        let element_encoded = bincode::serialize(&element).unwrap();
-        match tree.insert(&name, &element_encoded) {
-            Err(error) => {
-                println!("An error occurred: {} when writing an element at iteration {} to database", error, iteration);
-            },
-            Ok(Some(_)) => {
-                println!("Could not store element at iteration {} in database", iteration);
-            },
-            Ok(None) => (),
-        }
-    });
-    
+
+    let name = element_iteration_to_database_key(iteration, &element);
+    let element_encoded = bincode::serialize(&element).unwrap();
+    match tree.insert(&name, &element_encoded) {
+        Err(error) => {
+            println!("An error occurred: {} when writing an element at iteration {} to database. Continue anyway ...", error, iteration);
+        },
+        Ok(Some(_)) => {
+            println!("Could not store element at iteration {} in database: element already present. Continue anyway ...", iteration);
+        },
+        Ok(None) => (),
+    }
     Ok(())
 }
 
