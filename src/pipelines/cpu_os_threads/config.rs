@@ -111,7 +111,7 @@ where
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
 {
-    pub fn new_with_strategies(setup: SimulationSetup<Dom, Cel>, strategies: Strategies<Vox>) -> SimulationSupervisor<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>, Dom>
+    pub fn initialize_with_strategies(setup: SimulationSetup<Dom, Cel>, strategies: Strategies<Vox>) -> SimulationSupervisor<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>, Dom>
     where
         Cel: Sized,
     {
