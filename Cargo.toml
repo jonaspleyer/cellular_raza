@@ -1,7 +1,7 @@
 [package]
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 name = "cellular_raza"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 license = "GPL-2.0"
 description = "Cellular simulation tool"
