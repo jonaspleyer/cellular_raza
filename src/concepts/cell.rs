@@ -2,11 +2,8 @@ use crate::concepts::cycle::*;
 use crate::concepts::mechanics::{Position,Force,Velocity,Mechanics};
 use crate::concepts::interaction::*;
 use crate::concepts::errors::CalcError;
-use crate::storage::concepts::StorageIdent;
 
 use std::marker::{Send,Sync};
-
-use uuid::Uuid;
 
 use serde::{Serialize,Deserialize};
 
@@ -21,14 +18,21 @@ where
 {}
 
 
+/// This is a unique identifer which is deterministic even in multi-threading situations.
+/// Its components are
+/// 1. PlainIndex of Voxel where it was created
+/// 2. Count the number of cells that have already been created in this voxel since simulation begin.
+pub type CellularIdentifier = (u64, u64);
+
+
 /// Obtains the unique identifier of a cell
 pub trait Id {
-    fn get_uuid(&self) -> Uuid;
+    fn get_id(&self) -> CellularIdentifier;
 }
 
 
 /// A container struct containing meta-information of a given Cell
-/// Some variables such as Uuid are not required and not desired to be
+/// Some variables such as id are not required and not desired to be
 /// initialized by the user. This CellAgentBox acts as a container around the cell
 /// to hold these variables.
 #[derive(Serialize,Deserialize,Debug,Clone,PartialEq)]
@@ -36,7 +40,8 @@ pub struct CellAgentBox<A>
 where
     A: Serialize + for<'a> Deserialize<'a>
 {
-    id: Uuid,
+    id: CellularIdentifier,
+    parent_id: Option<CellularIdentifier>,
     #[serde(bound = "")]
     pub cell: A,
 }
@@ -46,7 +51,7 @@ impl<A> Id for CellAgentBox<A>
 where
     A: Serialize + for<'a> Deserialize<'a>
 {
-    fn get_uuid(&self) -> Uuid {
+    fn get_id(&self) -> CellularIdentifier {
         self.id
     }
 }
@@ -102,13 +107,10 @@ impl<C> CellAgentBox<C>
 where
     C: Serialize + for<'a> Deserialize<'a>
 {
-    pub fn new(ind: u32, generation: u16, n_cell: u64, cell: C) -> CellAgentBox<C> {
+    pub fn new(voxel_index: u64, n_cell: u64, cell: C, parent_id: Option<CellularIdentifier>) -> CellAgentBox<C> {
         CellAgentBox::<C> {
-            id: Uuid::from_fields(
-                ind,
-                StorageIdent::Cell.value(),
-                generation,
-                &n_cell.to_be_bytes()),
+            id: (voxel_index, n_cell),
+            parent_id,
             cell,
         }
     }

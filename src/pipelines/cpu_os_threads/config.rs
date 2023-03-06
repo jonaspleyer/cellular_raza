@@ -205,7 +205,7 @@ where
                     .into_iter()
                     .map(|(ind, mut cells)| {
                         cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
-                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| CellAgentBox::new(ind, 0, n_cell as u64, cell)).collect()
+                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| CellAgentBox::new(ind, n_cell as u64, cell, None)).collect()
                     )
                 }).collect());
                 res

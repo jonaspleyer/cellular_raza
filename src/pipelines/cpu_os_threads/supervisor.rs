@@ -1,4 +1,4 @@
-use crate::concepts::cell::{CellAgent,CellAgentBox};
+use crate::concepts::cell::{CellAgent,CellAgentBox,CellularIdentifier};
 use crate::concepts::interaction::{CellularReactions,InteractionExtracellularGRadient};
 use crate::concepts::domain::{Domain,ExtracellularMechanics,Voxel,Concentration};
 use crate::concepts::domain::{Index};
@@ -17,8 +17,6 @@ use std::sync::Arc;
 use core::ops::{Mul,Add,AddAssign};
 
 use hurdles::Barrier;
-
-use uuid::Uuid;
 
 use rayon::prelude::*;
 
@@ -153,7 +151,7 @@ where
 
                 let mut time = t_start;
                 #[allow(unused)]
-                let mut iteration = 0u32;
+                let mut iteration = 0u64;
                 for (t, _save, save_full) in t_eval {
                     let dt = t - time;
                     time = t;
@@ -295,7 +293,7 @@ where
     // #### DATABASE RELATED FUNCTIONALITY ####
     // ########################################
    #[cfg(feature = "db_sled")]
-    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Cel>>, SimulationError>
+    pub fn get_cells_at_iter(&self, iter: u64) -> Result<Vec<CellAgentBox<Cel>>, SimulationError>
     where
         Cel: Clone,
     {
@@ -304,15 +302,15 @@ where
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_cell_history(&self, uuid: &Uuid) -> Result<Option<Vec<(u32, CellAgentBox<Cel>)>>, SimulationError>
+    pub fn get_cell_history(&self, id: &CellularIdentifier) -> Result<Option<Vec<(u64, CellAgentBox<Cel>)>>, SimulationError>
     where
         Cel: Clone,
     {
-        super::storage_interface::get_cell_history::<CellAgentBox<Cel>>(&self.tree_cells, uuid, None, None)
+        super::storage_interface::get_cell_history::<CellAgentBox<Cel>>(&self.tree_cells, id, None, None)
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_all_cell_histories(&self) -> Result<HashMap<Uuid, Vec<(u32, CellAgentBox<Cel>)>>, SimulationError>
+    pub fn get_all_cell_histories(&self) -> Result<HashMap<CellularIdentifier, Vec<(u64, CellAgentBox<Cel>)>>, SimulationError>
     where
         Cel: Clone,
     {
@@ -323,12 +321,12 @@ where
     // #### PLOTTING RELATED FUNCTIONALITY ####
     // ########################################
     #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_iter_bitmap(&self, iteration: u32) -> Result<(), SimulationError>
+    pub fn plot_cells_at_iter_bitmap(&self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Cel: crate::plotting::spatial::PlotSelf + Clone,
     {
-        let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
+        let current_cells = self.get_cells_at_iter(iteration)?;
 
         // Create a plotting root
         let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
@@ -348,13 +346,13 @@ where
     }
 
     #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_iter_bitmap_with_cell_plotting_func<PlotCellsFunc>(&self, iteration: u32, cell_plotting_func: PlotCellsFunc) -> Result<(), SimulationError>
+    pub fn plot_cells_at_iter_bitmap_with_cell_plotting_func<PlotCellsFunc>(&self, iteration: u64, cell_plotting_func: PlotCellsFunc) -> Result<(), SimulationError>
     where
         PlotCellsFunc: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
         Dom: crate::plotting::spatial::CreatePlottingRoot,
         Cel: Clone,
     {
-        let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
+        let current_cells = self.get_cells_at_iter(iteration)?;
 
         // Create a plotting root
         let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);

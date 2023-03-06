@@ -74,7 +74,7 @@ where
 }
 
 /// This is a purely implementational detail and should not be of any concern to the end user.
-pub type PlainIndex = u32;
+pub type PlainIndex = u64;
 
 
 pub struct IndexBoundaryInformation<I> {
@@ -130,8 +130,8 @@ where
     #[serde(bound = "")]
     pub cells: Vec<(CellAgentBox<C>, AuxiliaryCellPropertyStorage<Pos,For,Vel,ConcVecIntracellular>)>,
     #[serde(bound = "")]
-    pub new_cells: Vec<C>,
-    pub uuid_counter: u64,
+    pub new_cells: Vec<(C, Option<CellularIdentifier>)>,
+    pub id_counter: u64,
     pub rng: ChaCha8Rng,
     #[serde(bound = "")]
     pub extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
@@ -210,7 +210,7 @@ where
             neighbors,
             cells: cells.into_iter().map(|cell| (cell, AuxiliaryCellPropertyStorage::default())).collect(),
             new_cells: Vec::new(),
-            uuid_counter: n_cells,
+            id_counter: n_cells,
             rng: ChaCha8Rng::seed_from_u64(plain_index as u64 * 10),
             extracellular_concentration_increments: Vec::new(),
             concentration_boundaries: Vec::new(),
@@ -312,7 +312,7 @@ where
                 match aux_storage.cycle_event {
                     Some(CycleEvent::Division) => {
                         match C::divide(&mut self.rng, &mut cbox.cell)? {
-                            Some(new_cell) => self.new_cells.push(new_cell),
+                            Some(new_cell) => self.new_cells.push((new_cell, Some(cbox.get_id()))),
                             None => (),
                         };
                         aux_storage.cycle_event = None;
@@ -333,13 +333,13 @@ where
             .collect::<Result<(), DeathError>>()?;
 
         // Include new cells
-        self.cells.extend(self.new_cells.drain(..).map(|cell| {
-            self.uuid_counter += 1;
+        self.cells.extend(self.new_cells.drain(..).map(|(cell, parent_id)| {
+            self.id_counter += 1;
             (CellAgentBox::new(
                 self.plain_index,
-                1,
-                self.uuid_counter,
-                cell
+                self.id_counter,
+                cell,
+                parent_id,
             ),
             AuxiliaryCellPropertyStorage::default())
         }));
@@ -775,7 +775,7 @@ where
                             sender.send(cell)?;
                             Ok(())
                         }
-                        None => Err(IndexError {message: format!("Could not correctly send cell with uuid {}", cell.get_uuid())}),
+                        None => Err(IndexError {message: format!("Could not correctly send cell with id {:?}", cell.get_id())}),
                     }
                 }
             }?;
@@ -794,7 +794,7 @@ where
 
 
     #[cfg(not(feature = "no_db"))]
-    pub fn save_cells_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
+    pub fn save_cells_to_database(&self, iteration: &u64) -> Result<(), SimulationError>
     where
         C: 'static,
         CellAgentBox<C>: Clone,
@@ -811,7 +811,7 @@ where
     }
 
     #[cfg(not(feature = "no_db"))]
-    pub fn save_voxels_to_database(&self, iteration: &u32) -> Result<(), SimulationError>
+    pub fn save_voxels_to_database(&self, iteration: &u64) -> Result<(), SimulationError>
     where
         VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone + Send + Sync + 'static,
     {

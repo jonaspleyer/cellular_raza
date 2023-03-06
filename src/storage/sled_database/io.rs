@@ -8,13 +8,13 @@ use std::collections::HashMap;
 pub fn store_single_element_in_tree<Element, Func>
 (
     tree: typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     element: Element,
     element_iteration_to_database_key: Func,
 ) -> Result<(), SimulationError>
 where
     Element: Serialize + Send + Sync + 'static,
-    Func: Fn(u32, &Element) -> String + Send + 'static,
+    Func: Fn(u64, &Element) -> String + Send + 'static,
 {
     async_std::task::spawn(async move {
         let name = element_iteration_to_database_key(iteration, &element);
@@ -37,13 +37,13 @@ where
 pub fn store_elements_in_tree<Element, Func>
 (
     tree: typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     elements: Vec<Element>,
     element_iteration_to_database_key: Func,
 ) -> Result<(), SimulationError>
 where
     Element: Serialize + Send + Sync + 'static,
-    Func: Fn(u32, &Element) -> String + Send + 'static,
+    Func: Fn(u64, &Element) -> String + Send + 'static,
 {
     async_std::task::spawn(async move {
         let mut batch = typed_sled::Batch::<String, Vec<u8>>::default();
@@ -69,13 +69,13 @@ where
 pub fn deserialize_single_element_from_tree<Element, Func, ReturnKey>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     key: &ReturnKey,
     iteration_and_other_to_database_key: Func
 ) -> Result<Element, SimulationError>
 where
     Element: for<'a>Deserialize<'a> + 'static,
-    Func: Fn(u32, &ReturnKey) -> String,
+    Func: Fn(u64, &ReturnKey) -> String,
 {
     let db_key = iteration_and_other_to_database_key(iteration, key);
     let element = tree.get(&db_key)?.ok_or(IndexError{message: format!("Cannot find element with key {} in database", db_key)})?;
@@ -89,10 +89,10 @@ pub fn deserialize_all_elements_from_tree<Element, Func>
     tree: &typed_sled::Tree<String, Vec<u8>>,
     database_key_to_iteration_and_other: Func,
     progress_style: Option<indicatif::ProgressStyle>,
-) -> Result<Vec<(u32, Element)>, SimulationError>
+) -> Result<Vec<(u64, Element)>, SimulationError>
 where
     Element: for<'a>Deserialize<'a>,
-    Func: Fn(&String) -> Result<u32, SimulationError>,
+    Func: Fn(&String) -> Result<u64, SimulationError>,
 {
     let bar = progress_style.map(|style| {
         let bar = indicatif::ProgressBar::new(tree.len() as u64);
@@ -126,10 +126,10 @@ pub fn deserialize_all_elements_from_tree_group<Element, Func, ReturnKey>
     tree: &typed_sled::Tree<String, Vec<u8>>,
     database_key_to_iteration_and_other: Func,
     progress_style: Option<indicatif::ProgressStyle>,
-) -> Result<HashMap<u32, Vec<Element>>, SimulationError>
+) -> Result<HashMap<u64, Vec<Element>>, SimulationError>
 where
     Element: for<'a>Deserialize<'a>,
-    Func: Fn(&String) -> Result<(u32, ReturnKey), SimulationError>,
+    Func: Fn(&String) -> Result<(u64, ReturnKey), SimulationError>,
 {
     let bar = progress_style.map(|style| {
         let bar = indicatif::ProgressBar::new(tree.len() as u64);
@@ -148,7 +148,7 @@ where
                 _ => None,
             }
         },)
-        .fold(HashMap::<u32, Vec<Element>>::new(), |mut acc, (iteration, element)| -> std::collections::HashMap<u32, Vec<Element>> {
+        .fold(HashMap::<u64, Vec<Element>>::new(), |mut acc, (iteration, element)| -> std::collections::HashMap<u64, Vec<Element>> {
             match acc.get_mut(&iteration) {
                 Some(elements) => elements.push(element),
                 None => {acc.insert(iteration, vec![element]);},

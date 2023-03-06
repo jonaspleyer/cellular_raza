@@ -1,4 +1,4 @@
-use crate::concepts::cell::Id;
+use crate::concepts::cell::{Id,CellularIdentifier};
 use crate::concepts::errors::{SimulationError,IndexError};
 
 use crate::storage::sled_database::io::{
@@ -16,25 +16,23 @@ use std::collections::HashMap;
 
 use serde::{Serialize,Deserialize};
 
-use uuid::Uuid;
-
 
 // ############################################################
 // Datastructures for storing cells, voxels, setup, etc.
 // ############################################################
 
 /// Datastructure for storing [Cells](crate::concepts::cell::CellAgent) at iteration of simulation
-pub type CellStorage<Cbox> = HashMap<u32, Vec<Cbox>>;
+pub type CellStorage<Cbox> = HashMap<u64, Vec<Cbox>>;
 /// Datastructure for storing [CellHistories](crate::concepts::cell::CellAgent)
-pub type CellHistories<Cbox> = HashMap<Uuid, Vec<(u32, Cbox)>>;
+pub type CellHistories<Cbox> = HashMap<CellularIdentifier, Vec<(u64, Cbox)>>;
 
 /// Datastructure for storing [Voxels](crate::concepts::domain::Voxel)
-pub type VoxelStorage<VBox> = HashMap<u32, Vec<VBox>>;
+pub type VoxelStorage<VBox> = HashMap<u64, Vec<VBox>>;
 /// Datastructure for storing [VoxelHistories](crate::concepts::domain::Voxel)
-pub type VoxelHistories<VBox> = HashMap<PlainIndex, Vec<(u32, VBox)>>;
+pub type VoxelHistories<VBox> = HashMap<PlainIndex, Vec<(u64, VBox)>>;
 
 /// Datastructure for storing [SimulationSetups](SimulationSetup)
-pub type SetupStorage<SimSetup> = Vec<(u32, SimSetup)>;
+pub type SetupStorage<SimSetup> = Vec<(u64, SimSetup)>;
 
 
 // ############################################################
@@ -52,9 +50,9 @@ where
     let mut histories = cell_storage.into_iter()
         .fold(CellHistories::<Cbox>::new(), |mut acc, (iteration, cells)| {
             cells.into_iter()
-                .for_each(|cell| match acc.get_mut(&cell.get_uuid()) {
+                .for_each(|cell| match acc.get_mut(&cell.get_id()) {
                     Some(cells) => cells.push((iteration, cell)),
-                    None => {acc.insert(cell.get_uuid(), vec![(iteration, cell)]);},
+                    None => {acc.insert(cell.get_id(), vec![(iteration, cell)]);},
                 });
             acc
         });
@@ -90,26 +88,27 @@ where
 // Private - Conversion of database entry (String) and cell-properties
 // ############################################################
 
-fn iteration_uuid_to_db_key(iteration: u32, uuid: &Uuid) -> String
+fn iteration_id_to_db_key(iteration: u64, id: &CellularIdentifier) -> String
 {
-    format!("{:010.0}_{}", iteration, uuid)
+    format!("{:010.0}_{}_{}", iteration, id.0, id.1)
 }
 
 
-fn iteration_cell_to_db_key<Cbox>(iteration: u32, cell: &Cbox) -> String
+fn iteration_cell_to_db_key<Cbox>(iteration: u64, cell: &Cbox) -> String
 where
     Cbox: Id,
 {
-    iteration_uuid_to_db_key(iteration, &cell.get_uuid())
+    iteration_id_to_db_key(iteration, &cell.get_id())
 }
 
 
-fn db_key_to_iteration_uuid(db_key: &String) -> Result<(u32, Uuid), SimulationError>
+fn db_key_to_iteration_id(db_key: &String) -> Result<(u64, CellularIdentifier), SimulationError>
 {
     let mut res = db_key.split("_");
-    let iter: u32 = res.next().unwrap().parse()?;
-    let uuid: Uuid = res.next().unwrap().parse()?;
-    Ok((iter, uuid))
+    let iter: u64 = res.next().unwrap().parse()?;
+    let id0: u64 = res.next().unwrap().parse()?;
+    let id1: u64 = res.next().unwrap().parse()?;
+    Ok((iter, (id0, id1)))
 }
 
 
@@ -119,7 +118,7 @@ fn db_key_to_iteration_uuid(db_key: &String) -> Result<(u32, Uuid), SimulationEr
 
 pub fn store_cell_in_tree<Cbox>(
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     cell: Cbox
 ) -> Result<(), SimulationError>
 where
@@ -132,7 +131,7 @@ where
 pub fn store_cells_in_tree<Cbox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     cells: Vec<Cbox>
 ) -> Result<(), SimulationError>
 where
@@ -158,7 +157,7 @@ where
     // Get values from buffer if existant
     let all_cells = match &buffer {
         Some(buff) => Ok((*buff).clone()),
-        None => deserialize_all_elements_from_tree_group(tree, db_key_to_iteration_uuid, progress_style),
+        None => deserialize_all_elements_from_tree_group(tree, db_key_to_iteration_id, progress_style),
     }?;
 
     // Update buffer
@@ -184,7 +183,7 @@ where
     let all_cell_histories = match &buffer {
         Some(buff) => (*buff).clone(),
         None => {
-            let cell_storage = deserialize_all_elements_from_tree_group(tree, db_key_to_iteration_uuid, progress_style)?;
+            let cell_storage = deserialize_all_elements_from_tree_group(tree, db_key_to_iteration_id, progress_style)?;
             convert_cell_storage_to_cell_histories(cell_storage, true)
         },
     };
@@ -206,13 +205,13 @@ where
 pub fn get_cell<Cbox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
-    uuid: &Uuid
+    iteration: u64,
+    id: &CellularIdentifier
 ) -> Result<Option<Cbox>, SimulationError>
 where
     Cbox: for<'a>Deserialize<'a> + 'static,
 {
-    deserialize_single_element_from_tree(tree, iteration, uuid, iteration_uuid_to_db_key)
+    deserialize_single_element_from_tree(tree, iteration, id, iteration_id_to_db_key)
 }
 
 
@@ -232,7 +231,7 @@ where
 pub fn get_cells_at_iter<Cbox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iter: &u32,
+    iteration: u64,
     buffer: Option<&mut CellStorage<Cbox>>,
     progress_style: Option<indicatif::ProgressStyle>,
 ) -> Result<Vec<Cbox>, SimulationError>
@@ -242,10 +241,10 @@ where
     let all_cells = get_cell_storage_with_buffer(tree, buffer, progress_style)?;
 
     // Get cells at certain iteration
-    all_cells.get(iter)
+    all_cells.get(&iteration)
         .map(|cells| (*cells).clone())
         .ok_or(IndexError{
-            message: format!("could not obtain cells at iteration {} from database: no entry for this iteration found", iter)
+            message: format!("could not obtain cells at iteration {} from database: no entry for this iteration found", iteration)
         }.into()
     )
 }
@@ -254,17 +253,17 @@ where
 pub fn get_cell_history<Cbox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    uuid: &Uuid,
+    id: &CellularIdentifier,
     buffer: Option<&mut CellHistories<Cbox>>,
     progress_style: Option<indicatif::ProgressStyle>,
-) -> Result<Option<Vec<(u32, Cbox)>>, SimulationError>
+) -> Result<Option<Vec<(u64, Cbox)>>, SimulationError>
 where
     Cbox: for<'a>Deserialize<'a> +Id + Clone
 {
     let all_cell_histories = get_cell_histories_with_buffer(tree, buffer, progress_style)?;
 
     // Return cell history
-    Ok(all_cell_histories.get(uuid).and_then(|x| Some(x.clone())))
+    Ok(all_cell_histories.get(id).and_then(|x| Some(x.clone())))
 }
 
 
@@ -335,7 +334,7 @@ where
 // Private - Conversion of database entry (String) and voxel-properties
 // ############################################################
 
-fn iteration_voxel_to_db_key<VBox>(iteration: u32, voxel: &VBox) -> String
+fn iteration_voxel_to_db_key<VBox>(iteration: u64, voxel: &VBox) -> String
 where
     VBox: Serialize + GetPlainIndex + Send + Sync,
 {
@@ -343,16 +342,16 @@ where
 }
 
 
-fn iteration_plain_index_to_db_key(iteration: u32, plain_index: &PlainIndex) -> String
+fn iteration_plain_index_to_db_key(iteration: u64, plain_index: &PlainIndex) -> String
 {
     format!("{:010.0}_{:010.0}", iteration, plain_index)
 }
 
 
-fn db_key_to_iteration_plain_index(db_key: &String) -> Result<(u32, PlainIndex), SimulationError>
+fn db_key_to_iteration_plain_index(db_key: &String) -> Result<(u64, PlainIndex), SimulationError>
 {
     let mut res = db_key.split("_");
-    let iter: u32 = res.next().unwrap().parse()?;
+    let iter: u64 = res.next().unwrap().parse()?;
     let plain_index: PlainIndex = res.next().unwrap().parse()?;
     Ok((iter, plain_index))
 }
@@ -365,7 +364,7 @@ fn db_key_to_iteration_plain_index(db_key: &String) -> Result<(u32, PlainIndex),
 pub fn store_voxel_in_tree<VBox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     voxel: VBox
 ) -> Result<(), SimulationError>
 where
@@ -377,7 +376,7 @@ where
 pub fn store_voxels_in_tree<VBox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
-    iteration: u32,
+    iteration: u64,
     voxels: Vec<VBox>,
 ) -> Result<(), SimulationError>
 where
@@ -452,7 +451,7 @@ pub fn get_voxel_at_iteration<VBox>
 (
     tree: &typed_sled::Tree<String, Vec<u8>>,
     plain_index: &PlainIndex,
-    iteration: u32,
+    iteration: u64,
 ) -> Result<VBox, SimulationError>
 where
     VBox: for<'a>Deserialize<'a> + 'static,
@@ -480,7 +479,7 @@ pub fn get_voxel_history<VBox>
     plain_index: &PlainIndex,
     buffer: Option<&mut VoxelStorage<VBox>>,
     progress_style: Option<indicatif::ProgressStyle>,
-) -> Result<Vec<(u32, VBox)>, SimulationError>
+) -> Result<Vec<(u64, VBox)>, SimulationError>
 where
     VBox: for<'a>Deserialize<'a> + GetPlainIndex + Clone,
 {
@@ -512,10 +511,10 @@ where
 // Private - Conversions for setup
 // ############################################################
 
-fn db_key_to_iteration(db_key: &String) -> Result<u32, SimulationError>
+fn db_key_to_iteration(db_key: &String) -> Result<u64, SimulationError>
 {
     let mut res = db_key.split("_");
-    let iter: u32 = res.nth(1).unwrap().parse()?;
+    let iter: u64 = res.nth(1).unwrap().parse()?;
     Ok(iter)
 }
 
@@ -600,58 +599,58 @@ mod test {
                 current_age: 0.0,
             };
 
-            let cellbox = CellAgentBox::new(0, 0, i, cell);
+            let cellbox = CellAgentBox::new(0, i, cell, None);
 
             store_single_element_in_tree(tree.clone(), 0, cellbox.clone(), iteration_cell_to_db_key).unwrap();
 
             cellboxes.push(cellbox);
         }
 
-        let res: CellAgentBox<StandardCell2D> = deserialize_single_element_from_tree(&tree, 0, &cellboxes[0].get_uuid(), iteration_uuid_to_db_key).unwrap();
+        let res: CellAgentBox<StandardCell2D> = deserialize_single_element_from_tree(&tree, 0, &cellboxes[0].get_id(), iteration_id_to_db_key).unwrap();
 
         assert_eq!(cellboxes[0].cell, res.cell);
     }
 
 
     #[cfg(not(feature = "test_exhaustive"))]
-    const N_UUIDS: u128 = 1_000;
+    const N_IDS: u64 = 1_000;
 
     #[cfg(not(feature = "test_exhaustive"))]
-    const N_ITERS: u32 = 1_000;
+    const N_ITERS: u64 = 1_000;
 
     #[cfg(feature = "test_exhaustive")]
-    const N_UUIDS: u128 = 10_000;
+    const N_IDS: u64 = 10_000;
 
     #[cfg(feature = "test_exhaustive")]
-    const N_ITERS: u32 = 10_000;
+    const N_ITERS: u64 = 10_000;
 
     #[test]
-    fn test_iter_uuid_conversion() {
+    fn test_iter_id_conversion() {
         #[cfg(feature = "test_exhaustive")]
         use rayon::prelude::*;
 
-        let uuids = (0..N_UUIDS).map(|i| uuid::Uuid::from_u128(i)).collect::<Vec<_>>();
+        let ids = (0..N_IDS).map(|i| (i, i)).collect::<Vec<_>>();
 
         #[cfg(feature = "test_exhaustive")]
-        uuids.into_par_iter().for_each(|uuid| {
+        ids.into_par_iter().for_each(|id| {
             (0..N_ITERS).for_each(|iter| {
-                let entry = cell_iteration_uuid_to_entry(&iter, &uuid);
-                let res = cell_entry_to_iteration_uuid(&entry);
-                let (iter_new, uuid_new) = res.unwrap();
+                let entry = cell_iteration_id_to_entry(&iter, &id);
+                let res = cell_entry_to_iteration_id(&entry);
+                let (iter_new, id_new) = res.unwrap();
 
-                assert_eq!(uuid_new, uuid);
+                assert_eq!(id_new, id);
                 assert_eq!(iter, iter_new);
             })
         });
 
         #[cfg(not(feature = "test_exhaustive"))]
-        uuids.into_iter().for_each(|uuid| {
+        ids.into_iter().for_each(|id| {
             (0..N_ITERS).for_each(|iter| {
-                let entry = iteration_uuid_to_db_key(iter, &uuid);
-                let res = db_key_to_iteration_uuid(&entry);
-                let (iter_new, uuid_new) = res.unwrap();
+                let entry = iteration_id_to_db_key(iter, &id);
+                let res = db_key_to_iteration_id(&entry);
+                let (iter_new, id_new) = res.unwrap();
 
-                assert_eq!(uuid_new, uuid);
+                assert_eq!(id_new, id);
                 assert_eq!(iter, iter_new);
             })
         });
