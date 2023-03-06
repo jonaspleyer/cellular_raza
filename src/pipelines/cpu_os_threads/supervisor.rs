@@ -1,9 +1,11 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox};
 use crate::concepts::interaction::{CellularReactions,InteractionExtracellularGRadient};
-use crate::concepts::domain::{AuxiliaryCellPropertyStorage,Domain,ExtracellularMechanics,Voxel,Concentration,MultiVoxelContainer,VoxelBox};
-use crate::concepts::domain::{DomainBox,Index};
+use crate::concepts::domain::{Domain,ExtracellularMechanics,Voxel,Concentration};
+use crate::concepts::domain::{Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::SimulationError;
+
+use super::domain_decomposition::{AuxiliaryCellPropertyStorage,MultiVoxelContainer,VoxelBox,DomainBox};
 
 use super::config::{PROGRESS_BAR_STYLE,PlottingConfig,SimulationConfig,SimulationMetaParams,SimulationSetup,SledDataBaseConfig,TimeSetup};
 
@@ -13,7 +15,6 @@ use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::Arc;
 
 use core::ops::{Mul,Add,AddAssign};
-use core::marker::PhantomData;
 
 use hurdles::Barrier;
 
@@ -33,72 +34,93 @@ use indicatif::{ProgressBar,ProgressStyle};
 
 /// # Supervisor controlling simulation execution
 /// 
-pub struct SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
+pub struct SimulationSupervisor<MVC, Dom>
 where
-    Pos: Serialize + for<'a> Deserialize<'a>,
-    For: Serialize + for<'a> Deserialize<'a>,
-    Vel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
-    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + 'static,
-    Cel: Serialize + for<'a> Deserialize<'a>,
     Dom: Serialize + for<'a> Deserialize<'a>,
 {
-    pub(super) worker_threads: Vec<thread::JoinHandle<Result<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>, SimulationError>>>,
-    pub(super) multivoxelcontainers: Vec<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>>,
+    pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
+    pub multivoxelcontainers: Vec<MVC>,
 
-    pub(super) time: TimeSetup,
-    pub(super) meta_params: SimulationMetaParams,
+    pub time: TimeSetup,
+    pub meta_params: SimulationMetaParams,
     #[cfg(feature = "db_sled")]
-    pub(super) database: SledDataBaseConfig,
+    pub database: SledDataBaseConfig,
 
-    pub(super) domain: DomainBox<Dom>,
+    pub domain: DomainBox<Dom>,
 
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    // Tree of database
+    // Tree of cell database + buffers
     #[cfg(not(feature = "no_db"))]
-    pub(super) tree_cells: typed_sled::Tree<String, Vec<u8>>,
+    pub tree_cells: typed_sled::Tree<String, Vec<u8>>,
     #[cfg(not(feature = "no_db"))]
-    pub(super) tree_voxels: typed_sled::Tree<String, Vec<u8>>,
-    #[cfg(not(feature = "no_db"))]
-    pub(super) meta_infos: typed_sled::Tree<String, Vec<u8>>,
 
-    // PhantomData for template arguments
-    pub(super) phantom_velocity: PhantomData<Vel>,
+    // Trees for voxels and infos
+    #[cfg(not(feature = "no_db"))]
+    pub tree_voxels: typed_sled::Tree<String, Vec<u8>>,
+    #[cfg(not(feature = "no_db"))]
+    pub meta_infos: typed_sled::Tree<String, Vec<u8>>,
 }
 
 
-impl<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom> SimulationSupervisor<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom>
+impl<
+    Pos,
+    For,
+    Inf,
+    Vel,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    Cel,
+    Ind,
+    Vox,
+    Dom
+>
+SimulationSupervisor<
+    MultiVoxelContainer<
+        Ind,
+        Pos,
+        For,
+        Inf,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+        Vox,
+        Dom,
+        Cel
+    >,
+Dom>
 where
-    Dom: Serialize + for<'a> Deserialize<'a> + Clone,
-    Pos: Serialize + for<'a> Deserialize<'a>,
-    For: Serialize + for<'a> Deserialize<'a>,
-    Vel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
-    Cel: Serialize + for<'a> Deserialize<'a>,
-    Ind: Serialize + for<'a> Deserialize<'a>,
-    Vox: Serialize + for<'a> Deserialize<'a>,
+    Dom: 'static + Serialize + for<'a> Deserialize<'a> + Clone,
+    Pos: 'static + Serialize + for<'a> Deserialize<'a>,
+    For: 'static + Serialize + for<'a> Deserialize<'a>,
+    Inf: 'static,
+    Vel: 'static + Serialize + for<'a> Deserialize<'a>,
+    ConcVecExtracellular: 'static + Serialize + for<'a>Deserialize<'a>,
+    ConcBoundaryExtracellular: 'static + Serialize + for<'a>Deserialize<'a>,
+    ConcVecIntracellular: 'static + Serialize + for<'a> Deserialize<'a>,
+    Cel: 'static + Serialize + for<'a> Deserialize<'a>,
+    Ind: 'static + Serialize + for<'a> Deserialize<'a>,
+    Vox: 'static + Serialize + for<'a> Deserialize<'a>,
 {
     fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
     where
-        Dom: 'static + Domain<Cel, Ind, Vox>,
-        Pos: 'static + Position,
-        For: 'static + Force,
-        Inf: 'static + crate::concepts::interaction::InteractionInformation,
-        Vel: 'static + Velocity,
-        ConcVecExtracellular: 'static + Concentration,
-        ConcTotalExtracellular: 'static + Concentration,
-        ConcVecIntracellular: 'static + Concentration,
-        ConcBoundaryExtracellular: 'static + Send + Sync,
+        Dom: Domain<Cel, Ind, Vox>,
+        Pos: Position,
+        For: Force,
+        Inf: crate::concepts::interaction::InteractionInformation,
+        Vel: Velocity,
+        ConcVecExtracellular: Concentration,
+        ConcTotalExtracellular: Concentration,
+        ConcVecIntracellular: Concentration,
+        ConcBoundaryExtracellular: Send + Sync,
         ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Ind: Index,
+        Vox: Voxel<Ind, Pos, For>,
         Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
+        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
         VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
@@ -186,20 +208,20 @@ where
 
     pub fn run_full_sim<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
     where
-        Dom: 'static + Domain<Cel, Ind, Vox>,
-        Pos: 'static + Position,
-        For: 'static + Force,
-        Inf: 'static + crate::concepts::interaction::InteractionInformation,
-        Vel: 'static + Velocity,
-        ConcVecExtracellular: 'static + Concentration,
-        ConcTotalExtracellular: 'static + Concentration,
+        Dom: Domain<Cel, Ind, Vox>,
+        Pos: Position,
+        For: Force,
+        Inf: crate::concepts::interaction::InteractionInformation,
+        Vel: Velocity,
+        ConcVecExtracellular: Concentration,
+        ConcTotalExtracellular: Concentration,
         ConcBoundaryExtracellular: Send + Sync + 'static,
-        ConcVecIntracellular: Send + Sync + 'static + Concentration,
+        ConcVecIntracellular: Send + Sync + Concentration,
         ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Ind: Index,
+        Vox: Voxel<Ind, Pos, For>,
         Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
+        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
         VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
@@ -210,20 +232,20 @@ where
 
     pub fn run_until<ConcTotalExtracellular,ConcGradientExtracellular>(&mut self, end_time: f64) -> Result<(), SimulationError>
     where
-        Dom: 'static + Domain<Cel, Ind, Vox>,
-        Pos: 'static + Position,
-        For: 'static + Force,
-        Inf: 'static + crate::concepts::interaction::InteractionInformation,
-        Vel: 'static + Velocity,
-        ConcVecExtracellular: 'static + Concentration,
-        ConcTotalExtracellular: 'static + Concentration,
+        Dom: Domain<Cel, Ind, Vox>,
+        Pos: Position,
+        For: Force,
+        Inf: crate::concepts::interaction::InteractionInformation,
+        Vel: Velocity,
+        ConcVecExtracellular: Concentration,
+        ConcTotalExtracellular: Concentration,
         ConcBoundaryExtracellular: Send + Sync + 'static,
-        ConcVecIntracellular: 'static + Concentration,
+        ConcVecIntracellular: Concentration,
         ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        Ind: 'static + Index,
-        Vox: 'static + Voxel<Ind, Pos, For>,
+        Ind: Index,
+        Vox: Voxel<Ind, Pos, For>,
         Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: 'static + CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
+        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
         VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
@@ -272,19 +294,21 @@ where
     // ########################################
     // #### DATABASE RELATED FUNCTIONALITY ####
     // ########################################
-    #[cfg(feature = "db_sled")]
-    pub fn get_cell_uuids_at_iter(&self, iter: &u32) -> Result<Vec<Uuid>, SimulationError> {
-        crate::storage::sled_database::io::get_cell_uuids_at_iter::<Cel>(&self.tree_cells, iter)
+   #[cfg(feature = "db_sled")]
+    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Cel>>, SimulationError>
+    where
+        Cel: Clone,
+    {
+        // TODO use buffer here!
+        super::storage_interface::get_cells_at_iter::<CellAgentBox<Cel>>(&self.tree_cells, iter, None, None)
     }
 
     #[cfg(feature = "db_sled")]
-    pub fn get_cells_at_iter(&self, iter: &u32) -> Result<Vec<CellAgentBox<Cel>>, SimulationError> {
-        crate::storage::sled_database::io::get_cells_at_iter::<Cel>(&self.tree_cells, iter)
-    }
-
-    #[cfg(feature = "db_sled")]
-    pub fn get_cell_history_from_database(&self, uuid: &Uuid) -> Result<Vec<(u32, CellAgentBox<Cel>)>, SimulationError> {
-        crate::storage::sled_database::io::get_cell_history_from_database(&self.tree_cells, uuid)
+    pub fn get_cell_history(&self, uuid: &Uuid) -> Result<Option<Vec<(u32, CellAgentBox<Cel>)>>, SimulationError>
+    where
+        Cel: Clone,
+    {
+        super::storage_interface::get_cell_history::<CellAgentBox<Cel>>(&self.tree_cells, uuid, None, None)
     }
 
     #[cfg(feature = "db_sled")]
@@ -292,7 +316,7 @@ where
     where
         Cel: Clone,
     {
-        crate::storage::sled_database::io::get_all_cell_histories(&self.tree_cells)
+        super::storage_interface::get_all_cell_histories::<CellAgentBox<Cel>>(&self.tree_cells, None, None)
     }
 
     // ########################################
@@ -302,7 +326,7 @@ where
     pub fn plot_cells_at_iter_bitmap(&self, iteration: u32) -> Result<(), SimulationError>
     where
         Dom: crate::plotting::spatial::CreatePlottingRoot,
-        Cel: crate::plotting::spatial::PlotSelf,
+        Cel: crate::plotting::spatial::PlotSelf + Clone,
     {
         let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
 
@@ -328,6 +352,7 @@ where
     where
         PlotCellsFunc: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
         Dom: crate::plotting::spatial::CreatePlottingRoot,
+        Cel: Clone,
     {
         let current_cells = self.get_cells_at_iter(&(iteration as u32))?;
 
@@ -355,7 +380,7 @@ where
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,
-        Cel: crate::plotting::spatial::PlotSelf + Send + Sync,
+        Cel: crate::plotting::spatial::PlotSelf + Send + Sync + Clone,
         CellAgentBox<Cel>: Send + Sync,
     {
         // Install the pool
@@ -367,14 +392,14 @@ where
         pool.install(|| -> Result<(), SimulationError> {
             // Create progress bar for tree deserialization
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
+            let all_cells = super::storage_interface::get_all_cells::<CellAgentBox<Cel>>(&self.tree_cells, None, Some(style.clone()))?;
 
             // Create progress bar for image generation
-            let bar = ProgressBar::new(cells_at_iter.len() as u64);
+            let bar = ProgressBar::new(all_cells.len() as u64);
             bar.set_style(style);
 
             println!("Generating Images");
-            cells_at_iter.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
+            all_cells.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
                 // Create a plotting root
                 let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
 
@@ -414,7 +439,7 @@ where
         Ind: Send + Sync,
         Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
         Vox: Send + Sync,
-        Cel: Send + Sync,
+        Cel: Send + Sync + Clone,
         CellAgentBox<Cel>: Send + Sync,
         Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
     {
@@ -428,14 +453,14 @@ where
             // Create progress bar for tree deserialization
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             // Deserialize the database tree
-            let cells_at_iter = crate::storage::sled_database::io::deserialize_tree::<Cel>(&self.tree_cells, Some(style.clone()))?;
+            let all_cells = super::storage_interface::get_all_cells::<CellAgentBox<Cel>>(&self.tree_cells, None, Some(style.clone()))?;
 
             // Create progress bar for image generation
-            let bar = ProgressBar::new(cells_at_iter.len() as u64);
+            let bar = ProgressBar::new(all_cells.len() as u64);
             bar.set_style(style);
 
             println!("Generating Images");
-            cells_at_iter.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
+            all_cells.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
                 // Create a plotting root
                 let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
 
@@ -460,17 +485,17 @@ where
     #[cfg(not(feature = "no_db"))]
     pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func<FuncCells,FuncVoxels>(&self, plotting_function_cells: &FuncCells, plotting_function_voxels: &FuncVoxels) -> Result<(), SimulationError>
     where
-        Pos: Send + Sync,
-        For: Send + Sync,
-        Inf: Send + Sync,
-        Vel: Send + Sync,
-        ConcVecExtracellular: Send + Sync,
-        ConcBoundaryExtracellular: Send + Sync + 'static,
-        ConcVecIntracellular: Send + Sync,
-        Ind: Send + Sync,
-        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
-        Vox: Send + Sync,
-        Cel: Send + Sync,
+        Pos: Send + Sync + Clone,
+        For: Send + Sync + Clone,
+        Inf: Send + Sync + Clone,
+        Vel: Send + Sync + Clone,
+        ConcVecExtracellular: Send + Sync + Clone,
+        ConcBoundaryExtracellular: Send + Sync + 'static + Clone,
+        ConcVecIntracellular: Send + Sync + Clone,
+        Ind: Send + Sync + Clone,
+        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync + Clone,
+        Vox: Send + Sync + Clone,
+        Cel: Send + Sync + Clone,
         CellAgentBox<Cel>: Send + Sync,
         // VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Send + Sync,
         FuncCells: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
@@ -486,17 +511,17 @@ where
             // Create progress bar for tree deserialization
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             // Deserialize the database tree
-            let voxels_at_iter = crate::storage::sled_database::io::voxels_deserialize_tree::<VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>(&self.tree_voxels, Some(style.clone()))?;
+            let all_voxels = super::storage_interface::get_all_voxels::<VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>(&self.tree_voxels, None, Some(style.clone()))?;
 
             // Create progress bar for image generation
-            let bar = ProgressBar::new(voxels_at_iter.len() as u64);
+            let bar = ProgressBar::new(all_voxels.len() as u64);
             bar.set_style(style);
 
             println!("Generating Images");
             use rayon::prelude::*;
 
             // TODO this is not a parallel iterator!
-            voxels_at_iter.into_par_iter()
+            all_voxels.into_par_iter()
                 .map(|(iteration, voxel_boxes)| -> Result<(), SimulationError> {
                 // Create a plotting root
                 let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
