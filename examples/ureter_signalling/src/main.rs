@@ -133,7 +133,6 @@ fn main() {
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     // Cells of Type 1
-    // let shared_concentrations = std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::<uuid::Uuid,f64>::new()));
     let mut cells = (0..N_CELLS_1 as i32).map(|_| {
         let pos = Vector2::<f64>::from([
             rng.gen_range(STARTING_DOMAIN_1_X_LOW..STARTING_DOMAIN_1_X_HIGH),
@@ -190,14 +189,6 @@ fn main() {
                 CELL_FOOD_UPTAKE_RATE,
                 0.0,
             ]),
-            // shared_concentration: shared_concentrations.clone(),
-            // uuid: uuid::Uuid::new_v4(),
-            // history: Vec::new(),
-            // target_average_concentration: 0.1,
-            // kp: 0.0,
-            // kd: 0.0,
-            // ki: 0.0,
-            // special_cell: k==0,
         },
     }}).collect::<Vec<_>>();
 
@@ -278,14 +269,6 @@ fn main() {
                     CELL_FOOD_UPTAKE_RATE,
                     0.01,
                 ]),
-                // shared_concentration: shared_concentrations.clone(),
-                // uuid: uuid::Uuid::new_v4(),
-                // history: Vec::new(),
-                // target_average_concentration: 0.1,
-                // kp: 0.1,
-                // kd: 0.01,
-                // ki: 0.005,
-                // special_cell: false,
             }
         }}).collect::<Vec<_>>();
     cells.extend(cells2);

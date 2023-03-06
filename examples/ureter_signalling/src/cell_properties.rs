@@ -114,24 +114,6 @@ impl OwnCycle {
 }
 
 
-/* fn controller_functor(dt: f64, diff: f64, history: &Vec<f64>, kp: f64, kd: f64, ki: f64, do_print: bool) -> f64 {
-    let proportional = kp*diff;
-    let mut differential = 0.0;
-    let mut integral = 0.0;
-    if history.len() >= 2 {
-        // if do_print {println!("{} {} {:?}", history.iter().filter(|value| value.is_normal()).last().unwrap(), history.iter().filter(|value| value.is_normal()).nth_back(1).unwrap(), history)};
-        differential = kd*(history.last().unwrap()-history.iter().nth_back(1).unwrap())/dt;
-    }
-    if history.len() > 10 {
-        integral = ki*history.iter().sum::<f64>()*dt;
-    }
-    if do_print {
-        println!("{:12.9} {:12.9} {:12.9}", proportional, differential, integral);
-    }
-    proportional + differential + integral
-}*/
-
-
 
 impl Cycle<MyCellType> for OwnCycle {
     fn update_cycle(
@@ -140,41 +122,6 @@ impl Cycle<MyCellType> for OwnCycle {
         c: &mut MyCellType
     ) -> Option<CycleEvent>
     {
-        // Insert entry for global concentration tracking
-        // if c.cycle.is_ureter==true {
-        //     let intra = c.get_intracellular()[0];
-        //     let uuid = c.cellular_reactions.uuid;
-        //     let mut concs = c.cellular_reactions.shared_concentration.lock().unwrap();
-        //     match concs.get_mut(&uuid) {
-        //         Some(entry) => *entry = intra,
-        //         None => {concs.insert(uuid, intra);},
-        //     }
-        //     // println!("{}", concs.iter().map(|(_, value)| value).sum::<f64>());
-        // }
-
-        // If we are a sender cell we modify the production rate
-        // if c.cycle.is_ureter==false {
-        //     let concs = c.cellular_reactions.shared_concentration.lock().unwrap();
-        //     let average_concentration = concs.iter().map(|(_, value)| value).sum::<f64>() / concs.len() as f64;
-        //     let control_variable = controller_functor(
-        //         *dt,
-        //         c.cellular_reactions.target_average_concentration - average_concentration,
-        //         &c.cellular_reactions.history,
-        //         c.cellular_reactions.kp,
-        //         c.cellular_reactions.kd,
-        //         c.cellular_reactions.ki,
-        //         c.cellular_reactions.special_cell
-        //     );
-        //     if c.cellular_reactions.special_cell {
-        //         println!("{:?}", concs.values());
-        //         assert_eq!(concs.len() < 10, true);
-        //     }
-        //     
-        //     c.cellular_reactions.history.push(control_variable);
-        //     c.cellular_reactions.production_term[0] = (c.cellular_reactions.production_term[0] + control_variable).max(0.0);
-        // }
-
-
         // If the cell is not at the maximum size let it grow
         if c.interaction.cell_radius < c.cycle.maximum_cell_radius {
             let growth_difference = (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt).min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
@@ -208,9 +155,6 @@ impl Cycle<MyCellType> for OwnCycle {
             /c.cycle.food_death_threshold
         ).clamp(0.0, 1.0);
         if c.cellular_reactions.get_intracellular()[1] < 0.0 && rng.gen_range(0.0..1.0) < relative_death_food_level {
-            // Remove from global hashmap
-            // let mut concs = c.cellular_reactions.shared_concentration.lock().unwrap();
-            // concs.remove(&c.cellular_reactions.uuid);
             return Some(CycleEvent::Death);
         }
         let relative_death_morphogen_level = ((0.3-c.get_intracellular()[2])/0.3).clamp(0.0, 1.0);
@@ -226,8 +170,6 @@ impl Cycle<MyCellType> for OwnCycle {
         c1.cycle.generation += 1;
         let mut c2 = c1.clone();
 
-        // Generate new uuid for new cell
-        // c2.cellular_reactions.uuid = uuid::Uuid::new_v4();
         let r = c1.interaction.cell_radius;
 
         // Make both cells smaller
@@ -270,16 +212,6 @@ pub struct OwnReactions {
     pub degradation_rate: ReactionVector,
     pub secretion_rate: ReactionVector,
     pub uptake_rate: ReactionVector,
-
-    // #[serde(skip)]
-    // pub shared_concentration: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<uuid::Uuid,f64>>>,
-    // pub uuid: uuid::Uuid,
-    // pub history: Vec<f64>,
-    // pub target_average_concentration: f64,
-    // pub kp: f64,
-    // pub kd: f64,
-    // pub ki: f64,
-    // pub special_cell: bool,
 }
 
 
