@@ -8,8 +8,6 @@ use rand::Rng;
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 3;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType = ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
-pub type MyVoxelType = CartesianCuboidVoxel2Reactions3;
-pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>, Vector2<f64>, Vector2<f64>, ReactionVector, ReactionVector, ReactionVector>;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]

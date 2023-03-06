@@ -1,16 +1,20 @@
+use nalgebra::Vector2;
+
 use std::env;
 
 mod cell_properties;
 mod plotting;
-
-use cell_properties::{MyVoxelBox,MyVoxelType};
 use plotting::*;
+use cell_properties::*;
 
 use cellular_raza::{
     concepts::errors::SimulationError,
-    pipelines::cpu_os_threads::prelude::{SimulationSetup,CartesianCuboid2},
+    pipelines::cpu_os_threads::prelude::*,
     plotting::spatial::CreatePlottingRoot,
 };
+
+pub type MyVoxelType = CartesianCuboidVoxel2Reactions3;
+pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>, Vector2<f64>, Vector2<f64>, ReactionVector, ReactionVector, ReactionVector>;
 
 
 fn main() {
@@ -27,8 +31,8 @@ fn main() {
         // Deserialize the database tree
         let style = indicatif::ProgressStyle::with_template(cellular_raza::pipelines::cpu_os_threads::config::PROGRESS_BAR_STYLE)?;
 
-        let voxels_at_iter = cellular_raza::storage::sled_database::io::voxels_deserialize_tree::<MyVoxelBox>(&tree_voxels, Some(style.clone())).unwrap();
-        let setups_at_iter = cellular_raza::storage::sled_database::io::setup_deserialize_tree::<SimulationSetup<CartesianCuboid2, MyVoxelType>>(&tree_setups, Some(style.clone())).unwrap();
+        let voxels_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_voxels::<MyVoxelBox>(&tree_voxels, None, Some(style.clone())).unwrap();
+        let setups_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_setups::<CartesianCuboid2, MyVoxelType>(&tree_setups, None, Some(style.clone())).unwrap();
 
         // Create progress bar for image generation
         println!("Generating Images");
@@ -40,9 +44,9 @@ fn main() {
             // Create a plotting root
             let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
 
-            let mut chart = match setups_at_iter.get(&iteration) {
-                Some(setup) => setup,
-                None => setups_at_iter.values().next().unwrap(),
+            let mut chart = match setups_at_iter.iter().filter(|(iter, _)| *iter==iteration).next() {
+                Some((_, setup)) => setup,
+                None => &setups_at_iter.iter().next().unwrap().1,
             }.domain.create_bitmap_root(1500, &filename)?;
 
             voxel_boxes
