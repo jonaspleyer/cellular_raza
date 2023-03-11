@@ -159,7 +159,6 @@ impl Cycle<MyCellType> for OwnCycle {
         }
         let relative_death_morphogen_level = ((0.3-c.get_intracellular()[2])/0.3).clamp(0.0, 1.0);
         if c.cellular_reactions.get_intracellular()[2] > 0.1 && c.cycle.is_ureter==true && rng.gen_range(0.0..1.0) < relative_death_morphogen_level {
-            println!("Killing cell {}", c.cellular_reactions.get_intracellular()[2]);
             return Some(CycleEvent::Death);
         }
         None
