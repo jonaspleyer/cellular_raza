@@ -23,6 +23,7 @@ pub use crate::implementations::cell_models::modular_cell::*;
 
 // Domain Implementations
 pub use crate::implementations::domains::cartesian_cuboid_n::*;
+pub use crate::implementations::domains::cartesian_cuboid_2_vertex::*;
 
 // Initalization of the Simulation
 pub use crate::pipelines::cpu_os_threads::supervisor::*;

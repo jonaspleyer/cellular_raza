@@ -4,11 +4,14 @@ use crate::concepts::domain::*;
 
 use crate::plotting::spatial::CreatePlottingRoot;
 
+use super::cartesian_cuboid_n::get_decomp_res;
+use crate::implementations::cell_properties::mechanics::VertexVector2;
+
 // Imports from std and core
 use core::cmp::{min,max};
+use nalgebra::SVector;
 
 // Imports from other crates
-use nalgebra::SVector;
 use itertools::Itertools;
 
 use serde::{Serialize,Deserialize};
@@ -19,76 +22,22 @@ use plotters::coord::cartesian::Cartesian2d;
 use plotters::coord::types::RangedCoordf64;
 
 
-/// Helper function to calculate the decomposition of a large number N into n as evenly-sized chunks as possible
-/// Examples:
-/// N   n   decomp
-/// 10  3    1 *  4  +  3 *  3
-/// 13  4    1 *  5  +  3 *  4
-/// 100 13   4 * 13  +  4 * 12
-/// 225 16   1 * 15  + 15 * 14
-/// 225 17   4 * 14  + 13 * 13
-pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize, usize, usize)> {
-    // We calculate how many times we need to drain how many voxels
-    // Example:
-    //      n_voxels    = 59
-    //      n_regions   = 6
-    //      average_len = (59 / 8).ceil() = (9.833 ...).ceil() = 10
-    //
-    // try to solve this equation:
-    //      n_voxels = average_len * n + (average_len-1) * m
-    //      where n,m are whole positive numbers
-    //
-    // We start with    n = n_regions = 6
-    // and with         m = min(0, n_voxel - average_len.pow(2)) = min(0, 59 - 6^2) = 23
-    let mut average_len: i64 = (n_voxel as f64 / n_regions as f64).ceil() as i64;
-
-    let residue = |n: i64, m: i64, avg: i64| {n_voxel as i64 - avg*n - (avg-1)*m};
-
-    let mut n = n_regions as i64;
-    let mut m = 0;
-
-    for _ in 0..n_regions {
-        let r = residue(n, m, average_len);
-        if r == 0 {
-            return Some((n as usize, m as usize, average_len as usize));
-        } else if r > 0 {
-            if n==n_regions as i64 {
-                // Start from the beginning again but with different value for average length
-                average_len += 1;
-                n = n_regions as i64;
-                m = 0;
-            } else {
-                n += 1;
-                m -= 1;
-            }
-        // Residue is negative. This means we have subtracted too much and we just decrease n and increase m
-        } else {
-            n -= 1;
-            m += 1;
-        }
-    }
-    None
-}
-
-
 #[macro_export]
-macro_rules! define_and_implement_cartesian_cuboid {
-    ($d: expr, $name: ident, $($k: expr),+) => {
-        #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
-        #[doc = stringify!($d)]
-        #[doc = "` dimensions"]
+macro_rules! define_and_implement_cartesian_cuboid_2_vertex {
+    ($name: ident) => {
+        /// Cuboid Domain with coordinates specialized for vertex systems in 2 dimensions
         #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct $name {
-            min: [f64; $d],
-            max: [f64; $d],
-            n_vox: [i64; $d],
-            voxel_sizes: [f64; $d],
+            min: [f64; 2],
+            max: [f64; 2],
+            n_vox: [i64; 2],
+            voxel_sizes: [f64; 2],
         }
 
 
         impl $name {
-            fn check_min_max(min: [f64; $d], max: [f64; $d]) -> Result<(), CalcError> {
-                for i in 0..$d {
+            fn check_min_max(min: [f64; 2], max: [f64; 2]) -> Result<(), CalcError> {
+                for i in 0..2 {
                     match max[i] > min[i] {
                         false => Err(CalcError { message: format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max)}),
                         true => Ok(()),
@@ -97,11 +46,11 @@ macro_rules! define_and_implement_cartesian_cuboid {
                 Ok(())
             }
 
-            fn check_positive<F>(interaction_ranges: [F; $d]) -> Result<(), CalcError>
+            fn check_positive<F>(interaction_ranges: [F; 2]) -> Result<(), CalcError>
             where
                 F: PartialOrd + num::Zero + core::fmt::Debug,
             {
-                for i in 0..$d {
+                for i in 0..2 {
                     match interaction_ranges[i] > F::zero() {
                         false => Err(CalcError { message: format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i])}),
                         true => Ok(())
@@ -114,12 +63,12 @@ macro_rules! define_and_implement_cartesian_cuboid {
             #[doc = "Builds a new `"]
             #[doc = stringify!($name)]
             #[doc = "` from given boundaries and maximum interaction ranges of the containing cells."]
-            pub fn from_boundaries_and_interaction_ranges(min: [f64; $d], max: [f64; $d], interaction_ranges: [f64; $d]) -> Result<$name, CalcError> {
+            pub fn from_boundaries_and_interaction_ranges(min: [f64; 2], max: [f64; 2], interaction_ranges: [f64; 2]) -> Result<$name, CalcError> {
                 $name::check_min_max(min, max)?;
                 $name::check_positive(interaction_ranges)?;
-                let mut n_vox = [0; $d];
-                let mut voxel_sizes = [0.0; $d];
-                for i in 0..$d {
+                let mut n_vox = [0; 2];
+                let mut voxel_sizes = [0.0; 2];
+                for i in 0..2 {
                     n_vox[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as i64;
                     voxel_sizes[i] = (max[i]-min[i])/n_vox[i] as f64;
                 }
@@ -134,17 +83,17 @@ macro_rules! define_and_implement_cartesian_cuboid {
             #[doc = "Builds a new `"]
             #[doc = stringify!($name)]
             #[doc = "` from given boundaries and the number of voxels per dimension specified."]
-            pub fn from_boundaries_and_n_voxels(min: [f64; $d], max: [f64; $d], n_vox: [usize; $d]) -> Result<$name, CalcError> {
+            pub fn from_boundaries_and_n_voxels(min: [f64; 2], max: [f64; 2], n_vox: [usize; 2]) -> Result<$name, CalcError> {
                 $name::check_min_max(min, max)?;
                 $name::check_positive(n_vox)?;
-                let mut voxel_sizes = [0.0; $d];
-                for i in 0..$d {
+                let mut voxel_sizes = [0.0; 2];
+                for i in 0..2 {
                     voxel_sizes[i] = (max[i] - min[i]) / n_vox[i] as f64;
                 }
                 Ok($name {
                     min,
                     max,
-                    n_vox: [$(n_vox[$k] as i64),+],
+                    n_vox: [n_vox[0] as i64, n_vox[1] as i64],
                     voxel_sizes,
                 })
             }
@@ -153,7 +102,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
 }
 
 
-macro_rules! define_and_implement_cartesian_cuboid_voxel{
+macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
     ($d: expr, $n_reactions:expr, $name: ident, $voxel_name: ident, $($k: expr),+) => {
         // Define the struct for the voxel
         #[doc = "Cuboid Voxel for `"]
@@ -162,7 +111,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
         #[derive(Clone,Debug,Serialize,Deserialize)]
-        pub struct $voxel_name {
+        pub struct $voxel_name<const D: usize> {
                 min: [f64; $d],
                 max: [f64; $d],
                 middle: [f64; $d],
@@ -177,8 +126,8 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>,
         }
 
-        impl $voxel_name {
-            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>) -> $voxel_name {
+        impl<const D: usize> $voxel_name<D> {
+            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>) -> $voxel_name<D> {
                 let middle = [$((max[$k] + min[$k])/2.0),+];
                 let dx = [$(max[$k]-min[$k]),+];
                 $voxel_name {
@@ -201,11 +150,13 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
             pub fn get_middle(&self) -> [f64; $d] {self.middle}
             pub fn get_dx(&self) -> [f64; $d] {self.dx}
 
-            fn position_is_in_domain(&self, pos: &SVector<f64, $d>) -> Result<(), RequestError> {
-                match pos.iter().enumerate().any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i])) {
+            fn position_is_in_domain(&self, pos: &VertexVector2::<D>) -> Result<(), RequestError> {
+                let middle = pos.row_sum() / pos.shape().0 as f64;
+                match middle.iter().enumerate().any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i])) {
                     true => Err(RequestError{ message: format!("point {:?} is not in requested voxel with boundaries {:?} {:?}", pos, self.min, self.max)}),
                     false => Ok(()),
-                }
+                }?;
+                Ok(())
             }
 
             fn index_to_distance_squared(&self, index: &[i64; $d]) -> f64 {
@@ -218,14 +169,14 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name {
+        impl<const D: usize> Voxel<[i64; $d], VertexVector2::<D>, VertexVector2::<D>> for $voxel_name<D> {
             fn get_index(&self) -> [i64; $d] {
                 self.index
             }
         }
 
-        impl ExtracellularMechanics<[i64; $d], SVector<f64, $d>, SVector<f64, $n_reactions>, SVector<SVector<f64, $d>, $n_reactions>, SVector<f64, $n_reactions>, SVector<f64, $n_reactions>> for $voxel_name {
-            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<SVector<f64, $n_reactions>, SimulationError> {
+        impl<const D: usize> ExtracellularMechanics<[i64; $d], VertexVector2::<D>, SVector<f64, $n_reactions>, SVector<SVector<f64, $d>, $n_reactions>, SVector<f64, $n_reactions>, SVector<f64, $n_reactions>> for $voxel_name<D> {
+            fn get_extracellular_at_point(&self, pos: &VertexVector2::<D>) -> Result<SVector<f64, $n_reactions>, SimulationError> {
                 self.position_is_in_domain(pos)?;
                 Ok(self.extracellular_concentrations)
             }
@@ -235,7 +186,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
             }
 
             fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<(), SimulationError> {
-                let mut new_gradient = SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0));
+                let mut new_gradient = SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::from_element(0.0));
                 boundaries.iter()
                     .for_each(|(index, boundary_condition)| {
                         let extracellular_difference = match boundary_condition {
@@ -247,15 +198,13 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                         let dist = pointer.norm();
                         let gradient = pointer.normalize()/dist;
                         new_gradient.iter_mut().zip(extracellular_difference.into_iter()).for_each(|(component, diff)| *component += *diff*gradient);
-                        // let total_gradient = SVector::<SVector<f64,$d>,$n_reactions>::from_iterator(extracellular_difference.into_iter().map(|diff| *diff*gradient));
-                        // gradient += total_gradient;
                     });
                 self.extracellular_gradient = new_gradient;
                 Ok(())
             }
 
             // TODO
-            fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, $n_reactions>, SimulationError> {
+            fn get_extracellular_gradient_at_point(&self, _pos: &VertexVector2::<D>) -> Result<SVector<SVector<f64, $d>, $n_reactions>, SimulationError> {
                 Ok(self.extracellular_gradient)
             }
 
@@ -263,7 +212,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 Ok(self.extracellular_concentrations = *concentrations)
             }
 
-            fn calculate_increment(&self, total_extracellular: &SVector<f64, $n_reactions>, point_sources: &[(SVector<f64, $d>, SVector<f64, $n_reactions>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<SVector<f64, $n_reactions>, CalcError> {
+            fn calculate_increment(&self, total_extracellular: &SVector<f64, $n_reactions>, point_sources: &[(VertexVector2::<D>, SVector<f64, $n_reactions>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<SVector<f64, $n_reactions>, CalcError> {
                 let mut inc = SVector::<f64, $n_reactions>::from_element(0.0);
 
                 self.domain_boundaries
@@ -297,42 +246,49 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
 
         // Implement the cartesian cuboid
         // Index is an array of size 3 with elements of type usize
-        impl<C> Domain<C, [i64; $d], $voxel_name> for $name
+        impl<C, const D: usize> Domain<C, [i64; $d], $voxel_name<D>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where C: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+        where C: crate::concepts::mechanics::Mechanics<VertexVector2::<D>, VertexVector2::<D>, VertexVector2::<D>>,
         {
             fn apply_boundary(&self, cell: &mut C) -> Result<(),BoundaryError> {
-                let mut pos = cell.pos();
-                let mut velocity = cell.velocity();
-        
-                // For each dimension
-                for i in 0..$d {
-                    // Check if the particle is below lower edge
-                    if pos[i] < self.min[i] {
-                        pos[i] = 2.0 * self.min[i] - pos[i];
-                        velocity[i] = velocity[i].abs();
-                    }
-                    // Check if the particle is over the edge
-                    if pos[i] > self.max[i] {
-                        pos[i] = 2.0 * self.max[i] - pos[i];
-                        velocity[i] = - velocity[i].abs();
+                let mut pos_single = cell.pos();
+                let mut velocity_single = cell.velocity();
+
+                for (mut pos, mut velocity) in pos_single.row_iter_mut().zip(velocity_single.row_iter_mut()) {
+            
+                    // For each dimension
+                    for i in 0..$d {
+                        // Check if the particle is below lower edge
+                        if pos[i] < self.min[i] {
+                            pos[i] = 2.0 * self.min[i] - pos[i];
+                            velocity[i] = velocity[i].abs();
+                        }
+                        // Check if the particle is over the edge
+                        if pos[i] > self.max[i] {
+                            pos[i] = 2.0 * self.max[i] - pos[i];
+                            velocity[i] = - velocity[i].abs();
+                        }
                     }
                 }
+
                 // Set new position and velocity of particle
-                cell.set_pos(&pos);
-                cell.set_velocity(&velocity);
-        
-                // If new position is still out of boundary return error
-                for i in 0..$d {
-                    if pos[i] < self.min[i] || pos[i] > self.max[i] {
-                        return Err(BoundaryError { message: format!("Particle is out of domain at position {:?}", pos) });
+                cell.set_pos(&pos_single);
+                cell.set_velocity(&velocity_single);
+
+                for pos in pos_single.row_iter() {
+                    // If new position is still out of boundary return error
+                    for i in 0..$d {
+                        if pos[i] < self.min[i] || pos[i] > self.max[i] {
+                            return Err(BoundaryError { message: format!("Particle is out of domain at position {:?}", pos) });
+                        }
                     }
                 }
                 Ok(())
             }
         
             fn get_voxel_index(&self, cell: &C) -> [i64; $d] {
-                let p = cell.pos();
+                // Calculate middle
+                let p = cell.pos().row_sum()/cell.pos().shape().0 as f64;
                 let mut out = [0; $d];
 
                 for i in 0..$d {
@@ -370,7 +326,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 return v;
             }
 
-            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name)>>), CalcError> {
+            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name<D>)>>), CalcError> {
                 // Get all voxel indices
                 let indices: Vec<[i64; $d]> = [$($k),+]
                     .iter()                                     // indices supplied in macro invokation
@@ -386,7 +342,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 };
 
                 // Now we drain the indices vector
-                let mut index_voxel_combinations: Vec<([i64; $d], $voxel_name)> = indices
+                let mut index_voxel_combinations: Vec<([i64; $d], $voxel_name<D>)> = indices
                     .into_iter()
                     .map(|ind| {
                         let min = [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+];
@@ -400,7 +356,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                             .filter(|new_index| new_index.iter().zip(self.n_vox.iter()).any(|(i1, i2)| *i1<0 || i2<=i1))
                             .map(|new_index| (new_index, BoundaryCondition::Neumann(SVector::<f64, $n_reactions>::from_element(0.0))))
                             .collect::<Vec<_>>();
-                        (ind, $voxel_name::new(min, max, ind, domain_boundaries))
+                        (ind, $voxel_name::<D>::new(min, max, ind, domain_boundaries))
                     })
                     .collect();
                 
@@ -431,41 +387,19 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
 }
 
 
-define_and_implement_cartesian_cuboid!(1, CartesianCuboid1, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 1, CartesianCuboid1, CartesianCuboidVoxel1Reactions1, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 2, CartesianCuboid1, CartesianCuboidVoxel1Reactions2, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 3, CartesianCuboid1, CartesianCuboidVoxel1Reactions3, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 4, CartesianCuboid1, CartesianCuboidVoxel1Reactions4, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 5, CartesianCuboid1, CartesianCuboidVoxel1Reactions5, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 6, CartesianCuboid1, CartesianCuboidVoxel1Reactions6, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 7, CartesianCuboid1, CartesianCuboidVoxel1Reactions7, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 8, CartesianCuboid1, CartesianCuboidVoxel1Reactions8, 0);
-define_and_implement_cartesian_cuboid_voxel!(1, 9, CartesianCuboid1, CartesianCuboidVoxel1Reactions9, 0);
-
-define_and_implement_cartesian_cuboid!(2, CartesianCuboid2, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 1, CartesianCuboid2, CartesianCuboidVoxel2Reactions1, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 2, CartesianCuboid2, CartesianCuboidVoxel2Reactions2, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 3, CartesianCuboid2, CartesianCuboidVoxel2Reactions3, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 4, CartesianCuboid2, CartesianCuboidVoxel2Reactions4, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 5, CartesianCuboid2, CartesianCuboidVoxel2Reactions5, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 6, CartesianCuboid2, CartesianCuboidVoxel2Reactions6, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 7, CartesianCuboid2, CartesianCuboidVoxel2Reactions7, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 8, CartesianCuboid2, CartesianCuboidVoxel2Reactions8, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(2, 9, CartesianCuboid2, CartesianCuboidVoxel2Reactions9, 0, 1);
-
-define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 1, CartesianCuboid3, CartesianCuboidVoxel3Reactions1, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 2, CartesianCuboid3, CartesianCuboidVoxel3Reactions2, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 3, CartesianCuboid3, CartesianCuboidVoxel3Reactions3, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 4, CartesianCuboid3, CartesianCuboidVoxel3Reactions4, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 5, CartesianCuboid3, CartesianCuboidVoxel3Reactions5, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 6, CartesianCuboid3, CartesianCuboidVoxel3Reactions6, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 7, CartesianCuboid3, CartesianCuboidVoxel3Reactions7, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 8, CartesianCuboid3, CartesianCuboidVoxel3Reactions8, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(3, 9, CartesianCuboid3, CartesianCuboidVoxel3Reactions9, 0, 1, 2);
+define_and_implement_cartesian_cuboid_2_vertex!(CartesianCuboid2Vertex);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 1, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions1, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 2, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions2, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 3, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions3, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 4, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions4, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 5, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions5, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 6, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions6, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 7, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions7, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 8, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions8, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 9, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions9, 0, 1);
 
 
-impl CreatePlottingRoot for CartesianCuboid2
+impl CreatePlottingRoot for CartesianCuboid2Vertex
 {
     fn create_bitmap_root<'a>(&self, image_size: u32, filename: &'a String) -> Result<DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>, DrawingError> {
         use plotters::drawing::IntoDrawingArea;
