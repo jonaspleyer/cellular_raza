@@ -1,4 +1,5 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+use cellular_raza::implementations::cell_properties::mechanics::{VertexMechanics2D,VertexVector2};
 
 use serde::{Serialize,Deserialize};
 use nalgebra::{Unit,Vector2};
@@ -6,8 +7,10 @@ use nalgebra::{Unit,Vector2};
 use rand::Rng;
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 4;
+pub const NUMBER_OF_VERTICES: usize = 5;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
-pub type MyCellType = ModularCell<Vector2<f64>, MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
+pub type InteractionInformation = ();
+pub type MyCellType = ModularCell<VertexVector2<NUMBER_OF_VERTICES>, VertexMechanics2D<NUMBER_OF_VERTICES>, VertexDerivedInteraction<OutsideInteraction, InsideInteraction>, OwnCycle, OwnReactions, GradientSensing>;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
@@ -20,66 +23,57 @@ pub struct DirectedSphericalMechanics {
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
-pub struct CellSpecificInteraction {
+pub struct OutsideInteraction {
     pub potential_strength: f64,
-    pub attraction_multiplier: f64,
-    pub relative_interaction_range: f64,
-    pub cell_radius: f64,
-    pub orientation: Unit<Vector2<f64>>,
-    pub polarity: i32,
+    pub interaction_range: f64,
 }
 
 
-impl Interaction<Vector2<f64>, Vector2<f64>, (f64, Unit<Vector2<f64>>)> for CellSpecificInteraction {
-    fn get_interaction_information(&self) -> Option<(f64, Unit<Vector2<f64>>)>
-    {
-        Some((self.cell_radius, self.orientation.clone()))
-    }
+#[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
+pub struct InsideInteraction {
+    pub potential_strength: f64,
+}
 
+
+impl Interaction<Vector2<f64>, Vector2<f64>, InteractionInformation> for OutsideInteraction {
     fn calculate_force_on(
         &self,
         own_pos: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
-        ext_info: &Option<(f64, Unit<Vector2<f64>>)>
+        _ext_info: &Option<InteractionInformation>
     ) -> Option<Result<Vector2<f64>, CalcError>>
     {
-        let min_relative_distance_to_center = 0.3162277660168379;
-        let (r, dir) = match (own_pos-ext_pos).norm() < self.cell_radius*min_relative_distance_to_center {
-            false => {
-                let z = own_pos - ext_pos;
-                let r = z.norm();
-                (r, z.normalize())
-            },
-            true => {
-                let dir = match own_pos==ext_pos {
-                    true => self.orientation.into_inner(),
-                    false => (own_pos - ext_pos).normalize(),
-                };
-                let r = self.cell_radius*min_relative_distance_to_center;
-                (r, dir)
-            }
-        };
-        match ext_info {
-            Some((ext_radius, external_orientation)) => {
-                // Introduce Non-dimensional length variable
-                let sigma = r/(self.cell_radius + ext_radius);
-                let bound = 4.0 + 1.0/sigma;
-                let spatial_cutoff = (1.0+(self.relative_interaction_range*(self.cell_radius+ext_radius)-r).signum())*0.5;
+        // Calculate distance and direction between own and other point
+        let z = ext_pos - own_pos;
+        let r = z.norm();
+        let dir = z/r;
 
-                // Calculate the strength of the interaction with correct bounds
-                let strength = self.potential_strength*((1.0/sigma).powf(2.0) - (1.0/sigma).powf(4.0)).min(bound).max(-bound);
+        // Introduce Non-dimensional length variable
+        let sigma = r/(self.interaction_range);
+        let spatial_cutoff = if r>self.interaction_range {0.0} else {1.0};
 
-                // Calculate the attraction modifier based on the different orientation value
-                let attraction_orientation_modifier = dir.dot(external_orientation).abs();
+        // Calculate the strength of the interaction with correct bounds
+        let strength = self.potential_strength * (1.0 - sigma);
 
-                // Calculate only attracting and repelling forces
-                let attracting_force = dir * (self.attraction_multiplier * attraction_orientation_modifier + 1.0) * strength.max(0.0) * spatial_cutoff;
-                let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        // Calculate only attracting and repelling forces
+        let force = - dir * strength * spatial_cutoff;
+        Some(Ok(force))
+    }
+}
 
-                Some(Ok(repelling_force + attracting_force))
-            },
-            None => None,
-        }
+
+impl Interaction<Vector2<f64>, Vector2<f64>, InteractionInformation> for InsideInteraction {
+    fn calculate_force_on(
+        &self,
+        own_pos: &Vector2<f64>,
+        ext_pos: &Vector2<f64>,
+        _ext_info: &Option<InteractionInformation>
+    ) -> Option<Result<Vector2<f64>, CalcError>> {
+        // Calculate direction between own and other point
+        let z = ext_pos - own_pos;
+        let dir = z.normalize();
+
+        Some(Ok(self.potential_strength*dir))
     }
 }
 
@@ -90,7 +84,8 @@ pub struct OwnCycle {
     pub division_age: f64,
     divisions: u8,
     generation: u8,
-    pub maximum_cell_radius: f64,
+    pub current_cell_area: f64,
+    pub maximum_cell_area: f64,
     pub growth_rate: f64,
     food_growth_rate_multiplier: f64,
     food_death_threshold: f64,
@@ -101,7 +96,8 @@ pub struct OwnCycle {
 impl OwnCycle {
     pub fn new(
         division_age: f64,
-        maximum_cell_radius: f64,
+        cell_area: f64,
+        maximum_cell_area: f64,
         growth_rate: f64,
         food_growth_rate_multiplier: f64,
         food_death_threshold: f64,
@@ -113,7 +109,8 @@ impl OwnCycle {
             division_age,
             divisions: 0,
             generation: 0,
-            maximum_cell_radius,
+            current_cell_area: cell_area,
+            maximum_cell_area,
             growth_rate,
             food_growth_rate_multiplier,
             food_death_threshold,
@@ -131,10 +128,10 @@ impl Cycle<MyCellType> for OwnCycle {
     ) -> Option<CycleEvent>
     {
         // If the cell is not at the maximum size let it grow
-        if c.interaction.cell_radius < c.cycle.maximum_cell_radius {
-            let growth_difference = (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt).min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
-            c.cellular_reactions.intracellular_concentrations[1] -= c.cycle.food_growth_rate_multiplier*growth_difference/c.cycle.maximum_cell_radius;
-            c.interaction.cell_radius += growth_difference;
+        if c.cycle.current_cell_area < c.cycle.maximum_cell_area {
+            let growth_difference = (c.cycle.maximum_cell_area * c.cycle.growth_rate * dt).min(c.cycle.maximum_cell_area - c.cycle.current_cell_area);
+            c.cellular_reactions.intracellular_concentrations[1] -= c.cycle.food_growth_rate_multiplier*growth_difference/c.cycle.maximum_cell_area;
+            c.cycle.current_cell_area += growth_difference;
         }
 
         // Increase the age of the cell and divide if possible
@@ -150,7 +147,7 @@ impl Cycle<MyCellType> for OwnCycle {
             // Check if the cell has aged enough
             c.cycle.age > c.cycle.division_age &&
             // Check if the cell has grown enough
-            c.interaction.cell_radius >= c.cycle.maximum_cell_radius &&
+            c.cycle.current_cell_area >= c.cycle.maximum_cell_area &&
             // Random selection but chance increased when significantly above the food threshold
             rng.gen_range(0.0..1.0) < relative_division_food_level
         {
@@ -168,31 +165,24 @@ impl Cycle<MyCellType> for OwnCycle {
         None
     }
 
-    fn divide(rng: &mut rand_chacha::ChaCha8Rng, c1: &mut MyCellType) -> Result<Option<MyCellType>, DivisionError> {
+    fn divide(_rng: &mut rand_chacha::ChaCha8Rng, c1: &mut MyCellType) -> Result<Option<MyCellType>, DivisionError> {
         // Clone existing cell
         c1.cycle.generation += 1;
         let mut c2 = c1.clone();
-        let r = c1.interaction.cell_radius;
+        // let r = c1.interaction.base_interaction.cell_radius;
 
         // Make both cells smaller
         // ALso keep old cell larger
         let relative_size_difference = 0.2;
-        c1.interaction.cell_radius *= (1.0+relative_size_difference)/std::f64::consts::SQRT_2;
-        c2.interaction.cell_radius *= (1.0-relative_size_difference)/std::f64::consts::SQRT_2;
+        c1.cycle.current_cell_area *= (1.0+relative_size_difference)/std::f64::consts::SQRT_2;
+        c2.cycle.current_cell_area *= (1.0-relative_size_difference)/std::f64::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
-        let angle_1 = rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
-        let dir_vec = nalgebra::Rotation2::new(angle_1) * c1.interaction.orientation;
+        // let angle_1 = rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
+        // let dir_vec = nalgebra::Rotation2::new(angle_1) * c1.interaction.base_interaction.orientation;
 
         // Define new positions for cells
         // It is randomly chosen if the old cell is left or right
-        let sign = -1.0;//rng.gen_range(-1.0_f64..1.0_f64).signum();
-        let offset = sign*dir_vec.into_inner()*r/std::f64::consts::SQRT_2;
-        let old_pos = c1.pos();
-
-        c1.set_pos(&(old_pos + offset));
-        c2.set_pos(&(old_pos - offset));
-
         // Decrease the amount of food in the cells
         c1.cellular_reactions.intracellular_concentrations *= (1.0+relative_size_difference)*0.5;
         c2.cellular_reactions.intracellular_concentrations *= (1.0-relative_size_difference)*0.5;
@@ -271,10 +261,7 @@ pub struct GradientSensing {}
 
 
 impl InteractionExtracellularGRadient<MyCellType, nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>> for GradientSensing {
-    fn sense_gradient(cell: &mut MyCellType<>, gradient: &nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>) -> Result<(), CalcError> {
-        if gradient[0].norm()!=0.0 {
-            cell.interaction.orientation = nalgebra::Unit::new_normalize(-gradient[2]);
-        }
+    fn sense_gradient(_cell: &mut MyCellType<>, _gradient: &nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>) -> Result<(), CalcError> {
         Ok(())
     }
 }

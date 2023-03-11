@@ -1,7 +1,7 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
 
-use nalgebra::{Unit,Vector2};
+use nalgebra::Vector2;
 
 use rand_chacha::ChaCha8Rng;
 use rand::{SeedableRng,Rng};
@@ -11,11 +11,11 @@ use rand::{SeedableRng,Rng};
 pub const N_CELLS: u32 = 200;
 
 // Mechanical parameters
-pub const CELL_MECHANICS_RADIUS: f64 = 6.0;
-pub const CELL_MECHANICS_RELATIVE_INTERACTION_RANGE: f64 = 1.15;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 0.5;
-pub const CELL_MECHANICS_VELOCITY_REDUCTION: f64 = 2.0;
-pub const CELL_MECHANICS_ATTRACTION_MULTIPLIER: f64 = 0.5;
+pub const CELL_MECHANICS_AREA: f64 = 300.0;
+pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 400.0;
+pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 4.0;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 2.5;
+pub const CELL_MECHANICS_DAMPENING_CONSTANT: f64 = 1.0;
 
 // Reaction parameters of the cell
 pub const CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION: f64 = 10.0;
@@ -41,23 +41,23 @@ pub const VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_1: f64 =   50.0;
 pub const VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_2: f64 = 2500.0;
 
 // Parameters for cell cycle
-pub const CELL_CYCLE_DIVISION_AGE_MIN: f64 = 60.0;
-pub const CELL_CYCLE_DIVISION_AGE_MAX: f64 = 70.0;
+pub const CELL_CYCLE_DIVISION_AGE_MIN: f64 = 1000.0;
+pub const CELL_CYCLE_DIVISION_AGE_MAX: f64 = 1010.0;
 pub const CELL_CYCLE_GROWTH_RATE: f64 = 0.3;
 pub const CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER: f64 = 2.0;
 pub const CELL_CYCLE_FOOD_DEATH_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.4;
 pub const CELL_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.6;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 1200.0;
-pub const DOMAIN_SIZE_Y: f64 = 1200.0;
+pub const DOMAIN_SIZE_X: f64 = 700.0;
+pub const DOMAIN_SIZE_Y: f64 = 700.0;
 
 // Where will the cells be placed initially
 // Define a polygon by points
-pub const STARTING_DOMAIN_X_LOW:  f64 = DOMAIN_SIZE_X/2.0 - 80.0;
-pub const STARTING_DOMAIN_X_HIGH: f64 = DOMAIN_SIZE_X/2.0 + 80.0;
-pub const STARTING_DOMAIN_Y_LOW:  f64 = DOMAIN_SIZE_Y/2.0 - 80.0;
-pub const STARTING_DOMAIN_Y_HIGH: f64 = DOMAIN_SIZE_Y/2.0 + 80.0;
+pub const STARTING_DOMAIN_X_LOW:  f64 = 150.0;
+pub const STARTING_DOMAIN_X_HIGH: f64 = 550.0;
+pub const STARTING_DOMAIN_Y_LOW:  f64 = 150.0;
+pub const STARTING_DOMAIN_Y_HIGH: f64 = 550.0;
 
 // Parameters for Voxel Reaction+Diffusion
 pub const VOXEL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE: f64 = 0.003;
@@ -70,14 +70,14 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 0.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 60.0;
 
 // Time parameters
-pub const N_TIMES: usize = 40_001;
-pub const DT: f64 = 0.02;
+pub const N_TIMES: usize = 900_001;
+pub const DT: f64 = 0.001;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: usize = 40;
-pub const FULL_SAVE_INTERVAL: usize = 40;
+pub const SAVE_INTERVAL: usize = 500;
+pub const FULL_SAVE_INTERVAL: usize = 500;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 8;
+pub const N_THREADS: usize = 14;
 
 
 mod plotting;
@@ -87,7 +87,7 @@ use plotting::*;
 use cell_properties::*;
 
 
-fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2Reactions4) {
+fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>) {
     voxel.diffusion_constant = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DIFFUSION_CONSTANT,
         VOXEL_FOOD_DIFFUSION_CONSTANT,
@@ -121,36 +121,46 @@ fn main() {
 
     // ###################################### DEFINE SIMULATION DOMAIN ######################################
     // Define the simulation domain
-    let domain = CartesianCuboid2::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid2Vertex::from_boundaries_and_interaction_ranges(
         [0.0; 2],
         [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_MECHANICS_RADIUS * 2.0; 2],
+        [2.0*CELL_MECHANICS_INTERACTION_RANGE.max((CELL_MECHANICS_AREA/std::f64::consts::PI).sqrt()); 2],
     ).unwrap();
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     // Cells of Type 1
+    let estimated_cell_diameter = 2.3*(CELL_MECHANICS_AREA/std::f64::consts::PI).sqrt();
+    let n_cells_per_row = ((STARTING_DOMAIN_X_HIGH-STARTING_DOMAIN_X_LOW)/estimated_cell_diameter).floor() as i32;
+
     let cells = (0..N_CELLS as i32).map(|n_cell| {
         let pos = Vector2::<f64>::from([
-            rng.gen_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH),
-            rng.gen_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH)]);
+            STARTING_DOMAIN_X_LOW + (n_cell % n_cells_per_row) as f64 * estimated_cell_diameter,
+            STARTING_DOMAIN_Y_LOW + (n_cell as f64/ n_cells_per_row as f64).floor() * estimated_cell_diameter
+        ]);
         ModularCell {
-        mechanics: cellular_raza::implementations::cell_models::modular_cell::MechanicsOptions::Mechanics(MechanicsModel2D {
+        mechanics: MechanicsOptions::<VertexMechanics2D<NUMBER_OF_VERTICES>, VertexVector2<NUMBER_OF_VERTICES>>::Mechanics(VertexMechanics2D::new(
             pos,
-            vel: Vector2::from([0.0, 0.0]),
-            dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
-        }),
-        interaction: CellSpecificInteraction {
-            potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-            attraction_multiplier: CELL_MECHANICS_ATTRACTION_MULTIPLIER,
-            relative_interaction_range: CELL_MECHANICS_RELATIVE_INTERACTION_RANGE,
-            cell_radius: CELL_MECHANICS_RADIUS,
-            orientation: Unit::<Vector2<f64>>::new_normalize(Vector2::<f64>::from([0.0, 1.0])),
-            polarity: n_cell,
-        },
+            CELL_MECHANICS_AREA,
+            2.0*std::f64::consts::PI/NUMBER_OF_VERTICES as f64 * n_cell as f64,
+            4.0,
+            3.0,
+            CELL_MECHANICS_DAMPENING_CONSTANT,
+            Some((0.03, rand_chacha::ChaCha8Rng::seed_from_u64(n_cell as u64)))
+        )),
+        interaction: VertexDerivedInteraction::from_two_forces(
+            OutsideInteraction {
+                potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+            },
+            InsideInteraction {
+                potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+            }
+        ),
         interaction_extracellular: GradientSensing {},
         cycle: OwnCycle::new(
             rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
-            CELL_MECHANICS_RADIUS,
+            CELL_MECHANICS_AREA,
+            CELL_MECHANICS_MAXIMUM_AREA,
             CELL_CYCLE_GROWTH_RATE,
             CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
             CELL_CYCLE_FOOD_DEATH_THRESHOLD,

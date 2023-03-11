@@ -1,7 +1,7 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use plotters::{
-    prelude::{DrawingArea,Cartesian2d,Circle,ShapeStyle},
+    prelude::{DrawingArea,Cartesian2d,ShapeStyle},
     coord::types::RangedCoordf64,
     backend::BitMapBackend,
 };
@@ -12,7 +12,7 @@ use crate::cell_properties::*;
 
 
 pub fn plot_voxel
-    (voxel: &CartesianCuboidVoxel2Reactions4, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (voxel: &CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
@@ -47,40 +47,30 @@ pub fn plot_modular_cell
     (modular_cell: &MyCellType, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
 {
     let cell_border_color = plotters::prelude::BLACK;
-    let cell_orientation_color = plotters::prelude::full_palette::BLACK;
+    // let cell_orientation_color = plotters::prelude::full_palette::BLACK;
 
-    let relative_border_thickness = 0.25;
+    let relative_border_thickness = 0.1;
 
     // Plot the cell border
-    let dx = root.get_x_range().end - root.get_x_range().start;
-    let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
-
-    let s = modular_cell.interaction.cell_radius / dx * dx_pix as f64;
-    let cell_border = Circle::new(
-        (modular_cell.pos().x, modular_cell.pos().y),
-        s,
-        Into::<ShapeStyle>::into(&cell_border_color).filled(),
+    let pos = modular_cell.pos();
+    let middle = pos.row_sum() / pos.shape().0 as f64;
+    // Calculate the paths
+    let path_points = pos.row_iter()
+        .map(|row| (middle[0] + row[0]-middle[0], middle[1] + row[1]-middle[1]))
+        .collect::<Vec<_>>();
+    // Define the style 
+    let cell_border = plotters::element::Polygon::new(
+        path_points.clone(),
+        Into::<ShapeStyle>::into(&cell_border_color),
     );
     root.draw(&cell_border)?;
 
     // Plot the inside of the cell
     let cell_inside_color = Life::get_color_normalized(modular_cell.get_intracellular()[1], 0.0, modular_cell.cellular_reactions.intracellular_concentrations_saturation_level[1]);
-    let cell_inside = Circle::new(
-        (modular_cell.pos().x, modular_cell.pos().y),
-        s*(1.0 - relative_border_thickness),
+    let cell_inside = plotters::element::Polygon::new(
+        path_points.clone().iter().map(|point| (middle[0] + (1.0-relative_border_thickness)*(point.0-middle[0]), middle[1] + (1.0-relative_border_thickness)*(point.1-middle[1]))).collect::<Vec<_>>(),
         Into::<ShapeStyle>::into(&cell_inside_color).filled(),
     );
     root.draw(&cell_inside)?;
-
-    // Plot the orientation as a line in the cell
-    let directed_offset = (1.0 - 0.5*relative_border_thickness) * modular_cell.interaction.cell_radius * modular_cell.interaction.orientation.into_inner();
-    let start = modular_cell.pos() - directed_offset;
-    let end = modular_cell.pos() + directed_offset;
-    let orientation_pointer = plotters::element::PathElement::new(
-        [(start.x, start.y),
-        (end.x, end.y)],
-        Into::<ShapeStyle>::into(&cell_orientation_color).filled().stroke_width((s/5.0).ceil() as u32),
-    );
-    root.draw(&orientation_pointer)?;
     Ok(())
 }
