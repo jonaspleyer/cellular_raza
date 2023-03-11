@@ -1,3 +1,7 @@
+<div align="center">
+    <image src="doc/cellular_raza.svg">
+</div>
+
 # cellular_raza
 [![License: MPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/license/gpl-2-0/)
 [![Test Nightly](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly.yml?label=Test%20Nightly&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)

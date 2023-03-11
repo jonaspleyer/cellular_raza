@@ -1,3 +1,7 @@
+<div align="center">
+    <image src="../../doc/cellular_raza.svg">
+</div>
+
 # About cellular_raza
 > “What I cannot create, I do not understand.”
 >

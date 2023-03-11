@@ -1,6 +1,8 @@
 #![feature(drain_filter)]
 #![feature(trait_alias)]
 
+#![doc(html_logo_url = "../../../doc/cellular_raza_square.png")]
+
 //! > “What I cannot create, I do not understand.”
 //! >
 //! >  --- Richard P. Feynman 
