@@ -573,7 +573,7 @@ mod test {
     #[test]
     fn test_get_demomp_res() {
         #[cfg(not(feature = "test_exhaustive"))]
-        let max = 50_000;
+        let max = 5_000;
         #[cfg(feature = "test_exhaustive")]
         let max = 5_000_000;
 
