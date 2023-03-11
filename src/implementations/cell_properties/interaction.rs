@@ -240,3 +240,143 @@ where
         Some(Ok(total_force))
     }
 }
+
+
+mod test {
+    #[test]
+    fn test_closest_points() {
+        // Define the line we will be using
+        let p1 = nalgebra::Vector2::from([0.0, 0.0]);
+        let p2 = nalgebra::Vector2::from([2.0, 0.0]);
+
+        // Create a vector of tuples which have (input_point, expected_nearest_point, expected_distance)
+        let mut test_points = Vec::new();
+
+        // Define the points we will be testing
+        // Normal point which lies perpendicular to line
+        test_points.push((
+            nalgebra::Vector2::from([0.5, 1.0]),
+            nalgebra::Vector2::from([0.5, 0.0]),
+            1.0
+        ));
+
+        // Point to check left edge of line
+        test_points.push((
+            nalgebra::Vector2::from([-1.0, 2.0]),
+            p1,
+            5.0_f64.sqrt()
+        ));
+
+        // Point to check right edge of line
+        test_points.push((
+            nalgebra::Vector2::from([3.0, -2.0]),
+            p2,
+            5.0_f64.sqrt()
+        ));
+
+        // Check if the distance and point are matching
+        for (q, r, d) in test_points.iter() {
+            let (dist, nearest_point) = super::nearest_point_from_point_to_line(&q, (p1, p2));
+            assert_eq!(dist, *d);
+            assert_eq!(nearest_point, *r);
+        }
+    }
+
+    #[test]
+    fn test_point_is_in_regular_polygon() {
+        use itertools::Itertools;
+        // Define the polygon for which we are testing
+        let polygon = [
+            nalgebra::Vector2::from([-1.0, 0.0]),
+            nalgebra::Vector2::from([0.0, 1.0]),
+            nalgebra::Vector2::from([1.0, 0.0]),
+            nalgebra::Vector2::from([0.0, -1.0]),
+        ];
+        // This is the polygon
+        //       / \
+        //     /     \
+        //   /         \
+        // /             \
+        // \             /
+        //   \         /
+        //     \     /
+        //       \ /
+
+        // For testing, we need to pick a point outside of the polygon
+        let point_outside_polygon = nalgebra::Vector::from([-3.0, 0.0]);
+
+        // Define points which should be inside the polygon
+        let points_inside = [
+            nalgebra::Vector2::from([0.0, 0.0]),
+            nalgebra::Vector2::from([0.0, 0.1]),
+            nalgebra::Vector2::from([0.0, 0.99999]),
+            nalgebra::Vector2::from([0.99999, 0.0]),
+            nalgebra::Vector2::from([0.0, 1.0]),
+            // This point here was always a problem!
+            nalgebra::Vector2::from([1.0, 0.0]),
+            nalgebra::Vector2::from([-1.0, 0.0]),
+            nalgebra::Vector2::from([0.0, -1.0]),
+        ];
+
+        // Check the points inside the polygon
+        for p in points_inside.iter() {
+            println!("Testing point {}", p);
+            let n_intersections: usize = polygon.clone()
+                .into_iter()
+                .circular_tuple_windows::<(_,_)>()
+                .map(|line| super::ray_intersects_line_segment(&(*p, point_outside_polygon), &line) as usize)
+                .sum();
+
+            assert_eq!(n_intersections % 2 == 1, true);
+        }
+
+        // Define points which should be outside the polygon
+        let points_outside = [
+            nalgebra::Vector2::from([2.0, 0.0]),
+            nalgebra::Vector2::from([-1.5, 0.0]),
+            nalgebra::Vector2::from([0.5, 1.2]),
+            nalgebra::Vector2::from([1.3, -1.0001]),
+            nalgebra::Vector2::from([1.0000000000001, 0.0]),
+            nalgebra::Vector2::from([0.0, -1.000000000001]),
+        ];
+
+        println!("Second run");
+
+        // Check them
+        for q in points_outside.iter() {
+            let n_intersections: usize = polygon.clone()
+                .into_iter()
+                .circular_tuple_windows()
+                .map(|line| super::ray_intersects_line_segment(&(*q, point_outside_polygon), &line) as usize)
+                .sum();
+
+            assert_eq!(n_intersections % 2 == 0, true);
+        }
+
+        // These are sample values taken from a random simulation
+        let new_polygon = [
+            nalgebra::Vector2::from([89.8169131069576, 105.21635977300497]),
+            nalgebra::Vector2::from([88.08135232199689, 107.60515425930363]),
+            nalgebra::Vector2::from([85.27315598238903, 106.69271595767589]),
+            nalgebra::Vector2::from([85.27315598238903, 103.74000358833405]),
+            nalgebra::Vector2::from([88.08135232199689, 102.8275652867063]),
+        ];
+        let new_point_outside_polygon = nalgebra::Vector2::from([80.0, 90.0]);
+
+        let points_inside_2 =[
+            nalgebra::Vector2::from([88.08135232199689, 102.8275652867063])
+        ];
+
+        println!("3rd run");
+
+        for q in points_inside_2.iter() {
+            let n_intersections: usize = new_polygon.clone()
+                .into_iter()
+                .circular_tuple_windows()
+                .map(|line| super::ray_intersects_line_segment(&(*q, new_point_outside_polygon), &line) as usize)
+                .sum();
+
+            assert_eq!(n_intersections % 2 == 0, false);
+        }
+    }
+}
