@@ -119,7 +119,6 @@ fn ray_intersects_line_segment(ray: &(Vector2<f64>, Vector2<f64>), line_segment:
     let t_denom = (r2-r1).perp(&(l2-l1));
     let u_denom = -t_denom;
 
-    // println!("{:12.9} {:12.9} {:12.9} {:12.9} {}", t_enum, u_enum, t_denom, u_denom, t_denom==0.0);
     // If the denominators are zero, the following possibilities arise
     // 1) Either r1 and r2 are identical or l1 and l2
     // 2) The lines are parallel and cannot intersect
@@ -129,7 +128,6 @@ fn ray_intersects_line_segment(ray: &(Vector2<f64>, Vector2<f64>), line_segment:
         // This value must be between the norm of l2-l1 squared
         let d = (r1-l1).dot(&(l2-l1));
         let e = (l2-l1).norm_squared();
-        // println!("Returning t_denom==0 {} {}", 0.0<=d, d<=e);
         return 0.0<=d && d<=e;
     }
 
@@ -140,8 +138,6 @@ fn ray_intersects_line_segment(ray: &(Vector2<f64>, Vector2<f64>), line_segment:
 
     // In order to be on the line-segment, we require that u is between 0.0 and 1.0
     // Additionally for p to be on the ray, we require t >= 0.0
-    // println!("Returning regular {} {}", u, t);
-    // println!("{} {} {}", 0.0<=u, u<1.0, 0.0<t);
     return 0.0<=u && u<1.0 && 0.0<=t;
 }
 
@@ -320,7 +316,6 @@ mod test {
 
         // Check the points inside the polygon
         for p in points_inside.iter() {
-            println!("Testing point {}", p);
             let n_intersections: usize = polygon.clone()
                 .into_iter()
                 .circular_tuple_windows::<(_,_)>()
@@ -339,8 +334,6 @@ mod test {
             nalgebra::Vector2::from([1.0000000000001, 0.0]),
             nalgebra::Vector2::from([0.0, -1.000000000001]),
         ];
-
-        println!("Second run");
 
         // Check them
         for q in points_outside.iter() {
@@ -366,8 +359,6 @@ mod test {
         let points_inside_2 =[
             nalgebra::Vector2::from([88.08135232199689, 102.8275652867063])
         ];
-
-        println!("3rd run");
 
         for q in points_inside_2.iter() {
             let n_intersections: usize = new_polygon.clone()
