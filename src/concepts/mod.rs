@@ -10,8 +10,8 @@ pub mod cell;
 ///
 /// | Event    | Function | Effect |
 /// | -------- | -------- | ------ |
-/// | Division | `divide` | Returns (creates) a new cell and modifies the existing cell in-place. This means, that the user is responsible to make sure, that every field of the cell struct is modified correctly in order to simulate cell-division. |
-/// | Death | `die` | This function by default does nothing but is able to change the cell before it is removed from the simulation. It is explicitly NOT suited for a prolonged death-cycles but is rather only the last action of the cell before removal. |
+/// | [Division](cycle::CycleEvent::Division) | [`divide`](cycle::Cycle::divide) | Returns (creates) a new cell and modifies the existing cell in-place. This means, that the user is responsible to make sure, that every field of the cell struct is modified correctly in order to simulate cell-division. |
+/// | [Death](cycle::CycleEvent::Death) | [`die`](cycle::Cycle::die) | This function by default does nothing but is able to change the cell before it is removed from the simulation. It is explicitly NOT suited for a prolonged death-cycles but is rather only the last action of the cell before removal. |
 ///
 /// # Stochasticity
 /// In order to make sure that results are reproducible, the provided rng parameter should be used.
