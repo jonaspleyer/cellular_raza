@@ -32,7 +32,7 @@ pub mod cell;
 ///     cycle::{Cycle,CycleEvent},
 ///     errors::DivisionError
 /// };
-/// 
+///
 /// // We define our cell struct with all parameters needed for this cell-agent.
 /// #[derive(Clone)]
 /// struct Cell {
