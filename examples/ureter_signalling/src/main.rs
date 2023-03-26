@@ -1,5 +1,5 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
-use cellular_raza::implementations::cell_models::modular_cell::{ModularCell,MechanicsOptions::*};
+use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
 
 use nalgebra::Vector2;
 
