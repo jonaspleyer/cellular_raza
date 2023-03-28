@@ -1,3 +1,5 @@
+# Feature Comparison
+
 <center><h1>Feature Comparison</h1></center>
 
 | Features | `cpu_os_threads` | `cpu_rayon` |

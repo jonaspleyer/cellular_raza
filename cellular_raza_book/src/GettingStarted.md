@@ -22,5 +22,17 @@ fn main() {
     println!("Hello World!");
 }
 ```
+Now we can use `cargo` to compile and execute the project in release mode with all possible optimizations
+```bash
+cargo run --release
+```
+```admonish tip
+Execute the simulation in release mode whenever performance is critical.
+Use the debug mode `cargo run` to find bugs in your simulation.
+```
+The following compilation process might take a while.
+Feel free to grab a water or coffee.
+
+
 
 <!-- TODO -->

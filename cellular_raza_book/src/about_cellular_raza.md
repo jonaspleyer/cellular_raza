@@ -45,22 +45,24 @@
     text197.style.fill = style["color"];
 </script>
 
-> “What I cannot create, I do not understand.”
->
->  --- Richard P. Feynman 
+
+```admonish quote title=""
+  “What I cannot create, I do not understand.”
+
+  --- Richard P. Feynman
+```
 
 `cellular_raza` is a cellular
-[agent-based modeling](https://en.wikipedia.org/wiki/Agent-based_model) framework which focusses
-on mechanistically-driven modeling, correctness and customizability.
+[agent-based modeling](https://en.wikipedia.org/wiki/Agent-based_model) framework which focusses on mechanistically-driven modeling.
 
 ## Cellular Modeling Mindset
 By using `cellular_raza` you, the researcher will be strongly encouraged to follow
-mechanistically-driven thought processes.
-A good example is modeling the morphogenesis of branching.
-One might be able to describe the average length before branching by a simple mathematical
-description such as a gaussian distribution around some average value.
-While this approach might be effective in describing the underlying system, it gives us not any
-additional information about the processes and mechanics which might take place inside the
-proliferating cells that make up this structure.
-To assess such deep questions, an agent-based model is highly effective as it provides pre-defined
-interfaces for rules which can then be directly interpreted as cellular behaviour.
+mechanistically-driven thought processes from the perspective of individual biological cells.
+Global behaviour such as number of branches or speed of growth of a tissue can often be mathematically described with simplistic models.
+While these models may obtain precise numerical values, they often only teach us very little about the underlying cellular processes.
+In addition, the description of the model was done top-to-bottom where one works back from observed bahaviour to intrinsic processes.
+Agent-based models are designed to be used bottom-up, meaning cellular processes come first and will govern global behaviour from their intrinsic rules and mechanics.
+
+## Etymology
+The name `cellular_raza` is an artistic combination of "cell" and ["tabula rasa"](https://en.wikipedia.org/wiki/Tabula_rasa).
+While the original intent was to describe the simulation tool as written with from a "blank slate", many of the interpretations from the wikipedia article are interesting and fitting. The logo has the [Rust](https://www.rust-lang.org/) symbol embedded, but when referring to the package in text, the snake case version `cellular_raza` in a monospaced font should be used.
