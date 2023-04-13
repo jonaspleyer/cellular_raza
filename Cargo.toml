@@ -47,12 +47,11 @@ ndarray = { version="0.15" }
 default = ["db_sled"]
 
 # Database
-no_db = []
 db_sled = ["dep:sled", "dep:typed-sled"]
 db_json_dump = []
 # Disable features
-no_fluid_mechanics = []
-no_gradients = []
+fluid_mechanics = []
+gradients = []
 
 # Testing
 test_exhaustive = []

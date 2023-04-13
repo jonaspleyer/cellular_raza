@@ -467,6 +467,7 @@ where
                     .map(|(cell, _)| self.domain.apply_boundary(cell))
                     .collect::<Result<(), BoundaryError>>()?;
 
+                #[cfg(feature = "gradients")]
                 vox.cells.iter_mut()
                     .map(|(cell, _)| {
                         let gradient = vox.voxel.get_extracellular_gradient_at_point(&cell.cell.pos())?;
@@ -591,6 +592,7 @@ where
                 let total_extracellular = voxel_box.voxel.get_total_extracellular();
                 let concentration_increment = voxel_box.voxel.calculate_increment(&total_extracellular, &voxel_box.extracellular_concentration_increments, &voxel_box.concentration_boundaries[..])?;
                 // Update the gradients before we set new extracllular because otherwise it would be inaccurate. This way the gradients are "behind" the actual concentrations by one timestep
+                #[cfg(feature = "gradients")]
                 voxel_box.voxel.update_extracellular_gradient(&voxel_box.concentration_boundaries[..])?;
                 voxel_box.voxel.set_total_extracellular(&(total_extracellular + concentration_increment * *dt))?;
                 voxel_box.extracellular_concentration_increments.drain(..);
@@ -836,7 +838,7 @@ where
     {
         // These methods are used for sending requests and gathering information in general
         // This gathers information of forces acting between cells and send between threads
-        #[cfg(not(feature = "no_fluid_mechanics"))]
+        #[cfg(feature = "fluid_mechanics")]
         self.update_fluid_mechanics_step_1()?;
 
         // Gather boundary conditions between voxels and domain boundaries and send between threads
@@ -846,7 +848,7 @@ where
         // The goal is to have as few as possible synchronizations
         self.barrier.wait();
 
-        #[cfg(not(feature = "no_fluid_mechanics"))]
+        #[cfg(feature = "fluid_mechanics")]
         self.update_fluid_mechanics_step_2()?;
 
         self.update_cellular_mechanics_step_2()?;
@@ -856,7 +858,7 @@ where
         self.update_cellular_reactions(dt)?;
 
         // These are the true update steps where cell agents are modified the order here may play a role!
-        #[cfg(not(feature = "no_fluid_mechanics"))]
+        #[cfg(feature = "fluid_mechanics")]
         self.update_fluid_mechanics_step_3(dt)?;
 
         self.update_cellular_mechanics_step_3(dt)?;

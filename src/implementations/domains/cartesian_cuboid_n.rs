@@ -234,6 +234,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 self.extracellular_concentrations
             }
 
+            #[cfg(feature = "gradients")]
             fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<(), SimulationError> {
                 let mut new_gradient = SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0));
                 boundaries.iter()
@@ -254,7 +255,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 Ok(())
             }
 
-            // TODO
+            #[cfg(feature = "gradients")]
             fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, $n_reactions>, SimulationError> {
                 Ok(self.extracellular_gradient)
             }

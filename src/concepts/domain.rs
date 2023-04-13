@@ -61,7 +61,7 @@ pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deseri
 }
 
 // TODO
-// #[cfg(not(feature = "no_gradients"))]
+// #[cfg(feature = "gradients")]
 pub trait ExtracellularMechanics<
     Ind,
     Pos,
@@ -73,12 +73,12 @@ pub trait ExtracellularMechanics<
 {
     fn get_extracellular_at_point(&self, pos: &Pos) -> Result<ConcVec, SimulationError>;
     fn get_total_extracellular(&self) -> ConcTotal;
-    #[cfg(not(feature = "no_gradients"))]
+    #[cfg(feature = "gradients")]
     fn update_extracellular_gradient(
         &mut self,
         boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)],
     ) -> Result<(), SimulationError>;
-    #[cfg(not(feature = "no_gradients"))]
+    #[cfg(feature = "gradients")]
     fn get_extracellular_gradient_at_point(
         &self,
         pos: &Pos,
