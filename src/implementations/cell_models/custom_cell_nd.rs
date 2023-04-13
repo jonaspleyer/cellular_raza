@@ -1,19 +1,18 @@
 use crate::concepts::{
-    errors::{DivisionError,CalcError},
-    cycle::{Cycle,CycleEvent},
+    cycle::{Cycle, CycleEvent},
+    errors::{CalcError, DivisionError},
     interaction::Interaction,
-    mechanics::Mechanics
+    mechanics::Mechanics,
 };
 
 use nalgebra::SVector;
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
 
-
 macro_rules! implement_custom_cell {
     ($d:expr, $name:ident) => {
-        #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]
+        #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         pub struct $name {
             pub pos: SVector<f64, $d>,
             pub velocity: SVector<f64, $d>,
@@ -30,9 +29,12 @@ macro_rules! implement_custom_cell {
             pub current_age: f64,
         }
 
-
         impl Cycle<$name> for $name {
-            fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, cell: &mut $name) -> Option<CycleEvent> {
+            fn update_cycle(
+                _rng: &mut rand_chacha::ChaCha8Rng,
+                dt: &f64,
+                cell: &mut $name,
+            ) -> Option<CycleEvent> {
                 cell.current_age += dt;
                 if cell.current_age > cell.maximum_age {
                     cell.remove = true;
@@ -40,7 +42,10 @@ macro_rules! implement_custom_cell {
                 None
             }
 
-            fn divide(_rng: &mut rand_chacha::ChaCha8Rng, _c: &mut $name) -> Result<Option<$name>, DivisionError> {
+            fn divide(
+                _rng: &mut rand_chacha::ChaCha8Rng,
+                _c: &mut $name,
+            ) -> Result<Option<$name>, DivisionError> {
                 panic!("This function should never be called!");
             }
         }
@@ -50,16 +55,24 @@ macro_rules! implement_custom_cell {
                 None
             }
 
-            fn calculate_force_on(&self, own_pos: &SVector<f64, $d>, ext_pos: &SVector<f64, $d>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $d>, CalcError>> {
+            fn calculate_force_on(
+                &self,
+                own_pos: &SVector<f64, $d>,
+                ext_pos: &SVector<f64, $d>,
+                _ext_information: &Option<()>,
+            ) -> Option<Result<SVector<f64, $d>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let sigma = 2.0 * self.cell_radius;
-                let spatial_cutoff = (1.0 + (2.0*sigma-r).signum())*0.5;
-                let dir = z/r;
-                let bound = 4.0 + sigma/r;
-                Some(Ok(
-                    dir * self.potential_strength * ((sigma/r).powf(2.0) - (sigma/r).powf(4.0)).min(bound).max(-bound) * spatial_cutoff
-                ))
+                let spatial_cutoff = (1.0 + (2.0 * sigma - r).signum()) * 0.5;
+                let dir = z / r;
+                let bound = 4.0 + sigma / r;
+                Some(Ok(dir
+                    * self.potential_strength
+                    * ((sigma / r).powf(2.0) - (sigma / r).powf(4.0))
+                        .min(bound)
+                        .max(-bound)
+                    * spatial_cutoff))
             }
         }
 
@@ -80,15 +93,17 @@ macro_rules! implement_custom_cell {
                 self.velocity = *v;
             }
 
-            fn calculate_increment(&self, force: SVector<f64, $d>) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $d>,
+            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
                 let dx = self.velocity;
                 let dv = force - self.velocity_reduction * self.velocity;
                 Ok((dx, dv))
             }
         }
-    }
+    };
 }
-
 
 implement_custom_cell!(1, CustomCell1D);
 implement_custom_cell!(2, CustomCell2D);

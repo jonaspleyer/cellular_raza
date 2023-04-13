@@ -1,17 +1,16 @@
 use crate::concepts::{
+    cycle::{Cycle, CycleEvent},
     errors::CalcError,
-    mechanics::Mechanics,
-    cycle::{Cycle,CycleEvent},
     interaction::Interaction,
+    mechanics::Mechanics,
 };
 
 use nalgebra::Vector2;
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
 
-
-#[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct StandardCell2D {
     pub pos: Vector2<f64>,
     pub velocity: Vector2<f64>,
@@ -27,9 +26,12 @@ pub struct StandardCell2D {
     pub current_age: f64,
 }
 
-
 impl Cycle<StandardCell2D> for StandardCell2D {
-    fn update_cycle(_rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, cell: &mut StandardCell2D) -> Option<CycleEvent> {
+    fn update_cycle(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        dt: &f64,
+        cell: &mut StandardCell2D,
+    ) -> Option<CycleEvent> {
         cell.current_age += dt;
         if cell.current_age > cell.maximum_age {
             cell.remove = true;
@@ -37,7 +39,10 @@ impl Cycle<StandardCell2D> for StandardCell2D {
         None
     }
 
-    fn divide(_rng: &mut rand_chacha::ChaCha8Rng, _c: &mut StandardCell2D) -> Result<Option<StandardCell2D>, crate::concepts::errors::DivisionError> {
+    fn divide(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _c: &mut StandardCell2D,
+    ) -> Result<Option<StandardCell2D>, crate::concepts::errors::DivisionError> {
         panic!("This function should never be called");
     }
 }
@@ -47,16 +52,24 @@ impl Interaction<Vector2<f64>, Vector2<f64>, ()> for StandardCell2D {
         None
     }
 
-    fn calculate_force_on(&self, own_pos: &Vector2<f64>, ext_pos: &Vector2<f64>, _ext_information: &Option<()>) -> Option<Result<Vector2<f64>, CalcError>> {
+    fn calculate_force_on(
+        &self,
+        own_pos: &Vector2<f64>,
+        ext_pos: &Vector2<f64>,
+        _ext_information: &Option<()>,
+    ) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = own_pos - ext_pos;
         let r = z.norm();
         let sigma = 2.0 * self.cell_radius;
-        let spatial_cutoff = (1.0 + (2.0*sigma-r).signum())*0.5;
-        let dir = z/r;
-        let bound = 4.0 + sigma/r;
-        Some(Ok(
-            dir * self.potential_strength * ((sigma/r).powf(2.0) - (sigma/r).powf(4.0)).min(bound).max(-bound) * spatial_cutoff
-        ))
+        let spatial_cutoff = (1.0 + (2.0 * sigma - r).signum()) * 0.5;
+        let dir = z / r;
+        let bound = 4.0 + sigma / r;
+        Some(Ok(dir
+            * self.potential_strength
+            * ((sigma / r).powf(2.0) - (sigma / r).powf(4.0))
+                .min(bound)
+                .max(-bound)
+            * spatial_cutoff))
     }
 }
 
@@ -77,7 +90,10 @@ impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for StandardCell2D {
         self.velocity = *v;
     }
 
-    fn calculate_increment(&self, force: Vector2<f64>) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
+    fn calculate_increment(
+        &self,
+        force: Vector2<f64>,
+    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         let dx = self.velocity;
         let dv = force - self.velocity_reduction * self.velocity;
         Ok((dx, dv))

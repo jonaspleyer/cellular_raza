@@ -5,6 +5,6 @@ pub mod custom_cell_nd;
 ///
 /// The [ModularCell](modular_cell::ModularCell) is a struct with fields that implement the various
 /// [concepts](crate::concepts). The concepts are afterwards derived automatically for the
-/// [ModularCell] struct.
+/// [ModularCell](modular_cell::ModularCell) struct.
 pub mod modular_cell;
 pub mod standard_cell_2d;
