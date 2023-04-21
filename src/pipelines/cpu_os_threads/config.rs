@@ -1,6 +1,7 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox};
 use crate::concepts::domain::{Index,Domain,Voxel};
 use crate::concepts::mechanics::{Position,Force,Velocity};
+use crate::storage::sled_database::SledStorageInterface;
 
 use super::domain_decomposition::{VoxelBox,DomainBox,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex,ConcentrationBoundaryInformation,IndexBoundaryInformation};
 use super::supervisor::SimulationSupervisor;
@@ -47,23 +48,21 @@ pub struct TimeSetup {
 }
 
 
-#[cfg(feature = "db_sled")]
-#[derive(Clone,Serialize,Deserialize)]
-pub struct SledDataBaseConfig  {
-    pub name: std::path::PathBuf,
+#[cfg(any(feature = "db_sled", feature = "json_dump"))]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct StorageConfig {
+    pub location: std::path::PathBuf,
 }
 
-
 /// # Complete Set of parameters controlling execution flow of simulation
-#[derive(Clone,Serialize,Deserialize)]
-pub struct SimulationSetup<Dom, C>
-{
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SimulationSetup<Dom, C> {
     pub domain: Dom,
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
-    #[cfg(feature = "db_sled")]
-    pub database: SledDataBaseConfig,
+    #[cfg(any(feature = "db_sled", feature = "json_dump"))]
+    pub storage: StorageConfig,
 }
 
 
@@ -213,18 +212,40 @@ where
             .collect();
 
         // Create an instance to communicate with the database
-        #[cfg(not(feature = "no_db"))]// TODO fix this if feature "no_db" is active!
         let date = chrono::Local::now().format("%Y-%m-%d:%H-%M-%S");
-        let filename = match setup.database.name.file_name() {
-            Some(name) => format!("{}_{}", date, name.to_str().unwrap()),
-            None => format!("{}", date),
-        };
-        let mut complete_path = setup.database.name.clone();
-        complete_path.set_file_name(filename);
-        let db = sled::Config::new().path(std::path::Path::new(&complete_path)).open().unwrap();
-        let tree_cells = typed_sled::Tree::<String, Vec<u8>>::open(&db, "cell_storage");
-        let tree_voxels = typed_sled::Tree::<String, Vec<u8>>::open(&db, "voxel_storage");
-        let meta_infos = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
+        let location_with_time = setup.storage.location.join(format!("{}", date));
+        setup.storage.location = location_with_time.into();
+
+        let storage_cells_path = setup.storage.location.clone().join("cell_storage");
+        let storage_voxels_path = setup.storage.location.clone().join("voxel_storage");
+        let meta_infos_path = setup.storage.location.clone().join("meta_infos");
+
+        // TODO catch these errors!
+        let storage_cells =
+            SledStorageInterface::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
+                storage_cells_path,
+            )
+            .unwrap();
+        let storage_voxels = SledStorageInterface::<
+            PlainIndex,
+            VoxelBox<
+                Ind,
+                Vox,
+                Cel,
+                Pos,
+                For,
+                Vel,
+                ConcVecExtracellular,
+                ConcBoundaryExtracellular,
+                ConcVecIntracellular,
+            >,
+        >::open_or_create(storage_voxels_path)
+        .unwrap();
+        let meta_infos =
+            SledStorageInterface::<(), SimulationSetup<DomainBox<Dom>, Cel>>::open_or_create(
+                meta_infos_path,
+            )
+            .unwrap();
 
         // Create all multivoxelcontainers
         multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
@@ -277,10 +298,10 @@ where
             let senders_boundary_index = create_senders!(sender_receiver_pairs_boundary_index);
             let senders_boundary_concentrations = create_senders!(sender_receiver_pairs_boundary_concentrations);
 
-            // Clone database instance
-            #[cfg(not(feature = "no_db"))]
-            let tree_cells_new = tree_cells.clone();
-            let tree_voxels_new = tree_voxels.clone();
+                // Clone database instance
+                #[cfg(not(feature = "no_db"))]
+                let storage_cells_new = storage_cells.clone();
+                let storage_voxels_new = storage_voxels.clone();
 
             voxels.iter_mut().for_each(|(_, voxelbox)| {
                 match strategies.voxel_definition_strategies {
@@ -319,8 +340,9 @@ where
                 database_cells: tree_cells_new,
                 database_voxels: tree_voxels_new,
 
-                mvc_id: i as u16,
-            };
+                    #[cfg(not(feature = "no_db"))]
+                    storage_cells: storage_cells_new,
+                    storage_voxels: storage_voxels_new,
 
             return cont;
         }).collect();
@@ -332,17 +354,13 @@ where
             time: setup.time,
             meta_params: setup.meta_params,
             #[cfg(feature = "db_sled")]
-            database: setup.database,
+            storage: setup.storage,
 
             domain: setup.domain.into(),
 
             config: SimulationConfig::default(),
             plotting_config: PlottingConfig::default(),
 
-            #[cfg(not(feature = "no_db"))]
-            tree_cells,
-            #[cfg(not(feature = "no_db"))]
-            tree_voxels,
             #[cfg(not(feature = "no_db"))]
             meta_infos,
         }
