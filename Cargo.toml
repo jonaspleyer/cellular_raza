@@ -43,14 +43,16 @@ rand_chacha = { version="0.3.1", features=["serde1"]}
 
 
 [features]
-default = ["db_sled"]
+default = ["db_sled", "intracellular_reactions", "fluid_mechanics", "gradients"]
 
 # Database
-db_sled = ["dep:sled", "dep:typed-sled"]
-db_json_dump = []
-# Disable features
+db_sled = ["dep:sled"]
+db_json_dump = ["dep:serde_json"]
+
+# Simulation aspects
+intracellular_reactions = []
 fluid_mechanics = []
-gradients = []
+gradients = ["fluid_mechanics"]
 
 # Testing
 test_exhaustive = []
