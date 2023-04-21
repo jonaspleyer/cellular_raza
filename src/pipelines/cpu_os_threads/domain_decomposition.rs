@@ -4,10 +4,10 @@ use crate::concepts::cycle::*;
 use crate::concepts::domain::*;
 use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
-use crate::concepts::mechanics::{Position,Force,Velocity};
+
 
 #[cfg(feature = "db_sled")]
-use super::storage_interface::{store_cells_in_tree,store_voxels_in_tree};
+use crate::storage::sled_database::SledStorageInterface;
 
 use std::collections::{HashMap,BTreeMap};
 use std::marker::{Send,Sync};
@@ -419,9 +419,10 @@ where
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
-    #[cfg(not(feature = "no_db"))]
-    pub database_cells: typed_sled::Tree<String, Vec<u8>>,
-    pub database_voxels: typed_sled::Tree<String, Vec<u8>>,
+    #[cfg(feature = "db_sled")]
+    pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
+    #[cfg(feature = "db_sled")]
+    pub storage_voxels: SledStorageInterface<PlainIndex, VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>,
 
     pub mvc_id: u16,
 }
@@ -802,14 +803,12 @@ where
         CellAgentBox<C>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
-        let cells = self.voxels.iter().map(|(_, vox)| vox.cells.clone().into_iter().map(|(c, _)| c))
+        let cells = self.voxels.iter().map(|(_, vox)| vox.cells.clone().into_iter().map(|(c, _)| (c.get_id(), c)))
             .flatten()
             .collect::<Vec<_>>();
 
         #[cfg(feature = "db_sled")]
-        store_cells_in_tree(&self.database_cells, *iteration, cells)?;
-
-        Ok(())
+        self.storage_cells.store_batch_elements(*iteration, cells)
     }
 
     #[cfg(not(feature = "no_db"))]
@@ -817,9 +816,11 @@ where
     where
         VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone + Send + Sync + 'static,
     {
-        let voxels = self.voxels.iter().map(|(_, voxel)| voxel.clone()).collect::<Vec<_>>();
+        let voxels = self.voxels.iter()
+            .map(|(_, voxel)| (voxel.get_plain_index(), voxel.clone())
+        ).collect::<Vec<_>>();
 
-        store_voxels_in_tree(&self.database_voxels, *iteration, voxels)
+        self.storage_voxels.store_batch_elements(*iteration, voxels)
     }
 
 
