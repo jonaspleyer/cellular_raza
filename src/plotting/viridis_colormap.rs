@@ -1,8 +1,7 @@
-use plotters::prelude::{HSLColor,RGBAColor,RGBColor};
-
+use plotters::prelude::{HSLColor, RGBAColor, RGBColor};
 
 /// Defines how colorscales should be used.
-pub trait ColorScale<ColorType: plotters::prelude::Color, FloatType=f32>
+pub trait ColorScale<ColorType: plotters::prelude::Color, FloatType = f32>
 where
     FloatType: num::Float,
 {
@@ -13,7 +12,6 @@ where
     fn get_color_normalized(&self, h: FloatType, min: FloatType, max: FloatType) -> ColorType;
 }
 
-
 /// Derive a colorscale from some provided colors and interpolate linearly in between them.
 ///
 /// While there are of course many other ways of implementing color interpolation, this is probably
@@ -22,16 +20,16 @@ pub struct DerivedColorScale<ColorType> {
     colors: Vec<ColorType>,
 }
 
-
 impl<ColorType: plotters::prelude::Color + Clone> DerivedColorScale<ColorType> {
     /// Creates a linear interpolation colormap from the specified colors.
     ///
     /// The minimum value corresponds to the first entry and the maximum value to the last one.
     pub fn new(colors: &[ColorType]) -> Self {
-        DerivedColorScale { colors: colors.iter().map(|color| color.clone()).collect::<Vec<_>>() }
+        DerivedColorScale {
+            colors: colors.iter().map(|color| color.clone()).collect::<Vec<_>>(),
+        }
     }
 }
-
 
 macro_rules! calculate_new_color_value(
     ($relative_difference:expr, $colors:expr, $index_upper:expr, $index_lower:expr, RGBColor) => {
@@ -66,7 +64,6 @@ macro_rules! calculate_new_color_value(
         )
     };
 );
-
 
 #[macro_export]
 macro_rules! define_linear_interpolation_color_scale{
@@ -113,8 +110,7 @@ macro_rules! define_linear_interpolation_color_scale{
     }
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     ViridisRGBA,
     8,
     RGBAColor,
@@ -128,8 +124,7 @@ define_linear_interpolation_color_scale!{
     (254, 232,  37, 1.0)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     ViridisFading,
     8,
     RGBAColor,
@@ -143,8 +138,7 @@ define_linear_interpolation_color_scale!{
     (254, 232,  37, 0.125)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     ViridisRGB,
     8,
     RGBColor,
@@ -158,8 +152,7 @@ define_linear_interpolation_color_scale!{
     (254, 232,  37)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     BlackWhiteRGB,
     2,
     RGBColor,
@@ -167,8 +160,7 @@ define_linear_interpolation_color_scale!{
     (255, 255,   255)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     GreenGrey,
     2,
     RGBColor,
@@ -176,8 +168,7 @@ define_linear_interpolation_color_scale!{
     ( 51, 255,  51)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     PinkGrey,
     2,
     RGBColor,
@@ -185,8 +176,7 @@ define_linear_interpolation_color_scale!{
     (247, 126, 201)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     Life,
     4,
     RGBColor,
@@ -196,8 +186,7 @@ define_linear_interpolation_color_scale!{
     ( 51, 255,  51)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     Dirt,
     4,
     RGBColor,
@@ -207,8 +196,7 @@ define_linear_interpolation_color_scale!{
     (212, 196, 169)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     Poison,
     4,
     RGBColor,
@@ -218,8 +206,7 @@ define_linear_interpolation_color_scale!{
     (141, 235, 113)
 }
 
-
-define_linear_interpolation_color_scale!{
+define_linear_interpolation_color_scale! {
     Awesome,
     5,
     RGBColor,
@@ -229,7 +216,6 @@ define_linear_interpolation_color_scale!{
     (255,  51, 255),
     (255,   0, 127)
 }
-
 
 macro_rules! implement_color_scale_for_derived_colorscale{
     ($($color_type:tt),+) => {
@@ -256,4 +242,4 @@ macro_rules! implement_color_scale_for_derived_colorscale{
     }
 }
 
-implement_color_scale_for_derived_colorscale!{RGBAColor, RGBColor, HSLColor}
+implement_color_scale_for_derived_colorscale! {RGBAColor, RGBColor, HSLColor}

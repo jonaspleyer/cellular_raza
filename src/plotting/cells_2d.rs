@@ -1,17 +1,13 @@
 use crate::concepts::errors::DrawingError;
 use crate::plotting::spatial::PlotSelf;
 
-
 use plotters::{
     backend::DrawingBackend,
     coord::cartesian::Cartesian2d,
     coord::types::RangedCoordf64,
-    prelude::{
-        DrawingArea,
-        Circle},
+    prelude::{Circle, DrawingArea},
     style::ShapeStyle,
 };
-
 
 macro_rules! implement_draw_cell_2d (
     ($cell:ty, $($ni:tt),+) => {
@@ -53,10 +49,16 @@ macro_rules! implement_draw_cell_2d (
     }
 );
 
-
-implement_draw_cell_2d!(crate::implementations::cell_models::custom_cell_nd::CustomCell2D, 0, 1);
-implement_draw_cell_2d!(crate::implementations::cell_models::standard_cell_2d::StandardCell2D, 0, 1);
-
+implement_draw_cell_2d!(
+    crate::implementations::cell_models::custom_cell_nd::CustomCell2D,
+    0,
+    1
+);
+implement_draw_cell_2d!(
+    crate::implementations::cell_models::standard_cell_2d::StandardCell2D,
+    0,
+    1
+);
 
 /*
 pub fn plot_current_cells_2d(
@@ -117,7 +119,7 @@ pub fn plot_current_cells_2d(
     for pos in data {
         // Color the border of the cell
         let border_color = BLACK;
-        let scale = 
+        let scale =
         if domain_size[0] < domain_size[1] {
             domain_size[0]
         } else {
