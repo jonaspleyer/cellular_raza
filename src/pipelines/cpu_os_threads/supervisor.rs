@@ -1,43 +1,47 @@
-use crate::concepts::cell::{CellAgent,CellAgentBox,CellularIdentifier};
-use crate::concepts::interaction::{CellularReactions,InteractionExtracellularGradient};
-use crate::concepts::domain::{Domain,ExtracellularMechanics,Voxel,Concentration};
-use crate::concepts::domain::{Index};
-use crate::concepts::mechanics::{Position,Force,Velocity};
+use crate::concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
+use crate::concepts::domain::Index;
+use crate::concepts::domain::{Concentration, Domain, ExtracellularMechanics, Voxel};
 use crate::concepts::errors::SimulationError;
+use crate::concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
+use crate::concepts::mechanics::{Force, Position, Velocity};
 
 use crate::storage::sled_database::SledStorageInterface;
 
-use super::domain_decomposition::{AuxiliaryCellPropertyStorage,MultiVoxelContainer,VoxelBox,DomainBox};
+use super::domain_decomposition::{
+    AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
+};
 
-use super::config::{PROGRESS_BAR_STYLE,PlottingConfig,SimulationConfig,SimulationMetaParams,SimulationSetup,StorageConfig,TimeSetup};
+use super::config::{
+    PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, StorageConfig,
+    TimeSetup, PROGRESS_BAR_STYLE,
+};
 
-use std::thread;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool,Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::thread;
 
-use core::ops::{Mul,Add,AddAssign};
+use core::ops::{Add, AddAssign, Mul};
 
 use hurdles::Barrier;
 
 use rayon::prelude::*;
 
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 use plotters::{
-    prelude::{BitMapBackend,Cartesian2d,DrawingArea},
     coord::types::RangedCoordf64,
+    prelude::{BitMapBackend, Cartesian2d, DrawingArea},
 };
 
-use indicatif::{ProgressBar,ProgressStyle};
-
+use indicatif::{ProgressBar, ProgressStyle};
 
 /// # Supervisor controlling simulation execution
-/// 
+///
 pub struct SimulationSupervisor<MVC, Dom, C>
 where
     Dom: Serialize + for<'a> Deserialize<'a>,
-    C: Serialize + for<'a>Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
     pub multivoxelcontainers: Vec<MVC>,
@@ -55,23 +59,7 @@ where
     pub meta_infos: SledStorageInterface<(), SimulationSetup<DomainBox<Dom>, C>>,
 }
 
-
 impl<
-    Pos,
-    For,
-    Inf,
-    Vel,
-    ConcVecExtracellular,
-    ConcBoundaryExtracellular,
-    ConcVecIntracellular,
-    Cel,
-    Ind,
-    Vox,
-    Dom
->
-SimulationSupervisor<
-    MultiVoxelContainer<
-        Ind,
         Pos,
         For,
         Inf,
@@ -79,27 +67,44 @@ SimulationSupervisor<
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
+        Cel,
+        Ind,
         Vox,
         Dom,
-        Cel
-    >,
-Dom,
-Cel>
-
+    >
+    SimulationSupervisor<
+        MultiVoxelContainer<
+            Ind,
+            Pos,
+            For,
+            Inf,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+            Vox,
+            Dom,
+            Cel,
+        >,
+        Dom,
+        Cel,
+    >
 where
     Dom: 'static + Serialize + for<'a> Deserialize<'a> + Clone,
     Pos: 'static + Serialize + for<'a> Deserialize<'a>,
     For: 'static + Serialize + for<'a> Deserialize<'a>,
     Inf: 'static,
     Vel: 'static + Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: 'static + Serialize + for<'a>Deserialize<'a>,
-    ConcBoundaryExtracellular: 'static + Serialize + for<'a>Deserialize<'a>,
+    ConcVecExtracellular: 'static + Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: 'static + Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: 'static + Serialize + for<'a> Deserialize<'a>,
     Cel: 'static + Serialize + for<'a> Deserialize<'a>,
     Ind: 'static + Serialize + for<'a> Deserialize<'a>,
     Vox: 'static + Serialize + for<'a> Deserialize<'a>,
 {
-    fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
+    fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
+        &mut self,
+    ) -> Result<(), SimulationError>
     where
         Dom: Domain<Cel, Ind, Vox>,
         Pos: Position,
@@ -110,16 +115,37 @@ where
         ConcTotalExtracellular: Concentration,
         ConcVecIntracellular: Concentration,
         ConcBoundaryExtracellular: Send + Sync,
-        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
+        ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
+            + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
+            + AddAssign<ConcVecIntracellular>,
         Ind: Index,
         Vox: Voxel<Ind, Pos, For>,
-        Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
-        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
+        Vox: ExtracellularMechanics<
+            Ind,
+            Pos,
+            ConcVecExtracellular,
+            ConcGradientExtracellular,
+            ConcTotalExtracellular,
+            ConcBoundaryExtracellular,
+        >,
+        Cel: CellAgent<Pos, For, Inf, Vel>
+            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
+            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
+        VoxelBox<
+            Ind,
+            Vox,
+            Cel,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone,
     {
         let mut handles = Vec::new();
-        let mut start_barrier = Barrier::new(self.multivoxelcontainers.len()+1);
+        let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
 
         // Create progress bar and define style
         println!("Running Simulation");
@@ -200,7 +226,9 @@ where
         Ok(())
     }
 
-    pub fn run_full_sim<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self) -> Result<(), SimulationError>
+    pub fn run_full_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
+        &mut self,
+    ) -> Result<(), SimulationError>
     where
         Dom: Domain<Cel, Ind, Vox>,
         Pos: Position,
@@ -211,13 +239,34 @@ where
         ConcTotalExtracellular: Concentration,
         ConcBoundaryExtracellular: Send + Sync + 'static,
         ConcVecIntracellular: Send + Sync + Concentration,
-        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
+        ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
+            + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
+            + AddAssign<ConcVecIntracellular>,
         Ind: Index,
         Vox: Voxel<Ind, Pos, For>,
-        Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
-        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
+        Vox: ExtracellularMechanics<
+            Ind,
+            Pos,
+            ConcVecExtracellular,
+            ConcGradientExtracellular,
+            ConcTotalExtracellular,
+            ConcBoundaryExtracellular,
+        >,
+        Cel: CellAgent<Pos, For, Inf, Vel>
+            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
+            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
+        VoxelBox<
+            Ind,
+            Vox,
+            Cel,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >: Clone,
+        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone,
     {
         self.spawn_worker_threads_and_run_sim()?;
         for thread in self.worker_threads.drain(..) {
@@ -229,7 +278,7 @@ where
         // TODO check if we need to replace this functionality.
         // #[cfg(feature = "db_sled")]
         // self.save_current_setup(&None)?;
-        
+
         Ok(())
     }
 
@@ -238,13 +287,19 @@ where
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
             cells: Vec::<Cel>::new(),
-            time: TimeSetup { t_start: 0.0, t_eval: Vec::new() },
-            meta_params: SimulationMetaParams { n_threads: self.worker_threads.len() },
+            time: TimeSetup {
+                t_start: 0.0,
+                t_eval: Vec::new(),
+            },
+            meta_params: SimulationMetaParams {
+                n_threads: self.worker_threads.len(),
+            },
             #[cfg(feature = "db_sled")]
             storage: self.storage.clone(),
         };
 
-        self.meta_infos.store_single_element(iteration, (), setup_current)?;
+        self.meta_infos
+            .store_single_element(iteration, (), setup_current)?;
         Ok(())
     }
 

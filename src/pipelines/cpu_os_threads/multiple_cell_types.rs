@@ -88,7 +88,6 @@ macro_rules! implement_cell_types {
     }
 }
 
-
 #[macro_export]
 macro_rules! define_simulation_types {
     (
@@ -113,10 +112,21 @@ macro_rules! define_simulation_types {
     }
 }
 
-
 #[macro_export]
 macro_rules! create_sim_supervisor {
     ($setup:expr) => {
-        Result::<SimulationSupervisor::<SimTypePosition, SimTypeForce, SimTypeVelocity, CellAgentType, SimTypeIndex, SimTypeVoxel, SimTypeDomain>, Box<dyn std::error::Error>>::from($setup).unwrap()
-    }
+        Result::<
+            SimulationSupervisor<
+                SimTypePosition,
+                SimTypeForce,
+                SimTypeVelocity,
+                CellAgentType,
+                SimTypeIndex,
+                SimTypeVoxel,
+                SimTypeDomain,
+            >,
+            Box<dyn std::error::Error>,
+        >::from($setup)
+        .unwrap()
+    };
 }
