@@ -71,6 +71,8 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
 }
 
 
+// TODO use const generics instead of macros
+
 #[macro_export]
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
@@ -432,6 +434,8 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
 }
 
 
+// TODO reformulate definition with const generics
+// TODO make them only visible if correspoding feature (eg. fluid_mechanics or gradients) is active
 define_and_implement_cartesian_cuboid!(1, CartesianCuboid1, 0);
 define_and_implement_cartesian_cuboid_voxel!(1, 1, CartesianCuboid1, CartesianCuboidVoxel1Reactions1, 0);
 define_and_implement_cartesian_cuboid_voxel!(1, 2, CartesianCuboid1, CartesianCuboidVoxel1Reactions2, 0);

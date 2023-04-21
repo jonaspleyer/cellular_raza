@@ -395,9 +395,6 @@ where
     pub plain_index_to_thread: BTreeMap<PlainIndex, usize>,
     pub index_to_thread: BTreeMap<I, usize>,
 
-    // Where do we want to send cells, positions and forces
-    // TODO use Vector of pointers in each voxel to get all neighbors.
-    // Also store cells in this way.
     pub senders_cell: HashMap<usize, Sender<CellAgentBox<C>>>,
     pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Inf>>>,
     pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
@@ -412,9 +409,6 @@ where
 
     pub receiver_index: Receiver<IndexBoundaryInformation<I>>,
     pub receiver_concentrations: Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,I>>,
-
-    // TODO store datastructures for forces and neighboring voxels such that
-    // memory allocation is minimized
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
@@ -480,7 +474,7 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    // TODO correctly add this functionality!
+    // TODO make sure that if no extracellular mechanics are in action updating is correct and the trait may be adjusted
     fn update_cellular_reactions<ConcGradientExtracellular,ConcTotalExtracellular>(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         ConcVecIntracellular: std::ops::AddAssign + Mul<f64,Output=ConcVecIntracellular>,
@@ -581,7 +575,6 @@ where
         ConcTotalExtracellular: Concentration,
         V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
-        // TODO
         // Update boundary conditions with new 
         for concentration_boundary_information in self.receiver_concentrations.try_iter() {
             let vox = self.voxels.get_mut(&concentration_boundary_information.index_original_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", concentration_boundary_information.index_original_sender)})?;
