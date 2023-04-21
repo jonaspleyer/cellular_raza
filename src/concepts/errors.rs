@@ -77,16 +77,13 @@ define_errors!(
     ),
     (BoundaryError, "Can occur during boundary calculation"),
     (
-        GenericDataBaseError,
+        DataBaseError,
         "Placeholder for when Database is not compiled."
     ),
     (DrawingError, "Used to catch errors related to plotting")
 );
 
-#[cfg(feature = "db_sled")]
-type DataBaseError = sled::Error;
-#[cfg(feature = "no_db")]
-type DataBaseError = GenericDataBaseError;
+pub type SledError = sled::Error;
 
 /// Covers all errors that can occur in this Simulation
 /// The errors are listed from very likely to be a user error from almost certainly an internal error.
@@ -102,10 +99,11 @@ pub enum SimulationError {
     DrawingError(DrawingError),
     // #[cfg(feature="db_mongodb")]
     // TODO
-    // DataBaseError,
+    // SledError,
+    DataBaseError(DataBaseError),
 
     // Less likely but possible to be user errors
-    DataBaseError(DataBaseError),
+    SledError(SledError),
     SerializeError(Box<bincode::ErrorKind>),
     SendError(String),
     ReceiveError(RecvError),
@@ -129,11 +127,12 @@ impl_from_error! {SimulationError,
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
     (IOError, std::io::Error),
-    (DataBaseError, DataBaseError),
+    (SledError, SledError),
     (SerializeError, Box<bincode::ErrorKind>),
     (ParseIntError, std::num::ParseIntError),
     (Utf8Error, std::str::Utf8Error),
     (DrawingError, DrawingError),
+    (DataBaseError, DataBaseError),
     (ThreadingError, rayon::ThreadPoolBuildError),
     (ConsoleLogError, indicatif::style::TemplateError)
 }
@@ -149,11 +148,12 @@ impl_error_variant! {SimulationError,
     BoundaryError,
     IndexError,
     IOError,
-    DataBaseError,
+    SledError,
     SerializeError,
     ParseIntError,
     Utf8Error,
     DrawingError,
+    DataBaseError,
     ThreadingError,
     ConsoleLogError
 }
