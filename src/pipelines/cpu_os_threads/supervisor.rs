@@ -1,5 +1,5 @@
 use crate::concepts::cell::{CellAgent,CellAgentBox,CellularIdentifier};
-use crate::concepts::interaction::{CellularReactions,InteractionExtracellularGRadient};
+use crate::concepts::interaction::{CellularReactions,InteractionExtracellularGradient};
 use crate::concepts::domain::{Domain,ExtracellularMechanics,Voxel,Concentration};
 use crate::concepts::domain::{Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
@@ -118,7 +118,7 @@ where
         Ind: Index,
         Vox: Voxel<Ind, Pos, For>,
         Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
+        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
@@ -219,7 +219,7 @@ where
         Ind: Index,
         Vox: Voxel<Ind, Pos, For>,
         Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
+        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {

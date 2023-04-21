@@ -451,7 +451,7 @@ where
         For: Force,
         Inf: InteractionInformation,
         Vel: Velocity,
-        C: CellAgent<Pos, For, Inf, Vel> + InteractionExtracellularGRadient<C, ConcGradientExtracellular>,
+        C: CellAgent<Pos, For, Inf, Vel> + InteractionExtracellularGradient<C, ConcGradientExtracellular>,
         V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         self.voxels
@@ -834,7 +834,7 @@ where
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,
         ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<C, ConcGradientExtracellular> + Clone,
+        C: Cycle<C> + Mechanics<Pos, For, Vel> + Interaction<Pos, For, Inf> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGradient<C, ConcGradientExtracellular> + Clone,
         V: ExtracellularMechanics<I,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
     {
         // These methods are used for sending requests and gathering information in general
