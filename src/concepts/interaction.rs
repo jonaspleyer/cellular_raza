@@ -18,6 +18,7 @@ pub trait Interaction<Pos, Force, Inf = ()> {
     // TODO
     // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
 }
+// TODO we should not use the option here
 
 pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
     fn sense_gradient(c: &mut Cell, gradient: &ConcGradientExtracellular) -> Result<(), CalcError>;
