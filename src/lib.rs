@@ -5,7 +5,7 @@
 
 //! > “What I cannot create, I do not understand.”
 //! >
-//! >  --- Richard P. Feynman 
+//! >  --- Richard P. Feynman
 //!
 //! [cellular_raza](crate) is an agent-based modeling tool to simulate individual biological cells with a mechanistically
 //! driven mindset.
@@ -70,7 +70,7 @@
 //!     - Models should be created with native Rust Code (or in the future by interacting with Python or Julia)
 //!     - Data Analysis can be done with Python/Julia
 //! - The option to freely change everything however you like during runtime
-//! 
+//!
 //! # Inherent Assumptions and Mindset
 //! - Additions are commutative
 //!     - This is inherently not true in almost all modern computers using floating point arithmetics
@@ -101,17 +101,16 @@ compile_error!("feature \"db_sled\" and feature \"db_mongodb\" cannot be enabled
 #[cfg(all(feature = "no_db", any(feature = "db_sled", feature = "db_mongodb")))]
 compile_error!("feature \"no_db\" and database feature cannot be enabled at the same time");
 
-
 /// Abstract concepts to describe cell properties, the domain and possible errors
 ///
 /// These concepts should be implemented by the user and then be used by a simulation
 /// [pipelines](crate::pipelines) which actually integrates the defined cellular properties.
 pub mod concepts;
-/// Database interface
-pub mod storage;
 /// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
 pub mod implementations;
 /// The pipline controls the simulation flow. Multiple variants could be available.
 pub mod pipelines;
 /// Methods for plotting simulation results
 pub mod plotting;
+/// Database interface
+pub mod storage;
