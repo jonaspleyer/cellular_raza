@@ -1,6 +1,7 @@
 use plotters::prelude::{HSLColor,RGBAColor,RGBColor};
 
 
+/// Defines how colorscales should be used.
 pub trait ColorScale<ColorType: plotters::prelude::Color, FloatType=f32>
 where
     FloatType: num::Float,
@@ -13,12 +14,19 @@ where
 }
 
 
+/// Derive a colorscale from some provided colors and interpolate linearly in between them.
+///
+/// While there are of course many other ways of implementing color interpolation, this is probably
+/// the easiest which already prodocues great results.
 pub struct DerivedColorScale<ColorType> {
     colors: Vec<ColorType>,
 }
 
 
 impl<ColorType: plotters::prelude::Color + Clone> DerivedColorScale<ColorType> {
+    /// Creates a linear interpolation colormap from the specified colors.
+    ///
+    /// The minimum value corresponds to the first entry and the maximum value to the last one.
     pub fn new(colors: &[ColorType]) -> Self {
         DerivedColorScale { colors: colors.iter().map(|color| color.clone()).collect::<Vec<_>>() }
     }
@@ -63,6 +71,9 @@ macro_rules! calculate_new_color_value(
 #[macro_export]
 macro_rules! define_linear_interpolation_color_scale{
     ($color_scale_name:ident, $number_colors:literal, $color_type:tt, $(($($color_value:expr),+)),+) => {
+        #[doc = "The "]
+        #[doc = stringify!($color_scale_name)]
+        #[doc = " color-scale"]
         pub struct $color_scale_name {}
 
         impl $color_scale_name {
@@ -154,6 +165,24 @@ define_linear_interpolation_color_scale!{
     RGBColor,
     (  0,   0,   0),
     (255, 255,   255)
+}
+
+
+define_linear_interpolation_color_scale!{
+    GreenGrey,
+    2,
+    RGBColor,
+    ( 51, 102,  51),
+    ( 51, 255,  51)
+}
+
+
+define_linear_interpolation_color_scale!{
+    PinkGrey,
+    2,
+    RGBColor,
+    (102,  52,  83),
+    (247, 126, 201)
 }
 
 
