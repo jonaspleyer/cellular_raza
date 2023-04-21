@@ -220,36 +220,21 @@ where
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
     {
         self.spawn_worker_threads_and_run_sim()?;
+        for thread in self.worker_threads.drain(..) {
+            // TODO introduce new error type to gain a error message here!
+            // Do not use unwrap anymore
+            let t = thread.join().unwrap()?;
+            // self.multivoxelcontainers.push(t);
+        }
+        // TODO check if we need to replace this functionality.
+        // #[cfg(feature = "db_sled")]
+        // self.save_current_setup(&None)?;
         
         Ok(())
     }
 
-    pub fn run_until<ConcTotalExtracellular,ConcGradientExtracellular>(&mut self, end_time: f64) -> Result<(), SimulationError>
-    where
-        Dom: Domain<Cel, Ind, Vox>,
-        Pos: Position,
-        For: Force,
-        Inf: crate::concepts::interaction::InteractionInformation,
-        Vel: Velocity,
-        ConcVecExtracellular: Concentration,
-        ConcTotalExtracellular: Concentration,
-        ConcBoundaryExtracellular: Send + Sync + 'static,
-        ConcVecIntracellular: Concentration,
-        ConcVecIntracellular: Mul<f64,Output=ConcVecIntracellular> + Add<ConcVecIntracellular,Output=ConcVecIntracellular> + AddAssign<ConcVecIntracellular>,
-        Ind: Index,
-        Vox: Voxel<Ind, Pos, For>,
-        Vox: ExtracellularMechanics<Ind,Pos,ConcVecExtracellular,ConcGradientExtracellular,ConcTotalExtracellular,ConcBoundaryExtracellular>,
-        Cel: CellAgent<Pos, For, Inf, Vel> + CellularReactions<ConcVecIntracellular, ConcVecExtracellular> + InteractionExtracellularGRadient<Cel, ConcGradientExtracellular>,
-        VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Clone,
-        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone
-    {
-        self.time.t_eval.drain_filter(|(t, _, _)| *t <= end_time);
-        self.run_full_sim()?;
-        Ok(())
-    }
-
-    #[cfg(not(feature = "no_db"))]
-    pub fn save_current_setup(&self, iteration: &Option<u32>) -> Result<(), SimulationError> {
+    #[cfg(any(feature = "db_sled", feature = "db_json_dump"))]
+    pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError> {
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
             cells: Vec::<Cel>::new(),
