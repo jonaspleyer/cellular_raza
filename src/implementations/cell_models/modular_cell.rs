@@ -168,7 +168,7 @@ impl<C, ConcGradientExtracellular> InteractionExtracellularGradient<C, ConcGradi
 }
 
 impl<Mec, Int, Cyc, React, IntExtracellular, ConcGradientExtracellular>
-InteractionExtracellularGradient<
+    InteractionExtracellularGradient<
         ModularCell<Mec, Int, Cyc, React, IntExtracellular>,
         ConcGradientExtracellular,
     > for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
