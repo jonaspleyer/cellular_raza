@@ -1,26 +1,28 @@
-use crate::concepts::cell::{CellAgent,CellAgentBox};
-use crate::concepts::domain::{Index,Domain,Voxel};
-use crate::concepts::mechanics::{Position,Force,Velocity};
+use crate::concepts::cell::{CellAgent, CellAgentBox};
+use crate::concepts::domain::{Domain, Index, Voxel};
+use crate::concepts::mechanics::{Force, Position, Velocity};
 use crate::storage::sled_database::SledStorageInterface;
 
-use super::domain_decomposition::{VoxelBox,DomainBox,MultiVoxelContainer,PosInformation,ForceInformation,PlainIndex,ConcentrationBoundaryInformation,IndexBoundaryInformation};
+use super::domain_decomposition::{
+    ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
+    MultiVoxelContainer, PlainIndex, PosInformation, VoxelBox,
+};
 use super::supervisor::SimulationSupervisor;
+use crate::concepts::cell::CellularIdentifier;
 
-use std::collections::{BTreeMap,HashMap};
+use std::collections::{BTreeMap, HashMap};
 
-use crossbeam_channel::{Sender,Receiver,unbounded};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use hurdles::Barrier;
 
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 use rayon::prelude::*;
 
-
-#[derive(Serialize,Deserialize,Clone,Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationConfig {
     pub show_progressbar: bool,
 }
-
 
 impl Default for SimulationConfig {
     fn default() -> Self {
@@ -30,23 +32,20 @@ impl Default for SimulationConfig {
     }
 }
 
-
 /// # Store meta parameters for simulation
-#[derive(Clone,Serialize,Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationMetaParams {
     pub n_threads: usize,
 }
 
-
 // TODO rethink how to specify time points to save
 // we need to frequently save cells and environment
 // Sometimes we need full snapshots for recovery purposes
-#[derive(Clone,Serialize,Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TimeSetup {
     pub t_start: f64,
     pub t_eval: Vec<(f64, bool, bool)>,
 }
-
 
 #[cfg(any(feature = "db_sled", feature = "json_dump"))]
 #[derive(Clone, Serialize, Deserialize)]
@@ -65,20 +64,16 @@ pub struct SimulationSetup<Dom, C> {
     pub storage: StorageConfig,
 }
 
+pub const PROGRESS_BAR_STYLE: &str =
+    "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
 
-pub const PROGRESS_BAR_STYLE: &str = "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
-
-
-#[derive(Serialize,Deserialize,Clone,Debug)]
-pub struct PlottingConfig
-{
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PlottingConfig {
     pub image_size: u32,
     pub n_threads: Option<usize>,
 }
 
-
-impl Default for PlottingConfig
-{
+impl Default for PlottingConfig {
     fn default() -> Self {
         PlottingConfig {
             image_size: 1000,
@@ -86,7 +81,6 @@ impl Default for PlottingConfig
         }
     }
 }
-
 
 #[derive(Clone)]
 pub struct Strategies<Vox>
@@ -96,29 +90,100 @@ where
     pub voxel_definition_strategies: Option<fn(&mut Vox)>,
 }
 
-
-impl<Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Cel, Ind, Vox, Dom> SimulationSupervisor<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>, Dom>
+impl<
+        Pos,
+        For,
+        Inf,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+        Cel,
+        Ind,
+        Vox,
+        Dom,
+    >
+    SimulationSupervisor<
+        MultiVoxelContainer<
+            Ind,
+            Pos,
+            For,
+            Inf,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+            Vox,
+            Dom,
+            Cel,
+        >,
+        Dom,
+        Cel,
+    >
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
     Pos: Serialize + for<'a> Deserialize<'a> + Position + 'static + std::fmt::Debug,
     For: Serialize + for<'a> Deserialize<'a> + Force + 'static,
     Vel: Serialize + for<'a> Deserialize<'a> + Velocity + 'static,
-    ConcVecExtracellular: Serialize + for<'a>Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a>Deserialize<'a>,
+    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,
     Vox: Voxel<Ind, Pos, For> + Clone + 'static,
     Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
+    VoxelBox<
+        Ind,
+        Vox,
+        Cel,
+        Pos,
+        For,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+    >: Clone,
 {
-    pub fn initialize_with_strategies(setup: SimulationSetup<Dom, Cel>, strategies: Strategies<Vox>) -> SimulationSupervisor<MultiVoxelContainer<Ind, Pos, For, Inf, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular, Vox, Dom, Cel>, Dom>
+    pub fn initialize_with_strategies(
+        mut setup: SimulationSetup<Dom, Cel>,
+        strategies: Strategies<Vox>,
+    ) -> SimulationSupervisor<
+        MultiVoxelContainer<
+            Ind,
+            Pos,
+            For,
+            Inf,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+            Vox,
+            Dom,
+            Cel,
+        >,
+        Dom,
+        Cel,
+    >
     where
         Cel: Sized,
     {
         // Create groups of voxels to put into our MultiVelContainers
-        let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(&setup.domain, setup.meta_params.n_threads).unwrap();
+        let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(
+            &setup.domain,
+            setup.meta_params.n_threads,
+        )
+        .unwrap();
 
-        let convert_to_plain_index: BTreeMap<Ind, PlainIndex> = setup.domain.get_all_indices().into_iter().enumerate().map(|(count, ind)| (ind, count as PlainIndex)).collect();
-        let convert_to_index: BTreeMap<PlainIndex, Ind> = convert_to_plain_index.iter().map(|(i, j)| (j.clone(), i.clone())).collect();
+        let convert_to_plain_index: BTreeMap<Ind, PlainIndex> = setup
+            .domain
+            .get_all_indices()
+            .into_iter()
+            .enumerate()
+            .map(|(count, ind)| (ind, count as PlainIndex))
+            .collect();
+        let convert_to_index: BTreeMap<PlainIndex, Ind> = convert_to_plain_index
+            .iter()
+            .map(|(i, j)| (j.clone(), i.clone()))
+            .collect();
 
         let mut index_to_thread = BTreeMap::<Ind, usize>::new();
         let mut plain_index_to_thread = BTreeMap::<PlainIndex, usize>::new();
@@ -133,19 +198,34 @@ where
         let multivoxelcontainers;
 
         // Create sender receiver pairs for all threads
-        let sender_receiver_pairs_cell: Vec<(Sender<CellAgentBox::<Cel>>, Receiver<CellAgentBox::<Cel>>)> = (0..n_threads).map(|_| unbounded()).collect();
-        let sender_receiver_pairs_pos: Vec<(Sender<PosInformation<Pos, Inf>>, Receiver<PosInformation<Pos, Inf>>)> = (0..n_threads).map(|_| unbounded()).collect();
-        let sender_receiver_pairs_force: Vec<(Sender<ForceInformation<For>>, Receiver<ForceInformation<For>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_cell: Vec<(
+            Sender<CellAgentBox<Cel>>,
+            Receiver<CellAgentBox<Cel>>,
+        )> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_pos: Vec<(
+            Sender<PosInformation<Pos, Inf>>,
+            Receiver<PosInformation<Pos, Inf>>,
+        )> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_force: Vec<(
+            Sender<ForceInformation<For>>,
+            Receiver<ForceInformation<For>>,
+        )> = (0..n_threads).map(|_| unbounded()).collect();
 
-        let sender_receiver_pairs_boundary_concentrations: Vec<(Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,Ind>>, Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular,Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
-        let sender_receiver_pairs_boundary_index: Vec<(Sender<IndexBoundaryInformation<Ind>>, Receiver<IndexBoundaryInformation<Ind>>)> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_boundary_concentrations: Vec<(
+            Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>,
+            Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>,
+        )> = (0..n_threads).map(|_| unbounded()).collect();
+        let sender_receiver_pairs_boundary_index: Vec<(
+            Sender<IndexBoundaryInformation<Ind>>,
+            Receiver<IndexBoundaryInformation<Ind>>,
+        )> = (0..n_threads).map(|_| unbounded()).collect();
 
         // Create a barrier to synchronize all threads
         let barrier = Barrier::new(n_threads);
 
         // Create an intermediate mapping just for this setup
         // Map voxel index to thread number
-        let mut plain_index_to_thread: BTreeMap<PlainIndex,usize> = BTreeMap::new();
+        let mut plain_index_to_thread: BTreeMap<PlainIndex, usize> = BTreeMap::new();
         for (i, chunk) in voxel_chunks.iter().enumerate() {
             for (index, _) in chunk {
                 plain_index_to_thread.insert(convert_to_plain_index[&index], i);
@@ -154,9 +234,10 @@ where
 
         // Sort cells into correct voxels
         let n_chunks = voxel_chunks.len();
-        let chunk_size = (setup.cells.len() as f64/ n_threads as f64).ceil() as usize;
+        let chunk_size = (setup.cells.len() as f64 / n_threads as f64).ceil() as usize;
 
-        let mut sorted_cells = setup.cells
+        let mut sorted_cells = setup
+            .cells
             .into_par_iter()
             .enumerate()
             .chunks(chunk_size)
@@ -169,44 +250,85 @@ where
                     match cs.get_mut(&id_thread) {
                         Some(index_to_cells) => match index_to_cells.get_mut(&plain_index) {
                             Some(cs) => cs.push(cell),
-                            None => {index_to_cells.insert(plain_index, vec![cell]);},
+                            None => {
+                                index_to_cells.insert(plain_index, vec![cell]);
+                            }
                         },
-                        None => {cs.insert(id_thread, BTreeMap::from([(plain_index, vec![cell])]));},
+                        None => {
+                            cs.insert(id_thread, BTreeMap::from([(plain_index, vec![cell])]));
+                        }
                     }
                 }
                 cs
             })
-            .reduce(|| (0..n_chunks).map(|i| (i, BTreeMap::new())).collect::<BTreeMap<usize, BTreeMap<PlainIndex, Vec<(usize, Cel)>>>>(), |mut acc, x| {
-                for (id_thread, idc) in x.into_iter() {
-                    for (index, mut cells) in idc.into_iter() {
-                        match acc.get_mut(&id_thread) {
-                            Some(index_to_cells) => match index_to_cells.get_mut(&index) {
-                                Some(cs) => cs.append(&mut cells),
-                                None => {index_to_cells.insert(index, cells);},
-                            },
-                            None => {acc.insert(id_thread, BTreeMap::from([(index, cells)]));},
+            .reduce(
+                || {
+                    (0..n_chunks)
+                        .map(|i| (i, BTreeMap::new()))
+                        .collect::<BTreeMap<usize, BTreeMap<PlainIndex, Vec<(usize, Cel)>>>>()
+                },
+                |mut acc, x| {
+                    for (id_thread, idc) in x.into_iter() {
+                        for (index, mut cells) in idc.into_iter() {
+                            match acc.get_mut(&id_thread) {
+                                Some(index_to_cells) => match index_to_cells.get_mut(&index) {
+                                    Some(cs) => cs.append(&mut cells),
+                                    None => {
+                                        index_to_cells.insert(index, cells);
+                                    }
+                                },
+                                None => {
+                                    acc.insert(id_thread, BTreeMap::from([(index, cells)]));
+                                }
+                            }
                         }
                     }
-                }
-                return acc;
-            });
+                    return acc;
+                },
+            );
 
-        let voxel_and_raw_cells: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<(usize, Cel)>>)> = voxel_chunks
+        let voxel_and_raw_cells: Vec<(
+            Vec<(PlainIndex, Vox)>,
+            BTreeMap<PlainIndex, Vec<(usize, Cel)>>,
+        )> = voxel_chunks
             .into_iter()
             .enumerate()
-            .map(|(i, chunk)| (chunk.into_iter().map(|(ind, vox)| (convert_to_plain_index[&ind], vox)).collect(), sorted_cells.remove(&i).unwrap()))
+            .map(|(i, chunk)| {
+                (
+                    chunk
+                        .into_iter()
+                        .map(|(ind, vox)| (convert_to_plain_index[&ind], vox))
+                        .collect(),
+                    sorted_cells.remove(&i).unwrap(),
+                )
+            })
             .collect();
 
-        let voxel_and_cell_boxes: Vec<(Vec<(PlainIndex, Vox)>, BTreeMap<PlainIndex, Vec<CellAgentBox<Cel>>>)> = voxel_and_raw_cells
+        let voxel_and_cell_boxes: Vec<(
+            Vec<(PlainIndex, Vox)>,
+            BTreeMap<PlainIndex, Vec<CellAgentBox<Cel>>>,
+        )> = voxel_and_raw_cells
             .into_iter()
             .map(|(chunk, sorted_cells)| {
-                let res = (chunk, sorted_cells
-                    .into_iter()
-                    .map(|(ind, mut cells)| {
-                        cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
-                        (ind, cells.into_iter().enumerate().map(|(n_cell, (_, cell))| CellAgentBox::new(ind, n_cell as u64, cell, None)).collect()
-                    )
-                }).collect());
+                let res = (
+                    chunk,
+                    sorted_cells
+                        .into_iter()
+                        .map(|(ind, mut cells)| {
+                            cells.sort_by(|(i, _), (j, _)| i.cmp(&j));
+                            (
+                                ind,
+                                cells
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(n_cell, (_, cell))| {
+                                        CellAgentBox::new(ind, n_cell as u64, cell, None)
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect(),
+                );
                 res
             })
             .collect();
@@ -248,104 +370,148 @@ where
             .unwrap();
 
         // Create all multivoxelcontainers
-        multivoxelcontainers = voxel_and_cell_boxes.into_iter().enumerate().map(|(i, (chunk, mut index_to_cells))| {
-            // TODO insert all variables correctly into this container here
-            let mut voxels: BTreeMap::<PlainIndex, VoxelBox<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular, ConcBoundaryExtracellular,ConcVecIntracellular>> = chunk.clone()
-                .into_iter()
-                .map(|(plain_index, voxel)| {
-                    let cells = match index_to_cells.remove(&plain_index) {
-                        Some(cs) => cs,
-                        None => Vec::new(),
+        multivoxelcontainers = voxel_and_cell_boxes
+            .into_iter()
+            .enumerate()
+            .map(|(i, (chunk, mut index_to_cells))| {
+                let mut voxels: BTreeMap<
+                    PlainIndex,
+                    VoxelBox<
+                        Ind,
+                        Vox,
+                        Cel,
+                        Pos,
+                        For,
+                        Vel,
+                        ConcVecExtracellular,
+                        ConcBoundaryExtracellular,
+                        ConcVecIntracellular,
+                    >,
+                > = chunk
+                    .clone()
+                    .into_iter()
+                    .map(|(plain_index, voxel)| {
+                        let cells = match index_to_cells.remove(&plain_index) {
+                            Some(cs) => cs,
+                            None => Vec::new(),
+                        };
+                        let neighbors = setup
+                            .domain
+                            .get_neighbor_voxel_indices(&convert_to_index[&plain_index])
+                            .into_iter()
+                            .map(|i| convert_to_plain_index[&i])
+                            .collect::<Vec<_>>();
+                        let vbox = VoxelBox::<
+                            Ind,
+                            Vox,
+                            Cel,
+                            Pos,
+                            For,
+                            Vel,
+                            ConcVecExtracellular,
+                            ConcBoundaryExtracellular,
+                            ConcVecIntracellular,
+                        >::new(
+                            plain_index,
+                            convert_to_index[&plain_index].clone(),
+                            voxel,
+                            neighbors,
+                            cells,
+                        );
+                        (plain_index, vbox)
+                    })
+                    .collect();
+
+                // Create non-occupied voxels
+                for (ind, _) in voxels.iter() {
+                    match index_to_cells.get(&ind) {
+                        Some(_) => (),
+                        None => {
+                            index_to_cells.insert(ind.clone(), Vec::new());
+                        }
+                    }
+                }
+
+                // Quick macro to create senders
+                macro_rules! create_senders {
+                    ($sr_pairs: expr) => {
+                        chunk
+                            .clone()
+                            .into_iter()
+                            .map(|(plain_index, _)| {
+                                setup
+                                    .domain
+                                    .get_neighbor_voxel_indices(&convert_to_index[&plain_index])
+                                    .into_iter()
+                                    .map(|ind| {
+                                        (
+                                            index_to_thread[&ind],
+                                            $sr_pairs[index_to_thread[&ind]].0.clone(),
+                                        )
+                                    })
+                            })
+                            .flatten()
+                            .collect::<HashMap<usize, _>>()
                     };
-                    let neighbors = setup.domain.get_neighbor_voxel_indices(&convert_to_index[&plain_index]).into_iter().map(|i| convert_to_plain_index[&i]).collect::<Vec<_>>();
-                    let vbox = VoxelBox::<Ind,Vox,Cel,Pos,For,Vel,ConcVecExtracellular, ConcBoundaryExtracellular,ConcVecIntracellular>::new(
-                        plain_index,
-                        convert_to_index[&plain_index].clone(),
-                        voxel,
-                        neighbors,
-                        cells,
-                    );
-                    (plain_index, vbox)
-                }).collect();
-
-            // Create non-occupied voxels
-            for (ind, _) in voxels.iter() {
-                match index_to_cells.get(&ind) {
-                    Some(_) => (),
-                    None => {index_to_cells.insert(ind.clone(), Vec::new());},
                 }
-            }
 
-            // Quick macro to create senders
-            macro_rules! create_senders {
-                ($sr_pairs: expr) => {
-                    chunk.clone()
-                        .into_iter()
-                        .map(|(plain_index, _)| {
-                            setup.domain
-                                .get_neighbor_voxel_indices(&convert_to_index[&plain_index])
-                                .into_iter()
-                                .map(|ind| (index_to_thread[&ind], $sr_pairs[index_to_thread[&ind]].0.clone()))
-                        })
-                        .flatten()
-                        .collect::<HashMap<usize,_>>()
-                }
-            }
-
-            let senders_cell = create_senders!(sender_receiver_pairs_cell);
-            let senders_pos = create_senders!(sender_receiver_pairs_pos);
-            let senders_force = create_senders!(sender_receiver_pairs_force);
-            let senders_boundary_index = create_senders!(sender_receiver_pairs_boundary_index);
-            let senders_boundary_concentrations = create_senders!(sender_receiver_pairs_boundary_concentrations);
+                let senders_cell = create_senders!(sender_receiver_pairs_cell);
+                let senders_pos = create_senders!(sender_receiver_pairs_pos);
+                let senders_force = create_senders!(sender_receiver_pairs_force);
+                let senders_boundary_index = create_senders!(sender_receiver_pairs_boundary_index);
+                let senders_boundary_concentrations =
+                    create_senders!(sender_receiver_pairs_boundary_concentrations);
 
                 // Clone database instance
                 #[cfg(not(feature = "no_db"))]
                 let storage_cells_new = storage_cells.clone();
                 let storage_voxels_new = storage_voxels.clone();
 
-            voxels.iter_mut().for_each(|(_, voxelbox)| {
-                match strategies.voxel_definition_strategies {
-                    Some(strategy) => strategy(&mut voxelbox.voxel),
-                    None => (),
-                };
-            });
+                voxels.iter_mut().for_each(|(_, voxelbox)| {
+                    match strategies.voxel_definition_strategies {
+                        Some(strategy) => strategy(&mut voxelbox.voxel),
+                        None => (),
+                    };
+                });
 
-            // Define the container for many voxels
-            let cont = MultiVoxelContainer {
-                voxels,
-                index_to_plain_index: convert_to_plain_index.clone(),
-                
-                domain: DomainBox::from(setup.domain.clone()),
+                // Define the container for many voxels
+                let cont = MultiVoxelContainer {
+                    voxels,
+                    index_to_plain_index: convert_to_plain_index.clone(),
 
-                index_to_thread: index_to_thread.clone(),
-                plain_index_to_thread: plain_index_to_thread.clone(),
+                    domain: DomainBox::from(setup.domain.clone()),
 
-                senders_cell,
-                senders_pos,
-                senders_force,
+                    index_to_thread: index_to_thread.clone(),
+                    plain_index_to_thread: plain_index_to_thread.clone(),
 
-                senders_boundary_index,
-                senders_boundary_concentrations,
-                
-                receiver_cell: sender_receiver_pairs_cell[i].1.clone(),
-                receiver_pos: sender_receiver_pairs_pos[i].1.clone(),
-                receiver_force: sender_receiver_pairs_force[i].1.clone(),
+                    senders_cell,
+                    senders_pos,
+                    senders_force,
 
-                receiver_index: sender_receiver_pairs_boundary_index[i].1.clone(),
-                receiver_concentrations: sender_receiver_pairs_boundary_concentrations[i].1.clone(),
+                    senders_boundary_index,
+                    senders_boundary_concentrations,
 
-                barrier: barrier.clone(),
+                    receiver_cell: sender_receiver_pairs_cell[i].1.clone(),
+                    receiver_pos: sender_receiver_pairs_pos[i].1.clone(),
+                    receiver_force: sender_receiver_pairs_force[i].1.clone(),
 
-                #[cfg(not(feature = "no_db"))]
-                database_cells: tree_cells_new,
-                database_voxels: tree_voxels_new,
+                    receiver_index: sender_receiver_pairs_boundary_index[i].1.clone(),
+                    receiver_concentrations: sender_receiver_pairs_boundary_concentrations[i]
+                        .1
+                        .clone(),
+
+                    barrier: barrier.clone(),
 
                     #[cfg(not(feature = "no_db"))]
                     storage_cells: storage_cells_new,
                     storage_voxels: storage_voxels_new,
 
-            return cont;
-        }).collect();
+                    mvc_id: i as u16,
+                };
+
+                return cont;
+            })
+            .collect();
 
         SimulationSupervisor {
             worker_threads: Vec::new(),
