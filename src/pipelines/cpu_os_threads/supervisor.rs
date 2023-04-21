@@ -5,9 +5,11 @@ use crate::concepts::domain::{Index};
 use crate::concepts::mechanics::{Position,Force,Velocity};
 use crate::concepts::errors::SimulationError;
 
+use crate::storage::sled_database::SledStorageInterface;
+
 use super::domain_decomposition::{AuxiliaryCellPropertyStorage,MultiVoxelContainer,VoxelBox,DomainBox};
 
-use super::config::{PROGRESS_BAR_STYLE,PlottingConfig,SimulationConfig,SimulationMetaParams,SimulationSetup,SledDataBaseConfig,TimeSetup};
+use super::config::{PROGRESS_BAR_STYLE,PlottingConfig,SimulationConfig,SimulationMetaParams,SimulationSetup,StorageConfig,TimeSetup};
 
 use std::thread;
 use std::collections::HashMap;
@@ -32,33 +34,25 @@ use indicatif::{ProgressBar,ProgressStyle};
 
 /// # Supervisor controlling simulation execution
 /// 
-pub struct SimulationSupervisor<MVC, Dom>
+pub struct SimulationSupervisor<MVC, Dom, C>
 where
     Dom: Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a>Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
     pub multivoxelcontainers: Vec<MVC>,
 
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
-    #[cfg(feature = "db_sled")]
-    pub database: SledDataBaseConfig,
+    pub storage: StorageConfig,
 
     pub domain: DomainBox<Dom>,
 
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    // Tree of cell database + buffers
-    #[cfg(not(feature = "no_db"))]
-    pub tree_cells: typed_sled::Tree<String, Vec<u8>>,
-    #[cfg(not(feature = "no_db"))]
-
-    // Trees for voxels and infos
-    #[cfg(not(feature = "no_db"))]
-    pub tree_voxels: typed_sled::Tree<String, Vec<u8>>,
-    #[cfg(not(feature = "no_db"))]
-    pub meta_infos: typed_sled::Tree<String, Vec<u8>>,
+    #[cfg(feature = "db_sled")]
+    pub meta_infos: SledStorageInterface<(), SimulationSetup<DomainBox<Dom>, C>>,
 }
 
 
@@ -89,7 +83,9 @@ SimulationSupervisor<
         Dom,
         Cel
     >,
-Dom>
+Dom,
+Cel>
+
 where
     Dom: 'static + Serialize + for<'a> Deserialize<'a> + Clone,
     Pos: 'static + Serialize + for<'a> Deserialize<'a>,
@@ -260,45 +256,22 @@ where
             time: TimeSetup { t_start: 0.0, t_eval: Vec::new() },
             meta_params: SimulationMetaParams { n_threads: self.worker_threads.len() },
             #[cfg(feature = "db_sled")]
-            database: self.database.clone(),
+            storage: self.storage.clone(),
         };
 
-        let setup_serialized = bincode::serialize(&setup_current)?;
-        let key;
-        match iteration {
-            Some(iter) => key = format!("setup_{:10.0}", iter),
-            None => key = format!("setup_{:10.0}", std::u32::MAX),
-        };
-        self.meta_infos.insert(&key, &setup_serialized)?;
-        Ok(())
-    }
-
-    // TODO find a way to pause the simulation without destroying the threads and
-    // send/retrieve information to from the threads to the main thread where
-    // the program was executed
-
-    pub fn end_simulation(&mut self) -> Result<(), SimulationError> {
-        for thread in self.worker_threads.drain(..) {
-            // TODO introduce new error type to gain a error message here!
-            // Do not use unwrap anymore
-            let t = thread.join().unwrap()?;
-            self.multivoxelcontainers.push(t);
-        }
-        #[cfg(not(feature = "no_db"))]
-        self.save_current_setup(&None)?;
+        self.meta_infos.store_single_element(iteration, (), setup_current)?;
         Ok(())
     }
 
     // ########################################
     // #### DATABASE RELATED FUNCTIONALITY ####
     // ########################################
-   #[cfg(feature = "db_sled")]
+    /* #[cfg(feature = "db_sled")]
     pub fn get_cells_at_iter(&self, iter: u64) -> Result<Vec<CellAgentBox<Cel>>, SimulationError>
     where
         Cel: Clone,
     {
-        // TODO use buffer here!
-        super::storage_interface::get_cells_at_iter::<CellAgentBox<Cel>>(&self.tree_cells, iter, None, None)
+        // super::storage_interface::get_cells_at_iter::<CellAgentBox<Cel>>(&self.tree_cells, iter, None, None)
     }
 
     #[cfg(feature = "db_sled")]
@@ -522,7 +495,11 @@ where
             all_voxels.into_par_iter()
                 .map(|(iteration, voxel_boxes)| -> Result<(), SimulationError> {
                 // Create a plotting root
-                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+                // TODO make this correct and much nicer
+                // let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+                let mut file_path = self.storage.location.clone();
+                file_path.push(format!("cells_at_iter{:010.0}.png", iteration));
+                let filename = file_path.into_os_string().into_string().unwrap();
 
                 let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
 
@@ -547,5 +524,5 @@ where
             Ok(())
         })?;
         Ok(())
-    }
+    }*/
 }
