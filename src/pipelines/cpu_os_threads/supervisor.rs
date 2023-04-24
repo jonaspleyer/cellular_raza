@@ -1,10 +1,11 @@
 use crate::concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
 use crate::concepts::domain::Index;
 use crate::concepts::domain::{Concentration, Domain, ExtracellularMechanics, Voxel};
-use crate::concepts::errors::SimulationError;
+use crate::concepts::errors::{DrawingError, RequestError, SimulationError};
 use crate::concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
 use crate::concepts::mechanics::{Force, Position, Velocity};
 
+use crate::plotting::spatial::{CreatePlottingRoot, PlotSelf};
 use crate::storage::sled_database::SledStorageInterface;
 
 use super::domain_decomposition::{
@@ -25,6 +26,7 @@ use core::ops::{Add, AddAssign, Mul};
 
 use hurdles::Barrier;
 
+use plotters::prelude::DrawingBackend;
 use rayon::prelude::*;
 
 use serde::{Deserialize, Serialize};
@@ -228,7 +230,21 @@ where
 
     pub fn run_full_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
-    ) -> Result<(), SimulationError>
+    ) -> Result<
+        SimulationResult<
+            Ind,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+            Vox,
+            Dom,
+            Cel,
+        >,
+        SimulationError,
+    >
     where
         Dom: Domain<Cel, Ind, Vox>,
         Pos: Position,
@@ -268,18 +284,34 @@ where
         >: Clone,
         AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone,
     {
+        // Run the simulation
         self.spawn_worker_threads_and_run_sim()?;
-        for thread in self.worker_threads.drain(..) {
-            // TODO introduce new error type to gain a error message here!
-            // Do not use unwrap anymore
-            let t = thread.join().unwrap()?;
-            // self.multivoxelcontainers.push(t);
-        }
-        // TODO check if we need to replace this functionality.
-        // #[cfg(feature = "db_sled")]
-        // self.save_current_setup(&None)?;
 
-        Ok(())
+        // Collect all threads
+        let mut databases = Vec::new();
+        for thread in self.worker_threads.drain(..) {
+            let t = thread
+                .join()
+                .expect("Could not join threads after Simulation has finished")?;
+            databases.push((t.storage_cells, t.storage_voxels, t.domain))
+        }
+
+        // Create a simulationresult which can then be used to further plot and analyze results
+        let (storage_cells, storage_voxels, domain) = databases.pop().ok_or(RequestError {
+            message: format!("The threads of the simulation did not yield any handles"),
+        })?;
+
+        let simulation_result = SimulationResult {
+            storage: self.storage.clone(),
+            domain,
+            #[cfg(feature = "db_sled")]
+            storage_cells,
+            #[cfg(feature = "db_sled")]
+            storage_voxels,
+            plotting_config: PlottingConfig::default(),
+        };
+
+        Ok(simulation_result)
     }
 
     #[cfg(any(feature = "db_sled", feature = "db_json_dump"))]
@@ -302,267 +334,325 @@ where
             .store_single_element(iteration, (), setup_current)?;
         Ok(())
     }
+}
 
-    // ########################################
-    // #### DATABASE RELATED FUNCTIONALITY ####
-    // ########################################
-    /* #[cfg(feature = "db_sled")]
-    pub fn get_cells_at_iter(&self, iter: u64) -> Result<Vec<CellAgentBox<Cel>>, SimulationError>
-    where
-        Cel: Clone,
-    {
-        // super::storage_interface::get_cells_at_iter::<CellAgentBox<Cel>>(&self.tree_cells, iter, None, None)
-    }
+use super::domain_decomposition::PlainIndex;
 
+pub struct SimulationResult<
+    I,
+    Pos,
+    For,
+    Vel,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    V,
+    D,
+    C,
+> where
+    Pos: Serialize + for<'a> Deserialize<'a>,
+    For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
+    VoxelBox<
+        I,
+        V,
+        C,
+        Pos,
+        For,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+    >: for<'a> Deserialize<'a> + Serialize,
+    D: Serialize + for<'a> Deserialize<'a>,
+    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
+{
+    pub storage: StorageConfig,
+
+    pub domain: DomainBox<D>,
     #[cfg(feature = "db_sled")]
-    pub fn get_cell_history(&self, id: &CellularIdentifier) -> Result<Option<Vec<(u64, CellAgentBox<Cel>)>>, SimulationError>
-    where
-        Cel: Clone,
-    {
-        super::storage_interface::get_cell_history::<CellAgentBox<Cel>>(&self.tree_cells, id, None, None)
-    }
-
+    pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
     #[cfg(feature = "db_sled")]
-    pub fn get_all_cell_histories(&self) -> Result<HashMap<CellularIdentifier, Vec<(u64, CellAgentBox<Cel>)>>, SimulationError>
+    pub storage_voxels: SledStorageInterface<
+        PlainIndex,
+        VoxelBox<
+            I,
+            V,
+            C,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >,
+    >,
+    pub plotting_config: PlottingConfig,
+}
+
+impl<
+        I,
+        Pos,
+        For,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+        V,
+        D,
+        C,
+    >
+    SimulationResult<
+        I,
+        Pos,
+        For,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+        V,
+        D,
+        C,
+    >
+where
+    Pos: Serialize + for<'a> Deserialize<'a>,
+    For: Serialize + for<'a> Deserialize<'a>,
+    Vel: Serialize + for<'a> Deserialize<'a>,
+    C: Serialize + for<'a> Deserialize<'a>,
+    D: Serialize + for<'a> Deserialize<'a>,
+    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
+    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
+    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
+    VoxelBox<
+        I,
+        V,
+        C,
+        Pos,
+        For,
+        Vel,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
+    >: for<'a> Deserialize<'a> + Serialize,
+{
+    fn plot_spatial_at_iteration_with_functions<Cpf, Vpf, Dpf>(
+        &self,
+        iteration: u64,
+        cell_plotting_func: Cpf,
+        voxel_plotting_func: Vpf,
+        domain_plotting_func: Dpf,
+    ) -> Result<(), SimulationError>
     where
-        Cel: Clone,
+        Dpf: for<'a> Fn(
+            &D,
+            u32,
+            &'a String,
+        ) -> Result<
+            DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            DrawingError,
+        >,
+        Cpf: Fn(
+            &C,
+            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+        Vpf: Fn(
+                &V,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
     {
-        super::storage_interface::get_all_cell_histories::<CellAgentBox<Cel>>(&self.tree_cells, None, None)
-    }
+        // Obtain the voxels from the database
+        let voxel_boxes = self
+            .storage_voxels
+            .load_all_elements_at_iteration(iteration)?
+            .into_iter()
+            .map(|(_, value)| value)
+            .collect::<Vec<_>>();
 
-    // ########################################
-    // #### PLOTTING RELATED FUNCTIONALITY ####
-    // ########################################
-    #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_iter_bitmap(&self, iteration: u64) -> Result<(), SimulationError>
-    where
-        Dom: crate::plotting::spatial::CreatePlottingRoot,
-        Cel: crate::plotting::spatial::PlotSelf + Clone,
-    {
-        let current_cells = self.get_cells_at_iter(iteration)?;
-
-        // Create a plotting root
-        let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
-        let image_size = 1000;
-
-        let mut chart = self.domain.domain_raw.create_bitmap_root(image_size as u32, &filename)?;
-
-        use crate::plotting::spatial::*;
-        for cell in current_cells {
-            // TODO catch this error
-            cell.plot_self(&mut chart)?;
+        // Choose the correct file path
+        let mut file_path = self.storage.location.clone();
+        file_path.push("images");
+        match std::fs::create_dir(&file_path) {
+            Ok(()) => (),
+            Err(_) => (),
         }
+        file_path.push(format!("cells_at_iter_{:010.0}.png", iteration));
+        let filename = file_path.into_os_string().into_string().unwrap();
 
-        // TODO catch this error
-        chart.present()?;
-        Ok(())
-    }
+        let mut chart = domain_plotting_func(&self.domain.domain_raw, self.plotting_config.image_size, &filename)?;
 
-    #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_iter_bitmap_with_cell_plotting_func<PlotCellsFunc>(&self, iteration: u64, cell_plotting_func: PlotCellsFunc) -> Result<(), SimulationError>
-    where
-        PlotCellsFunc: Fn(&Cel, &mut DrawingArea<BitMapBackend<'_>, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>,
-        Dom: crate::plotting::spatial::CreatePlottingRoot,
-        Cel: Clone,
-    {
-        let current_cells = self.get_cells_at_iter(iteration)?;
+        voxel_boxes
+            .iter()
+            .map(|voxelbox| voxel_plotting_func(&voxelbox.voxel, &mut chart))
+            .collect::<Result<(), DrawingError>>()?;
 
-        // Create a plotting root
-        let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
-
-        let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
-
-        current_cells.iter().map(|cell| cell_plotting_func(&cell.cell, &mut chart)).collect::<Result<(), SimulationError>>()?;
+        voxel_boxes
+            .iter()
+            .map(|voxelbox| voxelbox.cells.iter())
+            .flatten()
+            .map(|(cellbox, _)| cell_plotting_func(&cellbox.cell, &mut chart))
+            .collect::<Result<(), DrawingError>>()?;
 
         chart.present()?;
+        
         Ok(())
     }
 
-    #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_every_iter_bitmap(&self) -> Result<(), SimulationError>
+    pub fn plot_spatial_at_iteration(&self, iteration: u64) -> Result<(), SimulationError>
     where
-        Pos: Send + Sync,
-        For: Send + Sync,
-        Inf: Send + Sync,
-        Vel: Send + Sync,
-        ConcVecExtracellular: Send + Sync,
-        ConcBoundaryExtracellular: Send + Sync,
-        ConcVecIntracellular: Send + Sync,
-        Ind: Send + Sync,
-        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
-        Vox: Send + Sync,
-        Cel: crate::plotting::spatial::PlotSelf + Send + Sync + Clone,
-        CellAgentBox<Cel>: Send + Sync,
+        D: CreatePlottingRoot,
+        C: PlotSelf,
+        V: PlotSelf,
     {
-        // Install the pool
-        let n_threads = match self.plotting_config.n_threads {
-            Some(threads) => threads,
-            None => self.meta_params.n_threads,
-        };
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
-        pool.install(|| -> Result<(), SimulationError> {
-            // Create progress bar for tree deserialization
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            let all_cells = super::storage_interface::get_all_cells::<CellAgentBox<Cel>>(&self.tree_cells, None, Some(style.clone()))?;
+        match self.plotting_config.image_type {
+            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self_bitmap, V::plot_self_bitmap, D::create_bitmap_root),
+            // ImageType::Svg => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self::<BitMapBackend>, V::plot_self, D::create_svg_root),
+        }
+    }
 
-            // Create progress bar for image generation
-            let bar = ProgressBar::new(all_cells.len() as u64);
-            bar.set_style(style);
+    pub fn plot_spatial_at_iteration_custom_functions<Cpf, Vpf, Dpf>
+    (
+        &self,
+        iteration: u64,
+        cell_plotting_func: Cpf,
+        voxel_plotting_func: Vpf,
+        domain_plotting_func: Dpf,
+    ) -> Result<(), SimulationError>
+    where
+        Dpf: for<'a> Fn(
+            &D,
+            u32,
+            &'a String,
+        ) -> Result<
+            DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            DrawingError,
+        >,
+        Cpf: Fn(
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+        Vpf: Fn(
+                &V,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+    {
+        self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, voxel_plotting_func, domain_plotting_func)
+    }
 
-            println!("Generating Images");
-            all_cells.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
-                // Create a plotting root
-                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
+    pub fn plot_spatial_at_iteration_custom_cell_voxel_functions<Cpf, Vpf>
+    (
+        &self,
+        iteration: u64,
+        cell_plotting_func: Cpf,
+        voxel_plotting_func: Vpf,
+    ) -> Result<(), SimulationError>
+    where
+        D: CreatePlottingRoot,
+        Cpf: Fn(
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+        Vpf: Fn(
+                &V,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+    {
+        self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, voxel_plotting_func, D::create_bitmap_root)
+    }
 
-                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
+    pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>
+    (
+        &self,
+        iteration: u64,
+        cell_plotting_func: Cpf,
+    ) -> Result<(), SimulationError>
+    where
+        V: PlotSelf,
+        D: CreatePlottingRoot,
+        Cpf: Fn(
+            &C,
+            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+        ) -> Result<(), DrawingError>
+        + Send
+        + Sync,
+    {
+        match self.plotting_config.image_type {
+            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, V::plot_self_bitmap, D::create_bitmap_root),
+        }
+    }
 
-                current_cells
-                    .iter()
-                    .map(|cell| cell.cell.plot_self(&mut chart))
-                    .collect::<Result<(), _>>()?;
-
-                chart.present()?;
-                bar.inc(1);
-                Ok(())
-            }).collect::<Result<Vec<_>, SimulationError>>()?;
-
-            bar.finish();
-            Ok(())
-        })?;
+    pub fn plot_spatial_all_iterations_with_functions<Cpf, Vpf, Dpf>(
+        &self,
+        cell_plotting_func: Cpf,
+        voxel_plotting_func: Vpf,
+        domain_plotting_func: Dpf,
+    ) -> Result<(), SimulationError>
+    where
+        Dpf: for<'a> Fn(
+            &D,
+            u32,
+            &'a String,
+        ) -> Result<
+            DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            DrawingError,
+        >,
+        Cpf: Fn(
+            &C,
+            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+        Vpf: Fn(
+                &V,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+    {
+        for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
+            self.plot_spatial_at_iteration_with_functions(iteration, &cell_plotting_func, &voxel_plotting_func, &domain_plotting_func)?;
+        }
         Ok(())
     }
 
-    // TODO rework this to accept a general configuration struct or something
-    // Idea: have different functions for when a plotting Trait was already implemented or when a configuration is supplied
-    // have the configuration provided override existing implementations of the domain
-    // ie: The domain has trait implementation how to plot it and Plotting config has a function with same functionality (but possibly different result)
-    // then use the provided function in the plotting config
-    #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func<Func>(&self, plotting_function: &Func) -> Result<(), SimulationError>
+    pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>
+    (
+        &self,
+        cell_plotting_func: Cpf,
+        voxel_plotting_func: Vpf,
+    ) -> Result<(), SimulationError>
     where
-        Pos: Send + Sync,
-        For: Send + Sync,
-        Inf: Send + Sync,
-        Vel: Send + Sync,
-        ConcVecExtracellular: Send + Sync,
-        ConcBoundaryExtracellular: Send + Sync,
-        ConcVecIntracellular: Send + Sync,
-        Ind: Send + Sync,
-        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync,
-        Vox: Send + Sync,
-        Cel: Send + Sync + Clone,
-        CellAgentBox<Cel>: Send + Sync,
-        Func: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
+        D: CreatePlottingRoot,
+        Cpf: Fn(
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
+        Vpf: Fn(
+                &V,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
     {
-        // Install the pool
-        let n_threads = match self.plotting_config.n_threads {
-            Some(threads) => threads,
-            None => self.meta_params.n_threads,
-        };
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
-        pool.install(|| -> Result<(), SimulationError> {
-            // Create progress bar for tree deserialization
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            // Deserialize the database tree
-            let all_cells = super::storage_interface::get_all_cells::<CellAgentBox<Cel>>(&self.tree_cells, None, Some(style.clone()))?;
-
-            // Create progress bar for image generation
-            let bar = ProgressBar::new(all_cells.len() as u64);
-            bar.set_style(style);
-
-            println!("Generating Images");
-            all_cells.into_par_iter().map(|(iteration, current_cells)| -> Result<(), SimulationError> {
-                // Create a plotting root
-                let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
-
-                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
-
-                current_cells
-                    .iter()
-                    .map(|cell| plotting_function(&cell.cell, &mut chart))
-                    .collect::<Result<(), SimulationError>>()?;
-
-                chart.present()?;
-                bar.inc(1);
-                Ok(())
-            }).collect::<Result<Vec<_>, SimulationError>>()?;
-
-            bar.finish();
-            Ok(())
-        })?;
+        for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
+            self.plot_spatial_at_iteration_with_functions(iteration, &cell_plotting_func, &voxel_plotting_func, D::create_bitmap_root)?;
+        }
         Ok(())
     }
-
-    #[cfg(not(feature = "no_db"))]
-    pub fn plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func<FuncCells,FuncVoxels>(&self, plotting_function_cells: &FuncCells, plotting_function_voxels: &FuncVoxels) -> Result<(), SimulationError>
-    where
-        Pos: Send + Sync + Clone,
-        For: Send + Sync + Clone,
-        Inf: Send + Sync + Clone,
-        Vel: Send + Sync + Clone,
-        ConcVecExtracellular: Send + Sync + Clone,
-        ConcBoundaryExtracellular: Send + Sync + 'static + Clone,
-        ConcVecIntracellular: Send + Sync + Clone,
-        Ind: Send + Sync + Clone,
-        Dom: crate::plotting::spatial::CreatePlottingRoot + Send + Sync + Clone,
-        Vox: Send + Sync + Clone,
-        Cel: Send + Sync + Clone,
-        CellAgentBox<Cel>: Send + Sync,
-        // VoxelBox<Ind, Vox, Cel, Pos, For, Vel, Conc>: Send + Sync,
-        FuncCells: Fn(&Cel, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
-        FuncVoxels: Fn(&Vox, &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError> + Send + Sync,
-    {
-        // Install the pool
-        let n_threads = match self.plotting_config.n_threads {
-            Some(threads) => threads,
-            None => self.meta_params.n_threads,
-        };
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(n_threads).build()?;
-        pool.install(|| -> Result<(), SimulationError> {
-            // Create progress bar for tree deserialization
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            // Deserialize the database tree
-            let all_voxels = super::storage_interface::get_all_voxels::<VoxelBox<Ind, Vox, Cel, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>>(&self.tree_voxels, None, Some(style.clone()))?;
-
-            // Create progress bar for image generation
-            let bar = ProgressBar::new(all_voxels.len() as u64);
-            bar.set_style(style);
-
-            println!("Generating Images");
-            use rayon::prelude::*;
-
-            // TODO this is not a parallel iterator!
-            all_voxels.into_par_iter()
-                .map(|(iteration, voxel_boxes)| -> Result<(), SimulationError> {
-                // Create a plotting root
-                // TODO make this correct and much nicer
-                // let filename = format!("out/cells_at_iter_{:010.0}.png", iteration);
-                let mut file_path = self.storage.location.clone();
-                file_path.push(format!("cells_at_iter{:010.0}.png", iteration));
-                let filename = file_path.into_os_string().into_string().unwrap();
-
-                let mut chart = self.domain.domain_raw.create_bitmap_root(self.plotting_config.image_size, &filename)?;
-
-                voxel_boxes
-                    .iter()
-                    .map(|voxelbox| plotting_function_voxels(&voxelbox.voxel, &mut chart))
-                    .collect::<Result<(), SimulationError>>()?;
-
-                voxel_boxes
-                    .iter()
-                    .map(|voxelbox| voxelbox.cells.iter())
-                    .flatten()
-                    .map(|(cellbox, _)| plotting_function_cells(&cellbox.cell, &mut chart))
-                    .collect::<Result<(), SimulationError>>()?;
-
-                chart.present()?;
-                bar.inc(1);
-                Ok(())
-            }).collect::<Result<Vec<_>, SimulationError>>()?;
-
-            bar.finish();
-            Ok(())
-        })?;
-        Ok(())
-    }*/
 }

@@ -6,14 +6,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-// TODO use this struct or similar in the future for buffering
-// #[derive(Clone,Debug)]
-// struct StorageBuffer<Id, Element> {
-//     buffer_size: usize,
-//     // Mapping from iteration to another mapping containing identifiers and elements
-//     elements: HashMap<u64, HashMap<Id, Element>>,
-// }
-
+// TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
 #[derive(Clone, Debug)]
 pub struct SledStorageInterface<Id, Element> {
     db: sled::Db,
@@ -53,7 +46,21 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
     }
 
     pub fn open_or_create(location: std::path::PathBuf) -> Result<Self, SimulationError> {
-        let db = sled::open(location)?;
+        let config = sled::Config::default()
+            .mode(sled::Mode::HighThroughput)
+            .cache_capacity(1024 * 1024 * 1024 * 5)// 5gb
+            .path(&location)
+            .use_compression(false);
+
+        let db = config.open()?;
+        // TODO find out which tree gets inserted in the beginning and how to circumvent this!
+        for name in db.tree_names() {
+            // let x = bincode::deserialize::<u64>(&name)?;
+            // println!("{:?}", name);
+            // println!("{}", x);
+            // let y = bincode::serialize(&"default.sl")?;
+            // println!("{:?}", y);
+        }
         Ok(SledStorageInterface {
             db,
             id_phantom: PhantomData,
@@ -265,6 +272,15 @@ where
                 },
             );
         Ok(reordered_elements)
+    }
+
+    pub fn get_all_iterations(&self) -> Result<Vec<u64>, SimulationError> {
+        let iterations = self.db.tree_names()
+            .iter()
+            .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized))
+            .collect::<Result<Vec<_>, SimulationError>>()?;
+
+        Ok(iterations)
     }
 }
 
