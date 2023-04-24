@@ -175,6 +175,67 @@ impl<const D: usize> VertexMechanics2D<D> {
     }
 }
 
+impl VertexMechanics2D<4> {
+    pub fn fill_rectangle(
+        cell_area: f64,
+        spring_tensions: f64,
+        central_pressure: f64,
+        dampening_constant: f64,
+        rectangle: [SVector<f64, 2>; 2],
+    ) -> Vec<Self> {
+        let cell_side_length: f64 = cell_area.sqrt();
+        let cell_side_length_padded: f64 = cell_side_length * 1.04;
+
+        let number_of_cells_x: u64 =
+            ((rectangle[1].x - rectangle[0].x) / cell_side_length_padded).floor() as u64;
+        let number_of_cells_y: u64 =
+            ((rectangle[1].y - rectangle[0].y) / cell_side_length_padded).floor() as u64;
+
+        let start_x: f64 = rectangle[0].x
+            + 0.5
+                * ((rectangle[1].x - rectangle[0].x)
+                    - number_of_cells_x as f64 * cell_side_length_padded);
+        let start_y: f64 = rectangle[0].y
+            + 0.5
+                * ((rectangle[1].y - rectangle[0].y)
+                    - number_of_cells_y as f64 * cell_side_length_padded);
+
+        use itertools::iproduct;
+        let filled_rectangle = iproduct!(0..number_of_cells_x, 0..number_of_cells_y)
+            .map(|(i, j)| {
+                let corner = (
+                    start_x + (i as f64) * cell_side_length_padded,
+                    start_y + (j as f64) * cell_side_length_padded,
+                );
+
+                let points = VertexVector2::<4>::from_row_iterator([
+                    corner.0,
+                    corner.1,
+                    corner.0 + cell_side_length,
+                    corner.1,
+                    corner.0 + cell_side_length,
+                    corner.1 + cell_side_length,
+                    corner.0,
+                    corner.1 + cell_side_length,
+                ]);
+                let cell_boundary_lengths =
+                    VertexConnections2::<4>::from_iterator((0..2 * 4).map(|_| cell_side_length));
+
+                VertexMechanics2D {
+                    points,
+                    velocity: VertexVector2::<4>::zeros(),
+                    cell_boundary_lengths,
+                    spring_tensions: VertexConnections2::<4>::from_element(spring_tensions),
+                    cell_area,
+                    central_pressure,
+                    dampening_constant,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        filled_rectangle
+    }
+}
 
 impl<const D: usize> Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>
     for VertexMechanics2D<D>
