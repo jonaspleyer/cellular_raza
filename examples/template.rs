@@ -89,8 +89,6 @@ fn main() {
                 [N_VOXEL_X, N_VOXEL_Y]
             ).unwrap();
 
-            // TODO use this to build the threads automatically with the implemented method
-            // TODO also find good interface for main function
             let setup = SimulationSetup {
                 domain,
                 cells,
@@ -114,7 +112,6 @@ fn main() {
                 Err(error) => println!("{error}"),
             }
 
-            supervisor.end_simulation().unwrap();
             let total_sim_time = start.elapsed().as_millis();
             println!("======= [Threads {:2.0}] =======", n_threads);
             println!("[x] Creating cells        {} ms", cell_create_time);
