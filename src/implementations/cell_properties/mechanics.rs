@@ -141,6 +141,10 @@ impl<const D: usize> VertexMechanics2D<D> {
         }
     }
 
+    pub fn get_cell_area(&self) -> f64 {
+        self.cell_area
+    }
+
     pub fn set_cell_area(&mut self, cell_area: f64) {
         // Calculate the relative difference to current area
         match self.cell_area {
