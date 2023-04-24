@@ -11,6 +11,7 @@ use cellular_raza::{
     concepts::errors::SimulationError,
     pipelines::cpu_os_threads::prelude::*,
     plotting::spatial::CreatePlottingRoot,
+    storage::sled_database::SledStorageInterface,
 };
 
 pub type MyVoxelType = CartesianCuboidVoxel2Reactions4;
@@ -20,9 +21,9 @@ pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let db = typed_sled::open(&args[1]).unwrap();
-    let tree_voxels = typed_sled::Tree::<String, Vec<u8>>::open(&db, "voxel_storage");
-    let tree_setups = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
+    let storage_interface = SledStorageInterface::<PlainIndex, MyVoxelType>::open_or_create(args[1].clone().into()).unwrap();
+    // let tree_voxels = typed_sled::Tree::<String, Vec<u8>>::open(&db, "voxel_storage");
+    // let tree_setups = typed_sled::Tree::<String, Vec<u8>>::open(&db, "meta_infos");
 
     use rayon::prelude::*;
     let pool = rayon::ThreadPoolBuilder::new().num_threads(14).build().unwrap();
@@ -31,8 +32,10 @@ fn main() {
         // Deserialize the database tree
         let style = indicatif::ProgressStyle::with_template(cellular_raza::pipelines::cpu_os_threads::config::PROGRESS_BAR_STYLE)?;
 
-        let mut voxels_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_voxels::<MyVoxelBox>(&tree_voxels, None, Some(style.clone())).unwrap();
-        let mut setups_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_setups::<CartesianCuboid2, MyVoxelType>(&tree_setups, None, Some(style.clone())).unwrap();
+        println!("Deserializing voxels");
+        // let mut voxels_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_voxels::<MyVoxelBox>(&tree_voxels, None, Some(style.clone())).unwrap();
+        println!("Deserializing setups");
+        // let mut setups_at_iter = cellular_raza::pipelines::cpu_os_threads::storage_interface::get_all_setups::<CartesianCuboid2, MyVoxelType>(&tree_setups, None, Some(style.clone())).unwrap();
 
         // Create progress bar for image generation
         /*println!("Generating Images");

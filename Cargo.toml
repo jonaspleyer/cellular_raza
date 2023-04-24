@@ -67,6 +67,14 @@ name = "kidney_organoid_model"
 path = "examples/kidney_organoid_model/src/main.rs"
 
 [[example]]
+name = "organoid_simple"
+path = "examples/organoid_simple/src/main.rs"
+
+[[example]]
+name = "organoid_simple_plot_from_saved_run"
+path = "examples/organoid_simple/src/plot_from_saved_run.rs"
+
+[[example]]
 name = "ureter_signalling"
 path = "examples/ureter_signalling/src/main.rs"
 
