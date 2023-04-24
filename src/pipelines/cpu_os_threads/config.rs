@@ -67,10 +67,18 @@ pub struct SimulationSetup<Dom, C> {
 pub const PROGRESS_BAR_STYLE: &str =
     "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
 
+#[derive(Clone,Debug,Deserialize,Serialize)]
+pub enum ImageType {
+    BitMap,
+    // TODO
+    // Svg,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PlottingConfig {
     pub image_size: u32,
     pub n_threads: Option<usize>,
+    pub image_type: ImageType,
 }
 
 impl Default for PlottingConfig {
@@ -78,6 +86,7 @@ impl Default for PlottingConfig {
         PlottingConfig {
             image_size: 1000,
             n_threads: None,
+            image_type: ImageType::BitMap,
         }
     }
 }

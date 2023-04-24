@@ -13,7 +13,7 @@ use super::domain_decomposition::{
 
 use super::config::{
     PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, StorageConfig,
-    TimeSetup, PROGRESS_BAR_STYLE,
+    TimeSetup, PROGRESS_BAR_STYLE, ImageType,
 };
 
 use std::collections::HashMap;
