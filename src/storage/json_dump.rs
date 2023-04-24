@@ -1,12 +1,10 @@
-use crate::concepts::errors::{SimulationError,IndexError};
+use crate::concepts::errors::{IndexError, SimulationError};
 
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-
-pub fn store_single_element<Element, Id>
-(
+pub fn store_single_element<Element, Id>(
     save_path: std::path::Path,
     iteration: u64,
     id: Id,
@@ -20,9 +18,7 @@ where
     Ok(())
 }
 
-
-pub fn store_element_batch<Element, Func>
-(
+pub fn store_element_batch<Element, Func>(
     tree: typed_sled::Tree<String, Vec<u8>>,
     iteration: u64,
     elements: Vec<Element>,
@@ -36,30 +32,26 @@ where
     Ok(())
 }
 
-
-pub fn deserialize_single_element_from_tree<Element, Func, ReturnKey>
-(
+pub fn deserialize_single_element_from_tree<Element, Func, ReturnKey>(
     tree: &typed_sled::Tree<String, Vec<u8>>,
     iteration: u64,
     key: &ReturnKey,
-    iteration_and_other_to_database_key: Func
+    iteration_and_other_to_database_key: Func,
 ) -> Result<Element, SimulationError>
 where
-    Element: for<'a>Deserialize<'a> + 'static,
+    Element: for<'a> Deserialize<'a> + 'static,
     Func: Fn(u64, &ReturnKey) -> String,
 {
     Ok(element_deserialized)
 }
 
-
-pub fn deserialize_all_elements_from_tree<Element, Func>
-(
+pub fn deserialize_all_elements_from_tree<Element, Func>(
     tree: &typed_sled::Tree<String, Vec<u8>>,
     database_key_to_iteration_and_other: Func,
     progress_style: Option<indicatif::ProgressStyle>,
 ) -> Result<Vec<(u64, Element)>, SimulationError>
 where
-    Element: for<'a>Deserialize<'a>,
+    Element: for<'a> Deserialize<'a>,
     Func: Fn(&String) -> Result<u64, SimulationError>,
 {
     let bar = progress_style.map(|style| {
@@ -82,21 +74,19 @@ where
                 (Some(element), Some(iteration)) => Some((iteration, element)),
                 _ => None,
             }
-        },)
+        })
         .collect();
     bar.and_then(|bar| Some(bar.finish()));
     Ok(res)
 }
 
-
-pub fn deserialize_all_elements_from_tree_group<Element, Func, ReturnKey>
-(
+pub fn deserialize_all_elements_from_tree_group<Element, Func, ReturnKey>(
     tree: &typed_sled::Tree<String, Vec<u8>>,
     database_key_to_iteration_and_other: Func,
     progress_style: Option<indicatif::ProgressStyle>,
 ) -> Result<HashMap<u64, Vec<Element>>, SimulationError>
 where
-    Element: for<'a>Deserialize<'a> + Send + Sync,
+    Element: for<'a> Deserialize<'a> + Send + Sync,
     Func: Fn(&String) -> Result<(u64, ReturnKey), SimulationError> + Send + Sync,
 {
     let bar = progress_style.map(|style| {
@@ -117,29 +107,39 @@ where
                 (Some(element), Some((iteration, _))) => Some((iteration, element)),
                 _ => None,
             }
-        },)
-        .fold(|| HashMap::<u64, Vec<Element>>::new(), |mut acc, (iteration, element)| -> std::collections::HashMap<u64, Vec<Element>> {
-            match acc.get_mut(&iteration) {
-                Some(elements) => elements.push(element),
-                None => {acc.insert(iteration, vec![element]);},
-            }
-
-            match &bar {
-                Some(b) => b.inc(1),
-                None => (),
-            }
-            acc
         })
-        .reduce(|| HashMap::<u64, Vec<Element>>::new(), |mut h1, h2| {
-            for (key, value) in h2.into_iter() {
-                // h1.entry(key).and_modify(|entry| entry.extend(value)).or_insert(value);
-                match h1.get_mut(&key) {
-                    Some(extisting_entries) => extisting_entries.extend(value),
-                    None => {h1.insert(key, value);},
+        .fold(
+            || HashMap::<u64, Vec<Element>>::new(),
+            |mut acc, (iteration, element)| -> std::collections::HashMap<u64, Vec<Element>> {
+                match acc.get_mut(&iteration) {
+                    Some(elements) => elements.push(element),
+                    None => {
+                        acc.insert(iteration, vec![element]);
+                    }
                 }
-            }
-            h1
-        });
+
+                match &bar {
+                    Some(b) => b.inc(1),
+                    None => (),
+                }
+                acc
+            },
+        )
+        .reduce(
+            || HashMap::<u64, Vec<Element>>::new(),
+            |mut h1, h2| {
+                for (key, value) in h2.into_iter() {
+                    // h1.entry(key).and_modify(|entry| entry.extend(value)).or_insert(value);
+                    match h1.get_mut(&key) {
+                        Some(extisting_entries) => extisting_entries.extend(value),
+                        None => {
+                            h1.insert(key, value);
+                        }
+                    }
+                }
+                h1
+            },
+        );
     bar.and_then(|bar| Some(bar.finish()));
     Ok(res)
 }

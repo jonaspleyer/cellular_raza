@@ -1,6 +1,6 @@
 // Imports from this crate
-use crate::concepts::errors::*;
 use crate::concepts::domain::*;
+use crate::concepts::errors::*;
 
 use crate::plotting::spatial::CreatePlottingRoot;
 
@@ -8,19 +8,18 @@ use super::cartesian_cuboid_n::get_decomp_res;
 use crate::implementations::cell_properties::mechanics::VertexVector2;
 
 // Imports from std and core
-use core::cmp::{min,max};
+use core::cmp::{max, min};
 use nalgebra::SVector;
 
 // Imports from other crates
 use itertools::Itertools;
 
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
-use plotters::prelude::DrawingArea;
 use plotters::backend::BitMapBackend;
 use plotters::coord::cartesian::Cartesian2d;
 use plotters::coord::types::RangedCoordf64;
-
+use plotters::prelude::DrawingArea;
 
 #[macro_export]
 macro_rules! define_and_implement_cartesian_cuboid_2_vertex {
@@ -100,7 +99,6 @@ macro_rules! define_and_implement_cartesian_cuboid_2_vertex {
         }
     }
 }
-
 
 macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
     ($d: expr, $n_reactions:expr, $name: ident, $voxel_name: ident, $($k: expr),+) => {
@@ -256,7 +254,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                 let mut velocity_single = cell.velocity();
 
                 for (mut pos, mut velocity) in pos_single.row_iter_mut().zip(velocity_single.row_iter_mut()) {
-            
+
                     // For each dimension
                     for i in 0..$d {
                         // Check if the particle is below lower edge
@@ -286,7 +284,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                 }
                 Ok(())
             }
-        
+
             fn get_voxel_index(&self, cell: &C) -> [i64; $d] {
                 // Calculate middle
                 let p = cell.pos().row_sum()/cell.pos().shape().0 as f64;
@@ -306,7 +304,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                     .map(|ind_v| [$(ind_v[$k]),+])
                     .collect()
             }
-        
+
             fn get_neighbor_voxel_indices(&self, index: &[i64; $d]) -> Vec<[i64; $d]> {
                 // Create the bounds for the following creation of all the voxel indices
                 let bounds: [[i64; 2]; $d] = [$(
@@ -335,7 +333,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                     .multi_cartesian_product()                  // all possible combinations
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
                     .collect();
-                
+
                 let (n, _m, average_len);
                 match get_decomp_res(indices.len(), n_regions) {
                     Some(res) => (n, _m, average_len) = res,
@@ -360,11 +358,11 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                         (ind, $voxel_name::<D>::new(min, max, ind, domain_boundaries))
                     })
                     .collect();
-                
+
                 // TODO optimize this!
                 // Currently we are not splitting the voxels apart efficiently
                 let mut ind_n: Vec<Vec<_>> = index_voxel_combinations
-                    .drain(0..(average_len*n) as usize)    
+                    .drain(0..(average_len*n) as usize)
                     .into_iter()
                     .chunks(average_len as usize)
                     .into_iter()
@@ -378,7 +376,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
                     .into_iter()
                     .map(|chunk| chunk.collect::<Vec<_>>())
                     .collect();
-                
+
                 ind_n.append(&mut ind_m);
 
                 Ok((n_regions as usize, ind_n))
@@ -387,26 +385,96 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel_2_vertex {
     }
 }
 
-
 define_and_implement_cartesian_cuboid_2_vertex!(CartesianCuboid2Vertex);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 1, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions1, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 2, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions2, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 3, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions3, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 4, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions4, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 5, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions5, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 6, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions6, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 7, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions7, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 8, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions8, 0, 1);
-define_and_implement_cartesian_cuboid_voxel_2_vertex!(2, 9, CartesianCuboid2Vertex, CartesianCuboidVoxel2VertexReactions9, 0, 1);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    1,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions1,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    2,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions2,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    3,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions3,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    4,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions4,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    5,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions5,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    6,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions6,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    7,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions7,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    8,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions8,
+    0,
+    1
+);
+define_and_implement_cartesian_cuboid_voxel_2_vertex!(
+    2,
+    9,
+    CartesianCuboid2Vertex,
+    CartesianCuboidVoxel2VertexReactions9,
+    0,
+    1
+);
 
-
-impl CreatePlottingRoot for CartesianCuboid2Vertex
-{
-    fn create_bitmap_root<'a>(&self, image_size: u32, filename: &'a String) -> Result<DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>, DrawingError> {
+impl CreatePlottingRoot for CartesianCuboid2Vertex {
+    fn create_bitmap_root<'a, T>(
+        &self,
+        image_size: u32,
+        filename: &'a T,
+    ) -> Result<
+        DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+        DrawingError,
+    >
+    where
+        T: AsRef<std::path::Path> + ?Sized
+    {
         use plotters::drawing::IntoDrawingArea;
         // let root = plotters::backend::BitMapBackend::new(filename, (image_size, image_size)).into_drawing_area();
-        let dx = (self.max[0]-self.min[0]).abs();
-        let dy = (self.max[1]-self.min[1]).abs();
+        let dx = (self.max[0] - self.min[0]).abs();
+        let dy = (self.max[1] - self.min[1]).abs();
         let q = dx.min(dy);
         let image_size_x = (image_size as f64 * dx / q).round() as u32;
         let image_size_y = (image_size as f64 * dy / q).round() as u32;
@@ -415,52 +483,85 @@ impl CreatePlottingRoot for CartesianCuboid2Vertex
 
         let label_space = (0.05 * image_size as f64).round() as u32;
         use plotters::prelude::IntoFont;
-        let pos = plotters::style::text_anchor::Pos::new(plotters::style::text_anchor::HPos::Center, plotters::style::text_anchor::VPos::Center);
-        let label_style = plotters::prelude::TextStyle::from(("sans-serif", (0.02 * image_size as f64).round() as u32)
-            .into_font())
-            .color(&plotters::prelude::BLACK)
-            .pos(pos);
+        let pos = plotters::style::text_anchor::Pos::new(
+            plotters::style::text_anchor::HPos::Center,
+            plotters::style::text_anchor::VPos::Center,
+        );
+        let label_style = plotters::prelude::TextStyle::from(
+            ("sans-serif", (0.02 * image_size as f64).round() as u32).into_font(),
+        )
+        .color(&plotters::prelude::BLACK)
+        .pos(pos);
 
         // Draw legend
-        let voxel_pixel_size_x = ((image_size_x - 2 * label_space) as f64 / (self.n_vox[0]) as f64).round() as i32;
-        let voxel_pixel_size_y = ((image_size_y - 2 * label_space) as f64 / (self.n_vox[1]) as f64).round() as i32;
+        let voxel_pixel_size_x =
+            ((image_size_x - 2 * label_space) as f64 / (self.n_vox[0]) as f64).round() as i32;
+        let voxel_pixel_size_y =
+            ((image_size_y - 2 * label_space) as f64 / (self.n_vox[1]) as f64).round() as i32;
         let xy0 = (label_space as f64 * 0.5).round() as i32;
 
         let create_element = |index: usize, i: usize, pos: (i32, i32)| {
             plotters::prelude::Text::new(
-                format!("{:.0}", self.min[index] + i as f64 * self.voxel_sizes[index]),
+                format!(
+                    "{:.0}",
+                    self.min[index] + i as f64 * self.voxel_sizes[index]
+                ),
                 pos,
                 label_style.clone(),
             )
         };
 
-        let step_x = max(1, ((self.n_vox[0]+1) as f64 / 10.0).floor() as usize);
-        let step_y = max(1, ((self.n_vox[1]+1) as f64 / 10.0).floor() as usize);
+        let step_x = max(1, ((self.n_vox[0] + 1) as f64 / 10.0).floor() as usize);
+        let step_y = max(1, ((self.n_vox[1] + 1) as f64 / 10.0).floor() as usize);
         // Draw descriptions along x axis
-        (0..self.n_vox[0] as usize+1).filter(|i| i % step_x == 0).for_each(|i| {
-            let element_top = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x,                       xy0));
-            let element_bot = create_element(0, i, (label_space as i32 + i as i32 * voxel_pixel_size_x, image_size_y as i32 - xy0));
+        (0..self.n_vox[0] as usize + 1)
+            .filter(|i| i % step_x == 0)
+            .for_each(|i| {
+                let element_top = create_element(
+                    0,
+                    i,
+                    (label_space as i32 + i as i32 * voxel_pixel_size_x, xy0),
+                );
+                let element_bot = create_element(
+                    0,
+                    i,
+                    (
+                        label_space as i32 + i as i32 * voxel_pixel_size_x,
+                        image_size_y as i32 - xy0,
+                    ),
+                );
 
-            root.draw(&element_top).unwrap();
-            root.draw(&element_bot).unwrap();
-        });
+                root.draw(&element_top).unwrap();
+                root.draw(&element_bot).unwrap();
+            });
 
         // Draw descriptions along y axis
-        (0..self.n_vox[1] as usize+1).filter(|j| j % step_y == 0).for_each(|j| {
-            let element_left  = create_element(1, j, (                      xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
-            let element_right = create_element(1, j, (image_size_x as i32 - xy0, label_space as i32 + j as i32 * voxel_pixel_size_y));
+        (0..self.n_vox[1] as usize + 1)
+            .filter(|j| j % step_y == 0)
+            .for_each(|j| {
+                let element_left = create_element(
+                    1,
+                    j,
+                    (xy0, label_space as i32 + j as i32 * voxel_pixel_size_y),
+                );
+                let element_right = create_element(
+                    1,
+                    j,
+                    (
+                        image_size_x as i32 - xy0,
+                        label_space as i32 + j as i32 * voxel_pixel_size_y,
+                    ),
+                );
 
-            root.draw(&element_left).unwrap();
-            root.draw(&element_right).unwrap();
-        });
+                root.draw(&element_left).unwrap();
+                root.draw(&element_right).unwrap();
+            });
 
         let mut chart = plotters::prelude::ChartBuilder::on(&root)
             .margin(label_space)
             // Finally attach a coordinate on the drawing area and make a chart context
-            .build_cartesian_2d(
-                self.min[0]..self.max[0],
-                self.min[1]..self.max[1],
-            ).unwrap();
+            .build_cartesian_2d(self.min[0]..self.max[0], self.min[1]..self.max[1])
+            .unwrap();
 
         chart
             .configure_mesh()
@@ -470,25 +571,25 @@ impl CreatePlottingRoot for CartesianCuboid2Vertex
             .unwrap();
 
         // Draw vertical lines manually
-        for i in 0..self.n_vox[0]+1 {
+        for i in 0..self.n_vox[0] + 1 {
             let element = plotters::prelude::LineSeries::new(
                 [
                     (self.min[0] + i as f64 * self.voxel_sizes[0], self.min[1]),
-                    (self.min[0] + i as f64 * self.voxel_sizes[0], self.max[1])
+                    (self.min[0] + i as f64 * self.voxel_sizes[0], self.max[1]),
                 ],
-                plotters::prelude::BLACK
+                plotters::prelude::BLACK,
             );
             chart.draw_series(element).unwrap();
         }
 
         // Draw horizontal lines manually
-        for i in 0..self.n_vox[1]+1 {
+        for i in 0..self.n_vox[1] + 1 {
             let element = plotters::prelude::LineSeries::new(
                 [
                     (self.min[0], self.min[1] + i as f64 * self.voxel_sizes[1]),
-                    (self.max[0], self.min[1] + i as f64 * self.voxel_sizes[1])
+                    (self.max[0], self.min[1] + i as f64 * self.voxel_sizes[1]),
                 ],
-                plotters::prelude::BLACK
+                plotters::prelude::BLACK,
             );
             chart.draw_series(element)?;
         }
@@ -496,9 +597,6 @@ impl CreatePlottingRoot for CartesianCuboid2Vertex
         Ok(chart.plotting_area().clone())
     }
 }
-
-
-
 
 #[cfg(test)]
 mod test {
@@ -512,17 +610,23 @@ mod test {
         #[cfg(feature = "test_exhaustive")]
         let max = 5_000_000;
 
-        (1..max).into_par_iter().map(|n_voxel| {
-            for n_regions in 1..1_000 {
-                match get_decomp_res(n_voxel, n_regions) {
-                    Some(res) => {
-                        let (n, m, average_len) = res;
-                        assert_eq!(n + m, n_regions);
-                        assert_eq!(n*average_len + m*(average_len-1), n_voxel);
-                    },
-                    None => panic!("No result for inputs n_voxel: {} n_regions: {}", n_voxel, n_regions),
+        (1..max)
+            .into_par_iter()
+            .map(|n_voxel| {
+                for n_regions in 1..1_000 {
+                    match get_decomp_res(n_voxel, n_regions) {
+                        Some(res) => {
+                            let (n, m, average_len) = res;
+                            assert_eq!(n + m, n_regions);
+                            assert_eq!(n * average_len + m * (average_len - 1), n_voxel);
+                        }
+                        None => panic!(
+                            "No result for inputs n_voxel: {} n_regions: {}",
+                            n_voxel, n_regions
+                        ),
+                    }
                 }
-            }
-        }).collect::<Vec<()>>();
+            })
+            .collect::<Vec<()>>();
     }
 }

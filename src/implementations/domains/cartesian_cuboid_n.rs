@@ -655,14 +655,17 @@ define_and_implement_cartesian_cuboid_voxel!(
 );
 
 impl CreatePlottingRoot for CartesianCuboid2 {
-    fn create_bitmap_root<'a>(
+    fn create_bitmap_root<'a, T>(
         &self,
         image_size: u32,
-        filename: &'a String,
+        filename: &'a T,
     ) -> Result<
         DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
         DrawingError,
-    > {
+    >
+    where
+        T: AsRef<std::path::Path> + ?Sized,
+    {
         use plotters::drawing::IntoDrawingArea;
         // let root = plotters::backend::BitMapBackend::new(filename, (image_size, image_size)).into_drawing_area();
         let dx = (self.max[0] - self.min[0]).abs();
@@ -687,9 +690,9 @@ impl CreatePlottingRoot for CartesianCuboid2 {
 
         // Draw legend
         let voxel_pixel_size_x =
-            ((image_size_x - 2 * label_space) as f64 / (self.n_vox[0]) as f64).round() as i32;
+            ((image_size_x - 2 * label_space) as f64 / self.n_vox[0] as f64).round() as i32;
         let voxel_pixel_size_y =
-            ((image_size_y - 2 * label_space) as f64 / (self.n_vox[1]) as f64).round() as i32;
+            ((image_size_y - 2 * label_space) as f64 / self.n_vox[1] as f64).round() as i32;
         let xy0 = (label_space as f64 * 0.5).round() as i32;
 
         let create_element = |index: usize, i: usize, pos: (i32, i32)| {
