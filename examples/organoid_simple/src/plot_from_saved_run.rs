@@ -2,10 +2,10 @@ use nalgebra::Vector2;
 
 use std::env;
 
-mod cell_properties;
+mod bacteria_properties;
 mod plotting;
 use plotting::*;
-use cell_properties::*;
+use bacteria_properties::*;
 
 use cellular_raza::{
     concepts::errors::SimulationError,
@@ -14,7 +14,7 @@ use cellular_raza::{
     storage::sled_database::SledStorageInterface,
 };
 
-pub type MyVoxelType = CartesianCuboidVoxel2Reactions4;
+pub type MyVoxelType = CartesianCuboidVoxel2Reactions1;
 pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>, Vector2<f64>, Vector2<f64>, ReactionVector, ReactionVector, ReactionVector>;
 
 

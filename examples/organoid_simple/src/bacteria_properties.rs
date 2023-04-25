@@ -1,11 +1,11 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use nalgebra::Vector2;
+use num::Zero;
 use serde::{Deserialize, Serialize};
-
 use rand::Rng;
 
-pub const NUMBER_OF_REACTION_COMPONENTS: usize = 2;
+pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType =
     ModularCell<MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
@@ -78,16 +78,11 @@ impl Interaction<Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
 pub struct OwnCycle {
     age: f64,
     pub division_age: f64,
-    divisions: u8,
-    generation: u8,
     pub maximum_cell_radius: f64,
     pub growth_rate: f64,
     pub food_threshold: f64,
     food_growth_rate_multiplier: f64,
     food_division_threshold: f64,
-
-    pub is_ureter: bool,
-    cell_id: u32,
 }
 
 impl OwnCycle {
@@ -98,21 +93,15 @@ impl OwnCycle {
         food_threshold: f64,
         food_growth_rate_multiplier: f64,
         food_division_threshold: f64,
-        is_ureter: bool,
-        cell_id: u32,
     ) -> Self {
         OwnCycle {
             age: 0.0,
             division_age,
-            divisions: 0,
-            generation: 0,
             maximum_cell_radius,
             growth_rate,
             food_threshold,
             food_growth_rate_multiplier,
             food_division_threshold,
-            is_ureter,
-            cell_id,
         }
     }
 }
@@ -127,7 +116,7 @@ impl Cycle<MyCellType> for OwnCycle {
         if c.interaction.cell_radius < c.cycle.maximum_cell_radius {
             let growth_difference = (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt)
                 .min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
-            c.cellular_reactions.intracellular_concentrations[1] -=
+            c.cellular_reactions.intracellular_concentrations[0] -=
                 c.cycle.food_growth_rate_multiplier * growth_difference
                     / c.cycle.maximum_cell_radius;
             c.interaction.cell_radius += growth_difference;
@@ -138,13 +127,9 @@ impl Cycle<MyCellType> for OwnCycle {
 
         // Calculate the modifier (between 0.0 and 1.0) based on food threshold
         let relative_division_food_level = (
-            (c.get_intracellular()[1]-c.cycle.food_division_threshold)
+            (c.get_intracellular()[0]-c.cycle.food_division_threshold)
             /(c.cycle.food_threshold-c.cycle.food_division_threshold)
         ).clamp(0.0, 1.0);
-
-        if c.cycle.cell_id == 0 {
-            // println!("{}", c.cellular_reactions.intracellular_concentrations[1]);
-        }
 
         if
             // Check if the cell has aged enough
@@ -156,15 +141,6 @@ impl Cycle<MyCellType> for OwnCycle {
         {
             return Some(CycleEvent::Division);
         }
-
-        // If the cell has not enough food let it die
-        /* let relative_death_food_level = (
-            (c.cycle.food_death_threshold-c.get_intracellular()[1])
-            /c.cycle.food_death_threshold
-        ).clamp(0.0, 1.0);
-        if c.cellular_reactions.get_intracellular()[1] < 0.0 && rng.gen_range(0.0..1.0) < relative_death_food_level {
-            return Some(CycleEvent::Death);
-        }*/
         None
     }
 
@@ -173,7 +149,6 @@ impl Cycle<MyCellType> for OwnCycle {
         c1: &mut MyCellType,
     ) -> Result<Option<MyCellType>, DivisionError> {
         // Clone existing cell
-        c1.cycle.generation += 1;
         let mut c2 = c1.clone();
 
         let r = c1.interaction.cell_radius;
@@ -202,9 +177,6 @@ impl Cycle<MyCellType> for OwnCycle {
         c2.cellular_reactions.intracellular_concentrations *=
             (1.0 - relative_size_difference) * 0.5;
 
-        // Increase the amount of divisions that this cell has done
-        c1.cycle.divisions += 1;
-
         // New cell is completely new so set age to 0
         c2.cycle.age = 0.0;
 
@@ -220,9 +192,6 @@ pub struct OwnReactions {
     pub degradation_rate: ReactionVector,
     pub secretion_rate: ReactionVector,
     pub uptake_rate: ReactionVector,
-
-    pub bmp4_mod: f64,
-    pub bmp4_hill: f64,
 }
 
 impl CellularReactions<ReactionVector> for OwnReactions {
@@ -235,7 +204,6 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         // we are far away from the saturation level and 0.0 if we have reached it.
         let mut increment_extracellular = ReactionVector::zero();
         let mut increment_intracellular = ReactionVector::zero();
-
         
         for i in 0..NUMBER_OF_REACTION_COMPONENTS {
             let uptake = self.uptake_rate[i] * external_concentration_vector[i];

@@ -8,16 +8,16 @@ use plotters::{
 
 use nalgebra::Vector2;
 
-use crate::cell_properties::*;
+use crate::bacteria_properties::*;
 
 pub fn plot_voxel(
-    voxel: &CartesianCuboidVoxel2Reactions2,
+    voxel: &CartesianCuboidVoxel2Reactions1,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
     let upper_bound = 12.0;
-    let concentration = voxel.get_total_extracellular()[1];
+    let concentration = voxel.get_total_extracellular()[0];
 
     // This should give a nice colormap
     let voxel_color = ViridisRGB::get_color_normalized(concentration, lower_bound, upper_bound);
@@ -31,7 +31,7 @@ pub fn plot_voxel(
     root.draw(&rectangle)?;
 
     // Also plot the direction in which the current concentration is pointing
-    let gradient = voxel.extracellular_gradient[0];
+    /* let gradient = voxel.extracellular_gradient[0];
     let strength = gradient.norm();
     let gradient_upper_bound =
         (upper_bound - lower_bound) / voxel.get_dx().iter().sum::<f64>() * 2.0;
@@ -50,7 +50,7 @@ pub fn plot_voxel(
             .filled()
             .stroke_width(2),
     );
-    root.draw(&pointer)?;
+    root.draw(&pointer)?;*/
     Ok(())
 }
 
@@ -78,18 +78,12 @@ pub fn plot_modular_cell(
     let upper_bound = modular_cell.cycle.food_threshold/10.0;
 
     // Plot the inside of the cell
-    let cell_inside_color = match modular_cell.cycle.is_ureter {
-        true => PinkGrey::get_color_normalized(
-            modular_cell.get_intracellular()[1],
-            lower_bound,
-            upper_bound,
-        ),
-        false => Poison::get_color_normalized(
-            modular_cell.get_intracellular()[1],
-            lower_bound,
-            upper_bound,
-        ),
-    };
+    let cell_inside_color = PinkGrey::get_color_normalized(
+        modular_cell.get_intracellular()[0],
+        lower_bound,
+        upper_bound,
+    );
+
     // let cell_inside_color = Life::get_color_normalized(modular_cell.get_intracellular()[1], 0.0, modular_cell.cellular_reactions.intracellular_concentrations_saturation_level[1]);
     let cell_inside = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
