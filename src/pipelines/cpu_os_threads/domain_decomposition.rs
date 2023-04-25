@@ -414,10 +414,18 @@ where
             .collect::<Result<(), SimulationError>>()?;
 
         // Remove cells which are flagged for death
-        self.cells
-            .drain_filter(|(_, aux_storage)| aux_storage.cycle_event == Some(CycleEvent::Death))
+        // TODO use drain_filter when stabilized! [https://doc.rust-lang.org/std/vec/struct.DrainFilter.html]
+        let (dying_cells, normal_cells): (Vec<_>, Vec<_>) = self
+            .cells
+            .drain(..)
+            .partition(|(_, aux_storage)| aux_storage.cycle_event == Some(CycleEvent::Death));
+
+        dying_cells
+            .into_iter()
             .map(|(cbox, _)| C::die(&mut self.rng, cbox.cell))
             .collect::<Result<(), DeathError>>()?;
+
+        self.cells.extend(normal_cells);
 
         // Include new cells
         self.cells
@@ -1027,12 +1035,25 @@ where
 
         for (voxel_index, vox) in self.voxels.iter_mut() {
             // Drain every cell which is currently not in the correct voxel
-            let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
+            // TODO use drain_filter when stabilized
+            let (new_voxel_cells, old_voxel_cells): (Vec<_>, Vec<_>) =
+                vox.cells.drain(..).partition(|(c, _)| {
+                    match self
+                        .index_to_plain_index
+                        .get(&self.domain.get_voxel_index(&c))
+                    {
+                        Some(ind) => ind != voxel_index,
+                        None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
+                    }
+                });
+            find_new_home_cells.extend(new_voxel_cells);
+            vox.cells = old_voxel_cells;
+            /* let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
                 Some(ind) => ind,
                 None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
             }!=voxel_index);
             // Check if the cell needs to be sent to another multivoxelcontainer
-            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());
+            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());*/
         }
 
         // Send cells to other multivoxelcontainer or keep them here

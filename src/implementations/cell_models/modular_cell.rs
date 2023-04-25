@@ -7,6 +7,8 @@ use crate::concepts::mechanics::{Force, Mechanics, Position, Velocity};
 
 use serde::{Deserialize, Serialize};
 
+use num::Zero;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
     pub mechanics: Mec,

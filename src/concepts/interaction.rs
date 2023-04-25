@@ -2,7 +2,10 @@ use crate::concepts::errors::CalcError;
 
 // TODO Define trait aliases for Position and Force
 
-pub trait InteractionInformation = Send + Sync + Clone + core::fmt::Debug;
+// TODO use trait alias when available
+// pub trait InteractionInformation = Send + Sync + Clone + core::fmt::Debug;
+pub trait InteractionInformation: Send + Sync + Clone + core::fmt::Debug {}
+impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::Debug {}
 
 pub trait Interaction<Pos, Force, Inf = ()> {
     fn get_interaction_information(&self) -> Option<Inf> {

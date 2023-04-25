@@ -5,8 +5,20 @@ use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 use num::Zero;
 use std::marker::{Send, Sync};
 
+// TODO use trait alias when available
+/* pub trait Position = Sized
++ Add<Self, Output = Self>
++ AddAssign
++ Sub<Output = Self>
++ SubAssign
++ Clone
++ Debug
++ Send
++ Sync
++ Mul<f64, Output = Self>;*/
 /// Represents the current position of a cell-agent.
-pub trait Position = Sized
+pub trait Position:
+    Sized
     + Add<Self, Output = Self>
     + AddAssign
     + Sub<Output = Self>
@@ -15,10 +27,38 @@ pub trait Position = Sized
     + Debug
     + Send
     + Sync
-    + Mul<f64, Output = Self>;
+    + Mul<f64, Output = Self>
+{
+}
+impl<T> Position for T where
+    T: Sized
+        + Add<Self, Output = Self>
+        + AddAssign
+        + Sub<Output = Self>
+        + SubAssign
+        + Clone
+        + Debug
+        + Send
+        + Sync
+        + Mul<f64, Output = Self>
+{
+}
 
+// TODO use trait alias when available
+/* pub trait Force = Sized
++ Add<Self, Output = Self>
++ AddAssign
++ Sub<Output = Self>
++ SubAssign
++ Clone
++ Debug
++ Zero
++ Send
++ Sync
++ Mul<f64, Output = Self>;*/
 /// Represents a force which can act between two cells.
-pub trait Force = Sized
+pub trait Force:
+    Sized
     + Add<Self, Output = Self>
     + AddAssign
     + Sub<Output = Self>
@@ -28,10 +68,39 @@ pub trait Force = Sized
     + Zero
     + Send
     + Sync
-    + Mul<f64, Output = Self>;
+    + Mul<f64, Output = Self>
+{
+}
+impl<T> Force for T where
+    T: Sized
+        + Add<Self, Output = Self>
+        + AddAssign
+        + Sub<Output = Self>
+        + SubAssign
+        + Clone
+        + Debug
+        + Zero
+        + Send
+        + Sync
+        + Mul<f64, Output = Self>
+{
+}
 
+// TODO use trait alias when available
+/* pub trait Velocity = Sized
++ Add<Self, Output = Self>
++ AddAssign
++ Sub<Output = Self>
++ SubAssign
++ Clone
++ Debug
++ Zero
++ Send
++ Sync
++ Mul<f64, Output = Self>;*/
 /// Represents the velocity of a cell.
-pub trait Velocity = Sized
+pub trait Velocity:
+    Sized
     + Add<Self, Output = Self>
     + AddAssign
     + Sub<Output = Self>
@@ -41,7 +110,23 @@ pub trait Velocity = Sized
     + Zero
     + Send
     + Sync
-    + Mul<f64, Output = Self>;
+    + Mul<f64, Output = Self>
+{
+}
+impl<T> Velocity for T where
+    T: Sized
+        + Add<Self, Output = Self>
+        + AddAssign
+        + Sub<Output = Self>
+        + SubAssign
+        + Clone
+        + Debug
+        + Zero
+        + Send
+        + Sync
+        + Mul<f64, Output = Self>
+{
+}
 
 /// This trait should be merged with the interaction trait
 // TODO merge this with the interaction trait!

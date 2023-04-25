@@ -32,9 +32,21 @@ pub enum BoundaryCondition<ConcVecExtracellular> {
     Value(ConcVecExtracellular),
 }
 
-pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
-pub trait Concentration =
-    Sized + Add<Self, Output = Self> + Mul<f64, Output = Self> + Send + Sync + Zero;
+// TODO migrate to trait alias when stabilized
+// pub trait Index = Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug;
+pub trait Index: Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug {}
+impl<T> Index for T where T: Ord + Hash + Eq + Clone + Send + Sync + Serialize + std::fmt::Debug {}
+
+/* pub trait Concentration =
+Sized + Add<Self, Output = Self> + Mul<f64, Output = Self> + Send + Sync + Zero;*/
+pub trait Concentration:
+    Sized + Add<Self, Output = Self> + Mul<f64, Output = Self> + Send + Sync + Zero
+{
+}
+impl<T> Concentration for T where
+    T: Sized + Add<Self, Output = Self> + Mul<f64, Output = Self> + Send + Sync + Zero
+{
+}
 
 pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a> {
     fn custom_force_on_cell(&self, _pos: &Pos) -> Option<Result<Force, CalcError>> {

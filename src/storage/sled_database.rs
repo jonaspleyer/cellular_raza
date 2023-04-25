@@ -48,7 +48,7 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
     pub fn open_or_create(location: std::path::PathBuf) -> Result<Self, SimulationError> {
         let config = sled::Config::default()
             .mode(sled::Mode::HighThroughput)
-            .cache_capacity(1024 * 1024 * 1024 * 5)// 5gb
+            .cache_capacity(1024 * 1024 * 1024 * 5) // 5gb
             .path(&location)
             .use_compression(false);
 
@@ -147,11 +147,21 @@ where
         for iteration_serialized in self.db.tree_names() {
             // If we are above the maximal or below the minimal iteration, we skip checking
             let iteration: u64 = bincode::deserialize(&iteration_serialized)?;
-            if minimal_iteration.is_some_and(|min_iter| iteration < min_iter) {
-                continue;
+            match minimal_iteration {
+                None => (),
+                Some(min_iter) => {
+                    if iteration < min_iter {
+                        continue;
+                    }
+                }
             }
-            if maximal_iteration.is_some_and(|max_iter| max_iter < iteration) {
-                continue;
+            match maximal_iteration {
+                None => (),
+                Some(max_iter) => {
+                    if max_iter < iteration {
+                        continue;
+                    }
+                }
             }
             // Get the tree for a random iteration
             let tree = self.db.open_tree(iteration_serialized)?;
@@ -275,7 +285,9 @@ where
     }
 
     pub fn get_all_iterations(&self) -> Result<Vec<u64>, SimulationError> {
-        let iterations = self.db.tree_names()
+        let iterations = self
+            .db
+            .tree_names()
             .iter()
             .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized))
             .collect::<Result<Vec<_>, SimulationError>>()?;
