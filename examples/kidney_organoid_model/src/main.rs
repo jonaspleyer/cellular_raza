@@ -221,8 +221,8 @@ fn main() {
         meta_params: SimulationMetaParams {
             n_threads: N_THREADS
         },
-        database: SledDataBaseConfig {
-            name: "out/simulation_custom_cells".to_owned().into(),
+        storage: StorageConfig {
+            location: "out/kidney_organoid_model".to_owned().into(),
         }
     };
 
@@ -232,16 +232,14 @@ fn main() {
 
     let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
 
-    supervisor.run_full_sim().unwrap();
-
-    supervisor.end_simulation().unwrap();
-
-    supervisor.plotting_config = PlottingConfig {
-        n_threads: Some(20),
-        image_size: 1500,
-    };
+    let mut simulation_result = supervisor.run_full_sim().unwrap();
 
     // ###################################### PLOT THE RESULTS ######################################
-    // supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func(&plot_modular_cell).unwrap();
-    supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func(&plot_modular_cell, &plot_voxel).unwrap();
+    simulation_result.plotting_config = PlottingConfig {
+        n_threads: Some(20),
+        image_size: 1500,
+        image_type: ImageType::BitMap,
+    };
+
+    simulation_result.plot_spatial_all_iterations_custom_cell_voxel_functions(&plot_modular_cell, &plot_voxel).unwrap();
 }

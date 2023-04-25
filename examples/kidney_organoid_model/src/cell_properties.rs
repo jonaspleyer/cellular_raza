@@ -1,5 +1,5 @@
 use cellular_raza::pipelines::cpu_os_threads::prelude::*;
-use cellular_raza::implementations::cell_properties::mechanics::{VertexMechanics2D,VertexVector2};
+use cellular_raza::implementations::cell_properties::mechanics::VertexMechanics2D;
 
 use serde::{Serialize,Deserialize};
 use nalgebra::{Unit,Vector2};
@@ -7,10 +7,10 @@ use nalgebra::{Unit,Vector2};
 use rand::Rng;
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 4;
-pub const NUMBER_OF_VERTICES: usize = 5;
+pub const NUMBER_OF_VERTICES: usize = 4;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type InteractionInformation = ();
-pub type MyCellType = ModularCell<VertexVector2<NUMBER_OF_VERTICES>, VertexMechanics2D<NUMBER_OF_VERTICES>, VertexDerivedInteraction<OutsideInteraction, InsideInteraction>, OwnCycle, OwnReactions, GradientSensing>;
+pub type MyCellType = ModularCell<VertexMechanics2D<NUMBER_OF_VERTICES>, VertexDerivedInteraction<OutsideInteraction, InsideInteraction>, OwnCycle, OwnReactions, GradientSensing>;
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
@@ -19,7 +19,6 @@ pub struct DirectedSphericalMechanics {
     pub vel: Vector2<f64>,
     pub orientation: Unit<Vector2<f64>>,
 }
-
 
 
 #[derive(Serialize,Deserialize,Clone,core::fmt::Debug)]
@@ -222,6 +221,7 @@ impl CellularReactions<ReactionVector> for OwnReactions {
     {
         // Calculate a modifier which is clamps between 0.0 and 1.0 and will be 1.0 if
         // we are far away from the saturation level and 0.0 if we have reached it.
+        use num::Zero;
         let mut increment_extracellular = ReactionVector::zero();
         let mut increment_intracellular = ReactionVector::zero();
         for i in 0..2 {
@@ -260,7 +260,7 @@ impl CellularReactions<ReactionVector> for OwnReactions {
 pub struct GradientSensing {}
 
 
-impl InteractionExtracellularGRadient<MyCellType, nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>> for GradientSensing {
+impl InteractionExtracellularGradient<MyCellType, nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>> for GradientSensing {
     fn sense_gradient(_cell: &mut MyCellType<>, _gradient: &nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>) -> Result<(), CalcError> {
         Ok(())
     }

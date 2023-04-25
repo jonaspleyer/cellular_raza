@@ -12,7 +12,7 @@ use crate::cell_properties::*;
 
 
 pub fn plot_voxel
-    (voxel: &CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (voxel: &CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), DrawingError>
 {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
@@ -44,7 +44,7 @@ pub fn plot_voxel
 
 
 pub fn plot_modular_cell
-    (modular_cell: &MyCellType, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), SimulationError>
+    (modular_cell: &MyCellType, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), DrawingError>
 {
     let cell_border_color = plotters::prelude::BLACK;
     // let cell_orientation_color = plotters::prelude::full_palette::BLACK;
