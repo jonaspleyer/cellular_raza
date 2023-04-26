@@ -67,7 +67,7 @@ pub struct SimulationSetup<Dom, C> {
 pub const PROGRESS_BAR_STYLE: &str =
     "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
 
-#[derive(Clone,Debug,Deserialize,Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ImageType {
     BitMap,
     // TODO

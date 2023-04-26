@@ -13,11 +13,10 @@ use super::domain_decomposition::{
 };
 
 use super::config::{
-    PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, StorageConfig,
-    TimeSetup, PROGRESS_BAR_STYLE, ImageType,
+    ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup,
+    StorageConfig, TimeSetup, PROGRESS_BAR_STYLE,
 };
 
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -455,8 +454,8 @@ where
             DrawingError,
         >,
         Cpf: Fn(
-            &C,
-            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
@@ -485,7 +484,11 @@ where
         file_path.push(format!("cells_at_iter_{:010.0}.png", iteration));
         let filename = file_path.into_os_string().into_string().unwrap();
 
-        let mut chart = domain_plotting_func(&self.domain.domain_raw, self.plotting_config.image_size, &filename)?;
+        let mut chart = domain_plotting_func(
+            &self.domain.domain_raw,
+            self.plotting_config.image_size,
+            &filename,
+        )?;
 
         voxel_boxes
             .iter()
@@ -500,7 +503,7 @@ where
             .collect::<Result<(), DrawingError>>()?;
 
         chart.present()?;
-        
+
         Ok(())
     }
 
@@ -511,13 +514,17 @@ where
         V: PlotSelf,
     {
         match self.plotting_config.image_type {
-            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self_bitmap, V::plot_self_bitmap, D::create_bitmap_root),
+            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(
+                iteration,
+                C::plot_self_bitmap,
+                V::plot_self_bitmap,
+                D::create_bitmap_root,
+            ),
             // ImageType::Svg => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self::<BitMapBackend>, V::plot_self, D::create_svg_root),
         }
     }
 
-    pub fn plot_spatial_at_iteration_custom_functions<Cpf, Vpf, Dpf>
-    (
+    pub fn plot_spatial_at_iteration_custom_functions<Cpf, Vpf, Dpf>(
         &self,
         iteration: u64,
         cell_plotting_func: Cpf,
@@ -546,11 +553,15 @@ where
             + Send
             + Sync,
     {
-        self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, voxel_plotting_func, domain_plotting_func)
+        self.plot_spatial_at_iteration_with_functions(
+            iteration,
+            cell_plotting_func,
+            voxel_plotting_func,
+            domain_plotting_func,
+        )
     }
 
-    pub fn plot_spatial_at_iteration_custom_cell_voxel_functions<Cpf, Vpf>
-    (
+    pub fn plot_spatial_at_iteration_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,
         iteration: u64,
         cell_plotting_func: Cpf,
@@ -571,11 +582,15 @@ where
             + Send
             + Sync,
     {
-        self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, voxel_plotting_func, D::create_bitmap_root)
+        self.plot_spatial_at_iteration_with_functions(
+            iteration,
+            cell_plotting_func,
+            voxel_plotting_func,
+            D::create_bitmap_root,
+        )
     }
 
-    pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>
-    (
+    pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>(
         &self,
         iteration: u64,
         cell_plotting_func: Cpf,
@@ -584,14 +599,19 @@ where
         V: PlotSelf,
         D: CreatePlottingRoot,
         Cpf: Fn(
-            &C,
-            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
-        ) -> Result<(), DrawingError>
-        + Send
-        + Sync,
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+            ) -> Result<(), DrawingError>
+            + Send
+            + Sync,
     {
         match self.plotting_config.image_type {
-            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(iteration, cell_plotting_func, V::plot_self_bitmap, D::create_bitmap_root),
+            ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(
+                iteration,
+                cell_plotting_func,
+                V::plot_self_bitmap,
+                D::create_bitmap_root,
+            ),
         }
     }
 
@@ -611,8 +631,8 @@ where
             DrawingError,
         >,
         Cpf: Fn(
-            &C,
-            &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+                &C,
+                &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
@@ -624,13 +644,17 @@ where
             + Sync,
     {
         for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
-            self.plot_spatial_at_iteration_with_functions(iteration, &cell_plotting_func, &voxel_plotting_func, &domain_plotting_func)?;
+            self.plot_spatial_at_iteration_with_functions(
+                iteration,
+                &cell_plotting_func,
+                &voxel_plotting_func,
+                &domain_plotting_func,
+            )?;
         }
         Ok(())
     }
 
-    pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>
-    (
+    pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,
         cell_plotting_func: Cpf,
         voxel_plotting_func: Vpf,
@@ -651,7 +675,12 @@ where
             + Sync,
     {
         for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
-            self.plot_spatial_at_iteration_with_functions(iteration, &cell_plotting_func, &voxel_plotting_func, D::create_bitmap_root)?;
+            self.plot_spatial_at_iteration_with_functions(
+                iteration,
+                &cell_plotting_func,
+                &voxel_plotting_func,
+                D::create_bitmap_root,
+            )?;
         }
         Ok(())
     }

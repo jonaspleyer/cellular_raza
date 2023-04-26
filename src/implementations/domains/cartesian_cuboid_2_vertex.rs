@@ -469,7 +469,7 @@ impl CreatePlottingRoot for CartesianCuboid2Vertex {
         DrawingError,
     >
     where
-        T: AsRef<std::path::Path> + ?Sized
+        T: AsRef<std::path::Path> + ?Sized,
     {
         use plotters::drawing::IntoDrawingArea;
         // let root = plotters::backend::BitMapBackend::new(filename, (image_size, image_size)).into_drawing_area();

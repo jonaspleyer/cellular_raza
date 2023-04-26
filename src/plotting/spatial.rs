@@ -41,14 +41,14 @@ pub trait PlotSelf {
 
     fn plot_self_bitmap(
         &self,
-        root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>
+        root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
     ) -> Result<(), DrawingError> {
         self.plot_self(root)
     }
 
     fn plot_self_svg(
         &self,
-        root: &mut DrawingArea<SVGBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>
+        root: &mut DrawingArea<SVGBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
     ) -> Result<(), DrawingError> {
         self.plot_self(root)
     }
