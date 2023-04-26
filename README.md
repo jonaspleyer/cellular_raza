@@ -1,5 +1,9 @@
 <div align="center">
-    <image src="doc/cellular_raza.svg" style="background-color:white;padding:2%;">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" src="doc/cellular_raza_dark_mode.svg">
+        <source media="(prefers-color-scheme: light)" src="doc/cellular_raza.svg">
+        <img alt="The cellular_raza logo" src="doc/cellular_raza.svg">
+    </picture>
 </div>
 
 # cellular_raza
