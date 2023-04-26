@@ -45,7 +45,7 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 25.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 12.0;
 
 // Time parameters
-pub const N_TIMES: usize = 6_001;
+pub const N_TIMES: usize = 1_001;
 pub const DT: f64 = 0.25;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 100;
@@ -114,15 +114,11 @@ fn main() {
                     intracellular_concentrations: ReactionVector::from([
                         BACTERIA_FOOD_INITIAL_CONCENTRATION,
                     ]),
-                    turnover_rate: ReactionVector::from([
-                        BACTERIA_FOOD_TURNOVER_RATE,
-                    ]),
+                    turnover_rate: ReactionVector::from([BACTERIA_FOOD_TURNOVER_RATE]),
                     production_term: ReactionVector::zero(),
                     degradation_rate: ReactionVector::zero(),
                     secretion_rate: ReactionVector::zero(),
-                    uptake_rate: ReactionVector::from([
-                        BACTERIA_FOOD_UPTAKE_RATE,
-                    ]),
+                    uptake_rate: ReactionVector::from([BACTERIA_FOOD_UPTAKE_RATE]),
                 },
             }
         })
@@ -167,8 +163,7 @@ fn main() {
         image_type: ImageType::BitMap,
     };
 
-    simulation_result.plot_spatial_all_iterations_custom_cell_voxel_functions(
-        plot_modular_cell,
-        plot_voxel
-    ).unwrap();
+    simulation_result
+        .plot_spatial_all_iterations_custom_cell_voxel_functions(plot_modular_cell, plot_voxel)
+        .unwrap();
 }

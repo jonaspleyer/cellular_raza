@@ -2,8 +2,8 @@ use cellular_raza::pipelines::cpu_os_threads::prelude::*;
 
 use nalgebra::Vector2;
 use num::Zero;
-use serde::{Deserialize, Serialize};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
@@ -126,14 +126,14 @@ impl Cycle<MyCellType> for OwnCycle {
         c.cycle.age += dt;
 
         // Calculate the modifier (between 0.0 and 1.0) based on food threshold
-        let relative_division_food_level = (
-            (c.get_intracellular()[0]-c.cycle.food_division_threshold)
-            /(c.cycle.food_threshold-c.cycle.food_division_threshold)
-        ).clamp(0.0, 1.0);
+        let relative_division_food_level = ((c.get_intracellular()[0]
+            - c.cycle.food_division_threshold)
+            / (c.cycle.food_threshold - c.cycle.food_division_threshold))
+            .clamp(0.0, 1.0);
 
         if
-            // Check if the cell has aged enough
-            c.cycle.age > c.cycle.division_age &&
+        // Check if the cell has aged enough
+        c.cycle.age > c.cycle.division_age &&
             // Check if the cell has grown enough
             c.interaction.cell_radius >= c.cycle.maximum_cell_radius &&
             // Random selection but chance increased when significantly above the food threshold
@@ -204,7 +204,7 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         // we are far away from the saturation level and 0.0 if we have reached it.
         let mut increment_extracellular = ReactionVector::zero();
         let mut increment_intracellular = ReactionVector::zero();
-        
+
         for i in 0..NUMBER_OF_REACTION_COMPONENTS {
             let uptake = self.uptake_rate[i] * external_concentration_vector[i];
             let secretion = self.secretion_rate[i] * internal_concentration_vector[i];

@@ -6,8 +6,6 @@ use plotters::{
     prelude::{Cartesian2d, Circle, DrawingArea, ShapeStyle},
 };
 
-use nalgebra::Vector2;
-
 use crate::bacteria_properties::*;
 
 pub fn plot_voxel(
@@ -29,28 +27,6 @@ pub fn plot_voxel(
         Into::<ShapeStyle>::into(&voxel_color).filled(),
     );
     root.draw(&rectangle)?;
-
-    // Also plot the direction in which the current concentration is pointing
-    /* let gradient = voxel.extracellular_gradient[0];
-    let strength = gradient.norm();
-    let gradient_upper_bound =
-        (upper_bound - lower_bound) / voxel.get_dx().iter().sum::<f64>() * 2.0;
-    let start = Vector2::from(voxel.get_middle());
-    let end = if gradient != Vector2::from([0.0; 2]) {
-        start
-            + (gradient / strength.max(gradient_upper_bound))
-                .component_mul(&Vector2::from(voxel.get_dx()))
-                / 2.0
-    } else {
-        start
-    };
-    let pointer = plotters::element::PathElement::new(
-        [(start.x, start.y), (end.x, end.y)],
-        Into::<ShapeStyle>::into(&plotters::prelude::BLACK)
-            .filled()
-            .stroke_width(2),
-    );
-    root.draw(&pointer)?;*/
     Ok(())
 }
 
@@ -75,7 +51,7 @@ pub fn plot_modular_cell(
     root.draw(&cell_border)?;
 
     let lower_bound = 0.0;
-    let upper_bound = modular_cell.cycle.food_threshold/10.0;
+    let upper_bound = modular_cell.cycle.food_threshold / 10.0;
 
     // Plot the inside of the cell
     let cell_inside_color = PinkGrey::get_color_normalized(
