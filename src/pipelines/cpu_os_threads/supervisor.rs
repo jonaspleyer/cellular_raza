@@ -25,9 +25,6 @@ use core::ops::{Add, AddAssign, Mul};
 
 use hurdles::Barrier;
 
-use plotters::prelude::DrawingBackend;
-use rayon::prelude::*;
-
 use serde::{Deserialize, Serialize};
 
 use plotters::{

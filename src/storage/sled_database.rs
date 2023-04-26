@@ -53,14 +53,6 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
             .use_compression(false);
 
         let db = config.open()?;
-        // TODO find out which tree gets inserted in the beginning and how to circumvent this!
-        for name in db.tree_names() {
-            // let x = bincode::deserialize::<u64>(&name)?;
-            // println!("{:?}", name);
-            // println!("{}", x);
-            // let y = bincode::serialize(&"default.sl")?;
-            // println!("{:?}", y);
-        }
         Ok(SledStorageInterface {
             db,
             id_phantom: PhantomData,
