@@ -56,7 +56,7 @@ where
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    #[cfg(feature = "db_sled")]
+    #[cfg(feature = "sled")]
     pub meta_infos: SledStorageInterface<(), SimulationSetup<DomainBox<Dom>, C>>,
 }
 
@@ -303,9 +303,9 @@ where
         let simulation_result = SimulationResult {
             storage: self.storage.clone(),
             domain,
-            #[cfg(feature = "db_sled")]
+            #[cfg(feature = "sled")]
             storage_cells,
-            #[cfg(feature = "db_sled")]
+            #[cfg(feature = "sled")]
             storage_voxels,
             plotting_config: PlottingConfig::default(),
         };
@@ -313,7 +313,7 @@ where
         Ok(simulation_result)
     }
 
-    #[cfg(any(feature = "db_sled", feature = "db_json_dump"))]
+    #[cfg(any(feature = "sled", feature = "serde_json"))]
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError> {
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
@@ -325,7 +325,7 @@ where
             meta_params: SimulationMetaParams {
                 n_threads: self.worker_threads.len(),
             },
-            #[cfg(feature = "db_sled")]
+            #[cfg(feature = "sled")]
             storage: self.storage.clone(),
         };
 
@@ -372,9 +372,9 @@ pub struct SimulationResult<
     pub storage: StorageConfig,
 
     pub domain: DomainBox<D>,
-    #[cfg(feature = "db_sled")]
+    #[cfg(feature = "sled")]
     pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
-    #[cfg(feature = "db_sled")]
+    #[cfg(feature = "sled")]
     pub storage_voxels: SledStorageInterface<
         PlainIndex,
         VoxelBox<

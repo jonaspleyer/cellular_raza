@@ -5,7 +5,7 @@ use crate::concepts::errors::*;
 use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 
-#[cfg(feature = "db_sled")]
+#[cfg(feature = "sled")]
 use crate::storage::sled_database::SledStorageInterface;
 
 use std::collections::{BTreeMap, HashMap};
@@ -530,9 +530,9 @@ pub struct MultiVoxelContainer<
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
-    #[cfg(feature = "db_sled")]
+    #[cfg(feature = "sled")]
     pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
-    #[cfg(feature = "db_sled")]
+    #[cfg(feature = "sled")]
     pub storage_voxels: SledStorageInterface<
         PlainIndex,
         VoxelBox<
@@ -1108,7 +1108,7 @@ where
             .flatten()
             .collect::<Vec<_>>();
 
-        #[cfg(feature = "db_sled")]
+        #[cfg(feature = "sled")]
         self.storage_cells.store_batch_elements(*iteration, cells)
     }
 

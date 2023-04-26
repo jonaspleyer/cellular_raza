@@ -47,7 +47,7 @@ pub struct TimeSetup {
     pub t_eval: Vec<(f64, bool, bool)>,
 }
 
-#[cfg(any(feature = "db_sled", feature = "json_dump"))]
+#[cfg(any(feature = "sled", feature = "serde_json"))]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     pub location: std::path::PathBuf,
@@ -60,7 +60,7 @@ pub struct SimulationSetup<Dom, C> {
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
-    #[cfg(any(feature = "db_sled", feature = "json_dump"))]
+    #[cfg(any(feature = "sled", feature = "serde_json"))]
     pub storage: StorageConfig,
 }
 
@@ -528,7 +528,7 @@ where
 
             time: setup.time,
             meta_params: setup.meta_params,
-            #[cfg(feature = "db_sled")]
+            #[cfg(feature = "sled")]
             storage: setup.storage,
 
             domain: setup.domain.into(),
