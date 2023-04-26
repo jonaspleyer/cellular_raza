@@ -1,5 +1,5 @@
 <div align="center">
-    <image src="doc/cellular_raza.svg">
+    <image src="doc/cellular_raza.svg" style="background-color:white;padding:2%;">
 </div>
 
 # cellular_raza
