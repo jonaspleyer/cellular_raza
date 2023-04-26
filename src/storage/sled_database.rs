@@ -289,6 +289,8 @@ where
             .db
             .tree_names()
             .iter()
+            // TODO this should not be here! Fix it properly (I asked on sled discord)
+            .filter(|key| **key!=sled::IVec::from(&[95, 95, 115, 108, 101, 100, 95, 95, 100, 101, 102, 97, 117, 108, 116]))
             .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized))
             .collect::<Result<Vec<_>, SimulationError>>()?;
 
