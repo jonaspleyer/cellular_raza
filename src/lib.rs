@@ -93,12 +93,6 @@
 //!     - try to only need to cast from integer to floating point types and when doing the other way around be really careful
 //! - Code Style/Guideline
 
-#[cfg(all(feature = "db_sled", feature = "db_mongodb"))]
-compile_error!("feature \"db_sled\" and feature \"db_mongodb\" cannot be enabled at the same time");
-
-#[cfg(all(feature = "no_db", any(feature = "db_sled", feature = "db_mongodb")))]
-compile_error!("feature \"no_db\" and database feature cannot be enabled at the same time");
-
 /// Abstract concepts to describe cell properties, the domain and possible errors
 ///
 /// These concepts should be implemented by the user and then be used by a simulation
