@@ -172,7 +172,7 @@ where
                 let mut time = t_start;
                 #[allow(unused)]
                 let mut iteration = 0u64;
-                for (t, _save, save_full) in t_eval {
+                for (t, save) in t_eval {
                     let dt = t - time;
                     time = t;
 
@@ -191,13 +191,7 @@ where
                     }
 
                     // if save_now_new.load(Ordering::Relaxed) {
-                    #[cfg(not(feature = "no_db"))]
-                    if _save {
-                        // Save cells to database
-                        cont.save_cells_to_database(&iteration)?;
-                    }
-
-                    if save_full {
+                    if save {
                         cont.save_voxels_to_database(&iteration)?;
                     }
 

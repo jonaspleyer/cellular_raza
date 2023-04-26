@@ -44,7 +44,7 @@ pub struct SimulationMetaParams {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TimeSetup {
     pub t_start: f64,
-    pub t_eval: Vec<(f64, bool, bool)>,
+    pub t_eval: Vec<(f64, bool)>,
 }
 
 #[cfg(any(feature = "sled", feature = "serde_json"))]

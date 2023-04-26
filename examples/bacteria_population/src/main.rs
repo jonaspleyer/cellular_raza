@@ -49,7 +49,6 @@ pub const N_TIMES: usize = 1_001;
 pub const DT: f64 = 0.25;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 100;
-pub const FULL_SAVE_INTERVAL: usize = 100;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 4;
@@ -135,10 +134,9 @@ fn main() {
                     (
                         T_START + DT * i as f64,
                         i % SAVE_INTERVAL == 0,
-                        i % FULL_SAVE_INTERVAL == 0,
                     )
                 })
-                .collect::<Vec<(f64, bool, bool)>>(),
+                .collect::<Vec<(f64, bool)>>(),
         },
         meta_params: SimulationMetaParams {
             n_threads: N_THREADS,
