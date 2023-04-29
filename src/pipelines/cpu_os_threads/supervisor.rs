@@ -605,11 +605,25 @@ where
         }
     }
 
+    fn build_thread_pool(
+        &self,
+    ) -> Result<rayon::ThreadPool, SimulationError> {
+        // Build a thread pool
+        let mut builder = rayon::ThreadPoolBuilder::new();
+        // Set the number of threads
+        builder = match self.plotting_config.n_threads {
+            Some(n) => builder.num_threads(n),
+            // If not threads were supplied, we use only one
+            _ => builder.num_threads(1),
+        };
+        Ok(builder.build()?)
+    }
+
     pub fn plot_spatial_all_iterations_with_functions<Cpf, Vpf, Dpf>(
         &self,
-        cell_plotting_func: Cpf,
-        voxel_plotting_func: Vpf,
-        domain_plotting_func: Dpf,
+        cell_plotting_func: &Cpf,
+        voxel_plotting_func: &Vpf,
+        domain_plotting_func: &Dpf,
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
@@ -619,7 +633,9 @@ where
         ) -> Result<
             DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             DrawingError,
-        >,
+        >
+            + Send
+            + Sync,
         Cpf: Fn(
                 &C,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
@@ -632,16 +648,24 @@ where
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
+        CellAgentBox<C>: Send + Sync,
+        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Send + Sync,
+        DomainBox<D>: Send + Sync,
     {
-        for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
-            self.plot_spatial_at_iteration_with_functions(
-                iteration,
-                &cell_plotting_func,
-                &voxel_plotting_func,
-                &domain_plotting_func,
-            )?;
-        }
-        Ok(())
+        let pool = self.build_thread_pool()?;
+
+        // Generate all images by calling the pool
+        pool.install(move || -> Result<(), SimulationError> {
+            use rayon::prelude::*;
+            self.storage_voxels.get_all_iterations()?.into_par_iter().map(|iteration| {
+                self.plot_spatial_at_iteration_with_functions(
+                    iteration,
+                    &cell_plotting_func,
+                    &voxel_plotting_func,
+                    &domain_plotting_func,
+                )
+            }).collect::<Result<(), SimulationError>>()
+        })
     }
 
     pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>(
@@ -663,15 +687,23 @@ where
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
+        CellAgentBox<C>: Send + Sync,
+        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Send + Sync,
+        DomainBox<D>: Send + Sync,
     {
-        for iteration in self.storage_voxels.get_all_iterations()?.into_iter() {
-            self.plot_spatial_at_iteration_with_functions(
-                iteration,
-                &cell_plotting_func,
-                &voxel_plotting_func,
-                D::create_bitmap_root,
-            )?;
-        }
-        Ok(())
+        let pool = self.build_thread_pool()?;
+
+        // Generate all images by calling the pool
+        pool.install(move || -> Result<(), SimulationError> {
+            use rayon::prelude::*;
+            self.storage_voxels.get_all_iterations()?.into_par_iter().map(|iteration| {
+                self.plot_spatial_at_iteration_with_functions(
+                    iteration,
+                    &cell_plotting_func,
+                    &voxel_plotting_func,
+                    D::create_bitmap_root,
+                )
+            }).collect::<Result<(), SimulationError>>()
+        })
     }
 }
