@@ -6,16 +6,19 @@ use crate::concepts::interaction::{CellularReactions, InteractionExtracellularGr
 use crate::concepts::mechanics::{Force, Position, Velocity};
 
 use crate::plotting::spatial::{CreatePlottingRoot, PlotSelf};
-use crate::storage::sled_database::SledStorageInterface;
+use crate::storage::concepts::{StorageInterface,StorageManager};
+
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
 };
 
 use super::config::{
-    ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup,
-    StorageConfig, TimeSetup, PROGRESS_BAR_STYLE,
+    ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, TimeSetup,
+    PROGRESS_BAR_STYLE,
 };
+
+use super::config::StorageConfig;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -36,10 +39,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 /// # Supervisor controlling simulation execution
 ///
-pub struct SimulationSupervisor<MVC, Dom, C>
-where
-    Dom: Serialize + for<'a> Deserialize<'a>,
+pub struct SimulationSupervisor<
+    MVC,
+    Dom,
     C: Serialize + for<'a> Deserialize<'a>,
+> where
+    Dom: Serialize + for<'a> Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
     pub multivoxelcontainers: Vec<MVC>,
@@ -53,8 +58,7 @@ where
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    #[cfg(feature = "sled")]
-    pub meta_infos: SledStorageInterface<(), SimulationSetup<DomainBox<Dom>, C>>,
+    pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, C>>,
 }
 
 impl<
@@ -193,6 +197,7 @@ where
                     // if save_now_new.load(Ordering::Relaxed) {
                     if save {
                         cont.save_voxels_to_database(&iteration)?;
+                        cont.save_cells_to_database(&iteration)?;
                     }
 
                     // Check if we are stopping the simulation now
@@ -294,9 +299,7 @@ where
         let simulation_result = SimulationResult {
             storage: self.storage.clone(),
             domain,
-            #[cfg(feature = "sled")]
             storage_cells,
-            #[cfg(feature = "sled")]
             storage_voxels,
             plotting_config: PlottingConfig::default(),
         };
@@ -304,7 +307,6 @@ where
         Ok(simulation_result)
     }
 
-    #[cfg(any(feature = "sled", feature = "serde_json"))]
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError> {
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
@@ -316,12 +318,11 @@ where
             meta_params: SimulationMetaParams {
                 n_threads: self.worker_threads.len(),
             },
-            #[cfg(feature = "sled")]
             storage: self.storage.clone(),
         };
 
         self.meta_infos
-            .store_single_element(iteration, (), setup_current)?;
+            .store_single_element(iteration, &(), &setup_current)?;
         Ok(())
     }
 }
@@ -363,10 +364,8 @@ pub struct SimulationResult<
     pub storage: StorageConfig,
 
     pub domain: DomainBox<D>,
-    #[cfg(feature = "sled")]
-    pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
-    #[cfg(feature = "sled")]
-    pub storage_voxels: SledStorageInterface<
+    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<C>>,
+    pub storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
             I,

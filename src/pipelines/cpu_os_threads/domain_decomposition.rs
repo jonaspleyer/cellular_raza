@@ -5,8 +5,7 @@ use crate::concepts::errors::*;
 use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 
-#[cfg(feature = "sled")]
-use crate::storage::sled_database::SledStorageInterface;
+use crate::storage::concepts::{StorageInterface,StorageManager};
 
 use std::collections::{BTreeMap, HashMap};
 use std::marker::{Send, Sync};
@@ -530,10 +529,8 @@ pub struct MultiVoxelContainer<
     // Global barrier to synchronize threads and make sure every information is sent before further processing
     pub barrier: Barrier,
 
-    #[cfg(feature = "sled")]
-    pub storage_cells: SledStorageInterface<CellularIdentifier, CellAgentBox<C>>,
-    #[cfg(feature = "sled")]
-    pub storage_voxels: SledStorageInterface<
+    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<C>>,
+    pub storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
             I,
@@ -1094,7 +1091,6 @@ where
         Ok(())
     }
 
-    #[cfg(not(feature = "no_db"))]
     pub fn save_cells_to_database(&self, iteration: &u64) -> Result<(), SimulationError>
     where
         C: 'static,
@@ -1108,11 +1104,9 @@ where
             .flatten()
             .collect::<Vec<_>>();
 
-        #[cfg(feature = "sled")]
-        self.storage_cells.store_batch_elements(*iteration, cells)
+        self.storage_cells.store_batch_elements(*iteration, &cells)
     }
 
-    #[cfg(not(feature = "no_db"))]
     pub fn save_voxels_to_database(&self, iteration: &u64) -> Result<(), SimulationError>
     where
         VoxelBox<
@@ -1129,11 +1123,12 @@ where
     {
         let voxels = self
             .voxels
-            .iter()
-            .map(|(_, voxel)| (voxel.get_plain_index(), voxel.clone()))
+            .clone()
+            .into_iter()
+            .map(|(_, voxel)| (voxel.get_plain_index(), voxel))
             .collect::<Vec<_>>();
 
-        self.storage_voxels.store_batch_elements(*iteration, voxels)
+        self.storage_voxels.store_batch_elements(*iteration, &voxels)
     }
 
     // TODO find better function signature to have multiple time-scales

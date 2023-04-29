@@ -1,7 +1,7 @@
 use crate::concepts::cell::{CellAgent, CellAgentBox};
 use crate::concepts::domain::{Domain, Index, Voxel};
 use crate::concepts::mechanics::{Force, Position, Velocity};
-use crate::storage::sled_database::SledStorageInterface;
+use crate::storage::concepts::{StorageInterface,StorageManager};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -47,7 +47,6 @@ pub struct TimeSetup {
     pub t_eval: Vec<(f64, bool)>,
 }
 
-#[cfg(any(feature = "sled", feature = "serde_json"))]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     pub location: std::path::PathBuf,
@@ -60,7 +59,6 @@ pub struct SimulationSetup<Dom, C> {
     pub cells: Vec<C>,
     pub time: TimeSetup,
     pub meta_params: SimulationMetaParams,
-    #[cfg(any(feature = "sled", feature = "serde_json"))]
     pub storage: StorageConfig,
 }
 
@@ -342,39 +340,17 @@ where
             })
             .collect();
 
-        // Create an instance to communicate with the database
-        let date = chrono::Local::now().format("%Y-%m-%d:%H-%M-%S");
+        // Format the current time
+        let date = chrono::Local::now().format("%Y-%m-%d-%H:%M:%S");
         let location_with_time = setup.storage.location.join(format!("{}", date));
         setup.storage.location = location_with_time.into();
 
-        let storage_cells_path = setup.storage.location.clone().join("cell_storage");
-        let storage_voxels_path = setup.storage.location.clone().join("voxel_storage");
+        // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
-
-        // TODO catch these errors!
-        let storage_cells =
-            SledStorageInterface::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
-                storage_cells_path,
-            )
-            .unwrap();
-        let storage_voxels = SledStorageInterface::<
-            PlainIndex,
-            VoxelBox<
-                Ind,
-                Vox,
-                Cel,
-                Pos,
-                For,
-                Vel,
-                ConcVecExtracellular,
-                ConcBoundaryExtracellular,
-                ConcVecIntracellular,
-            >,
-        >::open_or_create(storage_voxels_path)
-        .unwrap();
         let meta_infos =
-            SledStorageInterface::<(), SimulationSetup<DomainBox<Dom>, Cel>>::open_or_create(
-                meta_infos_path,
+            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel>>::open_or_create(
+                &meta_infos_path,
+                0,
             )
             .unwrap();
 
@@ -471,10 +447,30 @@ where
                 let senders_boundary_concentrations =
                     create_senders!(sender_receiver_pairs_boundary_concentrations);
 
-                // Clone database instance
-                #[cfg(not(feature = "no_db"))]
-                let storage_cells_new = storage_cells.clone();
-                let storage_voxels_new = storage_voxels.clone();
+                let storage_cells_path = setup.storage.location.clone().join("cell_storage");
+                let storage_voxels_path = setup.storage.location.clone().join("voxel_storage");
+
+                // TODO catch these errors!
+                let storage_cells =
+                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
+                        &storage_cells_path,
+                        i as u64,
+                        ).unwrap();
+                let storage_voxels = StorageManager::<
+                    PlainIndex,
+                    VoxelBox<
+                        Ind,
+                        Vox,
+                        Cel,
+                        Pos,
+                        For,
+                        Vel,
+                        ConcVecExtracellular,
+                        ConcBoundaryExtracellular,
+                        ConcVecIntracellular,
+                        >,
+                    >::open_or_create(&storage_voxels_path, i as u64)
+                    .unwrap();
 
                 voxels.iter_mut().for_each(|(_, voxelbox)| {
                     match strategies.voxel_definition_strategies {
@@ -511,9 +507,8 @@ where
 
                     barrier: barrier.clone(),
 
-                    #[cfg(not(feature = "no_db"))]
-                    storage_cells: storage_cells_new,
-                    storage_voxels: storage_voxels_new,
+                    storage_cells,
+                    storage_voxels,
 
                     mvc_id: i as u16,
                 };
@@ -528,7 +523,6 @@ where
 
             time: setup.time,
             meta_params: setup.meta_params,
-            #[cfg(feature = "sled")]
             storage: setup.storage,
 
             domain: setup.domain.into(),
@@ -536,7 +530,6 @@ where
             config: SimulationConfig::default(),
             plotting_config: PlottingConfig::default(),
 
-            #[cfg(not(feature = "no_db"))]
             meta_infos,
         }
     }

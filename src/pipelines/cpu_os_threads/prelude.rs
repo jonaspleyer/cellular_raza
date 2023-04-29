@@ -7,7 +7,7 @@ pub use crate::concepts::interaction::*;
 pub use crate::concepts::mechanics::*;
 
 // Database
-#[cfg(not(feature = "no_db"))]
+#[cfg(feature = "sled")]
 pub use crate::storage::sled_database::*;
 
 // Cell Properties
