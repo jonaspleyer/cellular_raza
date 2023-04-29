@@ -1,9 +1,9 @@
+use super::concepts::StorageInterface;
 use crate::concepts::errors::{DataBaseError, SimulationError};
 
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::marker::PhantomData;
 
 // TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
@@ -44,8 +44,10 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
             Ok(Some(tree))
         }
     }
+}
 
-    pub fn open_or_create(location: std::path::PathBuf) -> Result<Self, SimulationError> {
+impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Element> {
+    fn open_or_create(location: &std::path::Path) -> Result<Self, SimulationError> {
         let config = sled::Config::default()
             .mode(sled::Mode::HighThroughput)
             .cache_capacity(1024 * 1024 * 1024 * 5) // 5gb
@@ -53,26 +55,24 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
             .use_compression(false);
 
         let db = config.open()?;
+
         Ok(SledStorageInterface {
             db,
             id_phantom: PhantomData,
             element_phantom: PhantomData,
         })
     }
-}
 
-// impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Element>
-impl<Id, Element> SledStorageInterface<Id, Element>
-where
-    Id: Hash + Serialize + for<'a> Deserialize<'a>,
-    Element: Serialize + for<'a> Deserialize<'a>,
-{
-    pub fn store_single_element(
+    fn store_single_element(
         &self,
         iteration: u64,
-        identifier: Id,
-        element: Element,
-    ) -> Result<(), SimulationError> {
+        identifier: &Id,
+        element: &Element,
+    ) -> Result<(), SimulationError>
+    where
+        Id: Serialize,
+        Element: Serialize,
+    {
         let tree = self.open_or_create_tree(iteration)?;
 
         // Serialize the identifier and the element
@@ -87,11 +87,15 @@ where
         Ok(())
     }
 
-    pub fn store_batch_elements(
+    fn store_batch_elements(
         &self,
         iteration: u64,
-        identifiers_elements: Vec<(Id, Element)>,
-    ) -> Result<(), SimulationError> {
+        identifiers_elements: &[(Id, Element)],
+    ) -> Result<(), SimulationError>
+    where
+        Id: Serialize,
+        Element: Serialize,
+    {
         let tree = self.open_or_create_tree(iteration)?;
         let mut batch = sled::Batch::default();
         for (identifier, element) in identifiers_elements.into_iter() {
@@ -103,16 +107,20 @@ where
         Ok(())
     }
 
-    pub fn load_single_element(
+    fn load_single_element(
         &self,
         iteration: u64,
-        identifier: Id,
-    ) -> Result<Option<Element>, SimulationError> {
+        identifier: &Id,
+    ) -> Result<Option<Element>, SimulationError>
+    where
+        Id: Serialize,
+        Element: for<'a> Deserialize<'a>,
+    {
         let tree = match self.open_tree(iteration)? {
             Some(tree) => tree,
             None => return Ok(None),
         };
-        let identifier_serialized = bincode::serialize(&identifier)?;
+        let identifier_serialized = bincode::serialize(identifier)?;
         match tree.get(&identifier_serialized)? {
             Some(element_serialized) => {
                 let element: Element = bincode::deserialize(&element_serialized)?;
@@ -122,10 +130,14 @@ where
         }
     }
 
-    pub fn load_element_history(
+    fn load_element_history(
         &self,
-        identifier: Id,
-    ) -> Result<HashMap<u64, Element>, SimulationError> {
+        identifier: &Id,
+    ) -> Result<Option<HashMap<u64, Element>>, SimulationError>
+    where
+        Id: Serialize,
+        Element: for<'a> Deserialize<'a>,
+    {
         // Keep track if the element has not been found in a database.
         // If so we can either get the current minimal iteration or maximal depending on where it was found else.
         let mut minimal_iteration = None;
@@ -135,7 +147,7 @@ where
         // Save results in this hashmap
         let mut accumulator = HashMap::new();
         // Serialize the identifier
-        let identifier_serialized = bincode::serialize(&identifier)?;
+        let identifier_serialized = bincode::serialize(identifier)?;
         for iteration_serialized in self.db.tree_names() {
             // If we are above the maximal or below the minimal iteration, we skip checking
             let iteration: u64 = bincode::deserialize(&iteration_serialized)?;
@@ -202,15 +214,20 @@ where
                 },
             };
         }
-        Ok(accumulator)
+        if accumulator.len() != 0 {
+            return Ok(Some(accumulator));
+        } else {
+            return Ok(None);
+        }
     }
 
-    pub fn load_all_elements_at_iteration(
+    fn load_all_elements_at_iteration(
         &self,
         iteration: u64,
     ) -> Result<HashMap<Id, Element>, SimulationError>
     where
-        Id: std::cmp::Eq,
+        Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
+        Element: for<'a> Deserialize<'a>,
     {
         let tree = match self.open_tree(iteration)? {
             Some(tree) => tree,
@@ -226,9 +243,10 @@ where
             .collect::<Result<HashMap<Id, Element>, SimulationError>>()
     }
 
-    pub fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, SimulationError>
+    fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, SimulationError>
     where
-        Id: std::cmp::Eq,
+        Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
+        Element: for<'a> Deserialize<'a>,
     {
         self.db
             .tree_names()
@@ -250,39 +268,18 @@ where
             .collect::<Result<HashMap<u64, HashMap<Id, Element>>, SimulationError>>()
     }
 
-    pub fn load_all_element_histories(
-        &self,
-    ) -> Result<HashMap<Id, HashMap<u64, Element>>, SimulationError>
-    where
-        Id: std::cmp::Eq,
-    {
-        let all_elements = self.load_all_elements()?;
-        let reordered_elements: HashMap<Id, HashMap<u64, Element>> = all_elements
-            .into_iter()
-            .map(|(iteration, identifier_to_elements)| {
-                identifier_to_elements
-                    .into_iter()
-                    .map(move |(identifier, element)| (identifier, iteration, element))
-            })
-            .flatten()
-            .fold(
-                HashMap::new(),
-                |mut acc, (identifier, iteration, element)| {
-                    let existing_elements = acc.entry(identifier).or_default();
-                    existing_elements.insert(iteration, element);
-                    acc
-                },
-            );
-        Ok(reordered_elements)
-    }
-
-    pub fn get_all_iterations(&self) -> Result<Vec<u64>, SimulationError> {
+    fn get_all_iterations(&self) -> Result<Vec<u64>, SimulationError> {
         let iterations = self
             .db
             .tree_names()
             .iter()
             // TODO this should not be here! Fix it properly (I asked on sled discord)
-            .filter(|key| **key!=sled::IVec::from(&[95, 95, 115, 108, 101, 100, 95, 95, 100, 101, 102, 97, 117, 108, 116]))
+            .filter(|key| {
+                **key
+                    != sled::IVec::from(&[
+                        95, 95, 115, 108, 101, 100, 95, 95, 100, 101, 102, 97, 117, 108, 116,
+                    ])
+            })
             .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized))
             .collect::<Result<Vec<_>, SimulationError>>()?;
 
