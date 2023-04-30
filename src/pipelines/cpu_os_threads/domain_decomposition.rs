@@ -5,7 +5,7 @@ use crate::concepts::errors::*;
 use crate::concepts::interaction::*;
 use crate::concepts::mechanics::*;
 
-use crate::storage::concepts::{StorageInterface,StorageManager};
+use crate::storage::concepts::{StorageInterface, StorageManager};
 
 use std::collections::{BTreeMap, HashMap};
 use std::marker::{Send, Sync};
@@ -1128,7 +1128,8 @@ where
             .map(|(_, voxel)| (voxel.get_plain_index(), voxel))
             .collect::<Vec<_>>();
 
-        self.storage_voxels.store_batch_elements(*iteration, &voxels)
+        self.storage_voxels
+            .store_batch_elements(*iteration, &voxels)
     }
 
     // TODO find better function signature to have multiple time-scales

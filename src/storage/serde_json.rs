@@ -42,10 +42,7 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
         Ok(std::io::BufWriter::new(file))
     }
 
-    fn get_iteration_path(
-        &self,
-        iteration: u64
-    ) -> std::path::PathBuf {
+    fn get_iteration_path(&self, iteration: u64) -> std::path::PathBuf {
         self.path.join(format!("{:020.0}", iteration))
     }
 
@@ -75,14 +72,17 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
             Some(filename) => match filename.to_str() {
                 Some(filename_string) => Ok(Some(filename_string.parse::<u64>()?)),
                 None => Ok(None),
-            }
+            },
             None => Ok(None),
         }
     }
 }
 
 impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Element> {
-    fn open_or_create(location: &std::path::Path, storage_instance: u64) -> Result<Self, SimulationError>
+    fn open_or_create(
+        location: &std::path::Path,
+        storage_instance: u64,
+    ) -> Result<Self, SimulationError>
     where
         Self: Sized,
     {
@@ -129,13 +129,11 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         let batch = JsonBatchSaveFormat {
             data: identifiers_elements
                 .into_iter()
-                .map(|(id, element)| {
-                    JsonSaveFormat {
-                        identifier: id,
-                        element,
-                    }
+                .map(|(id, element)| JsonSaveFormat {
+                    identifier: id,
+                    element,
                 })
-                .collect()
+                .collect(),
         };
         serde_json::to_writer_pretty(iteration_file, &batch)?;
         Ok(())
@@ -183,21 +181,21 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
                         Some(tail) => {
                             let elements = tail.split("_");
                             if elements.into_iter().next() == Some("batch") {
-                                let result: JsonBatchSaveFormat<Id, Element> = serde_json::from_reader(file)?;
-                                all_elements_at_iteration.extend(result
-                                    .data
-                                    .into_iter()
-                                    .map(|json_save_format| (json_save_format.identifier, json_save_format.element))
-                                );
+                                let result: JsonBatchSaveFormat<Id, Element> =
+                                    serde_json::from_reader(file)?;
+                                all_elements_at_iteration.extend(result.data.into_iter().map(
+                                    |json_save_format| {
+                                        (json_save_format.identifier, json_save_format.element)
+                                    },
+                                ));
                             }
-
-                        },
+                        }
                         None => (),
                     },
                     None => (),
                 }
             }
-            return Ok(all_elements_at_iteration)
+            return Ok(all_elements_at_iteration);
         } else {
             return Ok(HashMap::new());
         }
@@ -207,16 +205,14 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         let paths = std::fs::read_dir(&self.path)?;
         paths
             .into_iter()
-            .filter_map(|path| {
-                match path {
-                    Ok(p) => match self.folder_name_to_iteration(&p.path()) {
-                        Ok(Some(entry)) => Some(Ok(entry)),
-                        Ok(None) => None,
-                        Err(e) => Some(Err(e)),
-                    },
-                    Err(_) => None,
-                }
+            .filter_map(|path| match path {
+                Ok(p) => match self.folder_name_to_iteration(&p.path()) {
+                    Ok(Some(entry)) => Some(Ok(entry)),
+                    Ok(None) => None,
+                    Err(e) => Some(Err(e)),
+                },
+                Err(_) => None,
             })
-            .collect::<Result<Vec<_>,_>>()
+            .collect::<Result<Vec<_>, _>>()
     }
 }
