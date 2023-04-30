@@ -1,7 +1,7 @@
 <div align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" src="doc/cellular_raza_dark_mode.svg">
-        <source media="(prefers-color-scheme: light)" src="doc/cellular_raza.svg">
+        <source media="(prefers-color-scheme: dark)" srcset="doc/cellular_raza_dark_mode.svg">
+        <source media="(prefers-color-scheme: light)" srcset="doc/cellular_raza.svg">
         <img alt="The cellular_raza logo" src="doc/cellular_raza.svg">
     </picture>
 </div>
