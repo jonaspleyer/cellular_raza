@@ -142,7 +142,7 @@ fn main() {
             n_threads: N_THREADS,
         },
         storage: StorageConfig {
-            location: "out/organoid_simple".to_owned().into(),
+            location: "out/bacteria_population".to_owned().into(),
         },
     };
 
