@@ -5,7 +5,7 @@ use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 
 // Imports from this crate
-use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+use cellular_raza::backends::cpu_os_threads::prelude::*;
 
 
 // Constants of the simulation

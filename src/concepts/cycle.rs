@@ -13,7 +13,7 @@ pub enum CycleEvent {
 /// This trait represents all cycles of a cell and works in tandem with the [CycleEvent] enum.
 ///
 /// The `update_cycle` function is designed to be called frequently and return only something if a
-/// specific cycle event is supposed to be occuring. [Pipelines](crate::pipelines) should implement
+/// specific cycle event is supposed to be occuring. [Backends](crate::backends) should implement
 /// the functionality to call the corresponding functions as needed.
 pub trait Cycle<Cell> {
     fn update_cycle(

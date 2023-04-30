@@ -9,7 +9,7 @@ use crate::concepts::errors::SimulationError;
 /// [SimulationSupervisor](cpu_os_threads::supervisor::SimulationSupervisor).
 pub mod cpu_os_threads;
 
-pub trait Pipeline {
+pub trait Backend {
     type Setup;
     type SetupStrategies;
     type SnapShot;

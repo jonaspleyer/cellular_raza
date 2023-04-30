@@ -1,4 +1,4 @@
-use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+use cellular_raza::backend::cpu_os_threads::prelude::*;
 
 use nalgebra::Vector2;
 use num::Zero;

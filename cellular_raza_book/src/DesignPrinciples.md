@@ -27,7 +27,7 @@ A common workflow while building new models might be to:
 
 When chaning our model description, we actively want to avoid, having to rewrite the corresponding solver everytime a new model property is developed.
 This means that we need to define a way to handle a multitude of different implementations without knowing their detail while still obtaining correct results.
-`cellular_raza` solves this problem by defining [concepts](DesignPrinciples-Concepts.md) (traits in the rust language) that are responsible for interfacing between the generalized solver which is part of the [pipeline](Pipelines).
+`cellular_raza` solves this problem by defining [concepts](DesignPrinciples-Concepts.md) (traits in the rust language) that are responsible for interfacing between the generalized solver which is part of the [backend](Backends).
 
 ## Reduce your model
 During the development process of a new model it is often desirable to reduce yourself to the most simplistic formulation of your current iteration.
@@ -44,5 +44,5 @@ Every update step should be able to be executed simultanously and resolved in a 
 This means that results of a simulation will not only be deterministic as explained above but also invariant under reordering of elements.
 ```admonish info
     The generated unique identifiers of cells and voxels may be an exception!
-    This behaviour can be pipeline-dependent.
+    This behaviour can be backend-dependent.
 ```
