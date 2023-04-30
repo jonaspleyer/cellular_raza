@@ -89,7 +89,7 @@ impl<
         Cel,
     >
 where
-    Dom: 'static + Serialize + for<'a> Deserialize<'a> + Clone,
+    Dom: 'static + Serialize + for<'a> Deserialize<'a>,
     Pos: 'static + Serialize + for<'a> Deserialize<'a>,
     For: 'static + Serialize + for<'a> Deserialize<'a>,
     Inf: 'static,
@@ -304,7 +304,10 @@ where
         Ok(simulation_result)
     }
 
-    pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError> {
+    pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
+    where
+        Dom: Clone,
+    {
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
             cells: Vec::<Cel>::new(),
