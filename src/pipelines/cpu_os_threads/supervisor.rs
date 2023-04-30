@@ -602,9 +602,7 @@ where
         }
     }
 
-    fn build_thread_pool(
-        &self,
-    ) -> Result<rayon::ThreadPool, SimulationError> {
+    fn build_thread_pool(&self) -> Result<rayon::ThreadPool, SimulationError> {
         // Build a thread pool
         let mut builder = rayon::ThreadPoolBuilder::new();
         // Set the number of threads
@@ -624,14 +622,13 @@ where
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
-            &D,
-            u32,
-            &'a String,
-        ) -> Result<
-            DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
-            DrawingError,
-        >
-            + Send
+                &D,
+                u32,
+                &'a String,
+            ) -> Result<
+                DrawingArea<BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+                DrawingError,
+            > + Send
             + Sync,
         Cpf: Fn(
                 &C,
@@ -646,7 +643,17 @@ where
             + Send
             + Sync,
         CellAgentBox<C>: Send + Sync,
-        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Send + Sync,
+        VoxelBox<
+            I,
+            V,
+            C,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >: Send + Sync,
         DomainBox<D>: Send + Sync,
     {
         let pool = self.build_thread_pool()?;
@@ -654,14 +661,18 @@ where
         // Generate all images by calling the pool
         pool.install(move || -> Result<(), SimulationError> {
             use rayon::prelude::*;
-            self.storage_voxels.get_all_iterations()?.into_par_iter().map(|iteration| {
-                self.plot_spatial_at_iteration_with_functions(
-                    iteration,
-                    &cell_plotting_func,
-                    &voxel_plotting_func,
-                    &domain_plotting_func,
-                )
-            }).collect::<Result<(), SimulationError>>()
+            self.storage_voxels
+                .get_all_iterations()?
+                .into_par_iter()
+                .map(|iteration| {
+                    self.plot_spatial_at_iteration_with_functions(
+                        iteration,
+                        &cell_plotting_func,
+                        &voxel_plotting_func,
+                        &domain_plotting_func,
+                    )
+                })
+                .collect::<Result<(), SimulationError>>()
         })
     }
 
@@ -685,7 +696,17 @@ where
             + Send
             + Sync,
         CellAgentBox<C>: Send + Sync,
-        VoxelBox<I, V, C, Pos, For, Vel, ConcVecExtracellular, ConcBoundaryExtracellular, ConcVecIntracellular>: Send + Sync,
+        VoxelBox<
+            I,
+            V,
+            C,
+            Pos,
+            For,
+            Vel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >: Send + Sync,
         DomainBox<D>: Send + Sync,
     {
         let pool = self.build_thread_pool()?;
@@ -693,14 +714,18 @@ where
         // Generate all images by calling the pool
         pool.install(move || -> Result<(), SimulationError> {
             use rayon::prelude::*;
-            self.storage_voxels.get_all_iterations()?.into_par_iter().map(|iteration| {
-                self.plot_spatial_at_iteration_with_functions(
-                    iteration,
-                    &cell_plotting_func,
-                    &voxel_plotting_func,
-                    D::create_bitmap_root,
-                )
-            }).collect::<Result<(), SimulationError>>()
+            self.storage_voxels
+                .get_all_iterations()?
+                .into_par_iter()
+                .map(|iteration| {
+                    self.plot_spatial_at_iteration_with_functions(
+                        iteration,
+                        &cell_plotting_func,
+                        &voxel_plotting_func,
+                        D::create_bitmap_root,
+                    )
+                })
+                .collect::<Result<(), SimulationError>>()
         })
     }
 }
