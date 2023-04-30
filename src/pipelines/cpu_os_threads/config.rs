@@ -1,7 +1,7 @@
 use crate::concepts::cell::{CellAgent, CellAgentBox};
 use crate::concepts::domain::{Domain, Index, Voxel};
 use crate::concepts::mechanics::{Force, Position, Velocity};
-use crate::storage::concepts::{StorageInterface,StorageManager};
+use crate::storage::concepts::{StorageInterface, StorageManager};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -455,19 +455,21 @@ where
                     StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
                         &storage_cells_path,
                         i as u64,
-                        ).unwrap();
-                let storage_voxels = StorageManager::<
-                    PlainIndex,
-                    VoxelBox<
-                        Ind,
-                        Vox,
-                        Cel,
-                        Pos,
-                        For,
-                        Vel,
-                        ConcVecExtracellular,
-                        ConcBoundaryExtracellular,
-                        ConcVecIntracellular,
+                    )
+                    .unwrap();
+                let storage_voxels =
+                    StorageManager::<
+                        PlainIndex,
+                        VoxelBox<
+                            Ind,
+                            Vox,
+                            Cel,
+                            Pos,
+                            For,
+                            Vel,
+                            ConcVecExtracellular,
+                            ConcBoundaryExtracellular,
+                            ConcVecIntracellular,
                         >,
                     >::open_or_create(&storage_voxels_path, i as u64)
                     .unwrap();

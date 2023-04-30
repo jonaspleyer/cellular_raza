@@ -6,8 +6,7 @@ use crate::concepts::interaction::{CellularReactions, InteractionExtracellularGr
 use crate::concepts::mechanics::{Force, Position, Velocity};
 
 use crate::plotting::spatial::{CreatePlottingRoot, PlotSelf};
-use crate::storage::concepts::{StorageInterface,StorageManager};
-
+use crate::storage::concepts::{StorageInterface, StorageManager};
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
@@ -39,11 +38,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 /// # Supervisor controlling simulation execution
 ///
-pub struct SimulationSupervisor<
-    MVC,
-    Dom,
+pub struct SimulationSupervisor<MVC, Dom, C>
+where
     C: Serialize + for<'a> Deserialize<'a>,
-> where
     Dom: Serialize + for<'a> Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
