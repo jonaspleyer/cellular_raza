@@ -18,6 +18,7 @@
 A cellular Agent-Based modeling tool.
 
 ## Documentation
+Read the [book](https://jonaspleyer.github.io/cellular_raza/).
 Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of the package.
 Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentation of the code.
 
