@@ -34,12 +34,13 @@ macro_rules! impl_error_variant {
                     $(
                         $name::$err_var(message) => write!(f, "{}", message),
                     )+
+                    #[cfg(feature="serde_json")]
+                    $name::SerdeJsonError(message) => write!(f, "{}", message),
+                    #[cfg(feature = "sled")]
+                    $name::SledError(message) => write!(f, "{}", message),
                 }
             }
         }
-
-        // Also implement the general error property
-        impl std::error::Error for $name {}
     }
 }
 
@@ -53,6 +54,20 @@ macro_rules! impl_from_error {
                 }
             }
         )+
+
+        #[cfg(feature="serde_json")]
+        impl From<serde_json::Error> for $name {
+            fn from(err: serde_json::Error) -> Self {
+                $name::SerdeJsonError(err)
+            }
+        }
+
+        #[cfg(feature = "sled")]
+        impl From<sled::Error> for $name {
+            fn from(err: sled::Error) -> Self {
+                $name::SledError(err)
+            }
+        }
     }
 }
 
@@ -83,8 +98,6 @@ define_errors!(
     (DrawingError, "Used to catch errors related to plotting")
 );
 
-pub type SledError = sled::Error;
-
 /// Covers all errors that can occur in this Simulation
 /// The errors are listed from very likely to be a user error from almost certainly an internal error.
 #[derive(Debug)]
@@ -97,13 +110,13 @@ pub enum SimulationError {
     DeathError(DeathError),
     BoundaryError(BoundaryError),
     DrawingError(DrawingError),
-    // #[cfg(feature="db_mongodb")]
-    // TODO
-    // SledError,
     DataBaseError(DataBaseError),
 
     // Less likely but possible to be user errors
-    SledError(SledError),
+    #[cfg(feature = "serde_json")]
+    SerdeJsonError(serde_json::Error),
+    #[cfg(feature = "sled")]
+    SledError(sled::Error),
     SerializeError(Box<bincode::ErrorKind>),
     SendError(String),
     ReceiveError(RecvError),
@@ -127,7 +140,6 @@ impl_from_error! {SimulationError,
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
     (IOError, std::io::Error),
-    (SledError, SledError),
     (SerializeError, Box<bincode::ErrorKind>),
     (ParseIntError, std::num::ParseIntError),
     (Utf8Error, std::str::Utf8Error),
@@ -148,7 +160,6 @@ impl_error_variant! {SimulationError,
     BoundaryError,
     IndexError,
     IOError,
-    SledError,
     SerializeError,
     ParseIntError,
     Utf8Error,
@@ -157,6 +168,9 @@ impl_error_variant! {SimulationError,
     ThreadingError,
     ConsoleLogError
 }
+
+// Implement the general error property
+impl std::error::Error for SimulationError {}
 
 // Implement conversion from Sending error manually
 impl<T> From<SendError<T>> for SimulationError {
