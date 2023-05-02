@@ -152,8 +152,8 @@ macro_rules! define_and_implement_cartesian_cuboid {
     }
 }
 
-macro_rules! define_and_implement_cartesian_cuboid_voxel{
-    ($d: expr, $n_reactions:expr, $name: ident, $voxel_name: ident, $($k: expr),+) => {
+macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
+    ($d: literal, $name: ident, $voxel_name: ident, $($k: expr),+) => {
         // Define the struct for the voxel
         #[doc = "Cuboid Voxel for `"]
         #[doc = stringify!($name)]
@@ -161,36 +161,38 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
         #[derive(Clone,Debug,Serialize,Deserialize)]
-        pub struct $voxel_name {
+        pub struct $voxel_name<const N: usize> {
                 min: [f64; $d],
                 max: [f64; $d],
                 middle: [f64; $d],
                 dx: [f64; $d],
                 index: [i64; $d],
 
-                pub extracellular_concentrations: SVector<f64, $n_reactions>,
-                pub extracellular_gradient: SVector<SVector<f64, $d>, $n_reactions>,
-                pub diffusion_constant: SVector<f64, $n_reactions>,
-                pub production_rate: SVector<f64, $n_reactions>,
-                pub degradation_rate: SVector<f64, $n_reactions>,
-                domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>,
+                pub extracellular_concentrations: SVector<f64, N>,
+                #[cfg(feature = "gradients")]
+                pub extracellular_gradient: SVector<SVector<f64, $d>, N>,
+                pub diffusion_constant: SVector<f64, N>,
+                pub production_rate: SVector<f64, N>,
+                pub degradation_rate: SVector<f64, N>,
+                domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>,
         }
 
-        impl $voxel_name {
-            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)>) -> $voxel_name {
+        impl<const N: usize> $voxel_name<N> {
+            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>) -> $voxel_name<N> {
                 let middle = [$((max[$k] + min[$k])/2.0),+];
                 let dx = [$(max[$k]-min[$k]),+];
-                $voxel_name {
+                $voxel_name::<N> {
                     min,
                     max,
                     middle,
                     dx,
                     index,
-                    extracellular_concentrations: SVector::<f64, $n_reactions>::from_element(0.0),
-                    extracellular_gradient: SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0)),
-                    diffusion_constant: SVector::<f64, $n_reactions>::from_element(0.0),
-                    production_rate: SVector::<f64, $n_reactions>::from_element(0.0),
-                    degradation_rate: SVector::<f64, $n_reactions>::from_element(0.0),
+                    extracellular_concentrations: SVector::<f64, N>::from_element(0.0),
+                    #[cfg(feature = "gradients")]
+                    extracellular_gradient: SVector::<SVector<f64, $d>, N>::from_element(SVector::<f64, $d>::from_element(0.0)),
+                    diffusion_constant: SVector::<f64, N>::from_element(0.0),
+                    production_rate: SVector::<f64, N>::from_element(0.0),
+                    degradation_rate: SVector::<f64, N>::from_element(0.0),
                     domain_boundaries,
                 }
             }
@@ -217,25 +219,25 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name {
+        impl<const N: usize> Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name<N> {
             fn get_index(&self) -> [i64; $d] {
                 self.index
             }
         }
 
-        impl ExtracellularMechanics<[i64; $d], SVector<f64, $d>, SVector<f64, $n_reactions>, SVector<SVector<f64, $d>, $n_reactions>, SVector<f64, $n_reactions>, SVector<f64, $n_reactions>> for $voxel_name {
-            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<SVector<f64, $n_reactions>, SimulationError> {
+        impl<const N: usize> ExtracellularMechanics<[i64; $d], SVector<f64, $d>, SVector<f64, N>, SVector<SVector<f64, $d>, N>, SVector<f64, N>, SVector<f64, N>> for $voxel_name<N> {
+            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<SVector<f64, N>, SimulationError> {
                 self.position_is_in_domain(pos)?;
                 Ok(self.extracellular_concentrations)
             }
 
-            fn get_total_extracellular(&self) -> SVector<f64, $n_reactions> {
+            fn get_total_extracellular(&self) -> SVector<f64, N> {
                 self.extracellular_concentrations
             }
 
             #[cfg(feature = "gradients")]
-            fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<(), SimulationError> {
-                let mut new_gradient = SVector::<SVector<f64, $d>, $n_reactions>::from_element(SVector::<f64, $d>::from_element(0.0));
+            fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]) -> Result<(), SimulationError> {
+                let mut new_gradient = SVector::<SVector<f64, $d>, N>::from_element(SVector::<f64, $d>::from_element(0.0));
                 boundaries.iter()
                     .for_each(|(index, boundary_condition)| {
                         let extracellular_difference = match boundary_condition {
@@ -247,7 +249,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                         let dist = pointer.norm();
                         let gradient = pointer.normalize()/dist;
                         new_gradient.iter_mut().zip(extracellular_difference.into_iter()).for_each(|(component, diff)| *component += *diff*gradient);
-                        // let total_gradient = SVector::<SVector<f64,$d>,$n_reactions>::from_iterator(extracellular_difference.into_iter().map(|diff| *diff*gradient));
+                        // let total_gradient = SVector::<SVector<f64,$d>,N>::from_iterator(extracellular_difference.into_iter().map(|diff| *diff*gradient));
                         // gradient += total_gradient;
                     });
                 self.extracellular_gradient = new_gradient;
@@ -255,16 +257,16 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
             }
 
             #[cfg(feature = "gradients")]
-            fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, $n_reactions>, SimulationError> {
+            fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, N>, SimulationError> {
                 Ok(self.extracellular_gradient)
             }
 
-            fn set_total_extracellular(&mut self, concentrations: &SVector<f64, $n_reactions>) -> Result<(), CalcError> {
+            fn set_total_extracellular(&mut self, concentrations: &SVector<f64, N>) -> Result<(), CalcError> {
                 Ok(self.extracellular_concentrations = *concentrations)
             }
 
-            fn calculate_increment(&self, total_extracellular: &SVector<f64, $n_reactions>, point_sources: &[(SVector<f64, $d>, SVector<f64, $n_reactions>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, $n_reactions>>)]) -> Result<SVector<f64, $n_reactions>, CalcError> {
-                let mut inc = SVector::<f64, $n_reactions>::from_element(0.0);
+            fn calculate_increment(&self, total_extracellular: &SVector<f64, N>, point_sources: &[(SVector<f64, $d>, SVector<f64, N>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]) -> Result<SVector<f64, N>, CalcError> {
+                let mut inc = SVector::<f64, N>::from_element(0.0);
 
                 self.domain_boundaries
                     .iter()
@@ -290,14 +292,14 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 Ok(inc)
             }
 
-            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<SVector<f64, $n_reactions>>, IndexError> {
+            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<SVector<f64, N>>, IndexError> {
                 Ok(BoundaryCondition::Value(self.extracellular_concentrations))
             }
         }
 
         // Implement the cartesian cuboid
         // Index is an array of size 3 with elements of type usize
-        impl<C> Domain<C, [i64; $d], $voxel_name> for $name
+        impl<C, const N: usize> Domain<C, [i64; $d], $voxel_name<N>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
         where C: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
@@ -370,7 +372,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 return v;
             }
 
-            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name)>>), CalcError> {
+            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name<N>)>>), CalcError> {
                 // Get all voxel indices
                 let indices: Vec<[i64; $d]> = [$($k),+]
                     .iter()                                     // indices supplied in macro invokation
@@ -386,7 +388,7 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                 };
 
                 // Now we drain the indices vector
-                let mut index_voxel_combinations: Vec<([i64; $d], $voxel_name)> = indices
+                let mut index_voxel_combinations: Vec<([i64; $d], $voxel_name<N>)> = indices
                     .into_iter()
                     .map(|ind| {
                         let min = [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+];
@@ -398,9 +400,9 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
                             .map(|v| [$(ind[$k] + v[$k]),+])
                             .filter(|new_index| *new_index != ind)
                             .filter(|new_index| new_index.iter().zip(self.n_vox.iter()).any(|(i1, i2)| *i1<0 || i2<=i1))
-                            .map(|new_index| (new_index, BoundaryCondition::Neumann(SVector::<f64, $n_reactions>::from_element(0.0))))
+                            .map(|new_index| (new_index, BoundaryCondition::Neumann(SVector::<f64, N>::from_element(0.0))))
                             .collect::<Vec<_>>();
-                        (ind, $voxel_name::new(min, max, ind, domain_boundaries))
+                        (ind, $voxel_name::<N>::new(min, max, ind, domain_boundaries))
                     })
                     .collect();
 
@@ -433,226 +435,27 @@ macro_rules! define_and_implement_cartesian_cuboid_voxel{
 // TODO reformulate definition with const generics
 // TODO make them only visible if correspoding feature (eg. fluid_mechanics or gradients) is active
 define_and_implement_cartesian_cuboid!(1, CartesianCuboid1, 0);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    1,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions1,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    2,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions2,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    3,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions3,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    4,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions4,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    5,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions5,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    6,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions6,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    7,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions7,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    8,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions8,
-    0
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    1,
-    9,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1Reactions9,
-    0
-);
-
 define_and_implement_cartesian_cuboid!(2, CartesianCuboid2, 0, 1);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
+define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, 0, 1, 2);
+implement_cartesian_cuboid_voxel_fluid_mechanics!(
     1,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions1,
-    0,
-    1
+    CartesianCuboid1,
+    CartesianCuboidVoxel1,
+    0
 );
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
+implement_cartesian_cuboid_voxel_fluid_mechanics!(
     2,
     CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions2,
-    0,
-    1
+    CartesianCuboidVoxel2,
+    0, 1
 );
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
+implement_cartesian_cuboid_voxel_fluid_mechanics!(
     3,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions3,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    4,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions4,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    5,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions5,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    6,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions6,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    7,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions7,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    8,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions8,
-    0,
-    1
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    2,
-    9,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2Reactions9,
-    0,
-    1
+    CartesianCuboid3,
+    CartesianCuboidVoxel3,
+    0, 1, 2
 );
 
-define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, 0, 1, 2);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    1,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions1,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    2,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions2,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    3,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions3,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    4,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions4,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    5,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions5,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    6,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions6,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    7,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions7,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    8,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions8,
-    0,
-    1,
-    2
-);
-define_and_implement_cartesian_cuboid_voxel!(
-    3,
-    9,
-    CartesianCuboid3,
-    CartesianCuboidVoxel3Reactions9,
-    0,
-    1,
-    2
-);
 
 impl CreatePlottingRoot for CartesianCuboid2 {
     fn create_bitmap_root<'a, T>(
