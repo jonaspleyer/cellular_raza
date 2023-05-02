@@ -10,10 +10,10 @@ use nalgebra::Vector2;
 
 use crate::cell_properties::*;
 
-
-pub fn plot_voxel
-    (voxel: &CartesianCuboidVoxel2Reactions4, root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>) -> Result<(), DrawingError>
-{
+pub fn plot_voxel(
+    voxel: &CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>,
+    root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
     let upper_bound = 1000.0;

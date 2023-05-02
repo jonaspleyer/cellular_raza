@@ -60,7 +60,7 @@ mod plotting;
 use bacteria_properties::*;
 use plotting::*;
 
-fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2Reactions1) {
+fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>) {
     voxel.diffusion_constant = ReactionVector::from([VOXEL_FOOD_DIFFUSION_CONSTANT]);
     voxel.extracellular_concentrations = ReactionVector::from([VOXEL_FOOD_INITIAL_CONCENTRATION]);
     voxel.degradation_rate = ReactionVector::zero();

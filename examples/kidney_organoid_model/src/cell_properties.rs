@@ -259,9 +259,19 @@ impl CellularReactions<ReactionVector> for OwnReactions {
 #[derive(Clone,Debug,Serialize,Deserialize)]
 pub struct GradientSensing {}
 
-
-impl InteractionExtracellularGradient<MyCellType, nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>> for GradientSensing {
-    fn sense_gradient(_cell: &mut MyCellType<>, _gradient: &nalgebra::SVector<Vector2<f64>,NUMBER_OF_REACTION_COMPONENTS>) -> Result<(), CalcError> {
+impl
+    InteractionExtracellularGradient<
+        MyCellType,
+        nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,
+    > for GradientSensing
+{
+    fn sense_gradient(
+        _cell: &mut MyCellType,
+        _gradient: &nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,
+    ) -> Result<(), CalcError> {
+        // if gradient[0].norm()!=0.0 {
+        //     cell.interaction.outside_interaction.orientation = nalgebra::Unit::new_normalize(-gradient[2]);
+        // }
         Ok(())
     }
 }

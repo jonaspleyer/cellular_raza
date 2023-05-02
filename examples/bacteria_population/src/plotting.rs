@@ -9,7 +9,7 @@ use plotters::{
 use crate::bacteria_properties::*;
 
 pub fn plot_voxel(
-    voxel: &CartesianCuboidVoxel2Reactions1,
+    voxel: &CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values

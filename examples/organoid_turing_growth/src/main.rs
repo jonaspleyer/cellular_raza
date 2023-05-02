@@ -92,8 +92,7 @@ mod cell_properties;
 
 use cell_properties::*;
 
-
-fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2Reactions4) {
+fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>) {
     voxel.diffusion_constant = ReactionVector::from([
         VOXEL_BMP4_DIFFUSION_CONSTANT,
         VOXEL_FOOD_DIFFUSION_CONSTANT,
