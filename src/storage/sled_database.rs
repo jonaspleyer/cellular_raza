@@ -47,7 +47,10 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
 }
 
 impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Element> {
-    fn open_or_create(location: &std::path::Path) -> Result<Self, SimulationError> {
+    fn open_or_create(
+        location: &std::path::Path,
+        _storage_instance: u64,
+    ) -> Result<Self, SimulationError> {
         let config = sled::Config::default()
             .mode(sled::Mode::HighThroughput)
             .cache_capacity(1024 * 1024 * 1024 * 5) // 5gb

@@ -23,7 +23,7 @@ impl Default for StorageOptions {
     fn default() -> Self {
         #[cfg(feature = "sled")]
         return StorageOptions::Sled;
-        #[cfg(feature = "serde_json")]
+        #[cfg(all(feature = "serde_json", not(feature = "sled")))]
         return StorageOptions::SerdeJson;
         #[cfg(not(any(feature = "sled", feature = "serde_json")))]
         return StorageOptions::NoStorage;
@@ -52,7 +52,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     ) -> Result<Self, SimulationError> {
         #[cfg(feature = "sled")]
         let sled_storage = SledStorageInterface::<Id, Element>::open_or_create(
-            location.to_path_buf().join("sled"),
+            &location.to_path_buf().join("sled"),
             storage_instance,
         )?;
         #[cfg(feature = "serde_json")]

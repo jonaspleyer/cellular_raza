@@ -141,8 +141,8 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
 
     fn load_single_element(
         &self,
-        iteration: u64,
-        identifier: &Id,
+        _iteration: u64,
+        _identifier: &Id,
     ) -> Result<Option<Element>, SimulationError>
     where
         Id: Serialize,
