@@ -469,128 +469,30 @@ impl CreatePlottingRoot for CartesianCuboid2 {
     where
         T: AsRef<std::path::Path> + ?Sized,
     {
-        use plotters::drawing::IntoDrawingArea;
-        // let root = plotters::backend::BitMapBackend::new(filename, (image_size, image_size)).into_drawing_area();
+        // Calculate the images dimensions by the dimensions of the simulation domain
         let dx = (self.max[0] - self.min[0]).abs();
         let dy = (self.max[1] - self.min[1]).abs();
         let q = dx.min(dy);
         let image_size_x = (image_size as f64 * dx / q).round() as u32;
         let image_size_y = (image_size as f64 * dy / q).round() as u32;
+
+        // Create a domain with the correct size and fill it white.
+        use plotters::drawing::IntoDrawingArea;
         let root = BitMapBackend::new(filename, (image_size_x, image_size_y)).into_drawing_area();
         root.fill(&plotters::prelude::full_palette::WHITE).unwrap();
 
-        let label_space = (0.05 * image_size as f64).round() as u32;
-        use plotters::prelude::IntoFont;
-        let pos = plotters::style::text_anchor::Pos::new(
-            plotters::style::text_anchor::HPos::Center,
-            plotters::style::text_anchor::VPos::Center,
-        );
-        let label_style = plotters::prelude::TextStyle::from(
-            ("sans-serif", (0.02 * image_size as f64).round() as u32).into_font(),
-        )
-        .color(&plotters::prelude::BLACK)
-        .pos(pos);
-
-        // Draw legend
-        let voxel_pixel_size_x =
-            ((image_size_x - 2 * label_space) as f64 / self.n_vox[0] as f64).round() as i32;
-        let voxel_pixel_size_y =
-            ((image_size_y - 2 * label_space) as f64 / self.n_vox[1] as f64).round() as i32;
-        let xy0 = (label_space as f64 * 0.5).round() as i32;
-
-        let create_element = |index: usize, i: usize, pos: (i32, i32)| {
-            plotters::prelude::Text::new(
-                format!(
-                    "{:.0}",
-                    self.min[index] + i as f64 * self.voxel_sizes[index]
-                ),
-                pos,
-                label_style.clone(),
-            )
-        };
-
-        let step_x = max(1, ((self.n_vox[0] + 1) as f64 / 10.0).floor() as usize);
-        let step_y = max(1, ((self.n_vox[1] + 1) as f64 / 10.0).floor() as usize);
-        // Draw descriptions along x axis
-        (0..self.n_vox[0] as usize + 1)
-            .filter(|i| i % step_x == 0)
-            .for_each(|i| {
-                let element_top = create_element(
-                    0,
-                    i,
-                    (label_space as i32 + i as i32 * voxel_pixel_size_x, xy0),
-                );
-                let element_bot = create_element(
-                    0,
-                    i,
-                    (
-                        label_space as i32 + i as i32 * voxel_pixel_size_x,
-                        image_size_y as i32 - xy0,
-                    ),
-                );
-
-                root.draw(&element_top).unwrap();
-                root.draw(&element_bot).unwrap();
-            });
-
-        // Draw descriptions along y axis
-        (0..self.n_vox[1] as usize + 1)
-            .filter(|j| j % step_y == 0)
-            .for_each(|j| {
-                let element_left = create_element(
-                    1,
-                    j,
-                    (xy0, label_space as i32 + j as i32 * voxel_pixel_size_y),
-                );
-                let element_right = create_element(
-                    1,
-                    j,
-                    (
-                        image_size_x as i32 - xy0,
-                        label_space as i32 + j as i32 * voxel_pixel_size_y,
-                    ),
-                );
-
-                root.draw(&element_left).unwrap();
-                root.draw(&element_right).unwrap();
-            });
-
+        // Build a chart on the domain such that plotting later will be simplified
         let mut chart = plotters::prelude::ChartBuilder::on(&root)
-            .margin(label_space)
             // Finally attach a coordinate on the drawing area and make a chart context
             .build_cartesian_2d(self.min[0]..self.max[0], self.min[1]..self.max[1])
             .unwrap();
 
         chart
             .configure_mesh()
-            // we do not want to draw any mesh lines automatically but do this manually below
+            // we do not want to draw any mesh lines automatically
             .disable_mesh()
             .draw()
             .unwrap();
-
-        // Draw vertical lines manually
-        for i in 0..self.n_vox[0] + 1 {
-            let element = plotters::prelude::LineSeries::new(
-                [
-                    (self.min[0] + i as f64 * self.voxel_sizes[0], self.min[1]),
-                    (self.min[0] + i as f64 * self.voxel_sizes[0], self.max[1]),
-                ],
-                plotters::prelude::BLACK,
-            );
-            chart.draw_series(element).unwrap();
-        }
-
-        // Draw horizontal lines manually
-        for i in 0..self.n_vox[1] + 1 {
-            let element = plotters::prelude::LineSeries::new(
-                [
-                    (self.min[0], self.min[1] + i as f64 * self.voxel_sizes[1]),
-                    (self.max[0], self.min[1] + i as f64 * self.voxel_sizes[1]),
-                ],
-                plotters::prelude::BLACK,
-            );
-            chart.draw_series(element)?;
-        }
 
         Ok(chart.plotting_area().clone())
     }
