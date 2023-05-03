@@ -130,12 +130,7 @@ fn main() {
         time: TimeSetup {
             t_start: 0.0,
             t_eval: (0..N_TIMES)
-                .map(|i| {
-                    (
-                        T_START + DT * i as f64,
-                        i % SAVE_INTERVAL == 0,
-                    )
-                })
+                .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
                 .collect::<Vec<(f64, bool)>>(),
         },
         meta_params: SimulationMetaParams {
