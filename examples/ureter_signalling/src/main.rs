@@ -279,14 +279,16 @@ fn main() {
         cells,
         time: TimeSetup {
             t_start: 0.0,
-            t_eval: (0..N_TIMES).map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0, i % FULL_SAVE_INTERVAL == 0)).collect::<Vec<(f64, bool, bool)>>(),
+            t_eval: (0..N_TIMES)
+                .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
+                .collect::<Vec<(f64, bool)>>(),
         },
         meta_params: SimulationMetaParams {
-            n_threads: N_THREADS
+            n_threads: N_THREADS,
         },
-        database: SledDataBaseConfig {
-            name: "out/ureter_signalling".to_owned().into(),
-        }
+        storage: StorageConfig {
+            location: "out/ureter_signalling".to_owned().into(),
+        },
     };
 
     let strategies = Strategies {
@@ -295,16 +297,16 @@ fn main() {
 
     let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
 
-    supervisor.run_full_sim().unwrap();
-
-    supervisor.end_simulation().unwrap();
-
-    supervisor.plotting_config = PlottingConfig {
-        n_threads: Some(12),
-        image_size: 1500,
-    };
+    let mut simulation_result = supervisor.run_full_sim().unwrap();
 
     // ###################################### PLOT THE RESULTS ######################################
-    // supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func(&plot_modular_cell).unwrap();
-    supervisor.plot_cells_at_every_iter_bitmap_with_cell_plotting_func_and_voxel_plotting_func(&plot_modular_cell, &plot_voxel).unwrap();
+    simulation_result.plotting_config = PlottingConfig {
+        n_threads: Some(18),
+        image_size: 1500,
+        image_type: ImageType::BitMap,
+    };
+
+    simulation_result
+        .plot_spatial_all_iterations_custom_cell_voxel_functions(&plot_modular_cell, &plot_voxel)
+        .unwrap();
 }

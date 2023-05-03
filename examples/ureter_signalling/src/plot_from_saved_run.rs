@@ -4,20 +4,29 @@ use std::env;
 
 mod cell_properties;
 mod plotting;
-use plotting::*;
 use cell_properties::*;
+use plotting::*;
 
 use cellular_raza::{
     backend::cpu_os_threads::prelude::*, concepts::errors::SimulationError,
     plotting::spatial::CreatePlottingRoot,
 };
 
-pub type MyVoxelType = CartesianCuboidVoxel2Reactions3;
-pub type MyVoxelBox = VoxelBox<[usize; 2], MyVoxelType, MyCellType, Vector2<f64>, Vector2<f64>, Vector2<f64>, ReactionVector, ReactionVector, ReactionVector>;
-
+pub type MyVoxelType = CartesianCuboidVoxel2Reactions4;
+pub type MyVoxelBox = VoxelBox<
+    [usize; 2],
+    MyVoxelType,
+    MyCellType,
+    Vector2<f64>,
+    Vector2<f64>,
+    Vector2<f64>,
+    ReactionVector,
+    ReactionVector,
+    ReactionVector,
+>;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    /* let args: Vec<String> = env::args().collect();
 
     let db = typed_sled::open(&args[1]).unwrap();
     let tree_voxels = typed_sled::Tree::<String, Vec<u8>>::open(&db, "voxel_storage");
@@ -63,9 +72,9 @@ fn main() {
             chart.present()?;
             bar.inc(1);
             Ok(())
-            
+
         }).collect::<Result<(), SimulationError>>()?;
         bar.finish();
         Ok(())
-    }).unwrap();
+    }).unwrap();*/
 }
