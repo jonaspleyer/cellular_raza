@@ -1,4 +1,4 @@
-use cellular_raza::pipelines::cpu_os_threads::prelude::*;
+use cellular_raza::backend::cpu_os_threads::prelude::*;
 use cellular_raza::implementations::cell_properties::mechanics::VertexMechanics2D;
 
 use serde::{Serialize,Deserialize};

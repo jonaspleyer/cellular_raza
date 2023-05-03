@@ -8,7 +8,7 @@ use plotting::*;
 use cell_properties::*;
 
 use cellular_raza::{
-    concepts::errors::SimulationError, backend::cpu_os_threads::prelude::*,
+    backend::cpu_os_threads::prelude::*, concepts::errors::SimulationError,
     plotting::spatial::CreatePlottingRoot,
 };
 
@@ -28,7 +28,7 @@ fn main() {
     pool.install(|| -> Result<(), SimulationError> {
         // Create progress bar for tree deserialization
         // Deserialize the database tree
-        let style = indicatif::ProgressStyle::with_template(cellular_raza::pipelines::cpu_os_threads::config::PROGRESS_BAR_STYLE)?;
+        let style = indicatif::ProgressStyle::with_template(cellular_raza::backends::cpu_os_threads::config::PROGRESS_BAR_STYLE)?;
 
         let voxels_at_iter = cellular_raza::backends::cpu_os_threads::storage_interface::get_all_voxels::<MyVoxelBox>(&tree_voxels, None, Some(style.clone())).unwrap();
         let setups_at_iter = cellular_raza::backends::cpu_os_threads::storage_interface::get_all_setups::<CartesianCuboid2, MyVoxelType>(&tree_setups, None, Some(style.clone())).unwrap();
