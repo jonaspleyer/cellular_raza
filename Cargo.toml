@@ -44,7 +44,7 @@ rand_chacha = { version="0.3.1", features=["serde1"]}
 
 
 [features]
-default = ["sled", "intracellular_reactions", "fluid_mechanics", "gradients"]
+default = ["serde_json", "intracellular_reactions", "fluid_mechanics", "gradients"]
 
 # Storage
 sled = ["dep:sled"]
