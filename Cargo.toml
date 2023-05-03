@@ -76,5 +76,3 @@ name = "ureter_signalling"
 path = "examples/ureter_signalling/src/main.rs"
 
 [[example]]
-name = "ureter_signalling_plot_from_saved_run"
-path = "examples/ureter_signalling/src/plot_from_saved_run.rs"
