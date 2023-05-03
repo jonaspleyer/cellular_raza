@@ -76,3 +76,5 @@ name = "ureter_signalling"
 path = "examples/ureter_signalling/src/main.rs"
 
 [[example]]
+name = "organoid_turing_growth"
+path = "examples/organoid_turing_growth/src/main.rs"
