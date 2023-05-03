@@ -93,6 +93,8 @@
 //!     - try to only need to cast from integer to floating point types and when doing the other way around be really careful
 //! - Code Style/Guideline
 
+/// The backend controls the simulation flow. Multiple variants could be available.
+pub mod backend;
 /// Abstract concepts to describe cell properties, the domain and possible errors
 ///
 /// These concepts should be implemented by the user and then be used by a simulation
@@ -100,8 +102,6 @@
 pub mod concepts;
 /// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
 pub mod implementations;
-/// The backend controls the simulation flow. Multiple variants could be available.
-pub mod backend;
 /// Methods for plotting simulation results
 pub mod plotting;
 /// Database interface

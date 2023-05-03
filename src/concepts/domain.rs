@@ -72,8 +72,7 @@ pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deseri
     // Functions related to diffusion and fluid dynamics of extracellular reactants/ligands
 }
 
-// TODO
-// #[cfg(feature = "gradients")]
+// TODO rework this trait. We do not want to make it dependent on the voxel index. But it may be dependent on spatial representation such as Position type.
 pub trait ExtracellularMechanics<
     Ind,
     Pos,
@@ -84,25 +83,31 @@ pub trait ExtracellularMechanics<
 >: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 {
     fn get_extracellular_at_point(&self, pos: &Pos) -> Result<ConcVec, SimulationError>;
+
     fn get_total_extracellular(&self) -> ConcTotal;
+
     #[cfg(feature = "gradients")]
     fn update_extracellular_gradient(
         &mut self,
         boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)],
     ) -> Result<(), SimulationError>;
+
     #[cfg(feature = "gradients")]
     fn get_extracellular_gradient_at_point(
         &self,
         pos: &Pos,
     ) -> Result<ConcGradient, SimulationError>;
+
     fn set_total_extracellular(&mut self, concentration_total: &ConcTotal)
         -> Result<(), CalcError>;
+
     fn calculate_increment(
         &self,
         total_extracellular: &ConcTotal,
         point_sources: &[(Pos, ConcVec)],
         boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)],
     ) -> Result<ConcTotal, CalcError>;
+
     fn boundary_condition_to_neighbor_voxel(
         &self,
         neighbor_index: &Ind,

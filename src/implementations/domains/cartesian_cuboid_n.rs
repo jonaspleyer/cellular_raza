@@ -432,30 +432,20 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
     }
 }
 
-// TODO reformulate definition with const generics
 // TODO make them only visible if correspoding feature (eg. fluid_mechanics or gradients) is active
 define_and_implement_cartesian_cuboid!(1, CartesianCuboid1, 0);
 define_and_implement_cartesian_cuboid!(2, CartesianCuboid2, 0, 1);
 define_and_implement_cartesian_cuboid!(3, CartesianCuboid3, 0, 1, 2);
-implement_cartesian_cuboid_voxel_fluid_mechanics!(
-    1,
-    CartesianCuboid1,
-    CartesianCuboidVoxel1,
-    0
-);
-implement_cartesian_cuboid_voxel_fluid_mechanics!(
-    2,
-    CartesianCuboid2,
-    CartesianCuboidVoxel2,
-    0, 1
-);
+implement_cartesian_cuboid_voxel_fluid_mechanics!(1, CartesianCuboid1, CartesianCuboidVoxel1, 0);
+implement_cartesian_cuboid_voxel_fluid_mechanics!(2, CartesianCuboid2, CartesianCuboidVoxel2, 0, 1);
 implement_cartesian_cuboid_voxel_fluid_mechanics!(
     3,
     CartesianCuboid3,
     CartesianCuboidVoxel3,
-    0, 1, 2
+    0,
+    1,
+    2
 );
-
 
 impl CreatePlottingRoot for CartesianCuboid2 {
     fn create_bitmap_root<'a, T>(
