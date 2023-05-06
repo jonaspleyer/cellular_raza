@@ -1,8 +1,6 @@
 use cellular_raza::backend::cpu_os_threads::prelude::*;
 use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
 
-use nalgebra::Vector2;
-
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
@@ -28,15 +26,6 @@ pub const CELL_FOOD_SATURATION: f64 = 20.0;
 pub const CELL_FOOD_CONSUMPTION_RATE: f64 = 0.02;
 pub const CELL_FOOD_SECRETION_RATE: f64 = 0.0001;
 pub const CELL_FOOD_UPTAKE_RATE: f64 = 0.01;
-
-// Parameters for cell turing pattern
-pub const CELL_TURING_PATTERN_K1: f64 = 10.0;
-pub const CELL_TURING_PATTERN_K2: f64 = 0.1;
-pub const CELL_TURING_PATTERN_K3: f64 = 2.938271604938272e-07;
-pub const CELL_TURING_PATTERN_K4: f64 = 80.0;
-
-pub const VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_1: f64 = 50.0;
-pub const VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_2: f64 = 2500.0;
 
 // Parameters for cell cycle
 pub const CELL_CYCLE_DIVISION_AGE_MIN: f64 = 100.0;
@@ -83,27 +72,21 @@ use cell_properties::*;
 use plotting::*;
 
 fn voxel_definition_strategy(
-    voxel: &mut CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>,
+    voxel: &mut CartesianCuboidVoxel2VertexReactions2<NUMBER_OF_VERTICES>,
 ) {
     voxel.diffusion_constant = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DIFFUSION_CONSTANT,
         VOXEL_FOOD_DIFFUSION_CONSTANT,
-        VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_1,
-        VOXEL_TURING_PATTERN_DIFFUSION_CONSTANT_2,
     ]);
     voxel.extracellular_concentrations = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCNENTRATION,
         VOXEL_FOOD_INITIAL_CONCENTRATION,
-        0.0,
-        0.0,
     ]);
     voxel.degradation_rate = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
         VOXEL_FOOD_DEGRADATION_RATE,
-        0.0,
-        0.0,
     ]);
-    voxel.production_rate = ReactionVector::from([0.0, VOXEL_FOOD_PRODUCTION_RATE, 0.0, 0.0]);
+    voxel.production_rate = ReactionVector::from([0.0, VOXEL_FOOD_PRODUCTION_RATE]);
 }
 
 fn main() {
@@ -158,43 +141,27 @@ fn main() {
                 intracellular_concentrations: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION,
                     CELL_FOOD_INITIAL_CONCENTRATION,
-                    rng.gen_range(200.0..500.0),
-                    rng.gen_range(200.0..500.0),
                 ]),
                 intracellular_concentrations_saturation_level: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
                     CELL_FOOD_SATURATION,
-                    0.0,
-                    0.0,
                 ]),
                 production_term: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_PRODUCTION_RATE,
                     -CELL_FOOD_CONSUMPTION_RATE,
-                    0.0,
-                    0.0,
                 ]),
                 degradation_rate: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
-                    0.0,
-                    0.0,
                     0.0,
                 ]),
                 secretion_rate: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_SECRETION_RATE,
                     CELL_FOOD_SECRETION_RATE,
-                    0.0,
-                    0.0,
                 ]),
                 uptake_rate: ReactionVector::from([
                     CELL_SPATIAL_SIGNALLING_MOLECULE_UPTAKE_RATE,
                     CELL_FOOD_UPTAKE_RATE,
-                    0.0,
-                    0.0,
                 ]),
-                p1: CELL_TURING_PATTERN_K1,
-                p2: CELL_TURING_PATTERN_K2,
-                p3: CELL_TURING_PATTERN_K3,
-                p4: CELL_TURING_PATTERN_K4,
             },
         })
         .collect::<Vec<_>>();

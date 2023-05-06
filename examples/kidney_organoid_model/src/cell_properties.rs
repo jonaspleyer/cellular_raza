@@ -135,23 +135,6 @@ impl Cycle<MyCellType> for OwnCycle {
         // Increase the age of the cell and divide if possible
         c.cycle.age += dt;
 
-        // Calculate the modifier (between 0.0 and 1.0) based on food threshold
-        /* let relative_division_food_level = (
-            (c.get_intracellular()[1]-c.cycle.food_division_threshold)
-            /(c.cellular_reactions.intracellular_concentrations_saturation_level[1]-c.cycle.food_division_threshold)
-        ).clamp(0.0, 1.0);
-
-        if
-            // Check if the cell has aged enough
-            c.cycle.age > c.cycle.division_age &&
-            // Check if the cell has grown enough
-            c.mechanics.get_cell_area() >= c.cycle.maximum_cell_area &&
-            // Random selection but chance increased when significantly above the food threshold
-            rng.gen_range(0.0..1.0) < relative_division_food_level
-        {
-            return Some(CycleEvent::Division);
-        }*/
-
         // If the cell has not enough food let it die
         let relative_death_food_level = ((c.cycle.food_death_threshold - c.get_intracellular()[1])
             / c.cycle.food_death_threshold)
@@ -185,19 +168,6 @@ impl Cycle<MyCellType> for OwnCycle {
                 / std::f64::consts::SQRT_2,
         );
 
-        // Generate cellular splitting direction randomly
-        // let angle_1 = rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
-        // let dir_vec = nalgebra::Rotation2::new(angle_1) * c1.interaction.base_interaction.orientation;
-
-        // Define new positions for cells
-        // It is randomly chosen if the old cell is left or right
-        // let sign = -1.0;//rng.gen_range(-1.0_f64..1.0_f64).signum();
-        // let offset = sign*dir_vec.into_inner()*r/std::f64::consts::SQRT_2;
-        // let old_pos = c1.pos();
-        //
-        // c1.set_pos(&(old_pos + offset));
-        // c2.set_pos(&(old_pos - offset));
-        //
         // Decrease the amount of food in the cells
         c1.cellular_reactions.intracellular_concentrations *=
             (1.0 + relative_size_difference) * 0.5;
@@ -222,11 +192,6 @@ pub struct OwnReactions {
     pub degradation_rate: ReactionVector,
     pub secretion_rate: ReactionVector,
     pub uptake_rate: ReactionVector,
-
-    pub p1: f64,
-    pub p2: f64,
-    pub p3: f64,
-    pub p4: f64,
 }
 
 impl CellularReactions<ReactionVector> for OwnReactions {
@@ -256,17 +221,6 @@ impl CellularReactions<ReactionVector> for OwnReactions {
             increment_intracellular[i] = self.production_term[i] - increment_extracellular[i];
         }
 
-        // Reduce the amount of food if a peak of the turing pattern is nearby
-        increment_intracellular[1] -= self.production_term[1].abs()
-            * (external_concentration_vector[2] / 4000.0).clamp(0.0, 1.0);
-
-        // Equations for the Turing pattern
-        let a = external_concentration_vector[2];
-        let b = external_concentration_vector[3];
-        increment_extracellular[2] = self.p1 - self.p2 * a + self.p3 * a.powf(2.0) * b;
-        increment_extracellular[3] = self.p4 - self.p3 * a.powf(2.0) * b;
-        // println!("{:8.4?} {:8.4?}", external_concentration_vector[2], external_concentration_vector[3]);
-        // println!("Internal {:5.2?} External {:5.2?} Uptake {:5.2?} Secretion {:5.2?}", internal_concentration_vector, external_concentration_vector, uptake, secretion);
         Ok((increment_intracellular, increment_extracellular))
     }
 

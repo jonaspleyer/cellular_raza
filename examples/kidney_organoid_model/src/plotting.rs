@@ -11,13 +11,13 @@ use nalgebra::Vector2;
 use crate::cell_properties::*;
 
 pub fn plot_voxel(
-    voxel: &CartesianCuboidVoxel2VertexReactions4<NUMBER_OF_VERTICES>,
+    voxel: &CartesianCuboidVoxel2VertexReactions2<NUMBER_OF_VERTICES>,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
     let upper_bound = 1000.0;
-    let concentration = voxel.get_total_extracellular()[2];
+    let concentration = voxel.get_total_extracellular()[0];
 
     // This should give a nice colormap
     let voxel_color = ViridisRGB::get_color_normalized(concentration, lower_bound, upper_bound);
@@ -31,7 +31,7 @@ pub fn plot_voxel(
     root.draw(&rectangle)?;
 
     // Also plot the direction in which the current concentration is pointing
-    let gradient = voxel.extracellular_gradient[2];
+    let gradient = voxel.extracellular_gradient[0];
     let strength = gradient.norm();
     let gradient_upper_bound =
         (upper_bound - lower_bound) / voxel.get_dx().iter().sum::<f64>() * 2.0;
