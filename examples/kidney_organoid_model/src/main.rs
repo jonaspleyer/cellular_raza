@@ -75,7 +75,7 @@ use cell_properties::*;
 use plotting::*;
 
 fn voxel_definition_strategy(
-    voxel: &mut CartesianCuboidVoxel2VertexReactions2<NUMBER_OF_VERTICES>,
+    voxel: &mut CartesianCuboidVoxel2Vertex<NUMBER_OF_VERTICES, NUMBER_OF_REACTION_COMPONENTS>,
 ) {
     voxel.diffusion_constant = ReactionVector::from([
         VOXEL_SPATIAL_SIGNALLING_MOLECULE_DIFFUSION_CONSTANT,

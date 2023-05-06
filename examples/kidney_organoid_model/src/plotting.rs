@@ -11,7 +11,7 @@ use nalgebra::Vector2;
 use crate::cell_properties::*;
 
 pub fn plot_voxel(
-    voxel: &CartesianCuboidVoxel2VertexReactions2<NUMBER_OF_VERTICES>,
+    voxel: &CartesianCuboidVoxel2Vertex<NUMBER_OF_VERTICES, NUMBER_OF_REACTION_COMPONENTS>,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values
