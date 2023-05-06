@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use rand::Rng;
 
-pub const NUMBER_OF_REACTION_COMPONENTS: usize = 4;
-pub const NUMBER_OF_VERTICES: usize = 4;
+pub const NUMBER_OF_REACTION_COMPONENTS: usize = 2;
+pub const NUMBER_OF_VERTICES: usize = 6;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type InteractionInformation = ();
 pub type MyCellType = ModularCell<

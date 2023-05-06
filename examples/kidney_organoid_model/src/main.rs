@@ -4,8 +4,11 @@ use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
+// Number of cells
+pub const N_CELLS: usize = 30;
+
 // Mechanical parameters
-pub const CELL_MECHANICS_AREA: f64 = 300.0;
+pub const CELL_MECHANICS_AREA: f64 = 500.0;
 pub const CELL_MECHANICS_SPRING_TENSION: f64 = 4.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 2.0;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
@@ -36,8 +39,8 @@ pub const CELL_CYCLE_FOOD_DEATH_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.4;
 pub const CELL_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.6;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 700.0;
-pub const DOMAIN_SIZE_Y: f64 = 700.0;
+pub const DOMAIN_SIZE_X: f64 = 400.0;
+pub const DOMAIN_SIZE_Y: f64 = 400.0;
 
 // Where will the cells be placed initially
 // Define a polygon by points
@@ -57,10 +60,10 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 0.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 60.0;
 
 // Time parameters
-pub const N_TIMES: usize = 5_001;
+pub const N_TIMES: usize = 50_001;
 pub const DT: f64 = 0.02;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: usize = 100;
+pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 2;
@@ -104,27 +107,28 @@ fn main() {
     .unwrap();
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
-    let mut filled_rectangle = VertexMechanics2D::fill_rectangle(
-        CELL_MECHANICS_AREA,
-        CELL_MECHANICS_SPRING_TENSION,
-        CELL_MECHANICS_CENTRAL_PRESSURE,
-        CELL_MECHANICS_DAMPENING_CONSTANT,
-        [
-            Vector2::from([STARTING_DOMAIN_X_LOW, STARTING_DOMAIN_Y_LOW]),
-            Vector2::from([STARTING_DOMAIN_X_HIGH, STARTING_DOMAIN_Y_HIGH]),
-        ],
-    );
 
-    let cells = (0..filled_rectangle.len())
+    let cells = (0..N_CELLS)
         .map(|n_cell| ModularCell {
-            mechanics: filled_rectangle.pop().unwrap(),
+            mechanics: VertexMechanics2D::new(
+                [
+                    rng.gen_range(0.3*DOMAIN_SIZE_X..0.7*DOMAIN_SIZE_X),
+                    rng.gen_range(0.3*DOMAIN_SIZE_Y..0.7*DOMAIN_SIZE_Y),
+                ].into(),
+                CELL_MECHANICS_AREA,
+                0.0,
+                CELL_MECHANICS_SPRING_TENSION,
+                CELL_MECHANICS_CENTRAL_PRESSURE,
+                CELL_MECHANICS_DAMPENING_CONSTANT,
+                None
+            ),
             interaction: VertexDerivedInteraction::from_two_forces(
                 OutsideInteraction {
                     potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
                     interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
                 },
                 InsideInteraction {
-                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    potential_strength: 10.0*CELL_MECHANICS_POTENTIAL_STRENGTH,
                 },
             ),
             interaction_extracellular: GradientSensing {},
