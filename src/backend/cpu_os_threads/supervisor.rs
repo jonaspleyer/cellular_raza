@@ -433,6 +433,7 @@ where
         cell_plotting_func: Cpf,
         voxel_plotting_func: Vpf,
         domain_plotting_func: Dpf,
+        progress_bar: Option<indicatif::ProgressBar>,
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
@@ -494,6 +495,11 @@ where
 
         chart.present()?;
 
+        match progress_bar {
+            Some(bar) => bar.inc(1),
+            None => (),
+        }
+
         Ok(())
     }
 
@@ -509,6 +515,7 @@ where
                 C::plot_self_bitmap,
                 V::plot_self_bitmap,
                 D::create_bitmap_root,
+                None,
             ),
             // ImageType::Svg => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self::<BitMapBackend>, V::plot_self, D::create_svg_root),
         }
@@ -548,6 +555,7 @@ where
             cell_plotting_func,
             voxel_plotting_func,
             domain_plotting_func,
+            None,
         )
     }
 
@@ -577,6 +585,7 @@ where
             cell_plotting_func,
             voxel_plotting_func,
             D::create_bitmap_root,
+            None,
         )
     }
 
@@ -601,6 +610,7 @@ where
                 cell_plotting_func,
                 V::plot_self_bitmap,
                 D::create_bitmap_root,
+                None,
             ),
         }
     }
@@ -615,6 +625,20 @@ where
             _ => builder.num_threads(1),
         };
         Ok(builder.build()?)
+    }
+
+    fn build_progress_bar(
+        &self,
+        n_iterations: u64,
+    ) -> Result<Option<indicatif::ProgressBar>, SimulationError> {
+        let mut progress_bar = None;
+        if self.plotting_config.show_progressbar {
+            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            let bar = ProgressBar::new(n_iterations);
+            bar.set_style(style);
+            progress_bar = Some(bar);
+        }
+        Ok(progress_bar)
     }
 
     pub fn plot_spatial_all_iterations_with_functions<Cpf, Vpf, Dpf>(
@@ -664,8 +688,13 @@ where
         // Generate all images by calling the pool
         pool.install(move || -> Result<(), SimulationError> {
             use rayon::prelude::*;
-            self.storage_voxels
-                .get_all_iterations()?
+            let all_iterations = self.storage_voxels.get_all_iterations()?;
+            let progress_bar = self.build_progress_bar(all_iterations.len() as u64)?;
+            match progress_bar {
+                Some(_) => println!("Generating Images"),
+                None => (),
+            }
+            all_iterations
                 .into_par_iter()
                 .map(|iteration| {
                     self.plot_spatial_at_iteration_with_functions(
@@ -673,9 +702,16 @@ where
                         &cell_plotting_func,
                         &voxel_plotting_func,
                         &domain_plotting_func,
+                        progress_bar.clone(),
                     )
                 })
-                .collect::<Result<(), SimulationError>>()
+                .collect::<Result<(), SimulationError>>()?;
+
+            match progress_bar {
+                Some(bar) => bar.finish(),
+                None => (),
+            }
+            Ok(())
         })
     }
 
@@ -712,23 +748,10 @@ where
         >: Send + Sync,
         DomainBox<D>: Send + Sync,
     {
-        let pool = self.build_thread_pool()?;
-
-        // Generate all images by calling the pool
-        pool.install(move || -> Result<(), SimulationError> {
-            use rayon::prelude::*;
-            self.storage_voxels
-                .get_all_iterations()?
-                .into_par_iter()
-                .map(|iteration| {
-                    self.plot_spatial_at_iteration_with_functions(
-                        iteration,
-                        &cell_plotting_func,
-                        &voxel_plotting_func,
-                        D::create_bitmap_root,
-                    )
-                })
-                .collect::<Result<(), SimulationError>>()
-        })
+        self.plot_spatial_all_iterations_with_functions(
+            &cell_plotting_func,
+            &voxel_plotting_func,
+            &D::create_bitmap_root,
+        )
     }
 }

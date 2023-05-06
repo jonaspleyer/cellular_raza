@@ -77,6 +77,7 @@ pub struct PlottingConfig {
     pub image_size: u32,
     pub n_threads: Option<usize>,
     pub image_type: ImageType,
+    pub show_progressbar: bool,
 }
 
 impl Default for PlottingConfig {
@@ -85,6 +86,7 @@ impl Default for PlottingConfig {
             image_size: 1000,
             n_threads: None,
             image_type: ImageType::BitMap,
+            show_progressbar: true,
         }
     }
 }

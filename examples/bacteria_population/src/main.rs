@@ -154,6 +154,7 @@ fn main() {
         n_threads: Some(N_PLOTTING_THREADS),
         image_size: 1500,
         image_type: ImageType::BitMap,
+        ..Default::default()
     };
 
     simulation_result

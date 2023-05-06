@@ -316,6 +316,7 @@ fn main() {
         n_threads: Some(18),
         image_size: 1500,
         image_type: ImageType::BitMap,
+        ..Default::default()
     };
 
     simulation_result
