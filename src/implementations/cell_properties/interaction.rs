@@ -175,6 +175,12 @@ where
             .sum::<Vector2<f64>>()
             / own_pos.shape().0 as f64;
 
+        let middle_ext: Vector2<f64> = ext_pos
+            .row_iter()
+            .map(|v| v.transpose())
+            .sum::<Vector2<f64>>()
+            / ext_pos.shape().0 as f64;
+
         // Also calculate our own polygon defined by lines between points
         let own_polygon_lines = own_pos
             .row_iter()
@@ -244,7 +250,7 @@ where
                 // Calculate the force inside the cell
                 calc = self
                     .inside_interaction
-                    .calculate_force_on(&middle_own, &point, &inf2);
+                    .calculate_force_on(&middle_own, &middle_ext, &inf2);
             } else {
                 // Calculate the force outside
                 let (_, nearest_point) =
