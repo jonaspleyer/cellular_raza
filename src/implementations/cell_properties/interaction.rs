@@ -165,6 +165,10 @@ where
         ext_pos: &super::mechanics::VertexVector2<D>,
         ext_information: &Option<(Option<I1>, Option<I2>)>,
     ) -> Option<Result<super::mechanics::VertexVector2<D>, CalcError>> {
+        // TODO Reformulate this code:
+        // Do not calculate interactions between vertices but rather between
+        // edges of polygons.
+
         // IMPORTANT!!
         // This code assumes that we are dealing with a regular! polygon!
 
