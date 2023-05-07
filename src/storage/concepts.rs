@@ -46,6 +46,7 @@ pub struct StorageManager<Id, Element> {
 }
 
 impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> {
+    #[allow(unused)]
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
@@ -81,6 +82,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Ok(manager)
     }
 
+    #[allow(unused)]
     fn store_single_element(
         &self,
         iteration: u64,
@@ -102,6 +104,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Ok(())
     }
 
+    #[allow(unused)]
     fn store_batch_elements(
         &self,
         iteration: u64,
@@ -121,6 +124,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Ok(())
     }
 
+    #[allow(unused)]
     fn load_single_element(
         &self,
         iteration: u64,
@@ -141,6 +145,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         }
     }
 
+    #[allow(unused)]
     fn load_all_elements_at_iteration(
         &self,
         iteration: u64,
