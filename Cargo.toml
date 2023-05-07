@@ -41,6 +41,7 @@ rand_chacha = { version="0.3.1", features=["serde1"]}
 
 
 [dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
 
 
 [features]
@@ -82,3 +83,7 @@ path = "examples/organoid_turing_growth/src/main.rs"
 [[example]]
 name = "cell_sorting"
 path = "examples/cell_sorting/src/main.rs"
+
+[[bench]]
+name = "cell_scaling"
+harness = false
