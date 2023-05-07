@@ -147,7 +147,9 @@ where
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
 
         // Create progress bar and define style
-        println!("Running Simulation");
+        if self.config.show_progressbar {
+            println!("Running Simulation");
+        }
 
         for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
             // Clone barriers to use them for synchronization in threads
