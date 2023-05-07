@@ -23,13 +23,13 @@ macro_rules! implement_cell_types {
         }
 
         impl crate::concepts::cycle::Cycle<CellAgentType> for CellAgentType {
-            fn update_cycle(rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, c: &mut CellAgentType) -> Option<crate::concepts::cycle::CycleEvent> {
+            fn update_cycle(rng: &mut rand_chacha::ChaCha8Rng, dt: &f64, cell: &mut CellAgentType) -> Option<crate::concepts::cycle::CycleEvent> {
                 match c {
                     $(CellAgentType::$celltype(cell) => $celltype::update_cycle(rng, dt, cell),)+
                 }
             }
 
-            fn divide(rng: &mut rand_chacha::ChaCha8Rng, c: &mut CellAgentType) -> Result<Option<CellAgentType>, crate::concepts::errors::DivisionError> {
+            fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut CellAgentType) -> Result<Option<CellAgentType>, crate::concepts::errors::DivisionError> {
                 match c {
                     $(CellAgentType::$celltype(cell) => match $celltype::divide(rng, cell)? {
                         Some(new_cell) => Ok(Some(CellAgentType::$celltype(new_cell))),

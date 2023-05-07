@@ -33,6 +33,7 @@ macro_rules! define_no_cellular_reactions {
             fn calculate_intra_and_extracellular_reaction_increment(
                 &self,
                 _internal_concentration_vector: &$conc_vec_intracellular,
+                #[cfg(feature = "fluid_mechanics")]
                 _external_concentration_vector: &$conc_vec_extracellular,
             ) -> Result<
                 ($conc_vec_intracellular, $conc_vec_extracellular),
@@ -53,12 +54,12 @@ macro_rules! define_no_cellular_reactions {
     };
 }
 
-define_no_cellular_reactions! {f64, f64}
+define_no_cellular_reactions! {nalgebra::SVector<f64, 1>, nalgebra::SVector<f64, 1>}
 
-impl<Pos, For, Vel, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, For, Vel>
+impl<Pos, Vel, For, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, Vel, For>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
-    Mec: Mechanics<Pos, For, Vel>,
+    Mec: Mechanics<Pos, Vel, For>,
     Pos: Position,
     For: Force,
     Vel: Velocity,
@@ -84,12 +85,12 @@ where
     }
 }
 
-impl<Pos, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, For, Inf>
+impl<Pos, Vel, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, Vel, For, Inf>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
     Pos: Position,
     For: Force,
-    Int: Interaction<Pos, For, Inf>,
+    Int: Interaction<Pos, Vel, For, Inf>,
 {
     fn get_interaction_information(&self) -> Option<Inf> {
         self.interaction.get_interaction_information()
@@ -98,11 +99,13 @@ where
     fn calculate_force_on(
         &self,
         own_pos: &Pos,
+        own_vel: &Vel,
         ext_pos: &Pos,
+        ext_vel: &Vel,
         ext_information: &Option<Inf>,
     ) -> Option<Result<For, CalcError>> {
         self.interaction
-            .calculate_force_on(own_pos, ext_pos, ext_information)
+            .calculate_force_on(own_pos, own_vel, ext_pos, ext_vel, ext_information)
     }
 }
 
@@ -114,16 +117,16 @@ where
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &f64,
-        c: &mut Self,
+        cell: &mut Self,
     ) -> Option<CycleEvent> {
-        Cyc::update_cycle(rng, dt, c)
+        Cyc::update_cycle(rng, dt, cell)
     }
 
     fn divide(
         rng: &mut rand_chacha::ChaCha8Rng,
-        c: &mut Self,
+        cell: &mut Self,
     ) -> Result<Option<Self>, crate::concepts::errors::DivisionError> {
-        Cyc::divide(rng, c)
+        Cyc::divide(rng, cell)
     }
 }
 
@@ -136,11 +139,12 @@ where
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
         internal_concentration_vector: &ConcVecIntracellular,
-        external_concentration_vector: &ConcVecExtracellular,
+        #[cfg(feature = "fluid_mechanics")] external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError> {
         self.cellular_reactions
             .calculate_intra_and_extracellular_reaction_increment(
                 internal_concentration_vector,
+                #[cfg(feature = "fluid_mechanics")]
                 external_concentration_vector,
             )
     }

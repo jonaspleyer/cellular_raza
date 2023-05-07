@@ -130,7 +130,7 @@ impl<T> Velocity for T where
 
 /// This trait should be merged with the interaction trait
 // TODO merge this with the interaction trait!
-pub trait Mechanics<Pos, For, Vel> {
+pub trait Mechanics<Pos, Vel, For> {
     fn pos(&self) -> Pos;
     fn velocity(&self) -> Vel;
     fn set_pos(&mut self, pos: &Pos);

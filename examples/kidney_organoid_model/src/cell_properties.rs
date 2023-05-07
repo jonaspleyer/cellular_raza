@@ -36,11 +36,15 @@ pub struct InsideInteraction {
     pub potential_strength: f64,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, InteractionInformation> for OutsideInteraction {
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
+    for OutsideInteraction
+{
     fn calculate_force_on(
         &self,
         own_pos: &Vector2<f64>,
+        _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
+        _ext_vel: &Vector2<f64>,
         _ext_info: &Option<InteractionInformation>,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         // Calculate distance and direction between own and other point
@@ -61,11 +65,15 @@ impl Interaction<Vector2<f64>, Vector2<f64>, InteractionInformation> for Outside
     }
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, InteractionInformation> for InsideInteraction {
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
+    for InsideInteraction
+{
     fn calculate_force_on(
         &self,
         own_pos: &Vector2<f64>,
+        _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
+        _ext_vel: &Vector2<f64>,
         _ext_info: &Option<InteractionInformation>,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         // Calculate direction between own and other point
@@ -119,27 +127,29 @@ impl Cycle<MyCellType> for OwnCycle {
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &f64,
-        c: &mut MyCellType,
+        cell: &mut MyCellType,
     ) -> Option<CycleEvent> {
         // If the cell is not at the maximum size let it grow
-        if c.mechanics.get_cell_area() < c.cycle.maximum_cell_area {
-            let growth_difference = (c.cycle.maximum_cell_area * c.cycle.growth_rate * dt)
-                .min(c.cycle.maximum_cell_area - c.mechanics.get_cell_area())
+        if cell.mechanics.get_cell_area() < cell.cycle.maximum_cell_area {
+            let growth_difference = (cell.cycle.maximum_cell_area * cell.cycle.growth_rate * dt)
+                .min(cell.cycle.maximum_cell_area - cell.mechanics.get_cell_area())
                 .max(0.0);
-            c.cellular_reactions.intracellular_concentrations[1] -=
-                c.cycle.food_growth_rate_multiplier * growth_difference / c.cycle.maximum_cell_area;
-            c.mechanics
-                .set_cell_area(c.mechanics.get_cell_area() + growth_difference);
+            cell.cellular_reactions.intracellular_concentrations[1] -=
+                cell.cycle.food_growth_rate_multiplier * growth_difference
+                    / cell.cycle.maximum_cell_area;
+            cell.mechanics
+                .set_cell_area(cell.mechanics.get_cell_area() + growth_difference);
         }
 
         // Increase the age of the cell and divide if possible
-        c.cycle.age += dt;
+        cell.cycle.age += dt;
 
         // If the cell has not enough food let it die
-        let relative_death_food_level = ((c.cycle.food_death_threshold - c.get_intracellular()[1])
-            / c.cycle.food_death_threshold)
+        let relative_death_food_level = ((cell.cycle.food_death_threshold
+            - cell.get_intracellular()[1])
+            / cell.cycle.food_death_threshold)
             .clamp(0.0, 1.0);
-        if c.cellular_reactions.get_intracellular()[1] < 0.0
+        if cell.cellular_reactions.get_intracellular()[1] < 0.0
             && rng.gen_range(0.0..1.0) < relative_death_food_level
         {
             return Some(CycleEvent::Death);

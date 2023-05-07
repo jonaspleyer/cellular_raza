@@ -41,13 +41,13 @@ impl Cycle<StandardCell2D> for StandardCell2D {
 
     fn divide(
         _rng: &mut rand_chacha::ChaCha8Rng,
-        _c: &mut StandardCell2D,
+        _cell: &mut StandardCell2D,
     ) -> Result<Option<StandardCell2D>, crate::concepts::errors::DivisionError> {
         panic!("This function should never be called");
     }
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, ()> for StandardCell2D {
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, ()> for StandardCell2D {
     fn get_interaction_information(&self) -> Option<()> {
         None
     }
@@ -55,7 +55,9 @@ impl Interaction<Vector2<f64>, Vector2<f64>, ()> for StandardCell2D {
     fn calculate_force_on(
         &self,
         own_pos: &Vector2<f64>,
+        _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
+        _ext_vel: &Vector2<f64>,
         _ext_information: &Option<()>,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = own_pos - ext_pos;

@@ -7,10 +7,10 @@ use std::marker::{Send, Sync};
 
 use serde::{Deserialize, Serialize};
 
-pub trait CellAgent<Pos: Position, For: Force, Inf, Vel: Velocity>:
+pub trait CellAgent<Pos: Position, Vel: Velocity, For: Force, Inf>:
     Cycle<Self>
-    + Interaction<Pos, For, Inf>
-    + Mechanics<Pos, For, Vel>
+    + Interaction<Pos, Vel, For, Inf>
+    + Mechanics<Pos, Vel, For>
     + Sized
     + Send
     + Sync
@@ -19,14 +19,14 @@ pub trait CellAgent<Pos: Position, For: Force, Inf, Vel: Velocity>:
     + for<'a> serde::Deserialize<'a>
 {
 }
-impl<Pos, For, Inf, Vel, A> CellAgent<Pos, For, Inf, Vel> for A
+impl<Pos, Vel, For, Inf, A> CellAgent<Pos, Vel, For, Inf> for A
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
     A: Cycle<Self>
-        + Interaction<Pos, For, Inf>
-        + Mechanics<Pos, For, Vel>
+        + Interaction<Pos, Vel, For, Inf>
+        + Mechanics<Pos, Vel, For>
         + Sized
         + Send
         + Sync
@@ -52,19 +52,19 @@ pub trait Id {
 /// initialized by the user. This CellAgentBox acts as a container around the cell
 /// to hold these variables.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CellAgentBox<A>
+pub struct CellAgentBox<Cel>
 where
-    A: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
 {
     id: CellularIdentifier,
     parent_id: Option<CellularIdentifier>,
     #[serde(bound = "")]
-    pub cell: A,
+    pub cell: Cel,
 }
 
-impl<A> Id for CellAgentBox<A>
+impl<Cel> Id for CellAgentBox<Cel>
 where
-    A: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
 {
     fn get_id(&self) -> CellularIdentifier {
         self.id
@@ -72,11 +72,9 @@ where
 }
 
 // Auto-implement traits for CellAgentBox which where also implemented for CellAgent
-impl<Pos, For, Inf, A> Interaction<Pos, For, Inf> for CellAgentBox<A>
+impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
 where
-    Pos: Position,
-    For: Force,
-    A: Interaction<Pos, For, Inf> + Serialize + for<'a> Deserialize<'a>,
+    A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,
 {
     fn get_interaction_information(&self) -> Option<Inf> {
         self.cell.get_interaction_information()
@@ -85,20 +83,22 @@ where
     fn calculate_force_on(
         &self,
         own_pos: &Pos,
+        own_vel: &Vel,
         ext_pos: &Pos,
+        ext_vel: &Vel,
         ext_information: &Option<Inf>,
     ) -> Option<Result<For, CalcError>> {
         self.cell
-            .calculate_force_on(own_pos, ext_pos, ext_information)
+            .calculate_force_on(own_pos, own_vel, ext_pos, ext_vel, ext_information)
     }
 }
 
-impl<Pos, For, Vel, A> Mechanics<Pos, For, Vel> for CellAgentBox<A>
+impl<Pos, Vel, For, A> Mechanics<Pos, Vel, For> for CellAgentBox<A>
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: Mechanics<Pos, For, Vel> + Serialize + for<'a> Deserialize<'a>,
+    A: Mechanics<Pos, Vel, For> + Serialize + for<'a> Deserialize<'a>,
 {
     fn pos(&self) -> Pos {
         self.cell.pos()
@@ -121,17 +121,17 @@ where
     }
 }
 
-impl<C> CellAgentBox<C>
+impl<Cel> CellAgentBox<Cel>
 where
-    C: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
 {
     pub fn new(
         voxel_index: u64,
         n_cell: u64,
-        cell: C,
+        cell: Cel,
         parent_id: Option<CellularIdentifier>,
-    ) -> CellAgentBox<C> {
-        CellAgentBox::<C> {
+    ) -> CellAgentBox<Cel> {
+        CellAgentBox::<Cel> {
             id: (voxel_index, n_cell),
             parent_id,
             cell,

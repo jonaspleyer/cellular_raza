@@ -197,7 +197,8 @@ impl<const D: usize, const N: usize> CartesianCuboidVoxel2Vertex<D, N> {
 }
 
 // Implement the Voxel trait for our n-dim voxel
-impl<const D: usize, const N: usize> Voxel<[i64; 2], VertexVector2<D>, VertexVector2<D>>
+impl<const D: usize, const N: usize>
+    Voxel<[i64; 2], VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>
     for CartesianCuboidVoxel2Vertex<D, N>
 {
     fn get_index(&self) -> [i64; 2] {
@@ -324,13 +325,14 @@ impl<const D: usize, const N: usize>
 
 // Implement the cartesian cuboid
 // Index is an array of size 3 with elements of type usize
-impl<C, const D: usize, const N: usize> Domain<C, [i64; 2], CartesianCuboidVoxel2Vertex<D, N>>
+impl<Cel, const D: usize, const N: usize> Domain<Cel, [i64; 2], CartesianCuboidVoxel2Vertex<D, N>>
     for CartesianCuboid2Vertex
 // Position, Force and Velocity are all Vector2 supplied by the Nalgebra crate
 where
-    C: crate::concepts::mechanics::Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>,
+    Cel:
+        crate::concepts::mechanics::Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>,
 {
-    fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError> {
+    fn apply_boundary(&self, cell: &mut Cel) -> Result<(), BoundaryError> {
         let mut pos_single = cell.pos();
         let mut velocity_single = cell.velocity();
 
@@ -370,7 +372,7 @@ where
         Ok(())
     }
 
-    fn get_voxel_index(&self, cell: &C) -> [i64; 2] {
+    fn get_voxel_index(&self, cell: &Cel) -> [i64; 2] {
         // Calculate middle
         let p = cell.pos().row_sum() / cell.pos().shape().0 as f64;
         let mut out = [0; 2];

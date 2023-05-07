@@ -219,7 +219,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl<const N: usize> Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>> for $voxel_name<N> {
+        impl<const N: usize> Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $voxel_name<N> {
             fn get_index(&self) -> [i64; $d] {
                 self.index
             }
@@ -299,11 +299,11 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
 
         // Implement the cartesian cuboid
         // Index is an array of size 3 with elements of type usize
-        impl<C, const N: usize> Domain<C, [i64; $d], $voxel_name<N>> for $name
+        impl<Cel, const N: usize> Domain<Cel, [i64; $d], $voxel_name<N>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where C: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+        where Cel: crate::concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
-            fn apply_boundary(&self, cell: &mut C) -> Result<(),BoundaryError> {
+            fn apply_boundary(&self, cell: &mut Cel) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();
                 let mut velocity = cell.velocity();
 
@@ -333,7 +333,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 Ok(())
             }
 
-            fn get_voxel_index(&self, cell: &C) -> [i64; $d] {
+            fn get_voxel_index(&self, cell: &Cel) -> [i64; $d] {
                 let p = cell.pos();
                 let mut out = [0; $d];
 

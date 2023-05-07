@@ -17,7 +17,7 @@ pub struct CellSpecificInteraction {
     pub cell_radius: f64,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
     fn get_interaction_information(&self) -> Option<f64> {
         Some(self.cell_radius)
     }
@@ -25,7 +25,9 @@ impl Interaction<Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
     fn calculate_force_on(
         &self,
         own_pos: &Vector2<f64>,
+        _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
+        _ext_vel: &Vector2<f64>,
         ext_info: &Option<f64>,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let min_relative_distance_to_center = 0.3162277660168379;
@@ -110,32 +112,32 @@ impl Cycle<MyCellType> for OwnCycle {
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &f64,
-        c: &mut MyCellType,
+        cell: &mut MyCellType,
     ) -> Option<CycleEvent> {
         // If the cell is not at the maximum size let it grow
-        if c.interaction.cell_radius < c.cycle.maximum_cell_radius {
-            let growth_difference = (c.cycle.maximum_cell_radius * c.cycle.growth_rate * dt)
-                .min(c.cycle.maximum_cell_radius - c.interaction.cell_radius);
-            c.cellular_reactions.intracellular_concentrations[0] -=
-                c.cycle.food_growth_rate_multiplier * growth_difference
-                    / c.cycle.maximum_cell_radius;
-            c.interaction.cell_radius += growth_difference;
+        if cell.interaction.cell_radius < cell.cycle.maximum_cell_radius {
+            let growth_difference = (cell.cycle.maximum_cell_radius * cell.cycle.growth_rate * dt)
+                .min(cell.cycle.maximum_cell_radius - cell.interaction.cell_radius);
+            cell.cellular_reactions.intracellular_concentrations[0] -=
+                cell.cycle.food_growth_rate_multiplier * growth_difference
+                    / cell.cycle.maximum_cell_radius;
+            cell.interaction.cell_radius += growth_difference;
         }
 
         // Increase the age of the cell and divide if possible
-        c.cycle.age += dt;
+        cell.cycle.age += dt;
 
         // Calculate the modifier (between 0.0 and 1.0) based on food threshold
-        let relative_division_food_level = ((c.get_intracellular()[0]
-            - c.cycle.food_division_threshold)
-            / (c.cycle.food_threshold - c.cycle.food_division_threshold))
+        let relative_division_food_level = ((cell.get_intracellular()[0]
+            - cell.cycle.food_division_threshold)
+            / (cell.cycle.food_threshold - cell.cycle.food_division_threshold))
             .clamp(0.0, 1.0);
 
         if
         // Check if the cell has aged enough
-        c.cycle.age > c.cycle.division_age &&
+        cell.cycle.age > cell.cycle.division_age &&
             // Check if the cell has grown enough
-            c.interaction.cell_radius >= c.cycle.maximum_cell_radius &&
+            cell.interaction.cell_radius >= cell.cycle.maximum_cell_radius &&
             // Random selection but chance increased when significantly above the food threshold
             rng.gen_range(0.0..1.0) < relative_division_food_level
         {

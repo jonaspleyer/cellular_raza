@@ -57,9 +57,9 @@ pub trait PlotSelf {
 use crate::concepts::cell::CellAgentBox;
 use serde::{Deserialize, Serialize};
 
-impl<C> PlotSelf for CellAgentBox<C>
+impl<Cel> PlotSelf for CellAgentBox<Cel>
 where
-    C: PlotSelf + Serialize + for<'a> Deserialize<'a>,
+    Cel: PlotSelf + Serialize + for<'a> Deserialize<'a>,
 {
     fn plot_self<Db>(
         &self,

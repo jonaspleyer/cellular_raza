@@ -48,12 +48,14 @@ impl<T> Concentration for T where
 {
 }
 
-pub trait Voxel<I, Pos, Force>: Send + Sync + Clone + Serialize + for<'a> Deserialize<'a> {
-    fn custom_force_on_cell(&self, _pos: &Pos) -> Option<Result<Force, CalcError>> {
+pub trait Voxel<Ind, Pos, Vel, Force>:
+    Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
+{
+    fn custom_force_on_cell(&self, _pos: &Pos, _vel: &Vel) -> Option<Result<Force, CalcError>> {
         None
     }
 
-    fn get_index(&self) -> I;
+    fn get_index(&self) -> Ind;
 
     // TODO these functions do NOT capture possible implementations accurately
     // In principle we should differentiate between

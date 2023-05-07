@@ -116,15 +116,15 @@ impl<
         MultiVoxelContainer<
             Ind,
             Pos,
+            Vel,
             For,
             Inf,
-            Vel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
             Vox,
             Dom,
             Cel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
         >,
         Dom,
         Cel,
@@ -138,20 +138,50 @@ where
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,
-    Vox: Voxel<Ind, Pos, For> + Clone + 'static,
-    Cel: CellAgent<Pos, For, Inf, Vel> + 'static,
+    Vox: Voxel<Ind, Pos, Vel, For> + Clone + 'static,
+    Cel: CellAgent<Pos, Vel, For, Inf> + 'static,
     VoxelBox<
         Ind,
+        Pos,
+        Vel,
+        For,
         Vox,
         Cel,
-        Pos,
-        For,
-        Vel,
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
     >: Clone,
 {
+    pub fn initialize_from_setup(
+        setup: SimulationSetup<Dom, Cel>,
+    ) -> SimulationSupervisor<
+        MultiVoxelContainer<
+            Ind,
+            Pos,
+            Vel,
+            For,
+            Inf,
+            Vox,
+            Dom,
+            Cel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
+        >,
+        Dom,
+        Cel,
+    >
+    where
+        Cel: Sized,
+    {
+        Self::initialize_with_strategies(
+            setup,
+            Strategies {
+                voxel_definition_strategies: None,
+            },
+        )
+    }
+
     pub fn initialize_with_strategies(
         mut setup: SimulationSetup<Dom, Cel>,
         strategies: Strategies<Vox>,
@@ -159,15 +189,15 @@ where
         MultiVoxelContainer<
             Ind,
             Pos,
+            Vel,
             For,
             Inf,
-            Vel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
             Vox,
             Dom,
             Cel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
         >,
         Dom,
         Cel,
@@ -212,8 +242,8 @@ where
             Receiver<CellAgentBox<Cel>>,
         )> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_pos: Vec<(
-            Sender<PosInformation<Pos, Inf>>,
-            Receiver<PosInformation<Pos, Inf>>,
+            Sender<PosInformation<Pos, Vel, Inf>>,
+            Receiver<PosInformation<Pos, Vel, Inf>>,
         )> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_force: Vec<(
             Sender<ForceInformation<For>>,
@@ -365,11 +395,11 @@ where
                     PlainIndex,
                     VoxelBox<
                         Ind,
+                        Pos,
+                        Vel,
+                        For,
                         Vox,
                         Cel,
-                        Pos,
-                        For,
-                        Vel,
                         ConcVecExtracellular,
                         ConcBoundaryExtracellular,
                         ConcVecIntracellular,
@@ -390,11 +420,11 @@ where
                             .collect::<Vec<_>>();
                         let vbox = VoxelBox::<
                             Ind,
+                            Pos,
+                            Vel,
+                            For,
                             Vox,
                             Cel,
-                            Pos,
-                            For,
-                            Vel,
                             ConcVecExtracellular,
                             ConcBoundaryExtracellular,
                             ConcVecIntracellular,
@@ -464,11 +494,11 @@ where
                         PlainIndex,
                         VoxelBox<
                             Ind,
+                            Pos,
+                            Vel,
+                            For,
                             Vox,
                             Cel,
-                            Pos,
-                            For,
-                            Vel,
                             ConcVecExtracellular,
                             ConcBoundaryExtracellular,
                             ConcVecIntracellular,

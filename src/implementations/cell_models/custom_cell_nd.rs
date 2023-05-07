@@ -44,13 +44,13 @@ macro_rules! implement_custom_cell {
 
             fn divide(
                 _rng: &mut rand_chacha::ChaCha8Rng,
-                _c: &mut $name,
+                _cell: &mut $name,
             ) -> Result<Option<$name>, DivisionError> {
                 panic!("This function should never be called!");
             }
         }
 
-        impl Interaction<SVector<f64, $d>, SVector<f64, $d>, ()> for $name {
+        impl Interaction<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>, ()> for $name {
             fn get_interaction_information(&self) -> Option<()> {
                 None
             }
@@ -58,7 +58,9 @@ macro_rules! implement_custom_cell {
             fn calculate_force_on(
                 &self,
                 own_pos: &SVector<f64, $d>,
+                _own_vel: &SVector<f64, $d>,
                 ext_pos: &SVector<f64, $d>,
+                _ext_vel: &SVector<f64, $d>,
                 _ext_information: &Option<()>,
             ) -> Option<Result<SVector<f64, $d>, CalcError>> {
                 let z = own_pos - ext_pos;

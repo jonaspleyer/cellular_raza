@@ -38,9 +38,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 /// # Supervisor controlling simulation execution
 ///
-pub struct SimulationSupervisor<MVC, Dom, C>
+pub struct SimulationSupervisor<MVC, Dom, Cel>
 where
-    C: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
     Dom: Serialize + for<'a> Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
@@ -55,35 +55,35 @@ where
     pub config: SimulationConfig,
     pub plotting_config: PlottingConfig,
 
-    pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, C>>,
+    pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel>>,
 }
 
 impl<
         Pos,
+        Vel,
         For,
         Inf,
-        Vel,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
         Cel,
         Ind,
         Vox,
         Dom,
+        ConcVecExtracellular,
+        ConcBoundaryExtracellular,
+        ConcVecIntracellular,
     >
     SimulationSupervisor<
         MultiVoxelContainer<
             Ind,
             Pos,
+            Vel,
             For,
             Inf,
-            Vel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
             Vox,
             Dom,
             Cel,
+            ConcVecExtracellular,
+            ConcBoundaryExtracellular,
+            ConcVecIntracellular,
         >,
         Dom,
         Cel,
@@ -118,7 +118,7 @@ where
             + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
             + AddAssign<ConcVecIntracellular>,
         Ind: Index,
-        Vox: Voxel<Ind, Pos, For>,
+        Vox: Voxel<Ind, Pos, Vel, For>,
         Vox: ExtracellularMechanics<
             Ind,
             Pos,
@@ -127,21 +127,21 @@ where
             ConcTotalExtracellular,
             ConcBoundaryExtracellular,
         >,
-        Cel: CellAgent<Pos, For, Inf, Vel>
+        Cel: CellAgent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<
             Ind,
+            Pos,
+            Vel,
+            For,
             Vox,
             Cel,
-            Pos,
-            For,
-            Vel,
             ConcVecExtracellular,
             ConcBoundaryExtracellular,
             ConcVecIntracellular,
         >: Clone,
-        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
     {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
@@ -251,7 +251,7 @@ where
             + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
             + AddAssign<ConcVecIntracellular>,
         Ind: Index,
-        Vox: Voxel<Ind, Pos, For>,
+        Vox: Voxel<Ind, Pos, Vel, For>,
         Vox: ExtracellularMechanics<
             Ind,
             Pos,
@@ -260,21 +260,21 @@ where
             ConcTotalExtracellular,
             ConcBoundaryExtracellular,
         >,
-        Cel: CellAgent<Pos, For, Inf, Vel>
+        Cel: CellAgent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<
             Ind,
+            Pos,
+            Vel,
+            For,
             Vox,
             Cel,
-            Pos,
-            For,
-            Vel,
             ConcVecExtracellular,
             ConcBoundaryExtracellular,
             ConcVecIntracellular,
         >: Clone,
-        AuxiliaryCellPropertyStorage<Pos, For, Vel, ConcVecIntracellular>: Clone,
+        AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
     {
         // Run the simulation
         self.spawn_worker_threads_and_run_sim()?;
@@ -330,50 +330,50 @@ where
 use super::domain_decomposition::PlainIndex;
 
 pub struct SimulationResult<
-    I,
+    Ind,
     Pos,
     For,
     Vel,
     ConcVecExtracellular,
     ConcBoundaryExtracellular,
     ConcVecIntracellular,
-    V,
-    D,
-    C,
+    Vox,
+    Dom,
+    Cel,
 > where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    C: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
     VoxelBox<
-        I,
-        V,
-        C,
+        Ind,
         Pos,
-        For,
         Vel,
+        For,
+        Vox,
+        Cel,
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
     >: for<'a> Deserialize<'a> + Serialize,
-    D: Serialize + for<'a> Deserialize<'a>,
+    Dom: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     pub storage: StorageConfig,
 
-    pub domain: DomainBox<D>,
-    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<C>>,
+    pub domain: DomainBox<Dom>,
+    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
     pub storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
-            I,
-            V,
-            C,
+            Ind,
             Pos,
-            For,
             Vel,
+            For,
+            Vox,
+            Cel,
             ConcVecExtracellular,
             ConcBoundaryExtracellular,
             ConcVecIntracellular,
@@ -383,45 +383,45 @@ pub struct SimulationResult<
 }
 
 impl<
-        I,
+        Ind,
         Pos,
         For,
         Vel,
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
-        V,
-        D,
-        C,
+        Vox,
+        Dom,
+        Cel,
     >
     SimulationResult<
-        I,
+        Ind,
         Pos,
         For,
         Vel,
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
-        V,
-        D,
-        C,
+        Vox,
+        Dom,
+        Cel,
     >
 where
     Pos: Serialize + for<'a> Deserialize<'a>,
     For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    C: Serialize + for<'a> Deserialize<'a>,
-    D: Serialize + for<'a> Deserialize<'a>,
+    Cel: Serialize + for<'a> Deserialize<'a>,
+    Dom: Serialize + for<'a> Deserialize<'a>,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a> + 'static,
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
     VoxelBox<
-        I,
-        V,
-        C,
+        Ind,
         Pos,
-        For,
         Vel,
+        For,
+        Vox,
+        Cel,
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
@@ -437,7 +437,7 @@ where
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
-            &D,
+            &Dom,
             u32,
             &'a String,
         ) -> Result<
@@ -445,13 +445,13 @@ where
             DrawingError,
         >,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
         Vpf: Fn(
-                &V,
+                &Vox,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
@@ -505,16 +505,16 @@ where
 
     pub fn plot_spatial_at_iteration(&self, iteration: u64) -> Result<(), SimulationError>
     where
-        D: CreatePlottingRoot,
-        C: PlotSelf,
-        V: PlotSelf,
+        Dom: CreatePlottingRoot,
+        Cel: PlotSelf,
+        Vox: PlotSelf,
     {
         match self.plotting_config.image_type {
             ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(
                 iteration,
-                C::plot_self_bitmap,
-                V::plot_self_bitmap,
-                D::create_bitmap_root,
+                Cel::plot_self_bitmap,
+                Vox::plot_self_bitmap,
+                Dom::create_bitmap_root,
                 None,
             ),
             // ImageType::Svg => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self::<BitMapBackend>, V::plot_self, D::create_svg_root),
@@ -530,7 +530,7 @@ where
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
-            &D,
+            &Dom,
             u32,
             &'a String,
         ) -> Result<
@@ -538,13 +538,13 @@ where
             DrawingError,
         >,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
         Vpf: Fn(
-                &V,
+                &Vox,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
@@ -566,15 +566,15 @@ where
         voxel_plotting_func: Vpf,
     ) -> Result<(), SimulationError>
     where
-        D: CreatePlottingRoot,
+        Dom: CreatePlottingRoot,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
         Vpf: Fn(
-                &V,
+                &Vox,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
@@ -584,7 +584,7 @@ where
             iteration,
             cell_plotting_func,
             voxel_plotting_func,
-            D::create_bitmap_root,
+            Dom::create_bitmap_root,
             None,
         )
     }
@@ -595,10 +595,10 @@ where
         cell_plotting_func: Cpf,
     ) -> Result<(), SimulationError>
     where
-        V: PlotSelf,
-        D: CreatePlottingRoot,
+        Vox: PlotSelf,
+        Dom: CreatePlottingRoot,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
@@ -608,8 +608,8 @@ where
             ImageType::BitMap => self.plot_spatial_at_iteration_with_functions(
                 iteration,
                 cell_plotting_func,
-                V::plot_self_bitmap,
-                D::create_bitmap_root,
+                Vox::plot_self_bitmap,
+                Dom::create_bitmap_root,
                 None,
             ),
         }
@@ -649,7 +649,7 @@ where
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
-                &D,
+                &Dom,
                 u32,
                 &'a String,
             ) -> Result<
@@ -658,30 +658,30 @@ where
             > + Send
             + Sync,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
         Vpf: Fn(
-                &V,
+                &Vox,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
-        CellAgentBox<C>: Send + Sync,
+        CellAgentBox<Cel>: Send + Sync,
         VoxelBox<
-            I,
-            V,
-            C,
+            Ind,
             Pos,
-            For,
             Vel,
+            For,
+            Vox,
+            Cel,
             ConcVecExtracellular,
             ConcBoundaryExtracellular,
             ConcVecIntracellular,
         >: Send + Sync,
-        DomainBox<D>: Send + Sync,
+        DomainBox<Dom>: Send + Sync,
     {
         let pool = self.build_thread_pool()?;
 
@@ -721,37 +721,37 @@ where
         voxel_plotting_func: Vpf,
     ) -> Result<(), SimulationError>
     where
-        D: CreatePlottingRoot,
+        Dom: CreatePlottingRoot,
         Cpf: Fn(
-                &C,
+                &Cel,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
         Vpf: Fn(
-                &V,
+                &Vox,
                 &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
-        CellAgentBox<C>: Send + Sync,
+        CellAgentBox<Cel>: Send + Sync,
         VoxelBox<
-            I,
-            V,
-            C,
+            Ind,
             Pos,
-            For,
             Vel,
+            For,
+            Vox,
+            Cel,
             ConcVecExtracellular,
             ConcBoundaryExtracellular,
             ConcVecIntracellular,
         >: Send + Sync,
-        DomainBox<D>: Send + Sync,
+        DomainBox<Dom>: Send + Sync,
     {
         self.plot_spatial_all_iterations_with_functions(
             &cell_plotting_func,
             &voxel_plotting_func,
-            &D::create_bitmap_root,
+            &Dom::create_bitmap_root,
         )
     }
 }

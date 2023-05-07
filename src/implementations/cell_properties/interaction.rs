@@ -7,11 +7,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NoInteraction {}
 
-impl<Pos, For> Interaction<Pos, For> for NoInteraction {
+impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
     fn calculate_force_on(
         &self,
         _: &Pos,
+        _: &Vel,
         _: &Pos,
+        _: &Vel,
         _ext_information: &Option<()>,
     ) -> Option<Result<For, CalcError>> {
         return None;
@@ -26,8 +28,8 @@ pub struct LennardJones {
 
 macro_rules! implement_lennard_jones_nd(
     ($dim:literal) =>  {
-        impl Interaction<SVector<f64, $dim>,SVector<f64, $dim>> for LennardJones {
-            fn calculate_force_on(&self, own_pos: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
+        impl Interaction<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for LennardJones {
+            fn calculate_force_on(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let dir = z/r;
@@ -54,8 +56,8 @@ pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {
 impl<A, R, I1, I2> VertexDerivedInteraction<A, R, I1, I2> {
     pub fn from_two_forces(attracting_force: A, repelling_force: R) -> Self
     where
-        A: Interaction<Vector2<f64>, Vector2<f64>, I1>,
-        R: Interaction<Vector2<f64>, Vector2<f64>, I2>,
+        A: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I1>,
+        R: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I2>,
     {
         VertexDerivedInteraction {
             outside_interaction: attracting_force,
@@ -147,11 +149,12 @@ impl<A, R, I1, I2, const D: usize>
     Interaction<
         super::mechanics::VertexVector2<D>,
         super::mechanics::VertexVector2<D>,
+        super::mechanics::VertexVector2<D>,
         (Option<I1>, Option<I2>),
     > for VertexDerivedInteraction<A, R, I1, I2>
 where
-    A: Interaction<Vector2<f64>, Vector2<f64>, I1>,
-    R: Interaction<Vector2<f64>, Vector2<f64>, I2>,
+    A: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I1>,
+    R: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I2>,
 {
     fn get_interaction_information(&self) -> Option<(Option<I1>, Option<I2>)> {
         let i1 = self.outside_interaction.get_interaction_information();
@@ -162,7 +165,9 @@ where
     fn calculate_force_on(
         &self,
         own_pos: &super::mechanics::VertexVector2<D>,
+        own_vel: &super::mechanics::VertexVector2<D>,
         ext_pos: &super::mechanics::VertexVector2<D>,
+        ext_vel: &super::mechanics::VertexVector2<D>,
         ext_information: &Option<(Option<I1>, Option<I2>)>,
     ) -> Option<Result<super::mechanics::VertexVector2<D>, CalcError>> {
         // TODO Reformulate this code:
@@ -179,11 +184,23 @@ where
             .sum::<Vector2<f64>>()
             / own_pos.shape().0 as f64;
 
+        let average_vel_own: Vector2<f64> = own_vel
+            .row_iter()
+            .map(|v| v.transpose())
+            .sum::<Vector2<f64>>()
+            / own_vel.shape().0 as f64;
+
         let middle_ext: Vector2<f64> = ext_pos
             .row_iter()
             .map(|v| v.transpose())
             .sum::<Vector2<f64>>()
             / ext_pos.shape().0 as f64;
+
+        let average_vel_ext: Vector2<f64> = ext_vel
+            .row_iter()
+            .map(|v| v.transpose())
+            .sum::<Vector2<f64>>()
+            / ext_vel.shape().0 as f64;
 
         // Also calculate our own polygon defined by lines between points
         let own_polygon_lines = own_pos
@@ -252,9 +269,13 @@ where
             let calc;
             if external_point_is_in_polygon {
                 // Calculate the force inside the cell
-                calc = self
-                    .inside_interaction
-                    .calculate_force_on(&middle_own, &middle_ext, &inf2);
+                calc = self.inside_interaction.calculate_force_on(
+                    &middle_own,
+                    &average_vel_own,
+                    &middle_ext,
+                    &average_vel_ext,
+                    &inf2,
+                );
             } else {
                 // Calculate the force outside
                 let (_, nearest_point) =
@@ -262,9 +283,13 @@ where
                         Some(point) => point,
                         None => return None,
                     };
-                calc = self
-                    .outside_interaction
-                    .calculate_force_on(&nearest_point, &point, &inf1);
+                calc = self.outside_interaction.calculate_force_on(
+                    &nearest_point,
+                    &average_vel_own,
+                    &point,
+                    &average_vel_ext,
+                    &inf1,
+                );
             }
             match calc {
                 Some(Ok(calculated_force)) => force += calculated_force.transpose(),

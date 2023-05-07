@@ -7,7 +7,7 @@ use crate::concepts::errors::CalcError;
 pub trait InteractionInformation: Send + Sync + Clone + core::fmt::Debug {}
 impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::Debug {}
 
-pub trait Interaction<Pos, Force, Inf = ()> {
+pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     fn get_interaction_information(&self) -> Option<Inf> {
         None
     }
@@ -15,7 +15,9 @@ pub trait Interaction<Pos, Force, Inf = ()> {
     fn calculate_force_on(
         &self,
         own_pos: &Pos,
+        own_vel: &Vel,
         ext_pos: &Pos,
+        ext_vel: &Vel,
         ext_info: &Option<Inf>,
     ) -> Option<Result<Force, CalcError>>;
     // TODO
@@ -24,7 +26,10 @@ pub trait Interaction<Pos, Force, Inf = ()> {
 // TODO we should not use the option here
 
 pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
-    fn sense_gradient(c: &mut Cell, gradient: &ConcGradientExtracellular) -> Result<(), CalcError>;
+    fn sense_gradient(
+        cell: &mut Cell,
+        gradient: &ConcGradientExtracellular,
+    ) -> Result<(), CalcError>;
 }
 
 pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVecIntracellular> {
@@ -33,6 +38,6 @@ pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVec
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
         internal_concentration_vector: &ConcVecIntracellular,
-        external_concentration_vector: &ConcVecExtracellular,
+        #[cfg(feature = "fluid_mechanics")] external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError>;
 }
