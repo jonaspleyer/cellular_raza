@@ -8,9 +8,12 @@ use super::domain_decomposition::{
     MultiVoxelContainer, PlainIndex, PosInformation, VoxelBox,
 };
 use super::supervisor::SimulationSupervisor;
+#[cfg(feature = "controller")]
+use super::supervisor::ControllerBox;
 use crate::concepts::cell::CellularIdentifier;
 
 use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use hurdles::Barrier;
@@ -54,12 +57,64 @@ pub struct StorageConfig {
 
 /// # Complete Set of parameters controlling execution flow of simulation
 #[derive(Clone, Serialize, Deserialize)]
-pub struct SimulationSetup<Dom, C> {
-    pub domain: Dom,
-    pub cells: Vec<C>,
-    pub time: TimeSetup,
-    pub meta_params: SimulationMetaParams,
-    pub storage: StorageConfig,
+pub struct SimulationSetup<Dom, Cel, Cont = ()> {
+    pub(crate) domain: Dom,
+    pub(crate) cells: Vec<Cel>,
+    pub(crate) time: TimeSetup,
+    pub(crate) meta_params: SimulationMetaParams,
+    pub(crate) storage: StorageConfig,
+    #[cfg(feature = "controller")]
+    pub(crate) controller: Cont,
+    pub(crate) phantom_cont: PhantomData<Cont>,
+}
+
+// TODO rework this do not write two differenct functions
+#[cfg(not(feature = "controller"))]
+impl<Dom, Cel> SimulationSetup<Dom, Cel> {
+    pub fn new<V>(
+        domain: Dom,
+        cells: V,
+        time: TimeSetup,
+        meta_params: SimulationMetaParams,
+        storage: StorageConfig,
+    ) -> SimulationSetup<Dom, Cel>
+    where
+        V: IntoIterator<Item = Cel>,
+    {
+        SimulationSetup {
+            domain,
+            cells: cells.into_iter().collect(),
+            time,
+            meta_params,
+            storage,
+            phantom_cont: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "controller")]
+impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
+    pub fn new<V>(
+        domain: Dom,
+        cells: V,
+        time: TimeSetup,
+        meta_params: SimulationMetaParams,
+        storage: StorageConfig,
+        controller: Cont,
+    ) -> SimulationSetup<Dom, Cel, Cont>
+    where
+        V: IntoIterator<Item = Cel>,
+    {
+        SimulationSetup {
+            domain,
+            cells: cells.into_iter().collect(),
+            time,
+            meta_params,
+            storage,
+            controller,
+            phantom_cont: PhantomData,
+        }
+    }
 }
 
 pub const PROGRESS_BAR_STYLE: &str =
@@ -111,6 +166,8 @@ impl<
         Ind,
         Vox,
         Dom,
+        Cont,
+        Obs,
     >
     SimulationSupervisor<
         MultiVoxelContainer<
@@ -128,6 +185,8 @@ impl<
         >,
         Dom,
         Cel,
+        Cont,
+        Obs,
     >
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
@@ -151,9 +210,10 @@ where
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
     >: Clone,
+    Cont: Serialize + for<'a> Deserialize<'a>,
 {
     pub fn initialize_from_setup(
-        setup: SimulationSetup<Dom, Cel>,
+        setup: SimulationSetup<Dom, Cel, Cont>,
     ) -> SimulationSupervisor<
         MultiVoxelContainer<
             Ind,
@@ -170,6 +230,8 @@ where
         >,
         Dom,
         Cel,
+        Cont,
+        Obs,
     >
     where
         Cel: Sized,
@@ -183,7 +245,7 @@ where
     }
 
     pub fn initialize_with_strategies(
-        mut setup: SimulationSetup<Dom, Cel>,
+        mut setup: SimulationSetup<Dom, Cel, Cont>,
         strategies: Strategies<Vox>,
     ) -> SimulationSupervisor<
         MultiVoxelContainer<
@@ -201,6 +263,8 @@ where
         >,
         Dom,
         Cel,
+        Cont,
+        Obs,
     >
     where
         Cel: Sized,
@@ -380,7 +444,7 @@ where
         // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
         let meta_infos =
-            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel>>::open_or_create(
+            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create(
                 &meta_infos_path,
                 0,
             )
@@ -544,7 +608,7 @@ where
                     storage_cells,
                     storage_voxels,
 
-                    mvc_id: i as u16,
+                    mvc_id: i as u32,
                 };
 
                 return cont;
@@ -562,9 +626,16 @@ where
             domain: setup.domain.into(),
 
             config: SimulationConfig::default(),
-            plotting_config: PlottingConfig::default(),
 
             meta_infos,
+
+            #[cfg(feature = "controller")]
+            controller_box: std::sync::Arc::new(std::sync::Mutex::new(ControllerBox {
+                controller: setup.controller,
+                measurements: HashMap::new(),
+            })),
+            phantom_cont: PhantomData,
+            phantom_obs: PhantomData,
         }
     }
 }

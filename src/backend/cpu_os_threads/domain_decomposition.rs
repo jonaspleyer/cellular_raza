@@ -563,7 +563,7 @@ pub struct MultiVoxelContainer<
         >,
     >,
 
-    pub mvc_id: u16,
+    pub mvc_id: u32,
 }
 
 impl<

@@ -8,6 +8,8 @@ use num::Zero;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
+use serde::{Deserialize, Serialize};
+
 // Number of cells to put into simulation in the Beginning
 pub const N_BACTERIA_INITIAL: u32 = 400;
 
@@ -75,6 +77,48 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     )
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct CellNumberController {
+    pub target_number: i128,
+    pub K_p: f64,
+    pub K_d: f64,
+}
+
+type Observable = i128;
+
+impl Controller<MyCellType, Observable> for CellNumberController {
+    fn measure<'a, I>(&self, cells: I) -> Result<Observable, SimulationError>
+    where
+        I: IntoIterator<Item=&'a MyCellType>
+    {
+        let mut length = 0;
+        for _ in cells {
+            length+=1;
+        }
+        Ok(length)
+    }
+
+    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), SimulationError>
+    where
+        Observable: 'a,
+        MyCellType: 'b,
+        I: Iterator<Item=&'a Observable>,
+        J: Iterator<Item=&'b mut MyCellType>,
+    {
+        // Calculate difference between measured cells and target
+        let delta = self.target_number - measurements.sum::<i128>() as i128;
+
+        if delta < 0 {
+            cells.into_iter().take((-delta) as usize).for_each(|c| {
+                if c.mechanics.pos().y < DOMAIN_SIZE_Y/2.0 {
+                    c.cycle.division_age += 15.0;
+                }
+            });
+        }
+        Ok(())
+    }
+}
+
 fn main() {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
@@ -124,22 +168,27 @@ fn main() {
         .collect::<Vec<_>>();
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let setup = SimulationSetup {
+    let setup = SimulationSetup::new(
         domain,
         cells,
-        time: TimeSetup {
+        TimeSetup {
             t_start: 0.0,
             t_eval: (0..N_TIMES)
                 .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
                 .collect::<Vec<(f64, bool)>>(),
         },
-        meta_params: SimulationMetaParams {
+        SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        storage: StorageConfig {
+        StorageConfig {
             location: "out/bacteria_population".to_owned().into(),
         },
-    };
+        CellNumberController {
+            target_number: 5000,
+            K_p: 0.0,
+            K_d: 0.0,
+        },
+    );
 
     let strategies = Strategies {
         voxel_definition_strategies: Some(voxel_definition_strategy),

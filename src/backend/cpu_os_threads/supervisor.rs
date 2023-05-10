@@ -18,12 +18,15 @@ use super::config::{
 };
 
 use super::config::StorageConfig;
+use super::prelude::{Controller, CalcError};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
 use core::ops::{Add, AddAssign, Mul};
+
+use core::marker::PhantomData;
 
 use hurdles::Barrier;
 
@@ -36,12 +39,48 @@ use plotters::{
 
 use indicatif::{ProgressBar, ProgressStyle};
 
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg(feature = "controller")]
+pub(crate) struct ControllerBox<Cont, Obs> {
+    pub controller: Cont,
+    pub measurements: std::collections::HashMap<u64, std::collections::HashMap<u32, Obs>>
+}
+
+#[cfg(feature = "controller")]
+impl<Cont, Obs> ControllerBox<Cont, Obs>
+{
+    fn measure<'a, I, Cel>(&mut self, iteration: u64, thread_index: u32, cells: I) -> Result<(), SimulationError>
+    where
+        Cel: 'a,
+        I: Iterator<Item=&'a Cel>,
+        Cont: Controller<Cel, Obs>,
+    {
+        let obs = self.controller.measure(cells)?;
+        let entry = self.measurements.entry(iteration).or_insert(std::collections::HashMap::new());
+        entry.insert(thread_index, obs);
+        Ok(())
+    }
+
+    fn adjust<'a, Cel, J>(&mut self, iteration: u64, cells: J) -> Result<(), SimulationError>
+    where
+        Cel: 'a,
+        J: Iterator<Item=&'a mut Cel>,
+        Cont: Controller<Cel, Obs>,
+    {
+        match self.measurements.get_mut(&iteration) {
+            Some(measurements) => self.controller.adjust(measurements.values(), cells),
+            None => Err(CalcError{ message: format!("could not find measurements at iteration {}", iteration)})?,
+        }
+    }
+}
+
 /// # Supervisor controlling simulation execution
 ///
-pub struct SimulationSupervisor<MVC, Dom, Cel>
+pub struct SimulationSupervisor<MVC, Dom, Cel, Cont = (), Obs = ()>
 where
     Cel: Serialize + for<'a> Deserialize<'a>,
     Dom: Serialize + for<'a> Deserialize<'a>,
+    Cont: Serialize + for<'a> Deserialize<'a>,
 {
     pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
     pub multivoxelcontainers: Vec<MVC>,
@@ -56,6 +95,11 @@ where
     pub plotting_config: PlottingConfig,
 
     pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel>>,
+
+    #[cfg(feature = "controller")]
+    pub(crate) controller_box: Arc<std::sync::Mutex<ControllerBox<Cont, Obs>>>,
+    pub(crate) phantom_obs: PhantomData<Obs>,
+    pub(crate) phantom_cont: PhantomData<Cont>,
 }
 
 impl<
@@ -70,6 +114,8 @@ impl<
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
+        Cont,
+        Obs,
     >
     SimulationSupervisor<
         MultiVoxelContainer<
@@ -87,6 +133,8 @@ impl<
         >,
         Dom,
         Cel,
+        Cont,
+        Obs,
     >
 where
     Dom: 'static + Serialize + for<'a> Deserialize<'a>,
@@ -100,6 +148,8 @@ where
     Cel: 'static + Serialize + for<'a> Deserialize<'a>,
     Ind: 'static + Serialize + for<'a> Deserialize<'a>,
     Vox: 'static + Serialize + for<'a> Deserialize<'a>,
+    Cont: 'static + Serialize + for<'a> Deserialize<'a> + Send + Sync,
+    Obs: 'static + Send + Sync,
 {
     fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
@@ -142,9 +192,12 @@ where
             ConcVecIntracellular,
         >: Clone,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
+        Cont: Controller<Cel, Obs>,
     {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
+        #[cfg(feature = "controller")]
+        let mut controller_barrier = Barrier::new(self.multivoxelcontainers.len());
 
         // Create progress bar and define style
         if self.config.show_progressbar {
@@ -154,6 +207,8 @@ where
         for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
             // Clone barriers to use them for synchronization in threads
             let mut new_start_barrier = start_barrier.clone();
+            #[cfg(feature = "controller")]
+            let mut controller_barrier_new = controller_barrier.clone();
 
             // See if we need to save
             let stop_now_new = Arc::new(AtomicBool::new(false));
@@ -167,6 +222,9 @@ where
             let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
             let bar = ProgressBar::new(t_eval.len() as u64);
             bar.set_style(style);
+
+            #[cfg(feature = "controller")]
+            let controller_box = self.controller_box.clone();
 
             // Spawn a thread for each multivoxelcontainer that is running
             let handle = thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || -> Result<_, SimulationError> {
@@ -197,6 +255,31 @@ where
                     if save {
                         cont.save_voxels_to_database(&iteration)?;
                         cont.save_cells_to_database(&iteration)?;
+                    }
+
+                    #[cfg(feature = "controller")]
+                    {
+                        controller_box.lock().unwrap().measure(
+                            iteration,
+                            l as u32,
+                            cont.voxels
+                                .iter()
+                                .map(|vox| vox.1.cells
+                                    .iter()
+                                    .map(|(cbox, _)| &cbox.cell)
+                                )
+                                .flatten()
+                        )?;
+                        controller_barrier_new.wait();
+                        controller_box.lock().unwrap().adjust(iteration,
+                            cont.voxels
+                                .iter_mut()
+                                .map(|vox| vox.1.cells
+                                    .iter_mut()
+                                    .map(|(cbox, _)| &mut cbox.cell)
+                                )
+                                .flatten()
+                        );
                     }
 
                     // Check if we are stopping the simulation now
@@ -277,6 +360,7 @@ where
             ConcVecIntracellular,
         >: Clone,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
+        Cont: Controller<Cel, Obs>,
     {
         // Run the simulation
         self.spawn_worker_threads_and_run_sim()?;
@@ -309,6 +393,8 @@ where
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: Clone,
+        Cont: Clone,
+        Obs: Clone,
     {
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
@@ -321,6 +407,9 @@ where
                 n_threads: self.worker_threads.len(),
             },
             storage: self.storage.clone(),
+            #[cfg(feature = "controller")]
+            controller: self.controller_box.lock().unwrap().controller.clone(),
+            phantom_cont: PhantomData,
         };
 
         self.meta_infos

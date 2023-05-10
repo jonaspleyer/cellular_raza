@@ -115,3 +115,36 @@ pub trait ExtracellularMechanics<
         neighbor_index: &Ind,
     ) -> Result<BoundaryCondition<ConcBoundary>, IndexError>;
 }
+
+pub trait Controller<C, O> {
+    fn measure<'a, I>(&self, cells: I) -> Result<O, SimulationError>
+    where
+        C: 'a,
+        I: IntoIterator<Item=&'a C>;
+    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), SimulationError>
+    where
+        O: 'a,
+        C: 'b,
+        I: Iterator<Item=&'a O>,
+        J: Iterator<Item=&'b mut C>;
+}
+
+impl<C> Controller<C, ()> for () {
+    fn measure<'a, I>(&self, _cells: I) -> Result<(), SimulationError>
+        where
+            C: 'a,
+            I: IntoIterator<Item=&'a C> {
+        {
+            Ok(())
+        }
+    }
+
+    fn adjust<'a, 'b, I, J>(&self, _measurements: I, _cells: J) -> Result<(), SimulationError>
+        where
+            (): 'a,
+            C: 'b,
+            I: Iterator<Item=&'a ()>,
+            J: Iterator<Item=&'b mut C> {
+        Ok(())
+    }
+}
