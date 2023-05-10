@@ -402,9 +402,7 @@ where
                 t_start: 0.0,
                 t_eval: Vec::new(),
             },
-            meta_params: SimulationMetaParams {
-                n_threads: self.worker_threads.len(),
-            },
+            meta_params: self.meta_params.clone(),
             storage: self.storage.clone(),
             #[cfg(feature = "controller")]
             controller: self.controller_box.lock().unwrap().controller.clone(),
