@@ -25,7 +25,8 @@ pub trait Cycle<Cell> {
         rng: &mut rand_chacha::ChaCha8Rng,
         cell: &mut Cell,
     ) -> Result<Option<Cell>, DivisionError>;
-    fn die(_rng: &mut rand_chacha::ChaCha8Rng, _cell: Cell) -> Result<(), DeathError> {
+    #[allow(unused)]
+    fn die(rng: &mut rand_chacha::ChaCha8Rng, cell: Cell) -> Result<(), DeathError> {
         Ok(())
     }
 }
