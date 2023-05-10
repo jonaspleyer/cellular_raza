@@ -82,19 +82,18 @@ where
     Dom: Serialize + for<'a> Deserialize<'a>,
     Cont: Serialize + for<'a> Deserialize<'a>,
 {
-    pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
-    pub multivoxelcontainers: Vec<MVC>,
+    pub(crate) worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
+    pub(crate) multivoxelcontainers: Vec<MVC>,
 
-    pub time: TimeSetup,
-    pub meta_params: SimulationMetaParams,
-    pub storage: StorageConfig,
+    pub(crate) time: TimeSetup,
+    pub(crate) meta_params: SimulationMetaParams,
+    pub(crate) storage: StorageConfig,
 
-    pub domain: DomainBox<Dom>,
+    pub(crate) domain: DomainBox<Dom>,
 
     pub config: SimulationConfig,
-    pub plotting_config: PlottingConfig,
 
-    pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel>>,
+    pub(crate) meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>,
 
     #[cfg(feature = "controller")]
     pub(crate) controller_box: Arc<std::sync::Mutex<ControllerBox<Cont, Obs>>>,
