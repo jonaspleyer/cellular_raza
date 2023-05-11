@@ -149,7 +149,7 @@ impl Cycle<MyCellType> for OwnCycle {
     fn divide(
         rng: &mut rand_chacha::ChaCha8Rng,
         c1: &mut MyCellType,
-    ) -> Result<Option<MyCellType>, DivisionError> {
+    ) -> Result<MyCellType, DivisionError> {
         // Clone existing cell
         let mut c2 = c1.clone();
 
@@ -182,7 +182,7 @@ impl Cycle<MyCellType> for OwnCycle {
         // New cell is completely new so set age to 0
         c2.cycle.age = 0.0;
 
-        Ok(Some(c2))
+        Ok(c2)
     }
 }
 

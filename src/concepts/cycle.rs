@@ -21,10 +21,7 @@ pub trait Cycle<Cell> {
         dt: &f64,
         cell: &mut Cell,
     ) -> Option<CycleEvent>;
-    fn divide(
-        rng: &mut rand_chacha::ChaCha8Rng,
-        cell: &mut Cell,
-    ) -> Result<Option<Cell>, DivisionError>;
+    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Cell) -> Result<Cell, DivisionError>;
     #[allow(unused)]
     fn die(rng: &mut rand_chacha::ChaCha8Rng, cell: Cell) -> Result<(), DeathError> {
         Ok(())

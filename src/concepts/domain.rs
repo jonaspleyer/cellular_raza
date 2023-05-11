@@ -9,6 +9,8 @@ use std::ops::{Add, Mul};
 use num::Zero;
 use serde::{Deserialize, Serialize};
 
+use super::cycle::CycleEvent;
+
 pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a> {
     fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
@@ -120,31 +122,34 @@ pub trait Controller<C, O> {
     fn measure<'a, I>(&self, cells: I) -> Result<O, SimulationError>
     where
         C: 'a,
-        I: IntoIterator<Item=&'a C>;
+        I: IntoIterator<Item = &'a C> + Clone;
     fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), SimulationError>
     where
         O: 'a,
         C: 'b,
-        I: Iterator<Item=&'a O>,
-        J: Iterator<Item=&'b mut C>;
+        I: Iterator<Item = &'a O>,
+        J: Iterator<Item = (&'b mut C, &'b mut Vec<CycleEvent>)>;
 }
 
 impl<C> Controller<C, ()> for () {
     fn measure<'a, I>(&self, _cells: I) -> Result<(), SimulationError>
-        where
-            C: 'a,
-            I: IntoIterator<Item=&'a C> {
+    where
+        C: 'a,
+        I: IntoIterator<Item = &'a C> + Clone,
+    {
         {
             Ok(())
         }
     }
 
-    fn adjust<'a, 'b, I, J>(&self, _measurements: I, _cells: J) -> Result<(), SimulationError>
-        where
-            (): 'a,
-            C: 'b,
-            I: Iterator<Item=&'a ()>,
-            J: Iterator<Item=&'b mut C> {
+    #[allow(unused)]
+    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), SimulationError>
+    where
+        (): 'a,
+        C: 'b,
+        I: Iterator<Item = &'a ()>,
+        J: Iterator<Item = (&'b mut C, &'b mut Vec<CycleEvent>)>,
+    {
         Ok(())
     }
 }

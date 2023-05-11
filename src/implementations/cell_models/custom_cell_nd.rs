@@ -45,7 +45,7 @@ macro_rules! implement_custom_cell {
             fn divide(
                 _rng: &mut rand_chacha::ChaCha8Rng,
                 _cell: &mut $name,
-            ) -> Result<Option<$name>, DivisionError> {
+            ) -> Result<$name, DivisionError> {
                 panic!("This function should never be called!");
             }
         }

@@ -61,7 +61,7 @@ pub mod cell;
 ///         None
 ///     }
 ///
-///     fn divide(rng: &mut ChaCha8Rng, cell: &mut Cell) -> Result<Option<Cell>, DivisionError> {
+///     fn divide(rng: &mut ChaCha8Rng, cell: &mut Cell) -> Result<Cell, DivisionError> {
 ///         // Prepare the original cell for division.
 ///         // Set the radius of both cells to half of the original radius.
 ///         cell.radius *= 0.5;
@@ -95,7 +95,7 @@ pub mod cell;
 ///         new_cell.position = new_pos;
 ///
 ///         // Finally return the new cell
-///         return Ok(Some(new_cell));
+///         return Ok(new_cell);
 ///     }
 /// }
 pub mod cycle;

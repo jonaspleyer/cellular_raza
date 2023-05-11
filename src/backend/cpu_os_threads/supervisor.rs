@@ -18,7 +18,9 @@ use super::config::{
 };
 
 use super::config::StorageConfig;
-use super::prelude::{Controller, CalcError};
+use crate::concepts::domain::Controller;
+#[cfg(feature = "controller")]
+use crate::concepts::errors::CalcError;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -43,20 +45,27 @@ use indicatif::{ProgressBar, ProgressStyle};
 #[cfg(feature = "controller")]
 pub(crate) struct ControllerBox<Cont, Obs> {
     pub controller: Cont,
-    pub measurements: std::collections::HashMap<u64, std::collections::HashMap<u32, Obs>>
+    pub measurements: std::collections::HashMap<u64, std::collections::HashMap<u32, Obs>>,
 }
 
 #[cfg(feature = "controller")]
-impl<Cont, Obs> ControllerBox<Cont, Obs>
-{
-    fn measure<'a, I, Cel>(&mut self, iteration: u64, thread_index: u32, cells: I) -> Result<(), SimulationError>
+impl<Cont, Obs> ControllerBox<Cont, Obs> {
+    fn measure<'a, I, Cel>(
+        &mut self,
+        iteration: u64,
+        thread_index: u32,
+        cells: I,
+    ) -> Result<(), SimulationError>
     where
         Cel: 'a,
-        I: Iterator<Item=&'a Cel>,
+        I: Iterator<Item = &'a Cel> + Clone,
         Cont: Controller<Cel, Obs>,
     {
         let obs = self.controller.measure(cells)?;
-        let entry = self.measurements.entry(iteration).or_insert(std::collections::HashMap::new());
+        let entry = self
+            .measurements
+            .entry(iteration)
+            .or_insert(std::collections::HashMap::new());
         entry.insert(thread_index, obs);
         Ok(())
     }
@@ -64,12 +73,14 @@ impl<Cont, Obs> ControllerBox<Cont, Obs>
     fn adjust<'a, Cel, J>(&mut self, iteration: u64, cells: J) -> Result<(), SimulationError>
     where
         Cel: 'a,
-        J: Iterator<Item=&'a mut Cel>,
+        J: Iterator<Item = (&'a mut Cel, &'a mut Vec<crate::concepts::cycle::CycleEvent>)>,
         Cont: Controller<Cel, Obs>,
     {
         match self.measurements.get_mut(&iteration) {
             Some(measurements) => self.controller.adjust(measurements.values(), cells),
-            None => Err(CalcError{ message: format!("could not find measurements at iteration {}", iteration)})?,
+            None => Err(CalcError {
+                message: format!("could not find measurements at iteration {}", iteration),
+            })?,
         }
     }
 }
@@ -196,7 +207,7 @@ where
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
         #[cfg(feature = "controller")]
-        let mut controller_barrier = Barrier::new(self.multivoxelcontainers.len());
+        let controller_barrier = Barrier::new(self.multivoxelcontainers.len());
 
         // Create progress bar and define style
         if self.config.show_progressbar {
@@ -262,23 +273,21 @@ where
                             iteration,
                             l as u32,
                             cont.voxels
+                            .iter()
+                            .flat_map(|vox| vox.1.cells
                                 .iter()
-                                .map(|vox| vox.1.cells
-                                    .iter()
-                                    .map(|(cbox, _)| &cbox.cell)
-                                )
-                                .flatten()
+                                .map(|(cbox, _)| &cbox.cell)
+                            )
                         )?;
                         controller_barrier_new.wait();
                         controller_box.lock().unwrap().adjust(iteration,
                             cont.voxels
+                            .iter_mut()
+                            .flat_map(|vox| vox.1.cells
                                 .iter_mut()
-                                .map(|vox| vox.1.cells
-                                    .iter_mut()
-                                    .map(|(cbox, _)| &mut cbox.cell)
-                                )
-                                .flatten()
-                        );
+                                .map(|(cbox, aux_storage)| (&mut cbox.cell, &mut aux_storage.cycle_events))
+                            )
+                        )?;
                     }
 
                     // Check if we are stopping the simulation now

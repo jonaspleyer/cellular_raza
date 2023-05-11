@@ -7,9 +7,9 @@ use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
     MultiVoxelContainer, PlainIndex, PosInformation, VoxelBox,
 };
-use super::supervisor::SimulationSupervisor;
 #[cfg(feature = "controller")]
 use super::supervisor::ControllerBox;
+use super::supervisor::SimulationSupervisor;
 use crate::concepts::cell::CellularIdentifier;
 
 use std::collections::{BTreeMap, HashMap};

@@ -13,7 +13,7 @@ impl<Cel> Cycle<Cel> for NoCycle {
     fn divide(
         _: &mut rand_chacha::ChaCha8Rng,
         _: &mut Cel,
-    ) -> Result<Option<Cel>, crate::concepts::errors::DivisionError> {
-        Ok(None)
+    ) -> Result<Cel, crate::concepts::errors::DivisionError> {
+        panic!("This function should never be called. This is a backend error. Please report!")
     }
 }

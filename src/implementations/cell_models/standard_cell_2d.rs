@@ -42,8 +42,8 @@ impl Cycle<StandardCell2D> for StandardCell2D {
     fn divide(
         _rng: &mut rand_chacha::ChaCha8Rng,
         _cell: &mut StandardCell2D,
-    ) -> Result<Option<StandardCell2D>, crate::concepts::errors::DivisionError> {
-        panic!("This function should never be called");
+    ) -> Result<StandardCell2D, crate::concepts::errors::DivisionError> {
+        todo!()
     }
 }
 

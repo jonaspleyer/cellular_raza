@@ -125,7 +125,7 @@ where
     fn divide(
         rng: &mut rand_chacha::ChaCha8Rng,
         cell: &mut Self,
-    ) -> Result<Option<Self>, crate::concepts::errors::DivisionError> {
+    ) -> Result<Self, crate::concepts::errors::DivisionError> {
         Cyc::divide(rng, cell)
     }
 }
