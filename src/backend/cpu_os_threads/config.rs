@@ -7,7 +7,6 @@ use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
     MultiVoxelContainer, PlainIndex, PosInformation, VoxelBox,
 };
-#[cfg(feature = "controller")]
 use super::supervisor::ControllerBox;
 use super::supervisor::SimulationSupervisor;
 use crate::concepts::cell::CellularIdentifier;
@@ -64,36 +63,47 @@ pub struct SimulationSetup<Dom, Cel, Cont = ()> {
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
     pub(crate) storage: StorageConfig,
-    #[cfg(feature = "controller")]
     pub(crate) controller: Cont,
-    pub(crate) phantom_cont: PhantomData<Cont>,
 }
 
-// TODO rework this do not write two differenct functions
-#[cfg(not(feature = "controller"))]
-impl<Dom, Cel> SimulationSetup<Dom, Cel> {
-    pub fn new<V>(
-        domain: Dom,
-        cells: V,
-        time: TimeSetup,
-        meta_params: SimulationMetaParams,
-        storage: StorageConfig,
-    ) -> SimulationSetup<Dom, Cel>
-    where
-        V: IntoIterator<Item = Cel>,
-    {
-        SimulationSetup {
-            domain,
-            cells: cells.into_iter().collect(),
-            time,
-            meta_params,
-            storage,
-            phantom_cont: PhantomData,
-        }
-    }
-}
+#[macro_export]
+macro_rules! create_simulation_setup (
+    (
+        Domain: $domain:expr,
+        Cells: $cells:expr,
+        Time: $time:expr,
+        MetaParams: $meta_params:expr,
+        Storage: $storage:expr,
+        Controller: $controller:expr$(,)?
+    ) =>  {
+        SimulationSetup::new(
+            $domain,
+            $cells,
+            $time,
+            $meta_params,
+            $storage,
+            $controller,
+        )
+    };
 
-#[cfg(feature = "controller")]
+    (
+        Domain: $domain:expr,
+        Cells: $cells:expr,
+        Time: $time:expr,
+        MetaParams: $meta_params:expr,
+        Storage: $storage:expr$(,)?
+    ) =>  {
+        create_simulation_setup!(
+            Domain: $domain,
+            Cells: $cells,
+            Time: $time,
+            MetaParams: $meta_params,
+            Storage: $storage,
+            Controller: (),
+        )
+    };
+);
+
 impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
     pub fn new<V>(
         domain: Dom,
@@ -113,7 +123,6 @@ impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
             meta_params,
             storage,
             controller,
-            phantom_cont: PhantomData,
         }
     }
 }
@@ -632,10 +641,9 @@ where
 
             meta_infos,
 
-            #[cfg(feature = "controller")]
             controller_box: std::sync::Arc::new(std::sync::Mutex::new(ControllerBox {
                 controller: setup.controller,
-                measurements: HashMap::new(),
+                measurements: BTreeMap::new(),
             })),
             phantom_cont: PhantomData,
             phantom_obs: PhantomData,

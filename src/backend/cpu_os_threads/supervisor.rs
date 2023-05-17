@@ -19,7 +19,6 @@ use super::config::{
 
 use super::config::StorageConfig;
 use crate::concepts::domain::Controller;
-#[cfg(feature = "controller")]
 use crate::concepts::errors::CalcError;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -42,13 +41,11 @@ use plotters::{
 use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Clone, Serialize, Deserialize)]
-#[cfg(feature = "controller")]
 pub(crate) struct ControllerBox<Cont, Obs> {
     pub controller: Cont,
-    pub measurements: std::collections::HashMap<u64, std::collections::HashMap<u32, Obs>>,
+    pub measurements: std::collections::BTreeMap<u64, std::collections::BTreeMap<u32, Obs>>,
 }
 
-#[cfg(feature = "controller")]
 impl<Cont, Obs> ControllerBox<Cont, Obs> {
     fn measure<'a, I, Cel>(
         &mut self,
@@ -65,7 +62,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         let entry = self
             .measurements
             .entry(iteration)
-            .or_insert(std::collections::HashMap::new());
+            .or_insert(std::collections::BTreeMap::new());
         entry.insert(thread_index, obs);
         Ok(())
     }
@@ -106,7 +103,6 @@ where
 
     pub(crate) meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>,
 
-    #[cfg(feature = "controller")]
     pub(crate) controller_box: Arc<std::sync::Mutex<ControllerBox<Cont, Obs>>>,
     pub(crate) phantom_obs: PhantomData<Obs>,
     pub(crate) phantom_cont: PhantomData<Cont>,
@@ -206,7 +202,6 @@ where
     {
         let mut handles = Vec::new();
         let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
-        #[cfg(feature = "controller")]
         let controller_barrier = Barrier::new(self.multivoxelcontainers.len());
 
         // Create progress bar and define style
@@ -217,7 +212,6 @@ where
         for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
             // Clone barriers to use them for synchronization in threads
             let mut new_start_barrier = start_barrier.clone();
-            #[cfg(feature = "controller")]
             let mut controller_barrier_new = controller_barrier.clone();
 
             // See if we need to save
@@ -233,7 +227,6 @@ where
             let bar = ProgressBar::new(t_eval.len() as u64);
             bar.set_style(style);
 
-            #[cfg(feature = "controller")]
             let controller_box = self.controller_box.clone();
 
             // Spawn a thread for each multivoxelcontainer that is running
@@ -267,7 +260,7 @@ where
                         cont.save_cells_to_database(&iteration)?;
                     }
 
-                    #[cfg(feature = "controller")]
+                    // TODO Make sure to only call this if the controller type is not ()
                     {
                         controller_box.lock().unwrap().measure(
                             iteration,
@@ -413,9 +406,7 @@ where
             },
             meta_params: self.meta_params.clone(),
             storage: self.storage.clone(),
-            #[cfg(feature = "controller")]
             controller: self.controller_box.lock().unwrap().controller.clone(),
-            phantom_cont: PhantomData,
         };
 
         self.meta_infos
