@@ -49,7 +49,6 @@ criterion = { version = "0.4", features = ["html_reports"] }
 default = ["fluid_mechanics", "gradients"]
 
 # Simulation aspects
-intracellular_reactions = []
 fluid_mechanics = []
 gradients = ["fluid_mechanics"]
 
