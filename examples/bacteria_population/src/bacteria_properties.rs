@@ -202,8 +202,6 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         internal_concentration_vector: &ReactionVector,
         external_concentration_vector: &ReactionVector,
     ) -> Result<(ReactionVector, ReactionVector), CalcError> {
-        // Calculate a modifier which is clamps between 0.0 and 1.0 and will be 1.0 if
-        // we are far away from the saturation level and 0.0 if we have reached it.
         let mut increment_extracellular = ReactionVector::zero();
         let mut increment_intracellular = ReactionVector::zero();
 

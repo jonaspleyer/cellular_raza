@@ -33,27 +33,26 @@ pub const BACTERIA_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER: f64 = 10.0;
 pub const BACTERIA_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = BACTERIA_FOOD_INITIAL_CONCENTRATION * 0.8;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 2_000.0;
-pub const DOMAIN_SIZE_Y: f64 = 2_000.0;
+pub const DOMAIN_SIZE: f64 = 3_000.0;
 
 // Where will the cells be placed initially
-pub const STARTING_DOMAIN_X_LOW: f64 = DOMAIN_SIZE_X / 2.0 - 150.0;
-pub const STARTING_DOMAIN_X_HIGH: f64 = DOMAIN_SIZE_X / 2.0 + 150.0;
-pub const STARTING_DOMAIN_Y_LOW: f64 = DOMAIN_SIZE_Y / 2.0 - 150.0;
-pub const STARTING_DOMAIN_Y_HIGH: f64 = DOMAIN_SIZE_Y / 2.0 + 150.0;
+pub const STARTING_DOMAIN_X_LOW: f64 = DOMAIN_SIZE / 2.0 - 150.0;
+pub const STARTING_DOMAIN_X_HIGH: f64 = DOMAIN_SIZE / 2.0 + 150.0;
+pub const STARTING_DOMAIN_Y_LOW: f64 = DOMAIN_SIZE / 2.0 - 150.0;
+pub const STARTING_DOMAIN_Y_HIGH: f64 = DOMAIN_SIZE / 2.0 + 150.0;
 
 // Parameters for Voxel Reaction+Diffusion
 pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 25.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 12.0;
 
 // Time parameters
-pub const N_TIMES: usize = 1_001;
+pub const N_TIMES: usize = 20_001;
 pub const DT: f64 = 0.25;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: usize = 100;
+pub const SAVE_INTERVAL: usize = 1000;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 4;
+pub const N_THREADS: usize = 40;
 pub const N_PLOTTING_THREADS: usize = 40;
 
 mod bacteria_properties;
@@ -72,48 +71,35 @@ fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTIO
 fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     CartesianCuboid2::from_boundaries_and_interaction_ranges(
         [0.0; 2],
-        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
+        [DOMAIN_SIZE, DOMAIN_SIZE],
         [BACTERIA_MECHANICS_RADIUS * BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE; 2],
     )
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct CellNumberController {
-    pub target_number: i128,
-    pub K_p: f64,
-    pub K_d: f64,
-}
+pub struct CellNumberController {}
 
-type Observable = i128;
+type Observable = ();
 
 impl Controller<MyCellType, Observable> for CellNumberController {
-    fn measure<'a, I>(&self, cells: I) -> Result<Observable, SimulationError>
+    fn measure<'a, I>(&self, _cells: I) -> Result<Observable, SimulationError>
     where
-        I: IntoIterator<Item=&'a MyCellType>
+        I: IntoIterator<Item = &'a MyCellType> + Clone,
     {
-        let mut length = 0;
-        for _ in cells {
-            length+=1;
-        }
-        Ok(length)
+        Ok(())
     }
 
-    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), SimulationError>
+    fn adjust<'a, 'b, I, J>(&self, _measurements: I, cells: J) -> Result<(), SimulationError>
     where
         Observable: 'a,
         MyCellType: 'b,
-        I: Iterator<Item=&'a Observable>,
-        J: Iterator<Item=&'b mut MyCellType>,
+        I: Iterator<Item = &'a Observable>,
+        J: Iterator<Item = (&'b mut MyCellType, &'b mut Vec<CycleEvent>)>,
     {
-        // Calculate difference between measured cells and target
-        let delta = self.target_number - measurements.sum::<i128>() as i128;
-
-        if delta < 0 {
-            cells.into_iter().take((-delta) as usize).for_each(|c| {
-                if c.mechanics.pos().y < DOMAIN_SIZE_Y/2.0 {
-                    c.cycle.division_age += 15.0;
-                }
-            });
+        for (cell, _) in cells.into_iter() {
+            if cell.pos().x <= DOMAIN_SIZE / 2.0 && cell.pos().y <= DOMAIN_SIZE / 2.0 {
+                cell.cycle.division_age = BACTERIA_CYCLE_DIVISION_AGE_MAX * 2.0;
+            }
         }
         Ok(())
     }
@@ -184,11 +170,7 @@ fn main() {
             location: "out/bacteria_population".to_owned().into(),
             storage_priority: StorageOptions::default_priority(),
         },
-        CellNumberController {
-            target_number: 5000,
-            K_p: 0.0,
-            K_d: 0.0,
-        },
+        CellNumberController {},
     );
 
     let strategies = Strategies {
