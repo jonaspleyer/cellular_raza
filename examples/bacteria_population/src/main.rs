@@ -182,6 +182,7 @@ fn main() {
         },
         StorageConfig {
             location: "out/bacteria_population".to_owned().into(),
+            storage_priority: StorageOptions::default_priority(),
         },
         CellNumberController {
             target_number: 5000,

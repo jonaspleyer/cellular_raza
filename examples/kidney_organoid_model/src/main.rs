@@ -171,22 +171,23 @@ fn main() {
         .collect::<Vec<_>>();
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let setup = SimulationSetup {
-        domain,
-        cells,
-        time: TimeSetup {
+    let setup = create_simulation_setup!(
+        Domain: domain,
+        Cells: cells,
+        Time: TimeSetup {
             t_start: 0.0,
             t_eval: (0..N_TIMES)
                 .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
                 .collect::<Vec<(f64, bool)>>(),
         },
-        meta_params: SimulationMetaParams {
+        MetaParams: SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        storage: StorageConfig {
+        Storage: StorageConfig {
             location: "out/kidney_organoid_model".to_owned().into(),
+            storage_priority: StorageOptions::default_priority(),
         },
-    };
+    );
 
     let strategies = Strategies {
         voxel_definition_strategies: Some(voxel_definition_strategy),

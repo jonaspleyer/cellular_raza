@@ -281,20 +281,22 @@ fn main() {
         .map(|n| (T_START + n as f64 * DT, n % SAVE_INTERVAL == 0))
         .collect::<Vec<(f64, bool)>>();
 
-    let setup = SimulationSetup {
+    let setup = SimulationSetup::new(
         domain,
         cells,
-        time: TimeSetup {
+        TimeSetup {
             t_start: 0.0,
             t_eval,
         },
-        meta_params: SimulationMetaParams {
+        SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        storage: StorageConfig {
+        StorageConfig {
             location: "out/organoid_turing_growth".to_owned().into(),
+            storage_priority: StorageOptions::default_priority(),
         },
-    };
+        (),
+    );
 
     let strategies = Strategies {
         voxel_definition_strategies: Some(voxel_definition_strategy),

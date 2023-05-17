@@ -156,15 +156,17 @@ fn main() {
 
     let storage = StorageConfig {
         location: "out/cell_sorting".into(),
+        storage_priority: StorageOptions::default_priority(),
     };
 
-    let simulation_setup = SimulationSetup {
+    let simulation_setup = SimulationSetup::new(
         domain,
         cells,
         time,
         meta_params,
         storage,
-    };
+        (),
+    );
 
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
 

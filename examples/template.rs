@@ -99,8 +99,8 @@ fn main() {
                 meta_params: SimulationMetaParams {
                     n_threads
                 },
-                database: SledDataBaseConfig {
-                    name: format!("out/template_sim_{}", n_threads*AVERAGING_RUNS + k).into(),
+                database: StorageConfig {
+                    location: format!("out/template_sim_{}", n_threads*AVERAGING_RUNS + k).into(),
                 }
             };
 
