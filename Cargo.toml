@@ -81,5 +81,5 @@ name = "cell_sorting"
 path = "examples/cell_sorting/src/main.rs"
 
 [[bench]]
-name = "cell_scaling"
+name = "cell_sorting"
 harness = false
