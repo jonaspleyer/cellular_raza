@@ -137,9 +137,7 @@ impl<C> Controller<C, ()> for () {
         C: 'a,
         I: IntoIterator<Item = &'a C> + Clone,
     {
-        {
-            Ok(())
-        }
+        Ok(())
     }
 
     #[allow(unused)]
