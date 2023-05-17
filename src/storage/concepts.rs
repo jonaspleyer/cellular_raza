@@ -1,48 +1,94 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::collections::HashMap;
 
-use crate::concepts::errors::SimulationError;
+use crate::concepts::errors::{SimulationError, StorageError};
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "serde_json")]
+use super::quick_xml::XmlStorageInterface;
 use super::serde_json::JsonStorageInterface;
-#[cfg(feature = "sled")]
 use super::sled_database::SledStorageInterface;
 
 // TODO implement this correctly
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum StorageOptions {
-    NoStorage,
-    #[cfg(feature = "sled")]
     Sled,
-    #[cfg(feature = "serde_json")]
     SerdeJson,
+    SerdeXml,
 }
 
-impl Default for StorageOptions {
-    fn default() -> Self {
-        #[cfg(feature = "sled")]
-        return StorageOptions::Sled;
-        #[cfg(all(feature = "serde_json", not(feature = "sled")))]
-        return StorageOptions::SerdeJson;
-        #[cfg(not(any(feature = "sled", feature = "serde_json")))]
-        return StorageOptions::NoStorage;
+impl StorageOptions {
+    pub fn default_priority() -> Vec<Self> {
+        return vec![
+            StorageOptions::SerdeJson,
+            // TODO fix sled! This is currently not working on multiple threads
+            // StorageOptions::Sled,
+        ];
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CombinedSaveFormat<Id, Element> {
+    pub(super) identifier: Id,
+    pub(super) element: Element,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct BatchSaveFormat<Id, Element> {
+    pub(super) data: Vec<CombinedSaveFormat<Id, Element>>,
 }
 
 /// This manager handles if multiple storage options have been specified
 /// It can load resources from one storage aspect and will
 #[derive(Clone, Debug)]
 pub struct StorageManager<Id, Element> {
-    storage_priority: StorageOptions,
+    storage_priority: Vec<StorageOptions>,
 
-    #[cfg(feature = "sled")]
-    sled_storage: SledStorageInterface<Id, Element>,
-    #[cfg(feature = "serde_json")]
-    json_storage: JsonStorageInterface<Id, Element>,
+    sled_storage: Option<SledStorageInterface<Id, Element>>,
+    json_storage: Option<JsonStorageInterface<Id, Element>>,
+    xml_storage: Option<XmlStorageInterface<Id, Element>>,
+}
 
-    phantom_id: PhantomData<Id>,
-    phantom_element: PhantomData<Element>,
+impl<Id, Element> StorageManager<Id, Element> {
+    pub(crate) fn open_or_create_with_priority(
+        location: &std::path::Path,
+        storage_instance: u64,
+        storage_priority: &Vec<StorageOptions>,
+    ) -> Result<Self, SimulationError> {
+        let mut sled_storage = None;
+        let mut json_storage = None;
+        let mut xml_storage = None;
+        for storage_variant in storage_priority.iter() {
+            match storage_variant {
+                StorageOptions::SerdeJson => {
+                    json_storage = Some(JsonStorageInterface::<Id, Element>::open_or_create(
+                        &location.to_path_buf().join("json"),
+                        storage_instance,
+                    )?);
+                }
+                StorageOptions::Sled => {
+                    sled_storage = Some(SledStorageInterface::<Id, Element>::open_or_create(
+                        &location.to_path_buf().join("sled"),
+                        storage_instance,
+                    )?);
+                }
+                StorageOptions::SerdeXml => {
+                    xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(
+                        &location.to_path_buf().join("xml"),
+                        storage_instance,
+                    )?);
+                }
+            }
+        }
+        let manager = StorageManager {
+            storage_priority: storage_priority.clone(),
+
+            sled_storage,
+            json_storage,
+            xml_storage,
+        };
+
+        Ok(manager)
+    }
 }
 
 impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> {
@@ -51,35 +97,8 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         location: &std::path::Path,
         storage_instance: u64,
     ) -> Result<Self, SimulationError> {
-        #[cfg(feature = "sled")]
-        let sled_storage = SledStorageInterface::<Id, Element>::open_or_create(
-            &location.to_path_buf().join("sled"),
-            storage_instance,
-        )?;
-        #[cfg(feature = "serde_json")]
-        let json_storage = JsonStorageInterface::<Id, Element>::open_or_create(
-            &location.to_path_buf().join("json"),
-            storage_instance,
-        )?;
-
-        #[cfg(any(feature = "sled", feature = "serde_json"))]
-        let storage_priority = StorageOptions::default();
-        #[cfg(not(any(feature = "sled", feature = "serde_json")))]
-        let storage_priority = StorageOptions::NoStorage;
-
-        let manager = StorageManager {
-            storage_priority: storage_priority,
-
-            #[cfg(feature = "sled")]
-            sled_storage,
-            #[cfg(feature = "serde_json")]
-            json_storage,
-
-            phantom_id: PhantomData,
-            phantom_element: PhantomData,
-        };
-
-        Ok(manager)
+        let storage_priority = StorageOptions::default_priority();
+        Self::open_or_create_with_priority(location, storage_instance, &storage_priority)
     }
 
     #[allow(unused)]
@@ -93,13 +112,13 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Id: Serialize,
         Element: Serialize,
     {
-        #[cfg(feature = "sled")]
-        self.sled_storage
-            .store_single_element(iteration, identifier, element)?;
+        if let Some(sled_storage) = &self.sled_storage {
+            sled_storage.store_single_element(iteration, identifier, element)?;
+        }
 
-        #[cfg(feature = "serde_json")]
-        self.json_storage
-            .store_single_element(iteration, identifier, element)?;
+        if let Some(json_storage) = &self.json_storage {
+            json_storage.store_single_element(iteration, identifier, element)?;
+        }
 
         Ok(())
     }
@@ -114,13 +133,17 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Id: Serialize,
         Element: Serialize,
     {
-        #[cfg(feature = "sled")]
-        self.sled_storage
-            .store_batch_elements(iteration, identifiers_elements)?;
+        if let Some(sled_storage) = &self.sled_storage {
+            sled_storage.store_batch_elements(iteration, identifiers_elements)?;
+        }
 
-        #[cfg(feature = "serde_json")]
-        self.json_storage
-            .store_batch_elements(iteration, identifiers_elements)?;
+        if let Some(json_storage) = &self.json_storage {
+            json_storage.store_batch_elements(iteration, identifiers_elements)?;
+        }
+
+        if let Some(xml_storage) = &self.xml_storage {
+            xml_storage.store_batch_elements(iteration, identifiers_elements)?;
+        }
         Ok(())
     }
 
@@ -134,15 +157,39 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Id: Serialize,
         Element: for<'a> Deserialize<'a>,
     {
-        match self.storage_priority {
-            #[cfg(feature = "sled")]
-            StorageOptions::Sled => self.sled_storage.load_single_element(iteration, identifier),
-            #[cfg(feature = "serde_json")]
-            StorageOptions::SerdeJson => {
-                self.json_storage.load_single_element(iteration, identifier)
-            }
-            StorageOptions::NoStorage => Ok(None),
+        for priority in self.storage_priority.iter() {
+            let element = match priority {
+                StorageOptions::Sled => {
+                    if let Some(sled_storage) = &self.sled_storage {
+                        sled_storage.load_single_element(iteration, identifier)
+                    } else {
+                        Err(StorageError {
+                            message: "Sled storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeJson => {
+                    if let Some(json_storage) = &self.json_storage {
+                        json_storage.load_single_element(iteration, identifier)
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeJson storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeXml => {
+                    if let Some(xml_storage) = &self.xml_storage {
+                        xml_storage.load_single_element(iteration, identifier)
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeXML storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+            };
+            return element;
         }
+        Ok(None)
     }
 
     #[allow(unused)]
@@ -154,25 +201,75 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        match self.storage_priority {
-            #[cfg(feature = "sled")]
-            StorageOptions::Sled => self.sled_storage.load_all_elements_at_iteration(iteration),
-            #[cfg(feature = "serde_json")]
-            StorageOptions::SerdeJson => {
-                self.json_storage.load_all_elements_at_iteration(iteration)
-            }
-            StorageOptions::NoStorage => Ok(HashMap::new()),
+        for priority in self.storage_priority.iter() {
+            let elements = match priority {
+                StorageOptions::Sled => {
+                    if let Some(sled_storage) = &self.sled_storage {
+                        sled_storage.load_all_elements_at_iteration(iteration)
+                    } else {
+                        Err(StorageError {
+                            message: "Sled storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeJson => {
+                    if let Some(json_storage) = &self.json_storage {
+                        json_storage.load_all_elements_at_iteration(iteration)
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeJson storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeXml => {
+                    if let Some(xml_storage) = &self.xml_storage {
+                        xml_storage.load_all_elements_at_iteration(iteration)
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeXML storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+            };
+            return elements;
         }
+        Ok(HashMap::new())
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, SimulationError> {
-        match self.storage_priority {
-            #[cfg(feature = "sled")]
-            StorageOptions::Sled => self.sled_storage.get_all_iterations(),
-            #[cfg(feature = "serde_json")]
-            StorageOptions::SerdeJson => self.json_storage.get_all_iterations(),
-            _ => Ok(Vec::new()),
+        for priority in self.storage_priority.iter() {
+            let iterations = match priority {
+                StorageOptions::Sled => {
+                    if let Some(sled_storage) = &self.sled_storage {
+                        sled_storage.get_all_iterations()
+                    } else {
+                        Err(StorageError {
+                            message: "Sled storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeJson => {
+                    if let Some(json_storage) = &self.json_storage {
+                        json_storage.get_all_iterations()
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeJson storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+                StorageOptions::SerdeXml => {
+                    if let Some(xml_storage) = &self.xml_storage {
+                        xml_storage.get_all_iterations()
+                    } else {
+                        Err(StorageError {
+                            message: "SerdeXML storage was not initialized but called".into(),
+                        })?
+                    }
+                }
+            };
+            return iterations;
         }
+        Ok(Vec::new())
     }
 }
 

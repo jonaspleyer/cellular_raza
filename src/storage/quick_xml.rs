@@ -3,17 +3,17 @@ use crate::concepts::errors::SimulationError;
 use serde::{Deserialize, Serialize};
 
 use core::marker::PhantomData;
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct JsonStorageInterface<Id, Element> {
+pub struct XmlStorageInterface<Id, Element> {
     pub path: std::path::PathBuf,
     storage_instance: u64,
     phantom_id: PhantomData<Id>,
     phantom_element: PhantomData<Element>,
 }
 
-impl<Id, Element> JsonStorageInterface<Id, Element> {
+impl<Id, Element> XmlStorageInterface<Id, Element> {
     fn create_or_get_iteration_file_with_prefix(
         &self,
         iteration: u64,
@@ -49,7 +49,7 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
         // If this is the case increase the batch number until we find one where no batch is existing
         let save_path = iteration_path
             .join(format!("{}_{:020.0}", prefix, self.storage_instance))
-            .with_extension("json");
+            .with_extension("xml");
         Ok(save_path)
     }
 
@@ -67,7 +67,7 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Element> {
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
@@ -78,7 +78,7 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         if !location.is_dir() {
             std::fs::create_dir_all(location)?;
         }
-        Ok(JsonStorageInterface {
+        Ok(XmlStorageInterface {
             path: location.into(),
             storage_instance,
             phantom_id: PhantomData,
@@ -96,12 +96,17 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         Id: Serialize,
         Element: Serialize,
     {
-        let iteration_file = self.create_or_get_iteration_file_with_prefix(iteration, "single")?;
+        let mut iteration_file =
+            self.create_or_get_iteration_file_with_prefix(iteration, "single")?;
         let save_format = CombinedSaveFormat {
             identifier,
             element,
         };
-        serde_json::to_writer_pretty(iteration_file, &save_format)?;
+        let mut save_string = String::new();
+        let mut serializer = quick_xml::se::Serializer::new(&mut save_string);
+        serializer.indent(' ', 4);
+        save_format.serialize(serializer)?;
+        iteration_file.write(&save_string.as_bytes())?;
         Ok(())
     }
 
@@ -114,7 +119,8 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         Id: Serialize,
         Element: Serialize,
     {
-        let iteration_file = self.create_or_get_iteration_file_with_prefix(iteration, "batch")?;
+        let mut iteration_file =
+            self.create_or_get_iteration_file_with_prefix(iteration, "batch")?;
         let batch = BatchSaveFormat {
             data: identifiers_elements
                 .into_iter()
@@ -124,7 +130,11 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
                 })
                 .collect(),
         };
-        serde_json::to_writer_pretty(iteration_file, &batch)?;
+        let mut save_string = String::new();
+        let mut serializer = quick_xml::se::Serializer::new(&mut save_string);
+        serializer.indent(' ', 4);
+        batch.serialize(serializer)?;
+        iteration_file.write(&save_string.as_bytes())?;
         Ok(())
     }
 
@@ -138,45 +148,6 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         Element: for<'a> Deserialize<'a>,
     {
         todo!();
-        /* let iterations = self.get_all_iterations()?;
-        if iterations.contains(&iteration) {
-            // Get the path where the iteration folder is
-            let iteration_path = self.get_iteration_path(iteration);
-
-            // Load all elements which are inside this folder from batches and singles
-            for path in std::fs::read_dir(&iteration_path)? {
-                let p = path?.path();
-                let file = std::fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .open(&p)?;
-
-                match p.file_stem() {
-                    Some(stem) => match stem.to_str() {
-                        Some(tail) => {
-                            let elements = tail.split("_");
-                            if elements.into_iter().next() == Some("batch") {
-                                let result: BatchSaveFormat<Id, Element> =
-                                    serde_json::from_reader(file)?;
-                                for json_save_format in result.data.into_iter() {
-                                    let id1 = bincode::serialize(&json_save_format.identifier)?;
-                                    let id2 = bincode::serialize(&identifier)?;
-                                    if id1==id2 {
-                                        return Ok(Some(json_save_format.element))
-                                    }
-                                }
-                            }
-                        }
-                        None => (),
-                    },
-                    None => (),
-                }
-            }
-            return Ok(None);
-        } else {
-            return Ok(None);
-        }*/
     }
 
     fn load_all_elements_at_iteration(
@@ -203,6 +174,7 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
                     .write(true)
                     .create(true)
                     .open(&p)?;
+                let buffer_reader = std::io::BufReader::new(file);
 
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
@@ -210,7 +182,7 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
                             let elements = tail.split("_");
                             if elements.into_iter().next() == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
-                                    serde_json::from_reader(file)?;
+                                    quick_xml::de::from_reader(buffer_reader)?;
                                 all_elements_at_iteration.extend(result.data.into_iter().map(
                                     |json_save_format| {
                                         (json_save_format.identifier, json_save_format.element)

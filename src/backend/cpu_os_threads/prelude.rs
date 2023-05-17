@@ -6,8 +6,10 @@ pub use crate::concepts::errors::*;
 pub use crate::concepts::interaction::*;
 pub use crate::concepts::mechanics::*;
 
-// Database
-#[cfg(feature = "sled")]
+// Storage
+pub use crate::storage::concepts::*;
+pub use crate::storage::quick_xml::*;
+pub use crate::storage::serde_json::*;
 pub use crate::storage::sled_database::*;
 
 // Cell Properties

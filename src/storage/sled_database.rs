@@ -1,5 +1,5 @@
 use super::concepts::StorageInterface;
-use crate::concepts::errors::{DataBaseError, SimulationError};
+use crate::concepts::errors::{SimulationError, StorageError};
 
 use serde::{Deserialize, Serialize};
 
@@ -83,7 +83,7 @@ impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Ele
         let element_serialized = bincode::serialize(&element)?;
         match tree.insert(identifier_serialized, element_serialized)? {
             None => Ok(()),
-            Some(_) => Err(DataBaseError {
+            Some(_) => Err(StorageError {
                 message: format!("Element already present at iteration {}", iteration),
             }),
         }?;

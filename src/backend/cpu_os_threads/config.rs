@@ -1,7 +1,7 @@
 use crate::concepts::cell::{CellAgent, CellAgentBox};
 use crate::concepts::domain::{Domain, Index, Voxel};
 use crate::concepts::mechanics::{Force, Position, Velocity};
-use crate::storage::concepts::{StorageInterface, StorageManager};
+use crate::storage::concepts::{StorageManager, StorageOptions};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -53,6 +53,7 @@ pub struct TimeSetup {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     pub location: std::path::PathBuf,
+    pub storage_priority: Vec<StorageOptions>,
 }
 
 /// # Complete Set of parameters controlling execution flow of simulation
@@ -444,9 +445,10 @@ where
         // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
         let meta_infos =
-            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create(
+            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create_with_priority(
                 &meta_infos_path,
                 0,
+                &setup.storage.storage_priority,
             )
             .unwrap();
 
@@ -548,9 +550,10 @@ where
 
                 // TODO catch these errors!
                 let storage_cells =
-                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
+                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create_with_priority(
                         &storage_cells_path,
                         i as u64,
+                        &setup.storage.storage_priority,
                     )
                     .unwrap();
                 let storage_voxels =
@@ -567,7 +570,7 @@ where
                             ConcBoundaryExtracellular,
                             ConcVecIntracellular,
                         >,
-                    >::open_or_create(&storage_voxels_path, i as u64)
+                    >::open_or_create_with_priority(&storage_voxels_path, i as u64, &setup.storage.storage_priority)
                     .unwrap();
 
                 voxels.iter_mut().for_each(|(_, voxelbox)| {

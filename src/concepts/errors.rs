@@ -34,9 +34,9 @@ macro_rules! impl_error_variant {
                     $(
                         $name::$err_var(message) => write!(f, "{}", message),
                     )+
-                    #[cfg(feature="serde_json")]
                     $name::SerdeJsonError(message) => write!(f, "{}", message),
-                    #[cfg(feature = "sled")]
+                    $name::QuickXmlError(message) => write!(f, "{}", message),
+                    $name::FastXmlDeserializeError(message) => write!(f, "{}", message),
                     $name::SledError(message) => write!(f, "{}", message),
                 }
             }
@@ -55,14 +55,24 @@ macro_rules! impl_from_error {
             }
         )+
 
-        #[cfg(feature="serde_json")]
         impl From<serde_json::Error> for $name {
             fn from(err: serde_json::Error) -> Self {
                 $name::SerdeJsonError(err)
             }
         }
 
-        #[cfg(feature = "sled")]
+        impl From<quick_xml::Error> for $name {
+            fn from(err: quick_xml::Error) -> Self {
+                $name::QuickXmlError(err)
+            }
+        }
+
+        impl From<quick_xml::DeError> for $name {
+            fn from(err: quick_xml::DeError) -> Self {
+                $name::FastXmlDeserializeError(err)
+            }
+        }
+
         impl From<sled::Error> for $name {
             fn from(err: sled::Error) -> Self {
                 $name::SledError(err)
@@ -92,7 +102,7 @@ define_errors!(
     ),
     (BoundaryError, "Can occur during boundary calculation"),
     (
-        DataBaseError,
+        StorageError,
         "Placeholder for when Database is not compiled."
     ),
     (DrawingError, "Used to catch errors related to plotting")
@@ -110,12 +120,12 @@ pub enum SimulationError {
     DeathError(DeathError),
     BoundaryError(BoundaryError),
     DrawingError(DrawingError),
-    DataBaseError(DataBaseError),
+    StorageError(StorageError),
 
     // Less likely but possible to be user errors
-    #[cfg(feature = "serde_json")]
     SerdeJsonError(serde_json::Error),
-    #[cfg(feature = "sled")]
+    QuickXmlError(quick_xml::Error),
+    FastXmlDeserializeError(quick_xml::DeError),
     SledError(sled::Error),
     SerializeError(Box<bincode::ErrorKind>),
     SendError(String),
@@ -144,7 +154,7 @@ impl_from_error! {SimulationError,
     (ParseIntError, std::num::ParseIntError),
     (Utf8Error, std::str::Utf8Error),
     (DrawingError, DrawingError),
-    (DataBaseError, DataBaseError),
+    (StorageError, StorageError),
     (ThreadingError, rayon::ThreadPoolBuildError),
     (ConsoleLogError, indicatif::style::TemplateError)
 }
@@ -164,7 +174,7 @@ impl_error_variant! {SimulationError,
     ParseIntError,
     Utf8Error,
     DrawingError,
-    DataBaseError,
+    StorageError,
     ThreadingError,
     ConsoleLogError
 }

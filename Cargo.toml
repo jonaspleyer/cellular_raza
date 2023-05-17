@@ -28,8 +28,9 @@ indicatif = { version="0.17", features=["rayon"] }
 # Storage
 bincode = "1.3"
 serde = "1.0"
-serde_json = { version="1.0", optional=true }
-sled = { version="0.34", optional=true }
+quick-xml = { version="0.28", features=["serialize"]}
+serde_json = { version="1.0" }
+sled = { version="0.34" }
 chrono = "0.4"
 # async-std = { version="1.12", features=["std"]}
 
@@ -45,11 +46,7 @@ criterion = { version = "0.4", features = ["html_reports"] }
 
 
 [features]
-default = ["serde_json", "intracellular_reactions", "fluid_mechanics", "gradients"]
-
-# Storage
-sled = ["dep:sled"]
-serde_json = ["dep:serde_json"]
+default = ["fluid_mechanics", "gradients"]
 
 # Simulation aspects
 intracellular_reactions = []
