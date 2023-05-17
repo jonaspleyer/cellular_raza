@@ -16,6 +16,9 @@ pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a> {
     fn get_neighbor_voxel_indices(&self, index: &I) -> Vec<I>;
     fn get_voxel_index(&self, cell: &C) -> I;
     fn get_all_indices(&self) -> Vec<I>;
+    // TODO rename this function and generate SubDomains which then hold a number of voxels.
+    // These subdomains should also be responsible to integrate extracellular mechanics and so on.
+    // This is already partly realized by MultivoxelContainers in the domain_decomposition module of the cpu_os_threads backend.
     fn generate_contiguous_multi_voxel_regions(
         &self,
         n_regions: usize,
@@ -90,12 +93,14 @@ pub trait ExtracellularMechanics<
 
     fn get_total_extracellular(&self) -> ConcTotal;
 
+    // TODO formulate additional trait which does extracellular gradients mechanics and can be linked to this trait
     #[cfg(feature = "gradients")]
     fn update_extracellular_gradient(
         &mut self,
         boundaries: &[(Ind, BoundaryCondition<ConcBoundary>)],
     ) -> Result<(), SimulationError>;
 
+    // TODO formulate additional trait which does extracellular gradients mechanics and can be linked to this trait
     #[cfg(feature = "gradients")]
     fn get_extracellular_gradient_at_point(
         &self,
