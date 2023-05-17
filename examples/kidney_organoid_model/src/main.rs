@@ -1,18 +1,18 @@
-use cellular_raza::backend::cpu_os_threads::prelude::*;
 use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
+use cellular_raza::{backend::cpu_os_threads::prelude::*, create_simulation_setup};
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 // Number of cells
-pub const N_CELLS: usize = 30;
+pub const N_CELLS: usize = 100;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
 pub const CELL_MECHANICS_SPRING_TENSION: f64 = 4.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 2.0;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
-pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 3.0;
+pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 6.0;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 2.5;
 pub const CELL_MECHANICS_DAMPENING_CONSTANT: f64 = 1.0;
 
@@ -66,7 +66,7 @@ pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 2;
+pub const N_THREADS: usize = 4;
 
 mod cell_properties;
 mod plotting;
@@ -112,15 +112,16 @@ fn main() {
         .map(|n_cell| ModularCell {
             mechanics: VertexMechanics2D::new(
                 [
-                    rng.gen_range(0.3*DOMAIN_SIZE_X..0.7*DOMAIN_SIZE_X),
-                    rng.gen_range(0.3*DOMAIN_SIZE_Y..0.7*DOMAIN_SIZE_Y),
-                ].into(),
+                    rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
+                    rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
+                ]
+                .into(),
                 CELL_MECHANICS_AREA,
                 0.0,
                 CELL_MECHANICS_SPRING_TENSION,
                 CELL_MECHANICS_CENTRAL_PRESSURE,
                 CELL_MECHANICS_DAMPENING_CONSTANT,
-                None
+                None,
             ),
             interaction: VertexDerivedInteraction::from_two_forces(
                 OutsideInteraction {
@@ -128,7 +129,7 @@ fn main() {
                     interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
                 },
                 InsideInteraction {
-                    potential_strength: 10.0*CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
                 },
             ),
             interaction_extracellular: GradientSensing {},
