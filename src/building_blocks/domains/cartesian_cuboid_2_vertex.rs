@@ -5,7 +5,7 @@ use crate::concepts::errors::*;
 use crate::plotting::spatial::CreatePlottingRoot;
 
 use super::cartesian_cuboid_n::get_decomp_res;
-use crate::implementations::cell_properties::mechanics::VertexVector2;
+use crate::building_blocks::cell_building_blocks::mechanics::VertexVector2;
 
 // Imports from std and core
 use core::cmp::{max, min};

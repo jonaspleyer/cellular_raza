@@ -93,15 +93,16 @@
 //!     - try to only need to cast from integer to floating point types and when doing the other way around be really careful
 //! - Code Style/Guideline
 
-/// The backend controls the simulation flow. Multiple variants could be available.
+/// The backend controls the simulation flow. Multiple variants could be available in the future.
 pub mod backend;
-/// Abstract concepts to describe cell properties, the domain and possible errors
+/// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
+pub mod building_blocks;
+/// Abstract concepts to describe cell properties, the domain and possible errors.
 ///
 /// These concepts should be implemented by the user and then be used by a simulation
 /// [backends](crate::backends) which actually integrates the defined cellular properties.
+/// Some predefined implementations of concepts can be found in the [implementations] module.
 pub mod concepts;
-/// Implementations of various concepts that can be readily used. Contains cellular properties and domains.
-pub mod implementations;
 /// Methods for plotting simulation results
 pub mod plotting;
 /// Database interface

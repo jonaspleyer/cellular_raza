@@ -1,5 +1,5 @@
 use cellular_raza::backend::cpu_os_threads::prelude::*;
-use cellular_raza::implementations::cell_properties::mechanics::VertexMechanics2D;
+use cellular_raza::building_blocks::cell_building_blocks::mechanics::VertexMechanics2D;
 
 use nalgebra::{Unit, Vector2};
 use serde::{Deserialize, Serialize};

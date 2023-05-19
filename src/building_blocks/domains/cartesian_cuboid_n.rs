@@ -477,6 +477,8 @@ impl CreatePlottingRoot for CartesianCuboid2 {
             .build_cartesian_2d(self.min[0]..self.max[0], self.min[1]..self.max[1])
             .unwrap();
 
+        let root = chart.plotting_area().clone();
+
         chart
             .configure_mesh()
             // we do not want to draw any mesh lines automatically
@@ -484,7 +486,7 @@ impl CreatePlottingRoot for CartesianCuboid2 {
             .draw()
             .unwrap();
 
-        Ok(chart.plotting_area().clone())
+        Ok(root)
     }
 }
 

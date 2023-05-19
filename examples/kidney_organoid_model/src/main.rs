@@ -1,4 +1,4 @@
-use cellular_raza::implementations::cell_models::modular_cell::ModularCell;
+use cellular_raza::building_blocks::cell_models::modular_cell::ModularCell;
 use cellular_raza::{backend::cpu_os_threads::prelude::*, create_simulation_setup};
 
 use rand::{Rng, SeedableRng};
