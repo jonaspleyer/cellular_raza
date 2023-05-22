@@ -54,6 +54,7 @@ impl<Id, Element> StorageManager<Id, Element> {
         storage_instance: u64,
         storage_priority: &Vec<StorageOptions>,
     ) -> Result<Self, SimulationError> {
+        // Fill the used storage options
         let mut sled_storage = None;
         let mut json_storage = None;
         let mut xml_storage = None;

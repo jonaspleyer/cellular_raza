@@ -184,10 +184,7 @@ fn main() {
         MetaParams: SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        Storage: StorageConfig {
-            location: "out/kidney_organoid_model".to_owned().into(),
-            storage_priority: StorageOptions::default_priority(),
-        },
+        Storage: StorageConfig::from_path("out/kidney_organoid_model".to_owned().into()),
     );
 
     let strategies = Strategies {

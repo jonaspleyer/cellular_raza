@@ -55,6 +55,15 @@ pub struct StorageConfig {
     pub storage_priority: Vec<StorageOptions>,
 }
 
+impl StorageConfig {
+    pub fn from_path(path: std::path::PathBuf) -> Self {
+        Self {
+            location: path,
+            storage_priority: StorageOptions::default_priority(),
+        }
+    }
+}
+
 /// # Complete Set of parameters controlling execution flow of simulation
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationSetup<Dom, Cel, Cont = ()> {

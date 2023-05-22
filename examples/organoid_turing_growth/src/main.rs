@@ -291,10 +291,7 @@ fn main() {
         SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        StorageConfig {
-            location: "out/organoid_turing_growth".to_owned().into(),
-            storage_priority: StorageOptions::default_priority(),
-        },
+        StorageConfig::from_path("out/organoid_turing_growth".to_owned().into()),
         (),
     );
 
