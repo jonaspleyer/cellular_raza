@@ -121,6 +121,9 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
             json_storage.store_single_element(iteration, identifier, element)?;
         }
 
+        if let Some(xml_storage) = &self.xml_storage {
+            xml_storage.store_single_element(iteration, identifier, element)?;
+        }
         Ok(())
     }
 
