@@ -51,8 +51,8 @@ pub struct TimeSetup {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
-    pub location: std::path::PathBuf,
-    pub storage_priority: Vec<StorageOptions>,
+    location: std::path::PathBuf,
+    storage_priority: Vec<StorageOptions>,
 }
 
 impl StorageConfig {
@@ -61,6 +61,24 @@ impl StorageConfig {
             location: path,
             storage_priority: StorageOptions::default_priority(),
         }
+    }
+
+    pub fn storage_priority(self, storage_priority: Vec<StorageOptions>) -> Self {
+        Self {
+            location: self.location,
+            storage_priority,
+        }
+    }
+
+    pub fn location(self, location: &std::path::PathBuf) -> Self {
+        Self {
+            location: location.clone(),
+            storage_priority: self.storage_priority,
+        }
+    }
+
+    pub(crate) fn get_location(&self) -> std::path::PathBuf {
+        self.location.clone()
     }
 }
 

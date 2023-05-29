@@ -554,7 +554,7 @@ where
             .collect::<Vec<_>>();
 
         // Choose the correct file path
-        let mut file_path = self.storage.location.clone();
+        let mut file_path = self.storage.get_location().clone();
         file_path.push("images");
         match std::fs::create_dir(&file_path) {
             Ok(()) => (),
