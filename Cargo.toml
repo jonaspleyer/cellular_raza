@@ -1,85 +1,9 @@
-[package]
-authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
-name = "cellular_raza"
-version = "0.0.3"
-edition = "2021"
-license = "GPL-2.0"
-description = "Cellular simulation tool"
-readme = "README.md"
-repository = "https://github.com/jonaspleyer/cellular_raza"
-keywords = ["cell", "cellular", "simulation"]
-categories = ["science", "mathematics", "simulation"]
-autoexamples = false
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-
-[dependencies]
-# Core
-crossbeam-channel = { version="0.5" }
-hurdles = { version="1.0" }
-itertools = { version="0.10" }
-num = { version="0.4" }
-# ode_integrate = { version="0.0.2" }
-plotters = { version="0.3" }
-rayon = { version="1.6" }
-indicatif = { version="0.17", features=["rayon"] }
-
-# Storage
-bincode = "1.3"
-serde = "1.0"
-quick-xml = { version="0.28", features=["serialize"]}
-serde_json = { version="1.0" }
-sled = { version="0.34" }
-chrono = "0.4"
-# async-std = { version="1.12", features=["std"]}
-
-# Implementation dependencies
-nalgebra = { version="0.32", features=["serde-serialize"]}
-rand = { version="0.8", features = ["small_rng"] }
-rand_chacha = { version="0.3.1", features=["serde1"]}
-# ndarray = { version="0.15", features=["serde"]}
-
-
-[dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
-
-
-[features]
-default = ["fluid_mechanics", "gradients"]
-
-# Simulation aspects
-fluid_mechanics = []
-gradients = ["fluid_mechanics"]
-
-# Testing
-test_exhaustive = []
-
-
-[profile.release]
-debug = 1
-
-
-[[example]]
-name = "kidney_organoid_model"
-path = "examples/kidney_organoid_model/src/main.rs"
-
-[[example]]
-name = "bacteria_population"
-path = "examples/bacteria_population/src/main.rs"
-
-[[example]]
-name = "ureter_signalling"
-path = "examples/ureter_signalling/src/main.rs"
-
-[[example]]
-name = "organoid_turing_growth"
-path = "examples/organoid_turing_growth/src/main.rs"
-
-[[example]]
-name = "cell_sorting"
-path = "examples/cell_sorting/src/main.rs"
-
-[[bench]]
-name = "cell_sorting"
-harness = false
+members = [
+    "cellular_raza-benchmarks",
+    "cellular_raza-core",
+    "cellular_raza-concepts",
+    "cellular_raza-building-blocks",
+    "cellular_raza-examples/*",
+]

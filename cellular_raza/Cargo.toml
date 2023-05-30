@@ -1,0 +1,31 @@
+[package]
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+name = "cellular_raza"
+version = "0.0.3"
+edition = "2021"
+license = "GPL-2.0"
+description = "Cellular simulation tool"
+readme = "README.md"
+repository = "https://github.com/jonaspleyer/cellular_raza"
+keywords = ["cell", "cellular", "simulation"]
+categories = ["science", "mathematics", "simulation"]
+autoexamples = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies.cellular_raza-core]
+path = "../cellular_raza-core"
+
+[dependencies.cellular_raza-building-blocks]
+path = "../cellular_raza-building-blocks"
+
+[dependencies.cellular_raza-concepts]
+path = "../cellular_raza-concepts"
+
+[features]
+default = ["fluid_mechanics", "gradients"]
+
+# Simulation aspects
+fluid_mechanics = []
+gradients = ["fluid_mechanics"]

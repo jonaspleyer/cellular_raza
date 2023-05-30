@@ -1,0 +1,34 @@
+[package]
+authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
+name = "cellular_raza-building-blocks"
+version = "0.0.3"
+edition = "2021"
+license = "GPL-2.0"
+description = "cellular_raza Building Blocks"
+readme = "README.md"
+repository = "https://github.com/jonaspleyer/cellular_raza"
+keywords = ["cell", "cellular", "simulation"]
+categories = ["science", "mathematics", "simulation"]
+
+[dependencies]
+plotters = { version="0.3" }
+num = "0.4"
+rand = { version="0.8", features = ["small_rng"] }
+rand_chacha = { version="0.3.1", features=["serde1"]}
+nalgebra = { version="0.32", features=["serde-serialize"]}
+serde = "1.0"
+itertools = { version="0.10" }
+rayon = { version="1.6" }
+
+[dependencies.cellular_raza-core]
+path = "../cellular_raza-core"
+
+[dependencies.cellular_raza-concepts]
+path = "../cellular_raza-concepts"
+
+[features]
+default = ["fluid_mechanics", "gradients"]
+
+# Simulation aspects
+fluid_mechanics = []
+gradients = ["fluid_mechanics"]

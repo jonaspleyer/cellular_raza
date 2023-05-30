@@ -1,0 +1,25 @@
+[package]
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+name = "cellular_raza-concepts"
+version = "0.0.3"
+edition = "2021"
+license = "GPL-2.0"
+description = "cellular_raza concepts"
+readme = "README.md"
+repository = "https://github.com/jonaspleyer/cellular_raza"
+
+[dependencies]
+num = "0.4"
+serde = "1.0"
+rand_chacha = { version="0.3.1", features=["serde1"]}
+plotters = "0.3"
+
+[dev-dependencies]
+rand = { version="0.8", features = ["small_rng"] }
+
+[features]
+default = ["fluid_mechanics", "gradients"]
+
+# Simulation aspects
+fluid_mechanics = []
+gradients = ["fluid_mechanics"]
