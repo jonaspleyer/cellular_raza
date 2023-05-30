@@ -14,6 +14,7 @@
     - [Backends](BenchmarkBackends.md)
     - [Algorithms](BenchmarkAlgorithms.md)
     - [Hardware](BenchmarkHardware.md) -->
+- [Roadmap](Roadmap.md)
 - [For Developers](Developers.md)
     - [Coding Guidelines](DevelopersCodingGuidelines.md)
     - [How to write a Backend](DevelopersHowToWriteBackend.md)
