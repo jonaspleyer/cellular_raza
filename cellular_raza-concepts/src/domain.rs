@@ -125,7 +125,7 @@ pub trait Controller<C, O> {
     where
         C: 'a,
         I: IntoIterator<Item = &'a C> + Clone;
-    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), ControllerError>
+    fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
     where
         O: 'a,
         C: 'b,
@@ -143,7 +143,7 @@ impl<C> Controller<C, ()> for () {
     }
 
     #[allow(unused)]
-    fn adjust<'a, 'b, I, J>(&self, measurements: I, cells: J) -> Result<(), ControllerError>
+    fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
     where
         (): 'a,
         C: 'b,
