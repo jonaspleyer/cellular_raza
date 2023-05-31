@@ -1,6 +1,6 @@
 use cellular_raza_concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
 use cellular_raza_concepts::domain::Index;
-use cellular_raza_concepts::domain::{Concentration, Domain, ExtracellularMechanics, Voxel};
+use cellular_raza_concepts::domain::{Concentration, Controller, Domain, ExtracellularMechanics, Voxel};
 use cellular_raza_concepts::errors::{ControllerError, DrawingError, RequestError};
 use cellular_raza_concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
@@ -19,7 +19,6 @@ use super::config::{
 };
 
 use super::config::StorageConfig;
-use cellular_raza_concepts::domain::Controller;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -64,6 +63,11 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
             .entry(iteration)
             .or_insert(std::collections::BTreeMap::new());
         entry.insert(thread_index, obs);
+
+        // If the number of entries is above the limit defined by Controller::N, we omit the first results
+        while self.measurements.len() > Cont::N_SAVE {
+            self.measurements.pop_first();
+        }
         Ok(())
     }
 

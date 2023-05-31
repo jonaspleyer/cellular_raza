@@ -121,6 +121,8 @@ pub trait ExtracellularMechanics<
 }
 
 pub trait Controller<C, O> {
+    const N_SAVE: usize = 100;
+
     fn measure<'a, I>(&self, cells: I) -> Result<O, CalcError>
     where
         C: 'a,
@@ -134,6 +136,8 @@ pub trait Controller<C, O> {
 }
 
 impl<C> Controller<C, ()> for () {
+    const N_SAVE: usize = 0;
+
     fn measure<'a, I>(&self, _cells: I) -> Result<(), CalcError>
     where
         C: 'a,

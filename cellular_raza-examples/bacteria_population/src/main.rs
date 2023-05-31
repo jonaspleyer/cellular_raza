@@ -82,6 +82,7 @@ type Observable = ();
 
 impl Controller<MyCellType, Observable> for CellNumberController {
     fn measure<'a, I>(&self, _cells: I) -> Result<Observable, CalcError>
+    const N_SAVE: usize = 20;
     where
         I: IntoIterator<Item = &'a MyCellType> + Clone,
     {
