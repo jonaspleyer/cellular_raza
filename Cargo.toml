@@ -7,3 +7,21 @@ members = [
     "cellular_raza-building-blocks",
     "cellular_raza-examples/*",
 ]
+
+[workspace.package]
+name = "cellular_raza"
+version = "0.0.3"
+authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
+documentation = "docs.rs/cellular_raza"
+edition = "2021"
+license = "GPL-2.0"
+repository = "github.com/jonaspleyer/cellular_raza"
+keywords = ["cell", "cellular", "simulation"]
+categories = ["science", "mathematics", "simulation"]
+
+[workspace.dependencies]
+num = "0.4"
+itertools = "0.10"
+plotters = "0.3"
+rand = { version="0.8", features = ["small_rng"] }
+rand_chacha = { version="0.3.1", features=["serde1"] }

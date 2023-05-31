@@ -1,14 +1,15 @@
 [package]
-authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 name = "cellular_raza-building-blocks"
-version = "0.0.3"
-edition = "2021"
-license = "GPL-2.0"
 description = "cellular_raza Building Blocks"
 readme = "README.md"
-repository = "https://github.com/jonaspleyer/cellular_raza"
-keywords = ["cell", "cellular", "simulation"]
-categories = ["science", "mathematics", "simulation"]
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 plotters = { version="0.3" }

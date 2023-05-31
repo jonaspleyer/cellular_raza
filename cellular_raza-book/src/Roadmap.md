@@ -10,6 +10,8 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Stochastic Processes
 
 ## Planned for the Future
+- [ ] Complete Deserialization of Simulation
+    - [ ] Restart Simulation from Snapshot
 - [ ] Custom adaptive time steppers
 - [ ] Proper error handling with strategies
 - [ ] Export Formats other then 1:1 storage (such as vtk files for paraview)

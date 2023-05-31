@@ -1,14 +1,15 @@
 [package]
-authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 name = "cellular_raza-core"
-version = "0.0.3"
-edition = "2021"
-license = "GPL-2.0"
 description = "Cellular simulation tool"
 readme = "README.md"
-repository = "https://github.com/jonaspleyer/cellular_raza"
-keywords = ["cell", "cellular", "simulation"]
-categories = ["science", "mathematics", "simulation"]
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 autoexamples = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,10 +19,10 @@ autoexamples = false
 # Core
 crossbeam-channel = { version="0.5" }
 hurdles = { version="1.0" }
-itertools = { version="0.10" }
-num = "0.4"
+itertools = { workspace = true }
+num = { workspace = true }
 # ode_integrate = { version="0.0.2" }
-plotters = { version="0.3" }
+plotters = { workspace = true }
 rayon = { version="1.6" }
 indicatif = { version="0.17", features=["rayon"] }
 
@@ -34,8 +35,8 @@ sled = { version="0.34" }
 chrono = "0.4"
 
 # Implementation dependencies
-rand = { version="0.8", features = ["small_rng"] }
-rand_chacha = { version="0.3.1", features=["serde1"]}
+rand = { workspace = true }
+rand_chacha = { workspace = true }
 # ndarray = { version="0.15", features=["serde"]}
 
 [dependencies.cellular_raza-concepts]
