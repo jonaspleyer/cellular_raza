@@ -7,7 +7,13 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Find scalable user API with variadic generics (see [my question on the rust-forum](https://users.rust-lang.org/t/varying-generic-parameters-with-features/93333/58))
 - [ ] Stabilize Backend API (try to avoid features, see above)
 - [ ] Make it multi-scale: varying time-steps for portions of simulation
+    - [ ] Find user Interface for time input
 - [ ] Stochastic Processes
+- [ ] Better concepts for domain decomposition
+    - [ ] Probable solution: Define `SubDomain` which hold a number of `Voxel` (similar to what is realized already in the `MultiVoxelContainer` struct of the `cpu_os_threads` backend.)
+    - [ ] Efficiently implement this new concept and benchmark
+- [ ] Evaluate usage of associated types for some concepts
+    - [ ] Probably useful for `CellularReactions` concept
 
 ## Planned for the Future
 - [ ] Complete Deserialization of Simulation
@@ -17,4 +23,4 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Export Formats other then 1:1 storage (such as vtk files for paraview)
 
 ## Possible Directions
-- [ ] Purely GPU powered Backend (restricted)
+- [ ] Purely GPU powered Backend (probably restricted generics)
