@@ -12,13 +12,13 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-num = "0.4"
-serde = "1.0"
-rand_chacha = { version="0.3.1", features=["serde1"]}
-plotters = "0.3"
+num = { workspace = true }
+serde = { workspace = true }
+rand_chacha = { workspace = true }
+plotters = { workspace = true }
 
 [dev-dependencies]
-rand = { version="0.8", features = ["small_rng"] }
+rand = { workspace = true }
 
 [features]
 default = ["fluid_mechanics", "gradients"]
