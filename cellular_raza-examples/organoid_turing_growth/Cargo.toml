@@ -1,5 +1,5 @@
 [package]
-name = "cellular_raza-organoid-turing-growth"
+name = "cellular_raza-example-organoid-turing-growth"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]

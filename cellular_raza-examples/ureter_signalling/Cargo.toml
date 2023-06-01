@@ -1,5 +1,5 @@
 [package]
-name = "cellular_raza-ureter-signalling"
+name = "cellular_raza-example-ureter-signalling"
 version = "0.0.3"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
