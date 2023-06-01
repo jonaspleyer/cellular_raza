@@ -1,3 +1,4 @@
+use crate::cell::CellAgentBox;
 use crate::errors::*;
 
 use std::marker::{Send, Sync};
@@ -125,14 +126,14 @@ pub trait Controller<C, O> {
 
     fn measure<'a, I>(&self, cells: I) -> Result<O, CalcError>
     where
-        C: 'a,
-        I: IntoIterator<Item = &'a C> + Clone;
+        C: 'a + Serialize + for<'b> Deserialize<'b>,
+        I: IntoIterator<Item = &'a CellAgentBox<C>> + Clone;
     fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
     where
         O: 'a,
-        C: 'b,
+        C: 'b + Serialize + for<'c> Deserialize<'c>,
         I: Iterator<Item = &'a O>,
-        J: Iterator<Item = (&'b mut C, &'b mut Vec<CycleEvent>)>;
+        J: Iterator<Item = (&'b mut CellAgentBox<C>, &'b mut Vec<CycleEvent>)>;
 }
 
 impl<C> Controller<C, ()> for () {
@@ -140,8 +141,8 @@ impl<C> Controller<C, ()> for () {
 
     fn measure<'a, I>(&self, _cells: I) -> Result<(), CalcError>
     where
-        C: 'a,
-        I: IntoIterator<Item = &'a C> + Clone,
+        C: 'a + Serialize + for<'b> Deserialize<'b>,
+        I: IntoIterator<Item = &'a CellAgentBox<C>> + Clone,
     {
         Ok(())
     }
@@ -150,9 +151,9 @@ impl<C> Controller<C, ()> for () {
     fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
     where
         (): 'a,
-        C: 'b,
+        C: 'b + Serialize + for<'c> Deserialize<'c>,
         I: Iterator<Item = &'a ()>,
-        J: Iterator<Item = (&'b mut C, &'b mut Vec<CycleEvent>)>,
+        J: Iterator<Item = (&'b mut CellAgentBox<C>, &'b mut Vec<CycleEvent>)>,
     {
         Ok(())
     }

@@ -85,7 +85,7 @@ impl Controller<MyCellType, Observable> for CellNumberController {
 
     fn measure<'a, I>(&self, cells: I) -> Result<Observable, CalcError>
     where
-        I: IntoIterator<Item = &'a MyCellType> + Clone,
+        I: IntoIterator<Item = &'a CellAgentBox<MyCellType>> + Clone,
     {
         Ok(())
     }
@@ -95,7 +95,7 @@ impl Controller<MyCellType, Observable> for CellNumberController {
         Observable: 'a,
         MyCellType: 'b,
         I: Iterator<Item = &'a Observable>,
-        J: Iterator<Item = (&'b mut MyCellType, &'b mut Vec<CycleEvent>)>,
+        J: Iterator<Item = (&'b mut CellAgentBox<MyCellType>, &'b mut Vec<CycleEvent>)>,
     {
         for (cell, _) in cells.into_iter() {
             if cell.pos().x <= DOMAIN_SIZE / 2.0 && cell.pos().y <= DOMAIN_SIZE / 2.0 {

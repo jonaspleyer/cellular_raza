@@ -1,6 +1,8 @@
 use cellular_raza_concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
 use cellular_raza_concepts::domain::Index;
-use cellular_raza_concepts::domain::{Concentration, Controller, Domain, ExtracellularMechanics, Voxel};
+use cellular_raza_concepts::domain::{
+    Concentration, Controller, Domain, ExtracellularMechanics, Voxel,
+};
 use cellular_raza_concepts::errors::{ControllerError, DrawingError, RequestError};
 use cellular_raza_concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
@@ -53,8 +55,8 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         cells: I,
     ) -> Result<(), SimulationError>
     where
-        Cel: 'a,
-        I: Iterator<Item = &'a Cel> + Clone,
+        Cel: 'a + Serialize + for<'b> Deserialize<'b>,
+        I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
         Cont: Controller<Cel, Obs>,
     {
         let obs = self.controller.measure(cells)?;
@@ -73,10 +75,10 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
 
     fn adjust<'a, Cel, J>(&mut self, iteration: u64, cells: J) -> Result<(), ControllerError>
     where
-        Cel: 'a,
+        Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         J: Iterator<
             Item = (
-                &'a mut Cel,
+                &'a mut CellAgentBox<Cel>,
                 &'a mut Vec<cellular_raza_concepts::cycle::CycleEvent>,
             ),
         >,
@@ -278,7 +280,7 @@ where
                             .iter()
                             .flat_map(|vox| vox.1.cells
                                 .iter()
-                                .map(|(cbox, _)| &cbox.cell)
+                                .map(|(cbox, _)| cbox)
                             )
                         )?;
                         controller_barrier_new.wait();
@@ -287,7 +289,7 @@ where
                             .iter_mut()
                             .flat_map(|vox| vox.1.cells
                                 .iter_mut()
-                                .map(|(cbox, aux_storage)| (&mut cbox.cell, &mut aux_storage.cycle_events))
+                                .map(|(cbox, aux_storage)| (cbox, &mut aux_storage.cycle_events))
                             )
                         )?;
                     }
