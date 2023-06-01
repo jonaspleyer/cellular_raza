@@ -13,14 +13,9 @@ cargo add cellular_raza
 We can now begin to write the main function of our program.
 To do this, open the file `src/main.rs` with your favourite text-editor.
 `cellular_raza` is divided into different [layers](AbstractionLayers.md) which are combined within a [backend](Backends.md).
-By default, we use the `cpu_os_threads` backend.
-We begin by importing the needed functionality from the `prelude.rs` file.
+By default, we use the `cpu_os_threads` backend which can be loaded from `prelude.rs`.
 ```rust
-use cellular_raza::backends::cpu_os_threads::prelude::*;
-
-fn main() {
-    println!("Hello World!");
-}
+use cellular_raza::prelude::*;
 ```
 Now we can use `cargo` to compile and execute the project in release mode with all possible optimizations
 ```bash
