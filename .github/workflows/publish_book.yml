@@ -46,7 +46,7 @@ jobs:
           args: mdbook mdbook-admonish
 
       - name: Build Book
-        run: mdbook build cellular_raza_book
+        run: mdbook build cellular_raza-book
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: './cellular_raza_book/book/'
+          path: './cellular_raza-book/book/'
 
       - name: Deploy to GitHub Pages
         id: deployment
