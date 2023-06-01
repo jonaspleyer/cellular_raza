@@ -71,6 +71,15 @@ where
     }
 }
 
+impl<Cel> CellAgentBox<Cel>
+where
+    Cel: Serialize + for<'a> Deserialize<'a>,
+{
+    pub fn get_parent_id(&self) -> Option<CellularIdentifier> {
+        self.parent_id
+    }
+}
+
 // Auto-implement traits for CellAgentBox which where also implemented for CellAgent
 impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
 where
