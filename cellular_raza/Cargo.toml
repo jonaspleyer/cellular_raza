@@ -1,7 +1,7 @@
 [package]
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 name = "cellular_raza"
-version = "0.0.3"
+version.workspace = true
 edition = "2021"
 license = "GPL-2.0"
 description = "Cellular simulation tool"
@@ -16,12 +16,15 @@ autoexamples = false
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
+version = "0.0.3"
 
 [dependencies.cellular_raza-building-blocks]
 path = "../cellular_raza-building-blocks"
+version = "0.0.3"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
+version = "0.0.3"
 
 [features]
 default = ["fluid_mechanics", "gradients"]

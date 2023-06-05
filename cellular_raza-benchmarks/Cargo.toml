@@ -2,9 +2,9 @@
 name = "cellular_raza-benchmarks"
 description = "cellular_raza benchmarks"
 readme = "README.md"
+documentation = "https://docs.rs/cellular_raza-benchmarks"
 version.workspace = true
 authors.workspace = true
-documentation.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -24,6 +24,7 @@ criterion = { version = "0.4", features = ["html_reports"] }
 
 [dependencies.cellular_raza]
 path = "../cellular_raza"
+version = "0.0.3"
 
 [features]
 default = ["fluid_mechanics", "gradients"]

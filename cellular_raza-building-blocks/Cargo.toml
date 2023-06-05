@@ -2,9 +2,9 @@
 name = "cellular_raza-building-blocks"
 description = "cellular_raza Building Blocks"
 readme = "README.md"
+documentation = "https://docs.rs/cellular_raza-building-blocks"
 version.workspace = true
 authors.workspace = true
-documentation.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -23,9 +23,11 @@ rayon = { version="1.6" }
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
+version = "0.0.3"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
+version = "0.0.3"
 
 [features]
 default = ["fluid_mechanics", "gradients"]
