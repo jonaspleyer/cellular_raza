@@ -33,6 +33,7 @@ pub const BACTERIA_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = BACTERIA_FOOD_INITIAL_CO
 
 // Parameters for domain
 pub const DOMAIN_SIZE: f64 = 3_000.0;
+pub const DOMAIN_MIDDLE: Vector2<f64> = nalgebra::vector![DOMAIN_SIZE / 2.0, DOMAIN_SIZE / 2.0];
 
 // Where will the cells be placed initially
 pub const STARTING_DOMAIN_X_LOW: f64 = DOMAIN_SIZE / 2.0 - 150.0;
@@ -48,11 +49,11 @@ pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 12.0;
 pub const N_TIMES: usize = 20_001;
 pub const DT: f64 = 0.25;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: usize = 1000;
+pub const SAVE_INTERVAL: usize = 250;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 40;
-pub const N_PLOTTING_THREADS: usize = 40;
+pub const N_THREADS: usize = 14;
+pub const N_PLOTTING_THREADS: usize = 14;
 
 mod bacteria_properties;
 mod plotting;
@@ -76,18 +77,34 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct CellNumberController {}
+pub struct CellNumberController {
+    target_cell_number: i64,
+    stored_ids: std::collections::HashSet<(u64, u64)>,
+    full: bool,
+}
 
-type Observable = ();
+type Observable = Option<(i64, Vec<(u64, u64)>)>;
 
 impl Controller<MyCellType, Observable> for CellNumberController {
-    const N_SAVE: usize = 20;
+    const N_SAVE: usize = 1;
 
     fn measure<'a, I>(&self, cells: I) -> Result<Observable, CalcError>
     where
         I: IntoIterator<Item = &'a CellAgentBox<MyCellType>> + Clone,
     {
-        Ok(())
+        if !self.full {
+            let mut n_cells = 0_i64;
+            let positions = cells
+                .into_iter()
+                .map(|c| {
+                    n_cells += 1;
+                    c.get_id()
+                })
+                .collect();
+            Ok(Some((n_cells, positions)))
+        } else {
+            Ok(None)
+        }
     }
 
     fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
@@ -97,9 +114,34 @@ impl Controller<MyCellType, Observable> for CellNumberController {
         I: Iterator<Item = &'a Observable>,
         J: Iterator<Item = (&'b mut CellAgentBox<MyCellType>, &'b mut Vec<CycleEvent>)>,
     {
-        for (cell, _) in cells.into_iter() {
-            if cell.pos().x <= DOMAIN_SIZE / 2.0 && cell.pos().y <= DOMAIN_SIZE / 2.0 {
-                cell.cycle.division_age = BACTERIA_CYCLE_DIVISION_AGE_MAX * 2.0;
+        // If we are not full, we
+        if !self.full {
+            let mut total_cell_number: i64 = 0;
+            let all_ids: std::collections::HashSet<_> = measurements
+                .into_iter()
+                .filter_map(|meas| {
+                    if let Some((n_cells, ids)) = meas {
+                        total_cell_number += n_cells;
+                        Some(ids.into_iter())
+                    } else {
+                        None
+                    }
+                })
+                .flatten()
+                .map(|&id| id)
+                .collect();
+
+            if total_cell_number > self.target_cell_number {
+                self.stored_ids = all_ids;
+                self.full = true;
+            }
+        }
+        if self.full {
+            // Kill all cells which do not match ids
+            for (cell, cell_events) in cells.into_iter() {
+                if !self.stored_ids.contains(&cell.get_id()) {
+                    cell_events.push(CycleEvent::Death);
+                }
             }
         }
         Ok(())
@@ -168,7 +210,11 @@ fn main() {
             n_threads: N_THREADS,
         },
         StorageConfig::from_path("out/bacteria_population".to_owned().into()),
-        CellNumberController {},
+        CellNumberController {
+            target_cell_number: 15_000,
+            stored_ids: std::collections::HashSet::new(),
+            full: false,
+        },
     );
 
     let strategies = Strategies {
