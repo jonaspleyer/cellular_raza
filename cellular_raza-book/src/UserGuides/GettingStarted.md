@@ -22,7 +22,7 @@ Now we can use `cargo` to compile and execute the project in release mode with a
 cargo run --release
 ```
 ```admonish tip
-Execute the simulation in release mode whenever performance is critical.
+Execute the simulation in `--release` mode whenever performance is critical.
 Use the debug mode `cargo run` to find bugs in your simulation.
 ```
 The following compilation process might take a while.
