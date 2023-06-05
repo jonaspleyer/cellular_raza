@@ -1,22 +1,7 @@
 # Design Principles
 `cellular_raza` arose from a personal need which could not be satisfied by other frameworks.
 Agent-based models are particularly useful in the context of modeling pattern formation and self-organization.
-When properly used and executed, they represent a great restriction to be thinking inside of in order to find underlying cellular processes.
-
-## No hidden Parameters
-A  common problem for modelers in this regime is that the governing mechanisms might not be known and even less are quantitatively parametrized.
-This means, we desire a model which is not only low in parameters but can be completely parameter-less in its most minimal version (of course without doing anything and completing instantanously).
-This is already a requirement which many modeling frameworks cannot satisfy and basically takes care of everything that is out there.
-`cellular_raza` was designed such that all parameters are obvious to the user and can be accessed.
-We differentiate between two classes of parameters
-
-| Parameter Type | Model Parameters | Hyperparameters |
-| --- | --- | --- |
-| Description | Describe model | Control the simulation flow |
-| | Often direct physical meaning | Only helper variable to obtain numerical results. |
-| | Should be related to real-world setup | Often increasing/decreasing results in more accurate results. |
-| Examples | Death rate of a cell | Time step-size |
-| | 
+When properly used and executed, they present a useful restrictions in order to find underlying cellular processes.
 
 ## Flexible model properties
 A common workflow while building new models might be to:
@@ -28,6 +13,24 @@ A common workflow while building new models might be to:
 When chaning our model description, we actively want to avoid, having to rewrite the corresponding solver everytime a new model property is developed.
 This means that we need to define a way to handle a multitude of different implementations without knowing their detail while still obtaining correct results.
 `cellular_raza` solves this problem by defining [concepts](DesignPrinciples-Concepts.md) (traits in the rust language) that are responsible for interfacing between the generalized solver which is part of the [backend](Backends).
+
+It is a delicate business on how to design concepts in such a way that they are general enough while still providing useful abstractions.
+
+## No hidden Parameters
+A  common problem for modelers in this regime is that the governing mechanisms might not be known and even less are quantitatively parametrized.
+This means, we desire a model which is not only low in parameters but can be completely parameter-less in its most minimal version (of course without doing anything and completing instantanously).
+This is already a requirement which many modeling frameworks cannot satisfy and basically takes care of everything that is out there.
+`cellular_raza` was designed such that all parameters are obvious to the user and can be accessed.
+We differentiate between two classes of parameters
+
+### Model Parameters
+These parameters describe the underlying physical model itself.
+Some examples include proliferation rate, potential strength (of cellular forces) or reaction parameters such as uptake and secretion.
+
+### Hyperparameters
+The second type of parameters are concerned with controlling the overall simulation flow.
+They typically do not have physical meaning and may result in increased or decreased precision of results when changing the parameter.
+A good example is the time-step size.
 
 ## Reduce your model
 During the development process of a new model it is often desirable to reduce yourself to the most simplistic formulation of your current iteration.
