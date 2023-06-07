@@ -87,3 +87,21 @@ Agent-based models are designed to be used bottom-up, meaning cellular processes
 ## Etymology
 The name `cellular_raza` is an artistic combination of "cell" and ["tabula rasa"](https://en.wikipedia.org/wiki/Tabula_rasa).
 While the original intent was to describe the simulation tool as written with from a "blank slate", many of the interpretations from the wikipedia article are interesting and fitting. The logo has the [Rust](https://www.rust-lang.org/) symbol embedded, but when referring to the package in text, the snake case version `cellular_raza` in a monospaced font should be used.
+
+<!-- TODO check these points and possibly attach them to another subsection -->
+## What this crate does not aim to offer
+- A graphical user interface
+    - Models should be created with native Rust Code (or in the future by interacting with Python or Julia)
+    - Data Analysis can be done with Python/Julia
+- The option to freely change everything however you like during runtime
+
+## Inherent Assumptions and Mindset
+- Additions are commutative
+    - This is inherently not true in almost all modern computers using floating point arithmetics
+      It can lead to results which are not identical on a binary level, but should agree within their numerical uncertainty respective of the solver used.
+- Multiplication with floats like f64 are commutative
+- There should only be local rules
+    - CellAgents are interacting with themselves, their neighbors and the extracellular properties around them.
+      There is no exact definition of "local" but the first idea was to restrict interaction ranges.
+- Any multithreading or implementaional details of how information is transported on an actual computer should be hidden from the end user.
+    - Defining new cell-properties and domain/voxels should not involve thinking about parallelization etc.
