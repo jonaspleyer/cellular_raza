@@ -151,7 +151,7 @@ impl Cycle<MyCellType> for OwnCycle {
         if cell.cellular_reactions.get_intracellular()[1] < 0.0
             && rng.gen_range(0.0..1.0) < relative_death_food_level
         {
-            return Some(CycleEvent::Death);
+            return Some(CycleEvent::Remove);
         }
         None
     }

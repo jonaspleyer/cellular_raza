@@ -140,7 +140,7 @@ impl Controller<MyCellType, Observable> for CellNumberController {
             // Kill all cells which do not match ids
             for (cell, cell_events) in cells.into_iter() {
                 if !self.stored_ids.contains(&cell.get_id()) {
-                    cell_events.push(CycleEvent::Death);
+                    cell_events.push(CycleEvent::Remove);
                 }
             }
         }

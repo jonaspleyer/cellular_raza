@@ -420,14 +420,27 @@ where
                             let new_cell = Cel::divide(&mut self.rng, &mut cbox.cell)?;
                             self.new_cells.push((new_cell, Some(cbox.get_id())));
                         }
-                        CycleEvent::Death => remaining_events.push(CycleEvent::Death),
+                        CycleEvent::Remove => remaining_events.push(CycleEvent::Remove),
+                        CycleEvent::PhasedDeath => {
+                            remaining_events.push(CycleEvent::PhasedDeath);
+                        }
                     };
                 }
                 aux_storage.cycle_events = remaining_events;
                 // Update the cell cycle
-                match Cel::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
-                    Some(event) => aux_storage.cycle_events.push(event),
-                    None => (),
+                if aux_storage
+                    .cycle_events
+                    .contains(&CycleEvent::PhasedDeath)
+                {
+                    match Cel::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
+                        Some(event) => aux_storage.cycle_events.push(event),
+                        None => (),
+                    }
+                } else {
+                    match Cel::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)? {
+                        true => aux_storage.cycle_events.push(CycleEvent::Remove),
+                        false => (),
+                    }
                 }
                 Ok(())
             })
@@ -435,15 +448,10 @@ where
 
         // Remove cells which are flagged for death
         // TODO use drain_filter when stabilized! [https://doc.rust-lang.org/std/vec/struct.DrainFilter.html]
-        let (dying_cells, normal_cells): (Vec<_>, Vec<_>) = self
+        let (_, normal_cells): (Vec<_>, Vec<_>) = self
             .cells
             .drain(..)
-            .partition(|(_, aux_storage)| aux_storage.cycle_events.contains(&CycleEvent::Death));
-
-        dying_cells
-            .into_iter()
-            .map(|(cbox, _)| Cel::die(&mut self.rng, cbox.cell))
-            .collect::<Result<(), DeathError>>()?;
+            .partition(|(_, aux_storage)| aux_storage.cycle_events.contains(&CycleEvent::Remove));
 
         self.cells.extend(normal_cells);
 

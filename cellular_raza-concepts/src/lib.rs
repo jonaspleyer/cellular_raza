@@ -8,15 +8,18 @@ pub mod cell;
 /// These events can have different effects. For example a cell-division event triggers the
 /// `divide` method. A mapping of events and functions is depicted in the table below.
 ///
-/// | Event    | Function | Effect |
-/// | -------- | -------- | ------ |
-/// | [Division](cycle::CycleEvent::Division) | [`divide`](cycle::Cycle::divide) | Returns (creates) a new cell and modifies the existing cell in-place. This means, that the user is responsible to make sure, that every field of the cell struct is modified correctly in order to simulate cell-division. |
-/// | [Death](cycle::CycleEvent::Death) | [`die`](cycle::Cycle::die) | This function by default does nothing but is able to change the cell before it is removed from the simulation. It is explicitly NOT suited for a prolonged death-cycles but is rather only the last action of the cell before removal. |
+/// | Event | Effect |
+/// | ----- -------- | ------ |
+/// | [`Division`](cycle::CycleEvent::Division) | The [`divide`](cycle::Cycle::divide) function returns (creates) a new cell and modifies the existing cell in-place. This means, that the user is responsible to make sure, that every field of the cell struct is modified correctly in order to simulate cell-division. |
+/// | [`PhasedDeath`](cycle::CycleEvent::PhasedDeath) | The cell enters a dying process and is still continuously updated via [`update_conditional_phased_death`](cycle::Cycle::update_conditional_phased_death). Once the corresponding function returns `true` the process is considered complete and the cell is removed. |
+/// | [`Remove`](cycle::CycleEvent::Remove) | This event removes the cell from the simulation without any further actions. |
 ///
 /// # Stochasticity
 /// In order to make sure that results are reproducible, the provided rng parameter should be used.
 /// Should a user fall back to the option to use the threaded rng, this simulation cannot guarantee
 /// deterministic results anymore.
+/// We plan to include the stochastic aspect into individual [`Event`](cycle::CycleEvent) variants such that the correct
+/// handling of integrating the underlying stochastic process can be carried out by the [backend](https://docs.rs/cellular_raza-core/backend).
 ///
 /// # Example implementation
 /// This could be an example of a very simplified cell-agent.
