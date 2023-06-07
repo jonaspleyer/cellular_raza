@@ -8,53 +8,6 @@
 //! driven mindset.
 //! This means, properties of cells are individually driven by strictly local phenomena.
 //!
-//! # Simulating Cellular Biology
-//! This crate aims to provide interfaces to simulate the following mechanisms found in biological cells.
-//! - [x] Cellular mechanics via force interaction
-//! - [ ] Intra- and Extracellular Reactions
-//!     - [x] ODEs
-//!     - [ ] Stochastic ODEs and PDEs
-//! - [ ] Fluid Dynamics
-//!     - [x] Diffusion
-//!     - [ ] ...
-//! - [x] Cell-Proliferation
-//! - [x] Death
-//! - [ ] Differentiation
-//! - [ ] Contact functions
-//! - [ ] Custom (individual-only) rules
-//!
-//! # Features and Techniques
-// TODO extend list here: look at our own paper
-//! - [ ] Adaptive and Multi-Scale solving
-//! - [ ] Provide predefined Set of Cellular Agents and Simulation Domains
-//! - [x] Separation of Concepts and Implementations
-//! - [x] Parallelization
-//!     - [ ] Scheduling for highly-parallelized NUMA instances
-//! - [x] Deterministic (once fixing initial Seed, if random Processes take place)
-//! ## Concepts
-//! This crate provides well-defined traits to implement own cellular types with own rules.
-//!
-//! ## Simulation Snapshots
-//! - [x] Take a simulation snapshot at any given time
-//! - [ ] Start from any saved Snapshot
-//!     - [ ] Modify parameter values before beginning simulation
-//!
-//! ## Deterministic Results
-//! - This crates stochastic implementaions should always produce results which are deterministically reproducible when fixing the seed.
-//!   That is if the provided functionalities are used correctly (see [concepts]).
-//! - Changing the number of threads should not alter the sequence at which random numbers are being generated and thus provided to the agents and domains/voxels.
-//!
-//! These statements must be taken with a grain of salt.
-//! While we strive for binary reproducability, one problem is non-associativity of floating point operations, meaning `a+(b+c)!=(a+b)+c` on the binary level of almost all of modern hardware.
-//! This situation is not a data-race! For more information look at the implementation inside the [backend] module and read "[What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)".
-//! This situation can only be reliably circumvented when running on a single execution thread.
-//!
-//! # Layers of Abstraction of this crate
-//! ## Concepts
-//! ## Cellular + Domain Implementations
-//! ## Backends
-// TODO where does plotting and storage fit in here?
-
 // TODO move this to the corresponding backend
 //! ## Implementation Details
 //! - Intrinsic parallelization over physical simulation domain
