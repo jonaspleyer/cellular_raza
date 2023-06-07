@@ -45,7 +45,7 @@ The initial seed is considered a hyperparameter and can be manually adjusted.
 ### Ordering of objects does not matter
 Every update step should be able to be executed simultanously and resolved in a way that is independent of the ordering in which cells or other objects are included and stored.
 This means that results of a simulation will not only be deterministic as explained above but also invariant under reordering of elements.
-```admonish info
+```admonish warning
     The generated unique identifiers of cells and voxels may be an exception!
     This behaviour can be backend-dependent.
 ```
