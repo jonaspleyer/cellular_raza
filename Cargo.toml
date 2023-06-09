@@ -12,7 +12,7 @@ version = "0.0.3"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 edition = "2021"
 license = "GPL-2.0"
-repository = "github.com/jonaspleyer/cellular_raza"
+repository = "https://github.com/jonaspleyer/cellular_raza"
 keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
 
