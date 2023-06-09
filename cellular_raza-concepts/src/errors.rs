@@ -7,6 +7,9 @@ macro_rules! define_errors {
             #[doc = $err_descr]
             #[derive(Debug,Clone)]
             pub struct $err_name {
+                #[doc = "Error message associated with "]
+                #[doc = stringify!($err_name)]
+                #[doc = " error type."]
                 pub message: String,
             }
 
@@ -44,22 +47,9 @@ define_errors!(
     (
         ControllerError,
         "Occurs when incorrectly applying a controller effect"
-    )
+    ),
+    (DrawingError, "Used to catch errors related to plotting")
 );
-
-/// Used to catch errors related to plotting
-#[derive(Debug, Clone)]
-pub struct DrawingError {
-    pub message: String,
-}
-
-impl Display for DrawingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl Error for DrawingError {}
 
 impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for DrawingError
 where

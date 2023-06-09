@@ -1,3 +1,8 @@
+#![warn(missing_docs)]
+#![warn(clippy::missing_docs_in_private_items)]
+//! This crate encapsulates concepts which govern an agent-based model specified by [cellular_raza](https://docs.rs/cellular_raza).
+//! To learn how to design your own concepts please refer to the [cellular_raza book](https://jonaspleyer.github.io/cellular_raza/DevelopersDesigningNewConcepts.html).
+
 /// Traits and types to define a complete cell-agent
 pub mod cell;
 
@@ -150,6 +155,7 @@ pub mod interaction;
 /// need to check and apply boundary conditions independantly.
 pub mod mechanics;
 
+/// Visualize components of the simulation directly via the [plotters](https://docs.rs/plotters) library.
 pub mod plotting;
 
 /// Exports which can be used to simply access all concepts.

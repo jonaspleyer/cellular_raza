@@ -7,6 +7,12 @@ use std::marker::{Send, Sync};
 
 use serde::{Deserialize, Serialize};
 
+// TODO this concept should probably be not necessary
+// Prefer a combination of many traits
+/// Encapsulates all concepts that can be specified for a [CellAgent]
+///
+/// We hope to be deprecating this trait in the future and only rely on individual traits instead.
+/// While this trait could be manually implemented, it is often not necessary (see [cellular_raza-building-blocks](https://docs.rs/cellular_raza-building-blocks))
 pub trait CellAgent<Pos: Position, Vel: Velocity, For: Force, Inf>:
     Cycle<Self>
     + Interaction<Pos, Vel, For, Inf>
@@ -40,10 +46,13 @@ where
 /// Its components are
 /// 1. PlainIndex of Voxel where it was created
 /// 2. Count the number of cells that have already been created in this voxel since simulation begin.
+// TODO consider making this an associated type of the Id trait
 pub type CellularIdentifier = (u64, u64);
 
 /// Obtains the unique identifier of a cell
+// TODO consider making this trait generic for cell and voxel with associated type varying
 pub trait Id {
+    /// Simple method to access the identifier of the cell
     fn get_id(&self) -> CellularIdentifier;
 }
 
@@ -59,6 +68,7 @@ where
     id: CellularIdentifier,
     parent_id: Option<CellularIdentifier>,
     #[serde(bound = "")]
+    /// The user-defined cell which is stored inside this container.
     pub cell: Cel,
 }
 
@@ -75,6 +85,7 @@ impl<Cel> CellAgentBox<Cel>
 where
     Cel: Serialize + for<'a> Deserialize<'a>,
 {
+    /// Simple method to retrieve the [CellularIdentifier] of the parent cell if existing.
     pub fn get_parent_id(&self) -> Option<CellularIdentifier> {
         self.parent_id
     }
@@ -134,6 +145,9 @@ impl<Cel> CellAgentBox<Cel>
 where
     Cel: Serialize + for<'a> Deserialize<'a>,
 {
+    /// Create a new [CellAgentBox] at a specific voxel with a voxel-unique number
+    /// of cells that has already been created at this position.
+    // TODO make this generic with respect to voxel_index
     pub fn new(
         voxel_index: u64,
         n_cell: u64,
