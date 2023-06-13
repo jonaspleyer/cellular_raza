@@ -137,6 +137,7 @@ fn main() {
                     pos,
                     vel: Vector2::from([0.0, 0.0]),
                     dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
+                    mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
                     potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
@@ -213,6 +214,7 @@ fn main() {
                     pos,
                     vel: Vector2::from([0.0, 0.0]),
                     dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
+                    mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
                     potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,

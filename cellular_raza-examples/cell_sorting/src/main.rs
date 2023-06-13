@@ -118,6 +118,7 @@ fn main() {
                     pos,
                     vel: Vector3::zero(),
                     dampening_constant: CELL_DAMPENING,
+                    mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
                     species: match n <= N_CELLS_1 {

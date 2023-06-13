@@ -167,6 +167,7 @@ fn main() {
                     pos,
                     vel: Vector2::zero(),
                     dampening_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,
+                    mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
                     potential_strength: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,

@@ -110,6 +110,7 @@ fn run_simulation(
                     pos,
                     vel: Vector3::zero(),
                     dampening_constant: 2.0,
+                    mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
                     species: match n <= n_cells_1 {

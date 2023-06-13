@@ -121,6 +121,7 @@ fn main() {
                     pos,
                     vel: Vector2::zero(),
                     dampening_constant: CELL_DAMPENING,
+                    mass: cell_radius,
                 },
                 interaction: CellSpecificInteraction {
                     species: match n <= N_CELLS_CARGO {

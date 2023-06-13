@@ -13,6 +13,7 @@ macro_rules! implement_mechanics_model_nd(
             pub pos: SVector<f64, $dim>,
             pub vel: SVector<f64, $dim>,
             pub dampening_constant: f64,
+            pub mass: f64,
         }
 
         impl Mechanics<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for $model_name {
@@ -34,7 +35,7 @@ macro_rules! implement_mechanics_model_nd(
 
             fn calculate_increment(&self, force: SVector<f64, $dim>) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
                 let dx = self.vel;
-                let dv = force - self.dampening_constant * self.vel;
+                let dv = force/self.mass - self.dampening_constant * self.vel;
                 Ok((dx, dv))
             }
         }
