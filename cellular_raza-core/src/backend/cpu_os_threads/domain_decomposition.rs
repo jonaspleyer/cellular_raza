@@ -372,8 +372,8 @@ where
         Ok(())
     }
 
-    fn calculate_force_from_cells_on_other_cell<Inf>(
-        &self,
+    fn calculate_force_between_cells_external<Inf>(
+        &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_inf: &Option<Inf>,
@@ -928,7 +928,7 @@ where
                 for neighbor_index in self.voxels[&voxel_index].neighbors.iter() {
                     match self.voxels.get(&neighbor_index) {
                         Some(vox) => Ok::<(), CalcError>(
-                            force += vox.calculate_force_from_cells_on_other_cell(
+                            force += vox.calculate_force_between_cells_external(
                                 &cell_pos, &cell_vel, &cell_inf,
                             )?,
                         ),
@@ -970,7 +970,7 @@ where
         for pos_info in self.receiver_pos.try_iter() {
             let vox = self.voxels.get(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
             // Calculate force from cells in voxel
-            let force = vox.calculate_force_from_cells_on_other_cell(
+            let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
                 &pos_info.vel,
                 &pos_info.info,

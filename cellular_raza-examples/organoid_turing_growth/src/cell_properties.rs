@@ -22,7 +22,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
         Some(self.cell_radius)
     }
 
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
         _own_vel: &Vector2<f64>,

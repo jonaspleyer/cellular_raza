@@ -38,7 +38,7 @@ pub struct InsideInteraction {
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
     for OutsideInteraction
 {
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
         _own_vel: &Vector2<f64>,
@@ -67,7 +67,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
     for InsideInteraction
 {
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
         _own_vel: &Vector2<f64>,

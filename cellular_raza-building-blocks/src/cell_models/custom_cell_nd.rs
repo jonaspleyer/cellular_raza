@@ -55,7 +55,7 @@ macro_rules! implement_custom_cell {
                 None
             }
 
-            fn calculate_force_on(
+            fn calculate_force_between(
                 &self,
                 own_pos: &SVector<f64, $d>,
                 _own_vel: &SVector<f64, $d>,

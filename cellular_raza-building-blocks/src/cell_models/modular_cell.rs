@@ -96,7 +96,7 @@ where
         self.interaction.get_interaction_information()
     }
 
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Pos,
         own_vel: &Vel,
@@ -104,8 +104,13 @@ where
         ext_vel: &Vel,
         ext_information: &Option<Inf>,
     ) -> Option<Result<For, CalcError>> {
-        self.interaction
-            .calculate_force_on(own_pos, own_vel, ext_pos, ext_vel, ext_information)
+        self.interaction.calculate_force_between(
+            own_pos,
+            own_vel,
+            ext_pos,
+            ext_vel,
+            ext_information,
+        )
     }
 }
 

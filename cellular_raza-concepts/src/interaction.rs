@@ -18,7 +18,7 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
 
     /// Calculates the force (velocity-derivative) on the corresponding external position given external velocity.
     /// By providing velocities, we can calculate terms that are related to friction.
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Pos,
         own_vel: &Vel,

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct NoInteraction {}
 
 impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         _: &Pos,
         _: &Vel,
@@ -29,7 +29,7 @@ pub struct LennardJones {
 macro_rules! implement_lennard_jones_nd(
     ($dim:literal) =>  {
         impl Interaction<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for LennardJones {
-            fn calculate_force_on(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
+            fn calculate_force_between(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let dir = z/r;
@@ -162,7 +162,7 @@ where
         Some((i1, i2))
     }
 
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &super::mechanics::VertexVector2<D>,
         own_vel: &super::mechanics::VertexVector2<D>,
@@ -269,7 +269,7 @@ where
             let calc;
             if external_point_is_in_polygon {
                 // Calculate the force inside the cell
-                calc = self.inside_interaction.calculate_force_on(
+                calc = self.inside_interaction.calculate_force_between(
                     &middle_own,
                     &average_vel_own,
                     &middle_ext,
@@ -283,7 +283,7 @@ where
                         Some(point) => point,
                         None => return None,
                     };
-                calc = self.outside_interaction.calculate_force_on(
+                calc = self.outside_interaction.calculate_force_between(
                     &nearest_point,
                     &average_vel_own,
                     &point,

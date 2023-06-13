@@ -15,9 +15,9 @@ macro_rules! implement_cell_types {
                 }
             }
 
-            fn calculate_force_on(&self, own_pos: &$pos, ext_pos: &$pos, ext_information: &Option<$information>) -> Option<Result<$force, cellular_raza_concepts::errors::CalcError>> {
+            fn calculate_force_between(&self, own_pos: &$pos, ext_pos: &$pos, ext_information: &Option<$information>) -> Option<Result<$force, cellular_raza_concepts::errors::CalcError>> {
                 match self {
-                    $(CellAgentType::$celltype(cell) => cell.calculate_force_on(own_pos, ext_pos, ext_information),)+
+                    $(CellAgentType::$celltype(cell) => cell.calculate_force_between(own_pos, ext_pos, ext_information),)+
                 }
             }
         }

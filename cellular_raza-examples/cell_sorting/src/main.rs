@@ -40,7 +40,7 @@ struct CellSpecificInteraction {
 impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     for CellSpecificInteraction
 {
-    fn calculate_force_on(
+    fn calculate_force_between(
         &self,
         own_pos: &Vector3<f64>,
         _own_vel: &Vector3<f64>,
