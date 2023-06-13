@@ -385,8 +385,8 @@ where
 
                 if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
                     let force = force_result?;
-                    aux1.force -= force.clone() * 0.5;
-                    aux2.force += force * 0.5;
+                    aux1.force += force.clone() * 0.5;
+                    aux2.force -= force * 0.5;
                 }
             }
         }
