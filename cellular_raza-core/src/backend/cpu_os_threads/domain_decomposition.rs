@@ -425,9 +425,9 @@ where
                             let new_cell = Cel::divide(&mut self.rng, &mut cbox.cell)?;
                             self.new_cells.push((new_cell, Some(cbox.get_id())));
                         }
-                        CycleEvent::Remove => remaining_events.push(CycleEvent::Remove),
+                        CycleEvent::Remove => remaining_events.push(event),
                         CycleEvent::PhasedDeath => {
-                            remaining_events.push(CycleEvent::PhasedDeath);
+                            remaining_events.push(event);
                         }
                     };
                 }
@@ -449,13 +449,8 @@ where
             .collect::<Result<(), SimulationError>>()?;
 
         // Remove cells which are flagged for death
-        // TODO use drain_filter when stabilized! [https://doc.rust-lang.org/std/vec/struct.DrainFilter.html]
-        let (_, normal_cells): (Vec<_>, Vec<_>) = self
-            .cells
-            .drain(..)
-            .partition(|(_, aux_storage)| aux_storage.cycle_events.contains(&CycleEvent::Remove));
-
-        self.cells.extend(normal_cells);
+        self.cells
+            .retain(|(_, aux_storage)| !aux_storage.cycle_events.contains(&CycleEvent::Remove));
 
         // Include new cells
         self.cells
