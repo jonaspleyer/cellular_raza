@@ -433,18 +433,15 @@ where
                 }
                 aux_storage.cycle_events = remaining_events;
                 // Update the cell cycle
-                if aux_storage
-                    .cycle_events
-                    .contains(&CycleEvent::PhasedDeath)
-                {
-                    match Cel::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
-                        Some(event) => aux_storage.cycle_events.push(event),
-                        None => (),
-                    }
-                } else {
+                if aux_storage.cycle_events.contains(&CycleEvent::PhasedDeath) {
                     match Cel::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)? {
                         true => aux_storage.cycle_events.push(CycleEvent::Remove),
                         false => (),
+                    }
+                } else {
+                    match Cel::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
+                        Some(event) => aux_storage.cycle_events.push(event),
+                        None => (),
                     }
                 }
                 Ok(())
