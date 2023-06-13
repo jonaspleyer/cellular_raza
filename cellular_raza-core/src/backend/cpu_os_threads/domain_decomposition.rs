@@ -335,6 +335,25 @@ where
         Ok(())
     }
 
+    /// This code relies on the following snippet to work
+    /// ```
+    /// let n_elements: usize = 6;
+    ///
+    /// let mut v: Vec<_> = (0..N_ELEMENTS).collect();
+    ///
+    /// for n in 0..v.len() {
+    ///     for m in n+1..v.len() {
+    ///         let mut elements_mut = v.iter_mut();
+    ///
+    ///         let vn = elements_mut.nth(n).unwrap();
+    ///         let vm = elements_mut.nth(m-n-1).unwrap();
+    ///
+    ///         println!("Cells {} and {} interact", vn, vm);
+    ///         assert_ne!(vn, vm);
+    ///         assert_eq!(m>n,true);
+    ///     }
+    /// }
+    /// ```
     fn calculate_force_between_cells_internally<Inf>(&mut self) -> Result<(), CalcError>
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
