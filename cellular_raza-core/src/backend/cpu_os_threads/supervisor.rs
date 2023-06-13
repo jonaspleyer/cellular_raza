@@ -59,16 +59,18 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
         Cont: Controller<Cel, Obs>,
     {
-        let obs = self.controller.measure(cells)?;
-        let entry = self
-            .measurements
-            .entry(iteration)
-            .or_insert(std::collections::BTreeMap::new());
-        entry.insert(thread_index, obs);
+        if Cont::N_SAVE > 0 {
+            let obs = self.controller.measure(cells)?;
+            let entry = self
+                .measurements
+                .entry(iteration)
+                .or_insert(std::collections::BTreeMap::new());
+            entry.insert(thread_index, obs);
 
-        // If the number of entries is above the limit defined by Controller::N, we omit the first results
-        while self.measurements.len() > Cont::N_SAVE {
-            self.measurements.pop_first();
+            // If the number of entries is above the limit defined by Controller::N, we omit the first results
+            while self.measurements.len() > Cont::N_SAVE {
+                self.measurements.pop_first();
+            }
         }
         Ok(())
     }
@@ -84,11 +86,15 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         >,
         Cont: Controller<Cel, Obs>,
     {
-        match self.measurements.get_mut(&iteration) {
-            Some(measurements) => self.controller.adjust(measurements.values(), cells),
-            None => Err(ControllerError {
-                message: format!("could not find measurements at iteration {}", iteration),
-            }),
+        if Cont::N_SAVE > 0 {
+            match self.measurements.get_mut(&iteration) {
+                Some(measurements) => self.controller.adjust(measurements.values(), cells),
+                None => Err(ControllerError {
+                    message: format!("could not find measurements at iteration {}", iteration),
+                }),
+            }
+        } else {
+            Ok(())
         }
     }
 }
