@@ -345,27 +345,29 @@ where
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
     {
         for n in 0..self.cells.len() {
-            for m in 0..self.cells.len() {
-                if n != m {
-                    // Calculate the force which is exerted on
-                    let pos_other = self.cells[m].0.pos();
-                    let vel_other = self.cells[m].0.velocity();
-                    let inf_other = self.cells[m].0.get_interaction_information();
-                    let (cell, _) = self.cells.get_mut(n).unwrap();
-                    match cell.calculate_force_on(
-                        &cell.pos(),
-                        &cell.velocity(),
-                        &pos_other,
-                        &vel_other,
-                        &inf_other,
-                    ) {
-                        Some(Ok(force)) => {
-                            let (_, aux_storage) = self.cells.get_mut(m).unwrap();
-                            Ok(aux_storage.force += force)
-                        }
-                        Some(Err(e)) => Err(e),
-                        None => Ok(()),
-                    }?;
+            for m in n + 1..self.cells.len() {
+                let mut cells_mut = self.cells.iter_mut();
+                let (c1, aux1) = cells_mut.nth(n).unwrap();
+                let (c2, aux2) = cells_mut.nth(m - n - 1).unwrap();
+
+                let p1 = c1.pos();
+                let v1 = c1.velocity();
+                let i1 = c1.get_interaction_information();
+
+                let p2 = c2.pos();
+                let v2 = c2.velocity();
+                let i2 = c2.get_interaction_information();
+
+                if let Some(force_result) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2) {
+                    let force = force_result?;
+                    aux1.force -= force.clone() * 0.5;
+                    aux2.force += force * 0.5;
+                }
+
+                if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
+                    let force = force_result?;
+                    aux1.force -= force.clone() * 0.5;
+                    aux2.force += force * 0.5;
                 }
             }
         }
@@ -387,18 +389,21 @@ where
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For>,
     {
         let mut force = For::zero();
-        for (cell, _) in self.cells.iter() {
-            match cell.calculate_force_on(
+        for (cell, aux_storage) in self.cells.iter_mut() {
+            match cell.calculate_force_between(
                 &cell.pos(),
                 &cell.velocity(),
                 &ext_pos,
                 &ext_vel,
                 &ext_inf,
             ) {
-                Some(Ok(f)) => Ok(force += f),
-                Some(Err(e)) => Err(e),
-                None => Ok(()),
-            }?;
+                Some(Ok(f)) => {
+                    aux_storage.force -= f.clone() * 0.5;
+                    force += f * 0.5;
+                }
+                Some(Err(e)) => return Err(e),
+                None => (),
+            };
         }
         Ok(force)
     }
@@ -925,8 +930,9 @@ where
                     .0
                     .get_interaction_information();
                 let mut force = For::zero();
-                for neighbor_index in self.voxels[&voxel_index].neighbors.iter() {
-                    match self.voxels.get(&neighbor_index) {
+                let neighbors = self.voxels[&voxel_index].neighbors.clone();
+                for neighbor_index in neighbors {
+                    match self.voxels.get_mut(&neighbor_index) {
                         Some(vox) => Ok::<(), CalcError>(
                             force += vox.calculate_force_between_cells_external(
                                 &cell_pos, &cell_vel, &cell_inf,
@@ -968,7 +974,7 @@ where
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in self.receiver_pos.try_iter() {
-            let vox = self.voxels.get(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
+            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
