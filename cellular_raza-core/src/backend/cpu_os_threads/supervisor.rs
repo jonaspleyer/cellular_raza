@@ -42,15 +42,14 @@ use plotters::{
 use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct ControllerBox<Cont, Obs> {
+pub struct ControllerBox<Cont, Obs> {
     pub controller: Cont,
-    pub measurements: std::collections::BTreeMap<u64, std::collections::BTreeMap<u32, Obs>>,
+    pub measurements: std::collections::BTreeMap<u32, Obs>,
 }
 
 impl<Cont, Obs> ControllerBox<Cont, Obs> {
-    fn measure<'a, I, Cel>(
+    pub fn measure<'a, I, Cel>(
         &mut self,
-        iteration: u64,
         thread_index: u32,
         cells: I,
     ) -> Result<(), SimulationError>
@@ -59,23 +58,12 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
         Cont: Controller<Cel, Obs>,
     {
-        if Cont::N_SAVE > 0 {
-            let obs = self.controller.measure(cells)?;
-            let entry = self
-                .measurements
-                .entry(iteration)
-                .or_insert(std::collections::BTreeMap::new());
-            entry.insert(thread_index, obs);
-
-            // If the number of entries is above the limit defined by Controller::N, we omit the first results
-            while self.measurements.len() > Cont::N_SAVE {
-                self.measurements.pop_first();
-            }
-        }
+        let obs = self.controller.measure(cells)?;
+        self.measurements.insert(thread_index, obs);
         Ok(())
     }
 
-    fn adjust<'a, Cel, J>(&mut self, iteration: u64, cells: J) -> Result<(), ControllerError>
+    pub fn adjust<'a, Cel, J>(&mut self, cells: J) -> Result<(), ControllerError>
     where
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         J: Iterator<
@@ -86,16 +74,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         >,
         Cont: Controller<Cel, Obs>,
     {
-        if Cont::N_SAVE > 0 {
-            match self.measurements.get_mut(&iteration) {
-                Some(measurements) => self.controller.adjust(measurements.values(), cells),
-                None => Err(ControllerError {
-                    message: format!("could not find measurements at iteration {}", iteration),
-                }),
-            }
-        } else {
-            Ok(())
-        }
+        self.controller.adjust(self.measurements.values(), cells)
     }
 }
 
@@ -280,7 +259,6 @@ where
                     // TODO Make sure to only call this if the controller type is not ()
                     {
                         controller_box.lock().unwrap().measure(
-                            iteration,
                             l as u32,
                             cont.voxels
                             .iter()
@@ -288,16 +266,16 @@ where
                                 .iter()
                                 .map(|(cbox, _)| cbox)
                             )
-                        )?;
+                        ).unwrap();
                         controller_barrier_new.wait();
-                        controller_box.lock().unwrap().adjust(iteration,
+                        controller_box.lock().unwrap().adjust(
                             cont.voxels
                             .iter_mut()
                             .flat_map(|vox| vox.1.cells
                                 .iter_mut()
                                 .map(|(cbox, aux_storage)| (cbox, &mut aux_storage.cycle_events))
                             )
-                        )?;
+                        ).unwrap();
                     }
 
                     // Check if we are stopping the simulation now

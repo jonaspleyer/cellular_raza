@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use super::cycle::CycleEvent;
 
 /// Describes the physical simulation domain.
-/// 
+///
 /// This trait is responsible for the overall phyiscal setup of our simulation.
 /// Simple domains can be thought of as rectangular cuboids in 2D or 3D and such examples
 /// are being implemented in [domains](https://docs.rs/cellular_raza-building-blocks::domains).
@@ -166,16 +166,13 @@ pub trait ExtracellularMechanics<
 /// This controller is only useful when describing systems that are controlled from the outside and not subject to local interactions.
 /// This trait is not finalized yet.
 pub trait Controller<C, O> {
-    /// Number of past measurements to store for evaluation. Higher numbers can result in large performance and memory overhead.
-    const N_SAVE: usize = 100;
-
     /// This function views a part of the simulation domain and retrieves information about the cells contained in it.
     /// Afterwards, this measurement is stored and then a collection of measurements is provided to the [adjust](Controller::adjust) function.
     fn measure<'a, I>(&self, cells: I) -> Result<O, CalcError>
     where
         C: 'a + Serialize + for<'b> Deserialize<'b>,
         I: IntoIterator<Item = &'a CellAgentBox<C>> + Clone;
-    
+
     /// Function that operates on cells given an iterator over measurements. It modifies cellular properties and can invoke [CycleEvenets](super::cycle::CycleEvent).
     fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
     where
@@ -186,8 +183,6 @@ pub trait Controller<C, O> {
 }
 
 impl<C> Controller<C, ()> for () {
-    const N_SAVE: usize = 0;
-
     fn measure<'a, I>(&self, _cells: I) -> Result<(), CalcError>
     where
         C: 'a + Serialize + for<'b> Deserialize<'b>,

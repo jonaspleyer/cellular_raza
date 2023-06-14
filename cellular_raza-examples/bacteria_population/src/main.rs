@@ -86,8 +86,6 @@ pub struct CellNumberController {
 type Observable = Option<(i64, Vec<(u64, u64)>)>;
 
 impl Controller<MyCellType, Observable> for CellNumberController {
-    const N_SAVE: usize = 1;
-
     fn measure<'a, I>(&self, cells: I) -> Result<Observable, CalcError>
     where
         I: IntoIterator<Item = &'a CellAgentBox<MyCellType>> + Clone,
