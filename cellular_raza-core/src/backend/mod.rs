@@ -18,3 +18,5 @@ pub mod cpu_os_threads;
 
     fn run_full_simulation(&mut self) -> Result<(), SimulationError>;
 }*/
+
+pub mod chili;
