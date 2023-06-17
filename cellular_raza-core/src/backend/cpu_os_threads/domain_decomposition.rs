@@ -23,18 +23,11 @@ use serde::{Deserialize, Serialize};
 use rand_chacha::ChaCha8Rng;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct DomainBox<Dom>
-where
-    Dom: Serialize + for<'a> Deserialize<'a>,
-{
-    #[serde(bound = "")]
+pub struct DomainBox<Dom> {
     pub domain_raw: Dom,
 }
 
-impl<Dom> From<Dom> for DomainBox<Dom>
-where
-    Dom: Serialize + for<'a> Deserialize<'a>,
-{
+impl<Dom> From<Dom> for DomainBox<Dom> {
     fn from(domain: Dom) -> DomainBox<Dom> {
         DomainBox { domain_raw: domain }
     }
@@ -44,7 +37,7 @@ impl<Cel, Ind, Vox, Dom> Domain<CellAgentBox<Cel>, Ind, Vox> for DomainBox<Dom>
 where
     Dom: Domain<Cel, Ind, Vox>,
     Vox: Send + Sync,
-    Cel: Serialize + for<'a> Deserialize<'a> + Send + Sync,
+    Cel: Send + Sync,
 {
     fn apply_boundary(&self, cbox: &mut CellAgentBox<Cel>) -> Result<(), BoundaryError> {
         self.domain_raw.apply_boundary(&mut cbox.cell)
@@ -116,31 +109,19 @@ pub struct VoxelBox<
     ConcVecExtracellular,
     ConcBoundaryExtracellular,
     ConcVecIntracellular,
-> where
-    Pos: Serialize + for<'a> Deserialize<'a>,
-    For: Serialize + for<'a> Deserialize<'a>,
-    Vel: Serialize + for<'a> Deserialize<'a>,
-    Cel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
-{
+> {
     pub plain_index: PlainIndex,
     pub index: Ind,
     pub voxel: Vox,
     pub neighbors: Vec<PlainIndex>,
-    #[serde(bound = "")]
     pub cells: Vec<(
         CellAgentBox<Cel>,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     )>,
-    #[serde(bound = "")]
     pub new_cells: Vec<(Cel, Option<CellularIdentifier>)>,
     pub id_counter: u64,
     pub rng: ChaCha8Rng,
-    #[serde(bound = "")]
     pub extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
-    #[serde(bound = "")]
     pub concentration_boundaries: Vec<(Ind, BoundaryCondition<ConcBoundaryExtracellular>)>,
 }
 
@@ -166,14 +147,6 @@ impl<
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
     >
-where
-    Pos: Serialize + for<'a> Deserialize<'a>,
-    For: Serialize + for<'a> Deserialize<'a>,
-    Vel: Serialize + for<'a> Deserialize<'a>,
-    Cel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     fn get_plain_index(&self) -> PlainIndex {
         self.plain_index
@@ -236,13 +209,8 @@ impl<
     >
 where
     Ind: Clone,
-    Pos: Serialize + for<'a> Deserialize<'a>,
-    For: num::Zero + Serialize + for<'a> Deserialize<'a>,
-    Vel: Serialize + for<'a> Deserialize<'a>,
-    Cel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + Zero,
+    For: num::Zero,
+    ConcVecIntracellular: Zero,
 {
     pub fn new(
         plain_index: PlainIndex,
@@ -306,12 +274,8 @@ impl<
 where
     Ind: Clone,
     Pos: Serialize + for<'a> Deserialize<'a>,
-    For: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     Cel: Serialize + for<'a> Deserialize<'a>,
-    ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
-    ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     fn calculate_custom_force_on_cells(&mut self) -> Result<(), CalcError>
     where

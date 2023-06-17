@@ -61,30 +61,20 @@ pub trait Id {
 /// initialized by the user. This CellAgentBox acts as a container around the cell
 /// to hold these variables.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CellAgentBox<Cel>
-where
-    Cel: Serialize + for<'a> Deserialize<'a>,
-{
+pub struct CellAgentBox<Cel> {
     id: CellularIdentifier,
     parent_id: Option<CellularIdentifier>,
-    #[serde(bound = "")]
     /// The user-defined cell which is stored inside this container.
     pub cell: Cel,
 }
 
-impl<Cel> Id for CellAgentBox<Cel>
-where
-    Cel: Serialize + for<'a> Deserialize<'a>,
-{
+impl<Cel> Id for CellAgentBox<Cel> {
     fn get_id(&self) -> CellularIdentifier {
         self.id
     }
 }
 
-impl<Cel> CellAgentBox<Cel>
-where
-    Cel: Serialize + for<'a> Deserialize<'a>,
-{
+impl<Cel> CellAgentBox<Cel> {
     /// Simple method to retrieve the [CellularIdentifier] of the parent cell if existing.
     pub fn get_parent_id(&self) -> Option<CellularIdentifier> {
         self.parent_id
@@ -141,10 +131,7 @@ where
     }
 }
 
-impl<Cel> CellAgentBox<Cel>
-where
-    Cel: Serialize + for<'a> Deserialize<'a>,
-{
+impl<Cel> CellAgentBox<Cel> {
     /// Create a new [CellAgentBox] at a specific voxel with a voxel-unique number
     /// of cells that has already been created at this position.
     // TODO make this generic with respect to voxel_index
