@@ -303,7 +303,7 @@ where
     /// ```
     /// let n_elements: usize = 6;
     ///
-    /// let mut v: Vec<_> = (0..N_ELEMENTS).collect();
+    /// let mut v: Vec<_> = (0..n_elements).collect();
     ///
     /// for n in 0..v.len() {
     ///     for m in n+1..v.len() {
