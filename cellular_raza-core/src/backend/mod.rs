@@ -1,4 +1,4 @@
-/// Use multiple os-threads and cpu-only resources
+/// 🐧 Use multiple os-threads and cpu-only resources
 ///
 /// Parallelization is achieved by splitting the simualtion domain into as many chunks as threads are desired.
 /// Communication between threads is handled by [crossbeam_channel] and synchronization by [hurdles::Barrier].
@@ -19,4 +19,5 @@ pub mod cpu_os_threads;
     fn run_full_simulation(&mut self) -> Result<(), SimulationError>;
 }*/
 
+/// 🌶️ The future default backend.
 pub mod chili;
