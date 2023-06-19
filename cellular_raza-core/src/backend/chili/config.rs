@@ -53,7 +53,6 @@ mod test {
 
     struct VoxelIndex(usize);
 
-    #[derive(Debug)]
     struct TestSubDomain {
         min: f64,
         max: f64,
@@ -118,7 +117,7 @@ mod test {
                 let (cells_in_subdomain, other_cells): (Vec<_>, Vec<_>) =
                     cells.into_iter().partition(|&x| lower <= x && x < upper);
                 cells = other_cells;
-                println!("Indices in subdomain: {}", voxel_indices.len());
+
                 subdomains.push((
                     subdomain_index,
                     TestSubDomain {
