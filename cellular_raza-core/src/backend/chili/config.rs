@@ -33,6 +33,20 @@ impl<C, D> SimulationSetup<C, D> {
     {
         self.domain.decompose(n_subdomains, self.cells)
     }
+
+    // TODO add a funtion which will automatically generate the correct number of subdomains
+    // and simply checks beforehand how many cpu threads are available
+    /// Similar to [decompose](SimulationSetup::decompose) method but does not require to specify
+    /// how many subdomains should be chosen. It will attempt to retrieve resources available to the system
+    /// and spawn threads which are either pre-calculated, read from an existing file or acquired by auto-tuning.
+    pub fn decompose_auto_tune<S>(self) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
+    where
+        D: Domain<C, S>
+    {
+        todo!();
+        let max_n_threads = std::thread::available_parallelism()?;
+        self.decompose(max_n_threads.into())
+    }
 }
 
 #[cfg(test)]
