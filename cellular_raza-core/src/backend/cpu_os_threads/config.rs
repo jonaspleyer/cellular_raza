@@ -86,6 +86,7 @@ impl StorageConfig {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationSetup<Dom, Cel, Cont = ()> {
     pub(crate) domain: Dom,
+    // TODO use something like an iterator in this place to possibly process in parallel
     pub(crate) cells: Vec<Cel>,
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,

@@ -4,13 +4,18 @@ use cellular_raza_concepts::errors::CalcError;
 
 use serde::{Deserialize, Serialize};
 
+/// Struct containing all necessary information to construct a fully working simulation and run it.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SimulationSetup<C, D> {
+    /// The initial cells contained in the simulation. In the future we hope to provide an abstract type
+    /// in order to allow for pure iterators to be stored here
     pub cells: Vec<C>,
+    /// The physical simulation domain which is specified by the [Domain] trait.
     pub domain: D,
 }
 
 impl<C, D> SimulationSetup<C, D> {
+    /// Insert more cells into the setup after having already initialized the setup.
     pub fn insert_cells<I>(&mut self, cells: I)
     where
         I: IntoIterator<Item = C>,
@@ -18,6 +23,7 @@ impl<C, D> SimulationSetup<C, D> {
         self.cells.extend(cells.into_iter());
     }
 
+    /// Decomposes the struct into a [DecomposedDomain] which can be taken by the backend and turned into multiple subdomains.
     pub fn decompose<S>(
         self,
         n_subdomains: usize,
