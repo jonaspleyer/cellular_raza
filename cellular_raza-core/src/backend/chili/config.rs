@@ -18,14 +18,14 @@ impl<C, D> SimulationSetup<C, D> {
         self.cells.extend(cells.into_iter());
     }
 
-    pub fn into_subdomains<S>(
+    pub fn decompose<S>(
         self,
-        n: usize,
-    ) -> Result<Vec<(D::SubDomainIndex, S, Vec<C>)>, CalcError>
+        n_subdomains: usize,
+    ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, CalcError>
     where
         D: Domain<C, S>,
     {
-        self.domain.into_subdomains(n, self.cells)
+        self.domain.decompose(n_subdomains, self.cells)
     }
 }
 
@@ -49,6 +49,7 @@ mod test {
         min: f64,
         max: f64,
         n_voxels: usize,
+        rng_seed: u64,
     }
 
     struct VoxelIndex(usize);
@@ -83,13 +84,13 @@ mod test {
             (0..self.n_voxels).map(|i| VoxelIndex(i)).collect()
         }
 
-        fn into_subdomains(
+        fn decompose(
             self,
             n_subdomains: usize,
             cells: Vec<f64>,
-        ) -> Result<Vec<(Self::SubDomainIndex, TestSubDomain, Vec<f64>)>, CalcError> {
+        ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, CalcError> {
             let mut cells = cells;
-            let mut subdomains = Vec::new();
+            let mut index_subdomain_cells = Vec::new();
             let n_return_subdomains = n_subdomains.min(self.n_voxels);
             let dx = (self.max - self.min) / (self.n_voxels as f64);
 
@@ -118,7 +119,7 @@ mod test {
                     cells.into_iter().partition(|&x| lower <= x && x < upper);
                 cells = other_cells;
 
-                subdomains.push((
+                index_subdomain_cells.push((
                     subdomain_index,
                     TestSubDomain {
                         min: lower,
@@ -143,7 +144,16 @@ mod test {
                     cells_in_subdomain,
                 ));
             }
-            Ok(subdomains)
+            let n_subdomains = index_subdomain_cells.len();
+            let decomposed_domain = DecomposedDomain {
+                n_subdomains,
+                index_subdomain_cells,
+                neighbor_map: (0..n_subdomains)
+                    .map(|i| (i, vec![(i - 1).min(n_subdomains), i + 1]))
+                    .collect(),
+                rng_seed: self.rng_seed,
+            };
+            Ok(decomposed_domain)
         }
     }
 
@@ -192,12 +202,13 @@ mod test {
                 min,
                 max,
                 n_voxels: 8,
+                rng_seed: 0,
             },
         };
 
         let n_subdomains = 4;
-        let subdomains_and_cells = config.into_subdomains(n_subdomains).unwrap();
-        for (_, subdomain, cells) in subdomains_and_cells.into_iter() {
+        let decomposed_domain = config.decompose(n_subdomains).unwrap();
+        for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
             assert!(cells.len() > 0);
             // Test if each cell is really contained in the subdomain it is supposed to be.
             for cell in cells {
@@ -218,13 +229,14 @@ mod test {
                 min,
                 max,
                 n_voxels: 8,
+                rng_seed: 0,
             },
         };
 
         let n_subdomains = 4;
-        let subdomains_and_cells = config.into_subdomains(n_subdomains).unwrap();
+        let decomposed_domain = config.decompose(n_subdomains).unwrap();
         let mut cell_outside = -10.0;
-        for (_, subdomain, cells) in subdomains_and_cells.into_iter() {
+        for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
             for mut cell in cells.into_iter() {
                 let cell_prev = cell.clone();
                 subdomain.apply_boundary(&mut cell).unwrap();
@@ -244,6 +256,7 @@ mod test {
             min,
             max,
             n_voxels: 8,
+            rng_seed: 0,
         };
 
         for i in 0..domain.n_voxels {

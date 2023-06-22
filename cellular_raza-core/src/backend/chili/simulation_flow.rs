@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 ///
 /// This very simple implementation uses the [Barrier](hurdles::Barrier) struct from the [hurdles] crate
 /// which should in theory perform faster than the [std::sync::Barrier] struct from the standard library.
@@ -51,8 +50,10 @@ where
 {
     /// [SubDomains](super::concepts::SubDomain) can be neighboring each other via complicated graphs.
     /// An easy way to represent this is by using a [HashMap]. We want to create Barriers which match
-    /// the specified subdomain indices (given in [usize]).
-    fn from_map(map: std::collections::HashMap<usize, Vec<usize>>) -> HashMap<usize, Self>;
+    /// the specified subdomain indices.
+    fn from_map<I>(map: std::collections::HashMap<I, Vec<I>>) -> HashMap<I, Self>
+    where
+        I: Eq + core::hash::Hash + Clone;
 
     /// Function which forces connected syncers to wait for each other.
     /// This approach does not necessarily require all threads to wait but can mean that
@@ -61,12 +62,15 @@ where
 }
 
 impl SyncSubDomains for BarrierSync {
-    fn from_map(map: std::collections::HashMap<usize, Vec<usize>>) -> HashMap<usize, Self> {
+    fn from_map<I>(map: std::collections::HashMap<I, Vec<I>>) -> HashMap<I, Self>
+    where
+        I: Eq + core::hash::Hash + Clone,
+    {
         let barrier = hurdles::Barrier::new(map.len());
         map.keys()
-            .map(|&i| {
+            .map(|i| {
                 (
-                    i,
+                    i.clone(),
                     Self {
                         barrier: barrier.clone(),
                     },
@@ -95,15 +99,13 @@ pub mod test_sync {
 
         // We count the number of iterations via this mutex.
         // Individual threads will increment their counter by +1 each time they are executed
-        let iteration_counter = Arc::new(
-            Mutex::new(
-                Vec::from_iter((0..n_threads).map(|_| 0_usize))
-            )
-        );
+        let iteration_counter =
+            Arc::new(Mutex::new(Vec::from_iter((0..n_threads).map(|_| 0_usize))));
 
         // Create a barrier from which we
         let syncers = S::from_map(map);
-        let handles = syncers.into_iter()
+        let handles = syncers
+            .into_iter()
             .map(|(n_thread, mut syncer)| {
                 let iteration_counter_thread = Arc::clone(&iteration_counter);
                 std::thread::spawn(move || {
@@ -112,10 +114,7 @@ pub mod test_sync {
                         iteration_counter_thread.lock().unwrap()[n_thread] += 1;
                         syncer.sync();
                         let current_value = iteration_counter_thread.lock().unwrap().clone();
-                        assert_eq!(
-                            current_value,
-                            vec![n_iteration + 1; n_threads]
-                        );
+                        assert_eq!(current_value, vec![n_iteration + 1; n_threads]);
                     }
                 })
             })
@@ -130,32 +129,25 @@ pub mod test_sync {
     where
         S: 'static + SyncSubDomains + Send + Sync,
     {
-        let map0 = HashMap::from_iter([
-            (0, vec![1]),
-            (1, vec![0]),
-        ]);
+        let map0 = HashMap::from_iter([(0, vec![1]), (1, vec![0])]);
         test_single_map::<S>(map0);
 
-        let map1 = HashMap::from_iter([
-            (0, vec![1,2]),
-            (1, vec![0,2]),
-            (2, vec![0,1]),
-        ]);
+        let map1 = HashMap::from_iter([(0, vec![1, 2]), (1, vec![0, 2]), (2, vec![0, 1])]);
         test_single_map::<S>(map1);
 
         let map2 = HashMap::from_iter([
-            (0, vec![1,2,3]),
-            (1, vec![0,2,3]),
-            (2, vec![0,1,3]),
-            (3, vec![0,1,2]),
+            (0, vec![1, 2, 3]),
+            (1, vec![0, 2, 3]),
+            (2, vec![0, 1, 3]),
+            (3, vec![0, 1, 2]),
         ]);
         test_single_map::<S>(map2);
 
         let map3 = HashMap::from_iter([
-            (0, vec![1,2]),
-            (1, vec![0,3]),
-            (2, vec![0,3]),
-            (3, vec![1,2]),
+            (0, vec![1, 2]),
+            (1, vec![0, 3]),
+            (2, vec![0, 3]),
+            (3, vec![1, 2]),
         ]);
         test_single_map::<S>(map3);
 
