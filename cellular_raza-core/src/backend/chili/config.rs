@@ -26,7 +26,7 @@ impl<C, D> SimulationSetup<C, D> {
     /// Decomposes the struct into a [DecomposedDomain] which can be taken by the backend and turned into multiple subdomains.
     pub fn decompose<S>(
         self,
-        n_subdomains: usize,
+        n_subdomains: core::num::NonZeroUsize,
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: Domain<C, S>,
@@ -106,11 +106,12 @@ mod test {
 
         fn decompose(
             self,
-            n_subdomains: usize,
+            n_subdomains: core::num::NonZeroUsize,
             cells: Vec<f64>,
         ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, DecomposeError> {
             let mut cells = cells;
             let mut index_subdomain_cells = Vec::new();
+            let n_subdomains = n_subdomains.get();
             let n_return_subdomains = n_subdomains.min(self.n_voxels);
             let dx = (self.max - self.min) / (self.n_voxels as f64);
 
@@ -226,7 +227,7 @@ mod test {
             },
         };
 
-        let n_subdomains = 4;
+        let n_subdomains = core::num::NonZeroUsize::new(4).unwrap();
         let decomposed_domain = config.decompose(n_subdomains).unwrap();
         for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
             assert!(cells.len() > 0);
@@ -253,7 +254,7 @@ mod test {
             },
         };
 
-        let n_subdomains = 4;
+        let n_subdomains = core::num::NonZeroUsize::new(4).unwrap();
         let decomposed_domain = config.decompose(n_subdomains).unwrap();
         let mut cell_outside = -10.0;
         for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {

@@ -35,7 +35,7 @@ pub trait Domain<C, S> {
     /// In addition, we provide the initial cells for the simulation
     fn decompose(
         self,
-        n_subdomains: usize,
+        n_subdomains: core::num::NonZeroUsize,
         cells: Vec<C>,
     ) -> Result<DecomposedDomain<Self::SubDomainIndex, S, C>, DecomposeError>;
 }
