@@ -15,8 +15,8 @@ pub struct SubDomainBox<S, C, A>
 where
     S: SubDomain<C>,
 {
-    pub subdomain: S,
-    pub voxels: std::collections::BTreeMap<S::VoxelIndex, Voxel<C, A>>,
+    subdomain: S,
+    voxels: std::collections::BTreeMap<S::VoxelIndex, Voxel<C, A>>,
 }
 
 impl<S, C, A> SubDomainBox<S, C, A>
