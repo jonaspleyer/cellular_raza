@@ -1,8 +1,14 @@
+#![warn(missing_docs)]
+#![warn(clippy::missing_docs_in_private_items)]
+//! This crate provides powerful derive macros to automatically implement the `UpdateCycle` and `UpdateMechanics` traits.
+//! For the future, we are planning to have similar functionality with other concepts associated to CellAgents.
+
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput};
 
 #[proc_macro_derive(AuxStorage, attributes(UpdateCycle, UpdateMechanics))]
+/// Derives the `UpdateCycle` and `UpdateMechanics` trait automatically for the containing struct.
 pub fn aux_storage(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let ast = parse_macro_input!(input as DeriveInput);
