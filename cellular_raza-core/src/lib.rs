@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+#![warn(clippy::missing_docs_in_private_items)]
 //! > “What I cannot create, I do not understand.”
 //! >
 //! >  --- Richard P. Feynman
