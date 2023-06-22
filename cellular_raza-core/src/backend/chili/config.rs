@@ -5,12 +5,12 @@ use cellular_raza_concepts::errors::CalcError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct SimulationConfig<C, D> {
+pub struct SimulationSetup<C, D> {
     pub cells: Vec<C>,
     pub domain: D,
 }
 
-impl<C, D> SimulationConfig<C, D> {
+impl<C, D> SimulationSetup<C, D> {
     pub fn insert_cells<I>(&mut self, cells: I)
     where
         I: IntoIterator<Item = C>,
@@ -35,7 +35,7 @@ mod test {
 
     #[test]
     fn test_config_insert_cells() {
-        let mut config = SimulationConfig {
+        let mut config = SimulationSetup {
             cells: vec![1, 2, 3, 4],
             domain: "hello".to_owned(),
         };
@@ -186,7 +186,7 @@ mod test {
         // Define the testdomain with cells
         let min = 0.0;
         let max = 100.0;
-        let config = SimulationConfig {
+        let config = SimulationSetup {
             cells: vec![1.0, 20.0, 26.0, 41.0, 56.0, 84.0, 95.0],
             domain: TestDomain {
                 min,
@@ -212,7 +212,7 @@ mod test {
         // Define the testdomain with cells
         let min = 0.0;
         let max = 100.0;
-        let config = SimulationConfig {
+        let config = SimulationSetup {
             cells: vec![1.0, 20.0, 25.0, 50.0, 88.0],
             domain: TestDomain {
                 min,
