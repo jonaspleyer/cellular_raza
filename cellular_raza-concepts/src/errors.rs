@@ -30,6 +30,7 @@ define_errors!(
         StepsizeError,
         "Error occuring when choosing a non-appropriate stepsize"
     ),
+    (DecomposeError, "Error during decomposition of a SimulationDomain into multiple subdomains"),
     (DivisionError, "Errors related to a cell dividing process"),
     (
         DeathError,
@@ -50,6 +51,15 @@ define_errors!(
     ),
     (DrawingError, "Used to catch errors related to plotting")
 );
+
+impl From<std::io::Error> for DecomposeError
+{
+    fn from(value: std::io::Error) -> Self {
+        DecomposeError {
+            message: format!("{}", value),
+        }
+    }
+}
 
 impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for DrawingError
 where

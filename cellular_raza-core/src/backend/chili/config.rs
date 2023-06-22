@@ -21,7 +21,7 @@ impl<C, D> SimulationSetup<C, D> {
     pub fn decompose<S>(
         self,
         n_subdomains: usize,
-    ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, CalcError>
+    ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: Domain<C, S>,
     {
@@ -88,7 +88,7 @@ mod test {
             self,
             n_subdomains: usize,
             cells: Vec<f64>,
-        ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, CalcError> {
+        ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, DecomposeError> {
             let mut cells = cells;
             let mut index_subdomain_cells = Vec::new();
             let n_return_subdomains = n_subdomains.min(self.n_voxels);

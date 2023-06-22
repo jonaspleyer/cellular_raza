@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cellular_raza_concepts::errors::{BoundaryError, CalcError};
+use cellular_raza_concepts::errors::{BoundaryError, DecomposeError};
 
 use super::{
     aux_storage::{SubDomainBox, Voxel},
