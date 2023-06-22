@@ -83,7 +83,7 @@ impl<T> Concentration for T where
 {
 }
 
-/// The [Domain] trait generalizes over the [Voxel] generic parameter which 
+/// The [Domain] trait generalizes over the [Voxel] generic parameter which
 pub trait Voxel<Ind, Pos, Vel, Force>:
     Send + Sync + Clone + Serialize + for<'a> Deserialize<'a>
 {

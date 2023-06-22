@@ -23,6 +23,7 @@ pub enum CycleEvent {
 /// the functionality to call the corresponding functions as needed.
 pub trait Cycle<Cell> {
     /// Continuously updates cellular properties and may spawn a [CycleEvent] which then calls the corresponding functions (see also [CycleEvent]).
+    #[must_use]
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &f64,
@@ -33,12 +34,14 @@ pub trait Cycle<Cell> {
     /// The user is responsible for correctly adjusting cell-specific values such as intracellular
     /// concentrations or position of the two resulting cells.
     /// Corresponds to [CycleEvent::Division].
+    #[must_use]
     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Cell) -> Result<Cell, DivisionError>;
 
     /// Method corresponding to the [CycleEvent::PhasedDeath] event.
     /// Update the cell while returning a boolean which indicates if the updating procedure has finished.
     /// As soon as the return value is `true` the cell is removed.
     #[allow(unused)]
+    #[must_use]
     fn update_conditional_phased_death(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &f64,
