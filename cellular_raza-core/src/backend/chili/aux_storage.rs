@@ -10,20 +10,22 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
 use super::concepts::SubDomain;
+use super::simulation_flow::{BarrierSync, SyncSubDomains};
 
-pub struct SubDomainBox<S, C, A>
+pub struct SubDomainBox<S, C, A, Sy = BarrierSync>
 where
     S: SubDomain<C>,
 {
-    subdomain: S,
-    voxels: std::collections::BTreeMap<S::VoxelIndex, Voxel<C, A>>,
+    pub(crate) subdomain: S,
+    pub(crate) voxels: std::collections::BTreeMap<S::VoxelIndex, Voxel<C, A>>,
+    pub(crate) syncer: Sy,
 }
 
-impl<S, C, A> SubDomainBox<S, C, A>
+impl<S, C, A, Sy> SubDomainBox<S, C, A, Sy>
 where
     S: SubDomain<C>,
 {
-    pub fn from_subdomain_and_cells(subdomain: S, cells: Vec<C>) -> Self
+    pub fn initialize(subdomain: S, cells: Vec<C>, syncer: Sy, rng_seed: u64) -> Self
     where
         S::VoxelIndex: std::cmp::Eq + Hash + Ord,
         A: Default,
@@ -44,7 +46,7 @@ where
         let voxels = voxel_indices
             .into_iter()
             .map(|index| {
-                let rng = ChaCha8Rng::seed_from_u64(1);
+                let rng = ChaCha8Rng::seed_from_u64(rng_seed);
                 let cells = index_to_cells.remove(&index).or(Some(Vec::new())).unwrap();
                 (
                     index,
@@ -57,7 +59,18 @@ where
                 )
             })
             .collect();
-        Self { subdomain, voxels }
+        Self {
+            subdomain,
+            voxels,
+            syncer,
+        }
+    }
+
+    pub fn sync(&mut self)
+    where
+        Sy: SyncSubDomains,
+    {
+        self.syncer.sync();
     }
 
     pub fn apply_boundary(&mut self) -> Result<(), BoundaryError> {
@@ -70,9 +83,10 @@ where
     }
 
     // TODO this is not a boundary error!
-    pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, A)>) -> Result<(), BoundaryError>
+    pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), BoundaryError>
     where
         S::VoxelIndex: Ord,
+        A: Default,
     {
         for cell in new_cells.drain(..) {
             let voxel_index = self.subdomain.get_voxel_index_of(&cell.0)?;
@@ -82,7 +96,7 @@ where
                     message: "Could not find correct voxel for cell".to_owned(),
                 })?
                 .cells
-                .push(cell);
+                .push((cell.0, cell.1.map_or(A::default(), |x| x)));
         }
         Ok(())
     }
@@ -92,16 +106,13 @@ where
         C: cellular_raza_concepts::cycle::Cycle<C>,
         A: UpdateCycle,
     {
-        let mut rng = ChaCha8Rng::seed_from_u64(1);
-        self.voxels
-            .iter_mut()
-            .map(|(_, voxel)| voxel.cells.iter_mut())
-            .flatten()
-            .for_each(|(cell, aux_storage)| {
-                if let Some(event) = C::update_cycle(&mut rng, &0.01, cell) {
+        self.voxels.iter_mut().for_each(|(_, voxel)| {
+            voxel.cells.iter_mut().for_each(|(cell, aux_storage)| {
+                if let Some(event) = C::update_cycle(&mut voxel.rng, &0.01, cell) {
                     aux_storage.add_cycle_event(event);
                 }
-            });
+            })
+        });
         Ok(())
     }
 }
@@ -132,7 +143,6 @@ pub trait UpdateCycle {
     fn get_cycle_events(&self) -> Vec<CycleEvent>;
     fn add_cycle_event(&mut self, event: CycleEvent);
 }
-
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
