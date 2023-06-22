@@ -372,6 +372,7 @@ impl<P, V, const N: usize> UpdateMechanics<P, V, N> for AuxStorageMechanics<P, V
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Voxel<C, A> {
     pub cells: Vec<(C, A)>,
     pub new_cells: Vec<C>,
