@@ -106,6 +106,8 @@ where
     }
 }
 
+/// Used to store intermediate information about last positions and velocities.
+/// Can store up to `N` values.
 pub trait UpdateMechanics<P, V, const N: usize> {
     fn set_last_position(&mut self, pos: P);
     fn previous_positions(&self) -> std::collections::vec_deque::Iter<P>;
@@ -131,8 +133,6 @@ pub trait UpdateCycle {
     fn add_cycle_event(&mut self, event: CycleEvent);
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AuxStorage<T>(T);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
@@ -161,98 +161,100 @@ impl UpdateCycle for AuxStorageCycle {
     }
 }
 
-impl<T> UpdateCycle for AuxStorage<T>
-where
-    T: UpdateCycle,
-{
-    fn add_cycle_event(&mut self, event: CycleEvent) {
-        self.0.add_cycle_event(event)
-    }
-
-    fn set_cycle_events(&mut self, events: Vec<CycleEvent>) {
-        self.0.set_cycle_events(events)
-    }
-
-    fn get_cycle_events(&self) -> Vec<CycleEvent> {
-        self.0.get_cycle_events()
-    }
-}
-
-impl<T, U> UpdateCycle for (T, U)
-where
-    U: UpdateCycle,
-{
-    fn set_cycle_events(&mut self, events: Vec<CycleEvent>) {
-        self.1.set_cycle_events(events)
-    }
-
-    fn get_cycle_events(&self) -> Vec<CycleEvent> {
-        self.1.get_cycle_events()
-    }
-
-    fn add_cycle_event(&mut self, event: CycleEvent) {
-        self.1.add_cycle_event(event)
-    }
-}
-
 #[cfg(test)]
-mod test_aux_storage_cycle {
+pub mod test_derive_aux_storage {
     use super::*;
+    use cellular_raza_core_derive::AuxStorage;
 
-    #[test]
-    fn nested_1() {
-        let aux_storage = AuxStorage(AuxStorageCycle {cycle_events: Vec::new()});
+    #[derive(AuxStorage)]
+    struct TestStructDouble<P, V> {
+        #[UpdateCycle]
+        aux_cycle: AuxStorageCycle,
+        #[UpdateMechanics]
+        aux_mechanics: AuxStorageMechanics<P, V, 4>,
+    }
 
+    #[derive(AuxStorage)]
+    struct TestStructCycle {
+        #[UpdateCycle]
+        aux_cycle: AuxStorageCycle,
+    }
+
+    #[derive(AuxStorage)]
+    struct TestStructMechanics<P, V> {
+        #[UpdateMechanics]
+        aux_mechanis: AuxStorageMechanics<P, V, 4>,
+    }
+
+    fn add_get_events<A>(aux_storage: &mut A)
+    where
+        A: UpdateCycle,
+    {
+        aux_storage.add_cycle_event(CycleEvent::Division);
         let events = aux_storage.get_cycle_events();
-        assert_eq!(events.len(), 0);
+        assert_eq!(events, vec![CycleEvent::Division]);
+    }
+
+    fn set_get_events<A>(aux_storage: &mut A)
+    where
+        A: UpdateCycle,
+    {
+        let initial_events = vec![
+            CycleEvent::Division,
+            CycleEvent::Division,
+            CycleEvent::PhasedDeath,
+        ];
+        aux_storage.set_cycle_events(initial_events.clone());
+        let events = aux_storage.get_cycle_events();
+        assert_eq!(events.len(), 3);
+        assert_eq!(events, initial_events);
     }
 
     #[test]
-    fn nested_2() {
-        let aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorageCycle {
-                cycle_events: Vec::new(),
-            },
-        ));
-
-        let events = aux_storage.get_cycle_events();
-        assert_eq!(events.len(), 0);
+    fn cycle_add_get_events() {
+        let mut aux_storage = TestStructCycle {
+            aux_cycle: AuxStorageCycle::default(),
+        };
+        add_get_events(&mut aux_storage);
     }
 
     #[test]
-    fn nested_3() {
-        let aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorage((
-                1_f64,
-                AuxStorageCycle {
-                    cycle_events: Vec::new(),
-                },
-            )),
-        ));
-
-        let events = aux_storage.get_cycle_events();
-        assert_eq!(events.len(), 0);
+    fn cycle_set_get_events() {
+        let mut aux_storage = TestStructCycle {
+            aux_cycle: AuxStorageCycle::default(),
+        };
+        set_get_events(&mut aux_storage);
     }
 
     #[test]
-    fn nested_4() {
-        let aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorage((
-                1_f64,
-                AuxStorage((
-                    "This is my home".to_owned(),
-                    AuxStorageCycle {
-                        cycle_events: Vec::new(),
-                    },
-                ))
-            )),
-        ));
+    fn mechanics() {
+        let mut aux_storage = TestStructMechanics {
+            aux_mechanis: AuxStorageMechanics::default(),
+        };
+        aux_storage.set_last_position(3_f64);
+        aux_storage.set_last_velocity(5_f32);
+    }
 
-        let events = aux_storage.get_cycle_events();
-        assert_eq!(events.len(), 0);
+    #[test]
+    fn cycle_mechanics_add_get_events() {
+        let mut aux_storage = TestStructDouble::<_, _> {
+            aux_cycle: AuxStorageCycle::default(),
+            aux_mechanics: AuxStorageMechanics::default(),
+        };
+        aux_storage.set_last_position(3_f64);
+        aux_storage.set_last_velocity(5_f32);
+        add_get_events(&mut aux_storage);
+    }
+
+    #[test]
+    fn cycle_mechanics_set_get_events() {
+        let mut aux_storage = TestStructDouble::<_, _> {
+            aux_cycle: AuxStorageCycle::default(),
+            aux_mechanics: AuxStorageMechanics::default(),
+        };
+        aux_storage.set_last_position(3_f64);
+        aux_storage.set_last_velocity(5_f32);
+        set_get_events(&mut aux_storage);
     }
 }
 
@@ -285,6 +287,7 @@ mod test_aux_storage_cycle {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FixedSizeRingBuffer<T, const N: usize> {
     /// contains the elements in the buffer
+    // TODO can we do this without heap allocations?
     values: VecDeque<T>,
 }
 
@@ -356,129 +359,6 @@ impl<P, V, const N: usize> UpdateMechanics<P, V, N> for AuxStorageMechanics<P, V
 
     fn set_last_velocity(&mut self, vel: V) {
         self.velocities.push(vel);
-    }
-}
-
-impl<T, P, V, const N: usize> UpdateMechanics<P, V, N> for AuxStorage<T>
-where
-    T: UpdateMechanics<P, V, N>,
-{
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<P> {
-        self.0.previous_positions()
-    }
-
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V> {
-        self.0.previous_velocities()
-    }
-
-    fn set_last_position(&mut self, pos: P) {
-        self.0.set_last_position(pos);
-    }
-
-    fn set_last_velocity(&mut self, vel: V) {
-        self.0.set_last_velocity(vel);
-    }
-}
-
-impl<T, U, P, V, const N: usize> UpdateMechanics<P, V, N> for (T, U)
-where
-    U: UpdateMechanics<P, V, N>,
-{
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<P> {
-        self.1.previous_positions()
-    }
-
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V> {
-        self.1.previous_velocities()
-    }
-
-    fn set_last_position(&mut self, pos: P) {
-        self.1.set_last_position(pos);
-    }
-
-    fn set_last_velocity(&mut self, vel: V) {
-        self.1.set_last_velocity(vel);
-    }
-}
-
-#[cfg(test)]
-pub mod test_aux_storage_mechanics {
-    use super::*;
-
-    #[test]
-    fn nested_1() {
-        let mut aux_storage = AuxStorage(
-            AuxStorageMechanics::<_, _, 4>::default(),
-        );
-
-        aux_storage.set_last_position(1_f64);
-        aux_storage.set_last_velocity(0.1_f32);
-
-        let mut positions = aux_storage.previous_positions();
-        let mut velocities = aux_storage.previous_velocities();
-
-        assert_eq!(positions.next(), Some(&1_f64));
-        assert_eq!(velocities.next(), Some(&0.1_f32));
-    }
-
-    #[test]
-    fn nested_2() {
-        let mut aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorageMechanics::<_, _, 4>::default(),
-        ));
-
-        aux_storage.set_last_position(1_f64);
-        aux_storage.set_last_velocity(0.1_f32);
-
-        let mut positions = aux_storage.previous_positions();
-        let mut velocities = aux_storage.previous_velocities();
-
-        assert_eq!(positions.next(), Some(&1_f64));
-        assert_eq!(velocities.next(), Some(&0.1_f32));
-    }
-
-    #[test]
-    fn nested_3() {
-        let mut aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorage((
-                "All your base belong to us".to_owned(),
-                AuxStorageMechanics::<_, _, 4>::default()
-            )),
-        ));
-
-        aux_storage.set_last_position(1_f64);
-        aux_storage.set_last_velocity(0.1_f32);
-
-        let mut positions = aux_storage.previous_positions();
-        let mut velocities = aux_storage.previous_velocities();
-
-        assert_eq!(positions.next(), Some(&1_f64));
-        assert_eq!(velocities.next(), Some(&0.1_f32));
-    }
-
-    #[test]
-    fn nested_4() {
-        let mut aux_storage = AuxStorage((
-            AuxStorage(1_f64),
-            AuxStorage((
-                "All your base belong to us".to_owned(),
-                AuxStorage((
-                    1_f64,
-                    AuxStorageMechanics::<_, _, 4>::default()
-                )),
-            )),
-        ));
-
-        aux_storage.set_last_position(1_f64);
-        aux_storage.set_last_velocity(0.1_f32);
-
-        let mut positions = aux_storage.previous_positions();
-        let mut velocities = aux_storage.previous_velocities();
-
-        assert_eq!(positions.next(), Some(&1_f64));
-        assert_eq!(velocities.next(), Some(&0.1_f32));
     }
 }
 

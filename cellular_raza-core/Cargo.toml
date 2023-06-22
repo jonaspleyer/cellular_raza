@@ -43,6 +43,10 @@ rand_chacha = { workspace = true }
 path = "../cellular_raza-concepts"
 version = "0.0.3"
 
+[dependencies.cellular_raza-core-derive]
+path = "../cellular_raza-core-derive"
+version = "0.0.3"
+
 [features]
 default = ["fluid_mechanics", "gradients"]
 
