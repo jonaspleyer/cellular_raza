@@ -1,6 +1,6 @@
 use super::concepts::*;
 
-use cellular_raza_concepts::errors::CalcError;
+use cellular_raza_concepts::errors::DecomposeError;
 
 use serde::{Deserialize, Serialize};
 
