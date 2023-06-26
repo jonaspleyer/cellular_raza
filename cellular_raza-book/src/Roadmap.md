@@ -46,3 +46,4 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 ## Possible Directions
 - [ ] Purely GPU powered Backend (probably restricted generics)
 - [ ] Python bindings for some predefined models
+- [ ] Larger than memory simulations by using `sled` on disk
