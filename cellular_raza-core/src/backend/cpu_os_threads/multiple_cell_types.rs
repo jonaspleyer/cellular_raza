@@ -1,4 +1,5 @@
 #[macro_export]
+#[doc(hidden)]
 macro_rules! implement_cell_types {
     ($pos:ty, $force:ty, $information:ty, $velocity:ty, $voxel:ty, $index:ty, [$($celltype:ident),+]) => {
         use serde::{Serialize,Deserialize};
@@ -87,8 +88,11 @@ macro_rules! implement_cell_types {
         unsafe impl Sync for CellAgentType {}
     }
 }
+#[doc(inline)]
+pub use crate::implement_cell_types;
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! define_simulation_types {
     (
         Position:   $position:ty,
@@ -111,8 +115,11 @@ macro_rules! define_simulation_types {
         pub type SimTypeDomain = $domain;
     }
 }
+#[doc(inline)]
+pub use crate::define_simulation_types;
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! create_sim_supervisor {
     ($setup:expr) => {
         Result::<
@@ -130,3 +137,5 @@ macro_rules! create_sim_supervisor {
         .unwrap()
     };
 }
+#[doc(inline)]
+pub use crate::create_sim_supervisor;

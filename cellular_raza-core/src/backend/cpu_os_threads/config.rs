@@ -95,6 +95,7 @@ pub struct SimulationSetup<Dom, Cel, Cont = ()> {
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! create_simulation_setup (
     (
         Domain: $domain:expr,
@@ -131,6 +132,8 @@ macro_rules! create_simulation_setup (
         )
     };
 );
+#[doc(inline)]
+pub use crate::create_simulation_setup;
 
 impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
     pub fn new<V>(
