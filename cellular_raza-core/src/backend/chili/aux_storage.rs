@@ -1,11 +1,17 @@
 use cellular_raza_concepts::cycle::CycleEvent;
 use serde::{Deserialize, Serialize};
 
+use std::collections::VecDeque;
 
 /// Used to store intermediate information about last positions and velocities.
 /// Can store up to `N` values.
 pub trait UpdateMechanics<P, V, const N: usize> {
+    /// Stores the last position of the cell. May overwrite old results depending on
+    /// how many old results are being stored.
     fn set_last_position(&mut self, pos: P);
+
+    /// Get all previous positions. This number may be smaller than the maximum number of stored
+    /// positions but never exceeds it.
     fn previous_positions(&self) -> std::collections::vec_deque::Iter<P>;
     /* fn last_position(&self) -> Option<P>
     where
@@ -13,7 +19,12 @@ pub trait UpdateMechanics<P, V, const N: usize> {
     {
         self.previous_positions().iter().last().and_then(|x| Some(x.clone()))
     }*/
+    /// Stores the last velocity of the cell. Overwrites old results when stored amount
+    /// exceeds number of maximum stored values.
     fn set_last_velocity(&mut self, vel: V);
+
+    /// Get all previous velocities. This number may be smaller than the maximum number of stored
+    /// velocities but never exceeds it.
     fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V>;
     /* fn last_velocity(&self) -> Option<V>
     where
@@ -23,12 +34,19 @@ pub trait UpdateMechanics<P, V, const N: usize> {
     }*/
 }
 
+/// Trait which describes how to store intermediate information on the cell cycle.
 pub trait UpdateCycle {
+    /// Set all cycle events. This function is currently the only way to change the contents of the stored events.
     fn set_cycle_events(&mut self, events: Vec<CycleEvent>);
+
+    /// Get all cycle events currently stored.
     fn get_cycle_events(&self) -> Vec<CycleEvent>;
+
+    /// Add another cycle event to the storage.
     fn add_cycle_event(&mut self, event: CycleEvent);
 }
 
+/// Stores intermediate information about the cell cycle.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
     cycle_events: Vec<CycleEvent>,
@@ -187,6 +205,7 @@ pub struct FixedSizeRingBuffer<T, const N: usize> {
 }
 
 impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
+    /// Constructs a new empty ringbuffer.
     pub fn new() -> Self {
         Self {
             values: VecDeque::with_capacity(N),
@@ -201,6 +220,7 @@ impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
         self.values.push_back(value);
     }
 
+    /// Iterate over elements stored in the [FixedSizeRingBuffer].
     pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, T> {
         self.into_iter()
     }
@@ -224,6 +244,7 @@ impl<T, const N: usize> IntoIterator for FixedSizeRingBuffer<T, N> {
     }
 }
 
+/// Stores intermediate information about the mechanics of a cell.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuxStorageMechanics<P, V, const N: usize> {
     positions: FixedSizeRingBuffer<P, N>,

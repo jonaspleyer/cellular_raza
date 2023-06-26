@@ -73,8 +73,12 @@ pub trait SubDomain<C> {
     fn get_all_indices(&self) -> Vec<Self::VoxelIndex>;
 }
 
+/// Specifies how to retrieve a unique identifier of an object.
 pub trait Id {
+    /// The identifier type is usually chosen to be completely unique and repeatable across
+    /// different simulations.
     type Identifier;
 
+    /// Retrieves the Identifier from the object.
     fn get_id(&self) -> Self::Identifier;
 }
