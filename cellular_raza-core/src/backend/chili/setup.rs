@@ -39,9 +39,11 @@ impl<C, D> SimulationSetup<C, D> {
     /// Similar to [decompose](SimulationSetup::decompose) method but does not require to specify
     /// how many subdomains should be chosen. It will attempt to retrieve resources available to the system
     /// and spawn threads which are either pre-calculated, read from an existing file or acquired by auto-tuning.
-    pub fn decompose_auto_tune<S>(self) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
+    pub fn decompose_auto_tune<S>(
+        self,
+    ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
-        D: Domain<C, S>
+        D: Domain<C, S>,
     {
         todo!();
         let max_n_threads = std::thread::available_parallelism()?;
@@ -108,7 +110,8 @@ mod test {
             self,
             n_subdomains: core::num::NonZeroUsize,
             cells: Vec<f64>,
-        ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, DecomposeError> {
+        ) -> Result<DecomposedDomain<Self::SubDomainIndex, TestSubDomain, f64>, DecomposeError>
+        {
             let mut cells = cells;
             let mut index_subdomain_cells = Vec::new();
             let n_subdomains = n_subdomains.get();
@@ -292,3 +295,5 @@ mod test {
         }
     }
 }
+
+// TODO insert structs and traits for loading from saved results

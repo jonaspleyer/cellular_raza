@@ -7,7 +7,7 @@ pub mod concepts;
 pub mod datastructures;
 
 /// Specify a way to set-up and start the simulation.
-pub mod config;
+pub mod setup;
 
 /// Numerical integration and solving of the model.
 pub mod simulation_flow;
