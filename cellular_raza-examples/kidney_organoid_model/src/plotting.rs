@@ -4,6 +4,8 @@ use plotters::{
     backend::BitMapBackend,
     coord::types::RangedCoordf64,
     prelude::{Cartesian2d, DrawingArea, ShapeStyle},
+    style::colors::colormaps::{ColorMap, DerivedColorMap, ViridisRGB},
+    style::RGBColor,
 };
 
 use nalgebra::Vector2;
@@ -83,8 +85,16 @@ pub fn plot_modular_cell(
     );
     root.draw(&cell_border)?;
 
+    // Create colormap
+    let life_colormap = DerivedColorMap::new(&[
+        RGBColor(153, 0, 0),
+        RGBColor(255, 153, 51),
+        RGBColor(120, 255, 120),
+        RGBColor(51, 255, 51),
+    ]);
+
     // Plot the inside of the cell
-    let cell_inside_color = Life::get_color_normalized(
+    let cell_inside_color = life_colormap.get_color_normalized(
         modular_cell.get_intracellular()[1],
         0.0,
         modular_cell

@@ -4,6 +4,8 @@ use plotters::{
     backend::BitMapBackend,
     coord::types::RangedCoordf64,
     prelude::{Cartesian2d, Circle, DrawingArea, ShapeStyle},
+    style::colors::colormaps::{ColorMap, DerivedColorMap, ViridisRGB},
+    style::RGBColor,
 };
 
 use crate::bacteria_properties::*;
@@ -53,8 +55,11 @@ pub fn plot_modular_cell(
     let lower_bound = 0.0;
     let upper_bound = modular_cell.cycle.food_threshold / 10.0;
 
+    // Define colormap
+    let derived_colormap = DerivedColorMap::new(&[RGBColor(102, 52, 83), RGBColor(247, 126, 201)]);
+
     // Plot the inside of the cell
-    let cell_inside_color = PinkGrey::get_color_normalized(
+    let cell_inside_color = derived_colormap.get_color_normalized(
         modular_cell.get_intracellular()[0],
         lower_bound,
         upper_bound,

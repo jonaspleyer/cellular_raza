@@ -6,6 +6,3 @@ pub use crate::cell_models::modular_cell::*;
 
 pub use crate::domains::cartesian_cuboid_2_vertex::*;
 pub use crate::domains::cartesian_cuboid_n::*;
-
-pub use crate::plotting::cells_2d::*;
-pub use crate::plotting::viridis_colormap::*;
