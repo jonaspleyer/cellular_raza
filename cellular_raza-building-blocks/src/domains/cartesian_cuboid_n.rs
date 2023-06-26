@@ -69,8 +69,6 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
 }
 
 // TODO use const generics instead of macros
-
-#[macro_export]
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
