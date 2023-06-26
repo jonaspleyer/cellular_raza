@@ -2,11 +2,6 @@ use std::collections::HashMap;
 
 use cellular_raza_concepts::errors::{BoundaryError, DecomposeError};
 
-use super::{
-    aux_storage::{SubDomainBox, Voxel},
-    simulation_flow::SyncSubDomains,
-};
-
 /// Provides an abstraction of the physical total simulation domain.
 ///
 /// [cellular_raza](https://github.com/jonaspleyer/cellular_raza) uses domain-decomposition
@@ -59,54 +54,6 @@ pub struct DecomposedDomain<I, S, C> {
     pub neighbor_map: HashMap<I, Vec<I>>,
     /// Initial seed of the simulation for random number generation.
     pub rng_seed: u64,
-}
-
-impl<I, S, C> DecomposedDomain<I, S, C>
-where
-    S: SubDomain<C>,
-    S::VoxelIndex: Eq + Ord,
-    I: Eq + PartialEq + core::hash::Hash + Clone,
-{
-    // TODO this is not a BoundaryError
-    ///
-    pub fn into_subdomain_boxes<A, Sy>(
-        self,
-    ) -> Result<Vec<SubDomainBox<S, C, A, Sy>>, BoundaryError>
-    where
-        A: Default,
-        Sy: SyncSubDomains,
-    {
-        use rand::SeedableRng;
-        let mut syncers = Sy::from_map(self.neighbor_map);
-
-        self.index_subdomain_cells
-            .into_iter()
-            .map(|(index, subdomain, cells)| {
-                let mut cells = cells.into_iter().map(|c| (c, None)).collect();
-                let voxels = subdomain.get_all_indices().into_iter().map(|voxel_index| {
-                    (
-                        voxel_index,
-                        Voxel {
-                            cells: Vec::new(),
-                            new_cells: Vec::new(),
-                            id_counter: 0,
-                            rng: rand_chacha::ChaCha8Rng::seed_from_u64(self.rng_seed),
-                        },
-                    )
-                });
-                let syncer = syncers.remove(&index).ok_or(BoundaryError {
-                    message: "Index was not present in subdomain map".into(),
-                })?;
-                let mut subdomain_box = SubDomainBox {
-                    subdomain,
-                    voxels: voxels.collect(),
-                    syncer,
-                };
-                subdomain_box.insert_cells(&mut cells)?;
-                Ok(subdomain_box)
-            })
-            .collect::<Result<Vec<_>, _>>()
-    }
 }
 
 /// Subdomains are produced by decomposing a [Domain] into multiple physical regions.
