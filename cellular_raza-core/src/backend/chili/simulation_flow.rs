@@ -120,7 +120,16 @@ pub trait TimeStepper<F> {
     fn get_last_full_save(&self) -> Option<(F, i64)>;
 }
 
+/// Time stepping with a fixed time length
 ///
+/// This time-stepper increments the time variable by the same length.
+/// ```
+/// # use cellular_raza_core::backend::chili::simulation_flow::FixedStepsize;
+/// let t0 = 1.0;
+/// let dt = 0.2;
+/// let save_points = vec![3.0, 5.0, 11.0, 20.0];
+/// let time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
+/// ```
 #[derive(Clone, Deserialize, Serialize)]
 pub struct FixedStepsize<F> {
     // The stepsize which was fixed
