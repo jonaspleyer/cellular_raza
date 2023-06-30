@@ -69,7 +69,6 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
             .or(Some("".into_token_stream()))
             .unwrap();
 
-            // println!("{}", field_type.into_token_stream().to_string());
             let res2 = quote! {
                 // TODO these generic parameters <P, V, N> should be inferred if possible
                 // but it does not seem to be possible at this time.
@@ -88,7 +87,6 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
                     }
                 }
             };
-            // println!("{}", res2.clone().into_token_stream().to_string());
             result.extend(TokenStream::from(res2));
         }
     }
