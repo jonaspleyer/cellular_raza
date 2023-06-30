@@ -84,6 +84,37 @@ where
     }
 }
 
+#[doc(hidden)]
+#[macro_export]
+/// A macro that checks if an identifier exists in a given range of identifiers and
+/// inserts the given expression.
+///
+/// ```
+/// # use cellular_raza_core::contains_ident;
+/// contains_ident!(assert!(true), Mechanics, [Cycle, Interaction, Mechanics]);
+///```
+///
+/// This will simply not insert the specified expression it will not fail or panic.
+///```
+/// # use cellular_raza_core::contains_ident;
+/// contains_ident!(assert!(false), Mechanics, [Cycle, Interaction]);
+/// ```
+///
+/// We need to specify at least one Identifier to match against
+/// ```compile_fail
+/// # use cellular_raza_core::contains_ident;
+/// contains_ident!("Something", Mechanics, [])
+/// ```
+macro_rules! contains_ident(
+    ($expression:expr, $id1:ident, [$($ids:ident),+]) => {
+        $(
+            cellular_raza_core_derive::identical!($expression, $id1, $ids);
+        )+
+    };
+);
+#[doc(inline)]
+pub use crate::contains_ident;
+
 /// Encapsulates a subdomain with cells and other simulation aspects.
 pub struct SubDomainBox<S, C, A, Sy = BarrierSync>
 where
