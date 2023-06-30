@@ -3,7 +3,7 @@
 //! This crate provides powerful derive macros to automatically implement the `UpdateCycle` and `UpdateMechanics` traits.
 //! For the future, we are planning to have similar functionality with other concepts associated to CellAgents.
 
-use proc_macro::TokenStream;
+use proc_macro::{TokenStream, TokenTree};
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput};
 
@@ -95,4 +95,64 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
 
     // Hand the output tokens back to the compiler
     TokenStream::from(result)
+}
+
+fn parse_non_delimiter_tokens(tokenstream: TokenStream) -> Vec<TokenStream> {
+    use itertools::Itertools;
+    tokenstream
+        .into_iter()
+        .group_by(|token| match token {
+            TokenTree::Punct(p) => p.as_char() == char::from(','),
+            _ => false,
+        })
+        .into_iter()
+        .filter_map(|(is_comma, group)| if !is_comma { Some(group) } else { None })
+        .map(|group| TokenStream::from_iter(group.into_iter()))
+        .collect()
+}
+
+#[proc_macro]
+/// Simple macro that checks if two supplied values are identical.
+/// If this is the case it will insert the specified expression or otherwise.
+///
+/// The macro can be used to omit code when two idents are not identical
+/// ```
+/// # use cellular_raza_core_derive::identical;
+/// identical!(MyFirstIdentifier, MySecondIdentifier, println!("This will never be printed"));
+///
+/// identical!(SameIdent, SameIdent, assert!(true));
+///
+/// assert_eq!("hamster", identical!(Id1, Id1, "hamster"));
+///
+/// // Identifiers are not equal if their capitalization does not match
+/// identical!(caps, Caps, assert!(false));
+///
+/// // This works since 1_f64 is turned into a string and then compared to "1_f64" which is identically the same.
+/// identical!(1_f64, "1_f64", assert!(true));
+/// ```
+///
+/// The macro is not going to compile if given only two idents
+/// ```compile_fail
+/// identical!(Id1, Id2);
+/// ```
+///
+/// The same holds true if we do not supply two identifiers.
+/// ```compile_fail
+/// identical!(Id1, println!("asdf"));
+/// ```
+pub fn identical(tokenstream: TokenStream) -> TokenStream {
+    let tokens = parse_non_delimiter_tokens(tokenstream);
+    let tokens_length = tokens.len();
+    if tokens_length < 3 {
+        panic!("Macro requires two identifiers to compare against each other and one expression to insert");
+    } else {
+        let m1 = tokens[0].clone();
+        let m2 = tokens[1].clone();
+        let expr = TokenStream::from_iter(tokens.into_iter().skip(2).into_iter());
+        if m1.to_string() == m2.to_string() {
+            expr
+        } else {
+            TokenStream::from(quote!())
+        }
+    }
 }
