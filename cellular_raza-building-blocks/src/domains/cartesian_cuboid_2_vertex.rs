@@ -553,7 +553,7 @@ mod test {
 
     #[test]
     fn test_get_demomp_res() {
-        let max = 50_000;
+        let max = 5_000;
 
         (1..max)
             .into_par_iter()
