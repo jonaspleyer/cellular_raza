@@ -86,6 +86,28 @@ where
 
 #[doc(hidden)]
 #[macro_export]
+/// Given a collection of identifiers related to [concepts](cellular_raza_concepts) this will construct
+/// a wrapper around a new [SimulationSupervisor] and implement the correct methods for the type.
+///
+/// Note: Some simulation aspects can be considered incompatible.
+///
+/// | Identifier | Concept | Depends on |
+/// | --- | --- | --- |
+/// | `Mechanics` | [Mechanics](cellular_raza_concepts::mechanics) | |
+/// | `Cycle` | [Cycle](cellular_raza_concepts::cycle) | |
+/// | `Interaction` | [Interaction](cellular_raza_concepts::interaction::Interaction) | |
+/// | `CellularReactions` | [CellularReactions](cellular_raza_concepts::interaction::CellularReactions) | |
+/// | `ExtracellularReactions` | [ExtracellularMechanics](cellular_raza_concepts::domain::ExtracellularMechanics) | |
+/// | `Gradients` | [Gradients](cellular_raza_concepts::domain::ExtracellularMechanics) | `ExtracellularReactions` |
+///
+macro_rules! construct_supervisor(
+    () => {};
+);
+#[doc(inline)]
+pub use crate::construct_supervisor;
+
+#[doc(hidden)]
+#[macro_export]
 /// A macro that checks if an identifier exists in a given range of identifiers and
 /// inserts the given expression.
 ///
