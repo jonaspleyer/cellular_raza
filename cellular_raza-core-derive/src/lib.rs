@@ -111,21 +111,29 @@ fn parse_non_delimiter_tokens(tokenstream: TokenStream) -> Vec<TokenStream> {
 
 #[proc_macro]
 /// Simple macro that checks if two supplied values are identical.
-/// If this is the case it will insert the specified expression or otherwise.
+/// If this is the case it will insert the specified expression.
+/// Otherwise it inserts nothing.
 ///
-/// The macro can be used to omit code when two idents are not identical
+/// The macro can be used to omit code when two idents are not identical.
+/// It can also be used to check if an identifier is contained in a range of identifiers.
 /// ```
 /// # use cellular_raza_core_derive::identical;
-/// identical!(MyFirstIdentifier, MySecondIdentifier, println!("This will never be printed"));
+/// // Identifiers are not matching. This means that
+/// // the last statement will never be inserted
+/// identical!(MyFirstIdentifier, MySecondIdentifier, assert!(false));
 ///
+/// // Identifiers are matching. The last statement
+/// // (in this case `assert!(true)`) will be inserted into the code.
 /// identical!(SameIdent, SameIdent, assert!(true));
 ///
+/// // The String "hamster" is inserted here since both identifiers are matching.
 /// assert_eq!("hamster", identical!(Id1, Id1, "hamster"));
 ///
 /// // Identifiers are not equal if their capitalization does not match
 /// identical!(caps, Caps, assert!(false));
 ///
-/// // This works since 1_f64 is turned into a string and then compared to "1_f64" which is identically the same.
+/// // This works since 1_f64 is turned into a string and then
+/// // compared to "1_f64" which is identically the same.
 /// identical!(1_f64, "1_f64", assert!(true));
 /// ```
 ///
