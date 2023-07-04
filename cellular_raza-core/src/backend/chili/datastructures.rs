@@ -151,49 +151,6 @@ impl<S, C, A, Sy> SubDomainBox<S, C, A, Sy>
 where
     S: SubDomain<C>,
 {
-    /// A subdomain can be initialized by specifying which cells are present how to sync between
-    /// threads and the initial seed for our random number generator.
-    pub fn initialize(subdomain: S, cells: Vec<C>, syncer: Sy, rng_seed: u64) -> Self
-    where
-        S::VoxelIndex: std::cmp::Eq + Hash + Ord,
-        A: Default,
-    {
-        let voxel_indices = subdomain.get_all_indices();
-        // TODO let voxels = subdomain.generate_all_voxels();
-        let mut index_to_cells = cells
-            .into_iter()
-            .map(|cell| (subdomain.get_voxel_index_of(&cell).unwrap(), cell))
-            .fold(
-                std::collections::HashMap::new(),
-                |mut acc, (index, cell)| {
-                    let cells_in_voxel = acc.entry(index).or_insert(Vec::new());
-                    cells_in_voxel.push((cell, A::default()));
-                    acc
-                },
-            );
-        let voxels = voxel_indices
-            .into_iter()
-            .map(|index| {
-                let rng = ChaCha8Rng::seed_from_u64(rng_seed);
-                let cells = index_to_cells.remove(&index).or(Some(Vec::new())).unwrap();
-                (
-                    index,
-                    Voxel {
-                        cells,
-                        new_cells: Vec::new(),
-                        id_counter: 0,
-                        rng,
-                    },
-                )
-            })
-            .collect();
-        Self {
-            subdomain,
-            voxels,
-            syncer,
-        }
-    }
-
     /// Allows to sync between threads. In the most simplest case of [BarrierSync] syncing is done by a global barrier.
     pub fn sync(&mut self)
     where
