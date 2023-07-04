@@ -190,6 +190,7 @@ mod test {
             let n_subdomains = index_subdomain_cells.len();
             let decomposed_domain = DecomposedDomain {
                 n_subdomains,
+                voxel_index_to_plain_index,
                 index_subdomain_cells,
                 neighbor_map: (0..n_subdomains)
                     .map(|i| (i, vec![if i == 0 { n_subdomains } else { i - 1 }, i + 1]))
@@ -231,6 +232,20 @@ mod test {
 
         fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
             self.voxels.iter().map(|(&i, _)| i).collect()
+        }
+
+        fn get_neighbor_voxel_indices(
+            &self,
+            voxel_index: &Self::VoxelIndex,
+        ) -> Vec<Self::VoxelIndex> {
+            let mut neighbors = Vec::new();
+            if voxel_index > &0 && voxel_index <= &(self.total_voxels - 1) {
+                neighbors.push(voxel_index - 1);
+            }
+            if voxel_index >= &0 && voxel_index < &(self.total_voxels - 1) {
+                neighbors.push(voxel_index + 1);
+            }
+            neighbors
         }
     }
 
@@ -311,6 +326,38 @@ mod test {
             } else {
                 assert_eq!(neighbor_subdomain_indices, vec![i - 1, i + 1]);
             }
+        }
+    }
+
+    #[test]
+    fn test_neighbor_indices() {
+        // Define the testdomain with cells
+        let min = 0.0;
+        let max = 100.0;
+        let config = SimulationSetup {
+            cells: vec![1.0, 20.0, 26.0, 41.0, 56.0, 84.0, 95.0],
+            domain: TestDomain {
+                min,
+                max,
+                n_voxels: 8,
+                rng_seed: 0,
+            },
+        };
+
+        let n_subdomains = core::num::NonZeroUsize::new(4).unwrap();
+        let decomposed_domain = config.decompose(n_subdomains).unwrap();
+        for (_, subdomain, _) in decomposed_domain.index_subdomain_cells.into_iter() {
+            assert_eq!(vec![1], subdomain.get_neighbor_voxel_indices(&0));
+            assert_eq!(vec![0, 2], subdomain.get_neighbor_voxel_indices(&1));
+            assert_eq!(vec![1, 3], subdomain.get_neighbor_voxel_indices(&2));
+            assert_eq!(vec![2, 4], subdomain.get_neighbor_voxel_indices(&3));
+            assert_eq!(vec![3, 5], subdomain.get_neighbor_voxel_indices(&4));
+            assert_eq!(vec![4, 6], subdomain.get_neighbor_voxel_indices(&5));
+            assert_eq!(vec![5, 7], subdomain.get_neighbor_voxel_indices(&6));
+            assert_eq!(vec![6], subdomain.get_neighbor_voxel_indices(&7));
+            assert_eq!(vec![0_usize; 0], subdomain.get_neighbor_voxel_indices(&8));
+            assert_eq!(vec![0_usize; 0], subdomain.get_neighbor_voxel_indices(&9));
+            assert_eq!(vec![0_usize; 0], subdomain.get_neighbor_voxel_indices(&10));
         }
     }
 }

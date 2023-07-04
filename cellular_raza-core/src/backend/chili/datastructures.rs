@@ -223,10 +223,32 @@ where
             .into_iter()
             .map(|(index, subdomain, cells)| {
                 let mut cells = cells.into_iter().map(|c| (c, None)).collect();
+                let mut voxel_index_to_neighbor_plain_indices: HashMap<_, _> = subdomain
+                    .get_all_indices()
+                    .into_iter()
+                    .map(|voxel_index| {
+                        (
+                            voxel_index.clone(),
+                            subdomain
+                                .get_neighbor_voxel_indices(&voxel_index)
+                                .into_iter()
+                                .map(|neighbor_index| {
+                                    decomposed_domain.voxel_index_to_plain_index[&neighbor_index]
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                    })
+                    .collect();
                 let voxels = subdomain.get_all_indices().into_iter().map(|voxel_index| {
+                    let plain_index = decomposed_domain.voxel_index_to_plain_index[&voxel_index];
+                    let neighbors = voxel_index_to_neighbor_plain_indices
+                        .remove(&voxel_index)
+                        .unwrap();
                     (
-                        voxel_index,
+                        plain_index,
                         Voxel {
+                            plain_index,
+                            neighbors,
                             cells: Vec::new(),
                             new_cells: Vec::new(),
                             id_counter: 0,
@@ -241,19 +263,20 @@ where
                     "Index was not present in subdomain map".into(),
                 ))?;
                 let mut subdomain_box = SubDomainBox {
+                    plain_index_to_subdomain: plain_index_to_subdomain.clone(),
                     communicator,
                     subdomain,
                     voxels: voxels.collect(),
+                    voxel_index_to_plain_index: decomposed_domain
+                        .voxel_index_to_plain_index
+                        .clone(),
                     syncer,
                 };
                 subdomain_box.insert_cells(&mut cells)?;
-                Ok(subdomain_box)
+                Ok((index, subdomain_box))
             })
-            .collect::<Result<Vec<_>, _>>()?;
-        let simulation_supervisor = SimulationSupervisor {
-            subdomain_boxes,
-            phandom_data: PhantomData,
-        };
+            .collect::<Result<HashMap<_, _>, _>>()?;
+        let simulation_supervisor = SimulationSupervisor { subdomain_boxes };
         Ok(simulation_supervisor)
     }
 }
@@ -358,13 +381,18 @@ where
     {
         for cell in new_cells.drain(..) {
             let voxel_index = self.subdomain.get_voxel_index_of(&cell.0)?;
-            self.voxels
-                .get_mut(&voxel_index)
-                .ok_or(BoundaryError(
-                    "Could not find correct voxel for cell".to_owned(),
-                ))?
-                .cells
-                .push((cell.0, cell.1.map_or(A::default(), |x| x)));
+            let plain_index = self.voxel_index_to_plain_index[&voxel_index];
+            let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
+                "Could not find correct voxel for cell".to_owned(),
+            ))?;
+            voxel.cells.push((
+                CellBox::new(
+                    CellIdentifier(voxel.plain_index, voxel.id_counter),
+                    None,
+                    cell.0,
+                ),
+                cell.1.map_or(A::default(), |x| x),
+            ));
         }
         Ok(())
     }
