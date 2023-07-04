@@ -313,7 +313,7 @@ pub use crate::construct_supervisor;
 /// contains_ident!(assert!(true), Mechanics, [Cycle, Interaction, Mechanics]);
 ///```
 ///
-/// This will simply not insert the specified expression it will not fail or panic.
+/// This will simply not insert the specified expressio. It also won't fail or panic.
 ///```
 /// # use cellular_raza_core::contains_ident;
 /// contains_ident!(assert!(false), Mechanics, [Cycle, Interaction]);
@@ -324,10 +324,21 @@ pub use crate::construct_supervisor;
 /// # use cellular_raza_core::contains_ident;
 /// contains_ident!("Something", Mechanics, [])
 /// ```
+///
+/// We can also use this macro to conditionally execute certain functionality.
+/// ```
+/// # use cellular_raza_core::contains_ident;
+/// let mut x = 1;
+/// contains_ident!({x+=1;}, AddIt, [AddSome, AddNone]);
+/// assert_eq!(x, 1);
+///
+/// contains_ident!({x+=1;println!("{}", x);}, AddSome, [AddSome, AddNone]);
+/// assert_eq!(x, 2);
+/// ```
 macro_rules! contains_ident(
     ($expression:expr, $id1:ident, [$($ids:ident),+]) => {
         $(
-            cellular_raza_core_derive::identical!($expression, $id1, $ids);
+            cellular_raza_core_derive::identical!($id1, $ids, $expression);
         )+
     };
 );
