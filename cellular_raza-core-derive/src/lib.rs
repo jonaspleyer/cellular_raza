@@ -161,7 +161,7 @@ fn parse_non_delimiter_tokens(tokenstream: TokenStream) -> Vec<TokenStream> {
 pub fn identical(tokenstream: TokenStream) -> TokenStream {
     let tokens = parse_non_delimiter_tokens(tokenstream);
     let tokens_length = tokens.len();
-    if tokens_length < 3 {
+    if tokens_length != 3 {
         panic!("Macro requires two identifiers to compare against each other and one expression to insert");
     } else {
         let m1 = tokens[0].clone();
