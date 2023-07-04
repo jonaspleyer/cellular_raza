@@ -72,7 +72,10 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
             let res2 = quote! {
                 // TODO these generic parameters <P, V, N> should be inferred if possible
                 // but it does not seem to be possible at this time.
-                impl #struct_generics UpdateMechanics <#generic_args_field> for #struct_name #struct_generics {
+                impl #struct_generics UpdateMechanics <#generic_args_field> for #struct_name #struct_generics
+                where
+                    F: Clone + core::ops::AddAssign<F> + num::Zero,
+                {
                     fn set_last_position(&mut self, pos: P) {
                         self.#name.set_last_position(pos)
                     }
@@ -84,6 +87,15 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
                     }
                     fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V> {
                         self.#name.previous_velocities()
+                    }
+                    fn add_force(&mut self, force: F) {
+                        self.#name.add_force(force);
+                    }
+                    fn get_current_force(&self) -> F {
+                        self.#name.get_current_force()
+                    }
+                    fn clear_forces(&mut self) {
+                        self.#name.clear_forces()
                     }
                 }
             };

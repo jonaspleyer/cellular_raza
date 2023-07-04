@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 
 /// Used to store intermediate information about last positions and velocities.
 /// Can store up to `N` values.
-pub trait UpdateMechanics<P, V, const N: usize> {
+pub trait UpdateMechanics<P, V, F, const N: usize> {
     /// Stores the last position of the cell. May overwrite old results depending on
     /// how many old results are being stored.
     fn set_last_position(&mut self, pos: P);
@@ -13,12 +13,7 @@ pub trait UpdateMechanics<P, V, const N: usize> {
     /// Get all previous positions. This number may be smaller than the maximum number of stored
     /// positions but never exceeds it.
     fn previous_positions(&self) -> std::collections::vec_deque::Iter<P>;
-    /* fn last_position(&self) -> Option<P>
-    where
-        P: Clone,
-    {
-        self.previous_positions().iter().last().and_then(|x| Some(x.clone()))
-    }*/
+
     /// Stores the last velocity of the cell. Overwrites old results when stored amount
     /// exceeds number of maximum stored values.
     fn set_last_velocity(&mut self, vel: V);
@@ -26,12 +21,15 @@ pub trait UpdateMechanics<P, V, const N: usize> {
     /// Get all previous velocities. This number may be smaller than the maximum number of stored
     /// velocities but never exceeds it.
     fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V>;
-    /* fn last_velocity(&self) -> Option<V>
-    where
-        V: Clone,
-    {
-        self.previous_velocities().iter().last().and_then(|x| Some(x.clone()))
-    }*/
+
+    /// Add force to currently stored forces
+    fn add_force(&mut self, force: F);
+
+    /// Obtain current force on cell
+    fn get_current_force(&self) -> F;
+
+    /// Removes all stored forces
+    fn clear_forces(&mut self);
 }
 
 /// Trait which describes how to store intermediate information on the cell cycle.
@@ -80,11 +78,11 @@ pub mod test_derive_aux_storage {
     use cellular_raza_core_derive::AuxStorage;
 
     #[derive(AuxStorage)]
-    struct TestStructDouble<P, V> {
+    struct TestStructDouble<P, V, F> {
         #[UpdateCycle]
         aux_cycle: AuxStorageCycle,
         #[UpdateMechanics]
-        aux_mechanics: AuxStorageMechanics<P, V, 4>,
+        aux_mechanics: AuxStorageMechanics<P, V, F, 4>,
     }
 
     #[derive(AuxStorage)]
@@ -94,9 +92,9 @@ pub mod test_derive_aux_storage {
     }
 
     #[derive(AuxStorage)]
-    struct TestStructMechanics<P, V> {
+    struct TestStructMechanics<P, V, F> {
         #[UpdateMechanics]
-        aux_mechanis: AuxStorageMechanics<P, V, 4>,
+        aux_mechanis: AuxStorageMechanics<P, V, F, 4>,
     }
 
     fn add_get_events<A>(aux_storage: &mut A)
@@ -146,27 +144,30 @@ pub mod test_derive_aux_storage {
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
+        aux_storage.add_force(1_f32);
     }
 
     #[test]
     fn cycle_mechanics_add_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _> {
+        let mut aux_storage = TestStructDouble {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
+        aux_storage.add_force(-5_f32);
         add_get_events(&mut aux_storage);
     }
 
     #[test]
     fn cycle_mechanics_set_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _> {
+        let mut aux_storage = TestStructDouble {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
+        aux_storage.add_force(111_i64);
         set_get_events(&mut aux_storage);
     }
 }
@@ -246,21 +247,29 @@ impl<T, const N: usize> IntoIterator for FixedSizeRingBuffer<T, N> {
 
 /// Stores intermediate information about the mechanics of a cell.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AuxStorageMechanics<P, V, const N: usize> {
+pub struct AuxStorageMechanics<P, V, F, const N: usize> {
     positions: FixedSizeRingBuffer<P, N>,
     velocities: FixedSizeRingBuffer<V, N>,
+    current_force: F,
 }
 
-impl<P, V, const N: usize> Default for AuxStorageMechanics<P, V, N> {
+impl<P, V, F, const N: usize> Default for AuxStorageMechanics<P, V, F, N>
+where
+    F: num::Zero,
+{
     fn default() -> Self {
         AuxStorageMechanics {
             positions: FixedSizeRingBuffer::new(),
             velocities: FixedSizeRingBuffer::new(),
+            current_force: F::zero(),
         }
     }
 }
 
-impl<P, V, const N: usize> UpdateMechanics<P, V, N> for AuxStorageMechanics<P, V, N> {
+impl<P, V, F, const N: usize> UpdateMechanics<P, V, F, N> for AuxStorageMechanics<P, V, F, N>
+where
+    F: Clone + core::ops::AddAssign<F> + num::Zero,
+{
     fn previous_positions(&self) -> std::collections::vec_deque::Iter<P> {
         self.positions.iter()
     }
@@ -275,5 +284,17 @@ impl<P, V, const N: usize> UpdateMechanics<P, V, N> for AuxStorageMechanics<P, V
 
     fn set_last_velocity(&mut self, vel: V) {
         self.velocities.push(vel);
+    }
+
+    fn add_force(&mut self, force: F) {
+        self.current_force += force;
+    }
+
+    fn get_current_force(&self) -> F {
+        self.current_force.clone()
+    }
+
+    fn clear_forces(&mut self) {
+        self.current_force = F::zero();
     }
 }
