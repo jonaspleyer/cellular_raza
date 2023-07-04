@@ -371,9 +371,9 @@ where
         }
 
         // Create a simulationresult which can then be used to further plot and analyze results
-        let (storage_cells, storage_voxels, domain) = databases.pop().ok_or(RequestError {
-            message: format!("The threads of the simulation did not yield any handles"),
-        })?;
+        let (storage_cells, storage_voxels, domain) = databases.pop().ok_or(RequestError(
+            format!("The threads of the simulation did not yield any handles"),
+        ))?;
 
         let simulation_result = SimulationResult {
             storage: self.storage.clone(),

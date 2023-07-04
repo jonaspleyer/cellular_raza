@@ -784,9 +784,7 @@ where
             let voxel_box = self
                 .voxels
                 .get(&index_boundary_information.index_original_receiver)
-                .ok_or(IndexError {
-                    message: format!(""),
-                })?;
+                .ok_or(IndexError(format!("")))?;
 
             // Obtain the boundary concentrations to this voxel
             let concentration_boundary = voxel_box.voxel.boundary_condition_to_neighbor_voxel(
@@ -827,7 +825,7 @@ where
     {
         // Update boundary conditions with new
         for concentration_boundary_information in self.receiver_concentrations.try_iter() {
-            let vox = self.voxels.get_mut(&concentration_boundary_information.index_original_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", concentration_boundary_information.index_original_sender)})?;
+            let vox = self.voxels.get_mut(&concentration_boundary_information.index_original_sender).ok_or(IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", concentration_boundary_information.index_original_sender)))?;
             vox.concentration_boundaries.push((
                 concentration_boundary_information.index_original_receiver_raw,
                 concentration_boundary_information.concentration_boundary,
@@ -949,7 +947,7 @@ where
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in self.receiver_pos.try_iter() {
-            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(IndexError {message: format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)})?;
+            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
@@ -976,10 +974,10 @@ where
     {
         // Update position and velocity of all cells with new information
         for obt_forces in self.receiver_force.try_iter() {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError { message: format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)})?;
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
             match vox.cells.get_mut(obt_forces.count) {
                 Some((_, aux_storage)) => Ok(aux_storage.force+=obt_forces.force),
-                None => Err(IndexError { message: format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count)}),
+                None => Err(IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
             }?;
         }
 
@@ -1092,12 +1090,10 @@ where
                         sender.send(cell)?;
                         Ok(())
                     }
-                    None => Err(IndexError {
-                        message: format!(
-                            "Could not correctly send cell with id {:?}",
-                            cell.get_id()
-                        ),
-                    }),
+                    None => Err(IndexError(format!(
+                        "Could not correctly send cell with id {:?}",
+                        cell.get_id()
+                    ))),
                 },
             }?;
         }

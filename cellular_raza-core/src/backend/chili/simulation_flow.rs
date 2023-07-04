@@ -156,22 +156,24 @@ where
         let mut save_points = save_points;
         save_points.sort_by(|x, y| x.partial_cmp(y).unwrap());
         if save_points.iter().any(|x| t0 > *x) {
-            return Err(CalcError {message: "Invalid time configuration! Evaluation time point is before starting time point.".to_owned()});
+            return Err(CalcError(
+                "Invalid time configuration! Evaluation time point is before starting time point."
+                    .to_owned(),
+            ));
         }
         let last_save_point = save_points
             .clone()
             .into_iter()
             .max_by(|x, y| x.partial_cmp(y).unwrap())
-            .ok_or(CalcError {
-                message: "No savepoints specified. Simulation will not save any results."
-                    .to_owned(),
-            })?;
+            .ok_or(CalcError(
+                "No savepoints specified. Simulation will not save any results.".to_owned(),
+            ))?;
         let maximum_iterations =
             (((last_save_point - t0) / dt).round())
                 .to_i64()
-                .ok_or(CalcError {
-                    message: "An error in casting of float type to i64 occurred".to_owned(),
-                })?;
+                .ok_or(CalcError(
+                    "An error in casting of float type to i64 occurred".to_owned(),
+                ))?;
         let all_events = save_points
             .clone()
             .into_iter()
@@ -215,9 +217,9 @@ where
 {
     fn advance(&mut self) -> Result<Option<(F, i64, Option<TimeEvent>)>, CalcError> {
         self.current_iteration += 1;
-        self.current_time = F::from_i64(self.current_iteration).ok_or(CalcError {
-            message: "Error when casting from i64 to floating point value".to_owned(),
-        })? * self.dt
+        self.current_time = F::from_i64(self.current_iteration).ok_or(CalcError(
+            "Error when casting from i64 to floating point value".to_owned(),
+        ))? * self.dt
             + self.t0;
         // TODO Check if a current event should take place
         if let Some((_, _, event)) = self

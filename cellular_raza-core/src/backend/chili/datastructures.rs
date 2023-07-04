@@ -64,9 +64,9 @@ where
                         },
                     )
                 });
-                let syncer = syncers.remove(&index).ok_or(BoundaryError {
-                    message: "Index was not present in subdomain map".into(),
-                })?;
+                let syncer = syncers.remove(&index).ok_or(BoundaryError(
+                    "Index was not present in subdomain map".into(),
+                ))?;
                 let mut subdomain_box = SubDomainBox {
                     subdomain,
                     voxels: voxels.collect(),
@@ -224,9 +224,9 @@ where
             let voxel_index = self.subdomain.get_voxel_index_of(&cell.0)?;
             self.voxels
                 .get_mut(&voxel_index)
-                .ok_or(BoundaryError {
-                    message: "Could not find correct voxel for cell".to_owned(),
-                })?
+                .ok_or(BoundaryError(
+                    "Could not find correct voxel for cell".to_owned(),
+                ))?
                 .cells
                 .push((cell.0, cell.1.map_or(A::default(), |x| x)));
         }

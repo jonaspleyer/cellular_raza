@@ -205,9 +205,9 @@ mod test {
                     return Ok(*index);
                 }
             }
-            Err(cellular_raza_concepts::prelude::BoundaryError {
-                message: "Could not find voxel which contains cell".into(),
-            })
+            Err(cellular_raza_concepts::prelude::BoundaryError(
+                "Could not find voxel which contains cell".into(),
+            ))
         }
 
         fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {

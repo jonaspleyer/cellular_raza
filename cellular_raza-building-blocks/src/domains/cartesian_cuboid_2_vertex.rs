@@ -33,12 +33,10 @@ impl CartesianCuboid2Vertex {
     fn check_min_max(min: [f64; 2], max: [f64; 2]) -> Result<(), CalcError> {
         for i in 0..2 {
             match max[i] > min[i] {
-                false => Err(CalcError {
-                    message: format!(
-                        "Min {:?} must be smaller than Max {:?} for domain boundaries!",
-                        min, max
-                    ),
-                }),
+                false => Err(CalcError(format!(
+                    "Min {:?} must be smaller than Max {:?} for domain boundaries!",
+                    min, max
+                ))),
                 true => Ok(()),
             }?;
         }
@@ -51,12 +49,10 @@ impl CartesianCuboid2Vertex {
     {
         for i in 0..2 {
             match interaction_ranges[i] > F::zero() {
-                false => Err(CalcError {
-                    message: format!(
-                        "Interaction range must be positive and non-negative! Got value {:?}",
-                        interaction_ranges[i]
-                    ),
-                }),
+                false => Err(CalcError(format!(
+                    "Interaction range must be positive and non-negative! Got value {:?}",
+                    interaction_ranges[i]
+                ))),
                 true => Ok(()),
             }?;
         }
@@ -171,12 +167,10 @@ impl<const D: usize, const N: usize> CartesianCuboidVoxel2Vertex<D, N> {
             .enumerate()
             .any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i]))
         {
-            true => Err(RequestError {
-                message: format!(
-                    "point {:?} is not in requested voxel with boundaries {:?} {:?}",
-                    pos, self.min, self.max
-                ),
-            }),
+            true => Err(RequestError(format!(
+                "point {:?} is not in requested voxel with boundaries {:?} {:?}",
+                pos, self.min, self.max
+            ))),
             false => Ok(()),
         }?;
         Ok(())
@@ -365,9 +359,10 @@ where
             // If new position is still out of boundary return error
             for i in 0..2 {
                 if pos[i] < self.min[i] || pos[i] > self.max[i] {
-                    return Err(BoundaryError {
-                        message: format!("Particle is out of domain at position {:?}", pos),
-                    });
+                    return Err(BoundaryError(format!(
+                        "Particle is out of domain at position {:?}",
+                        pos
+                    )));
                 }
             }
         }
@@ -439,9 +434,9 @@ where
         match get_decomp_res(indices.len(), n_regions) {
             Some(res) => (n, _m, average_len) = res,
             None => {
-                return Err(CalcError {
-                    message: "Could not find a suiting decomposition".to_owned(),
-                })
+                return Err(CalcError(
+                    "Could not find a suiting decomposition".to_owned(),
+                ))
             }
         };
 

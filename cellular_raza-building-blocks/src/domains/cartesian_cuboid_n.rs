@@ -87,7 +87,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
             fn check_min_max(min: [f64; $d], max: [f64; $d]) -> Result<(), CalcError> {
                 for i in 0..$d {
                     match max[i] > min[i] {
-                        false => Err(CalcError { message: format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max)}),
+                        false => Err(CalcError(format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max))),
                         true => Ok(()),
                     }?;
                 }
@@ -100,7 +100,7 @@ macro_rules! define_and_implement_cartesian_cuboid {
             {
                 for i in 0..$d {
                     match interaction_ranges[i] > F::zero() {
-                        false => Err(CalcError { message: format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i])}),
+                        false => Err(CalcError(format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i]))),
                         true => Ok(())
                     }?;
                 }
@@ -201,7 +201,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
 
             fn position_is_in_domain(&self, pos: &SVector<f64, $d>) -> Result<(), RequestError> {
                 match pos.iter().enumerate().any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i])) {
-                    true => Err(RequestError{ message: format!("point {:?} is not in requested voxel with boundaries {:?} {:?}", pos, self.min, self.max)}),
+                    true => Err(RequestError(format!("point {:?} is not in requested voxel with boundaries {:?} {:?}", pos, self.min, self.max))),
                     false => Ok(()),
                 }
             }
@@ -324,7 +324,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 // If new position is still out of boundary return error
                 for i in 0..$d {
                     if pos[i] < self.min[i] || pos[i] > self.max[i] {
-                        return Err(BoundaryError { message: format!("Particle is out of domain at position {:?}", pos) });
+                        return Err(BoundaryError(format!("Particle is out of domain at position {:?}", pos)));
                     }
                 }
                 Ok(())
@@ -381,7 +381,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 let (n, _m, average_len);
                 match get_decomp_res(indices.len(), n_regions) {
                     Some(res) => (n, _m, average_len) = res,
-                    None => return Err(CalcError {message: "Could not find a suiting decomposition".to_owned(), }),
+                    None => return Err(CalcError("Could not find a suiting decomposition".to_owned())),
                 };
 
                 // Now we drain the indices vector
