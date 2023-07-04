@@ -20,10 +20,14 @@ pub struct SimulationSupervisor<I, Sb> {
 /// Stores information related to a voxel of the physical simulation domain.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Voxel<C, A> {
+    /// The index which is given when decomposing the domain and all indices are counted.
+    pub plain_index: VoxelPlainIndex,
+    /// Indices of neighboring voxels
+    pub neighbors: Vec<VoxelPlainIndex>,
     /// Cells currently in the voxel
-    pub cells: Vec<(C, A)>,
+    pub cells: Vec<(CellBox<C>, A)>,
     /// New cells which are about to be included into this voxels cells.
-    pub new_cells: Vec<C>,
+    pub new_cells: Vec<(C, Option<CellIdentifier>)>,
     /// A counter to make sure that each Id of a cell is unique.
     pub id_counter: u64,
     /// A random number generator which is unique to this voxel and thus able
