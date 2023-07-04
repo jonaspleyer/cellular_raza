@@ -17,6 +17,8 @@ pub mod aux_storage;
 /// Preliminary concepts which are being used for testing.
 pub mod concepts;
 
+pub mod errors;
+
 pub mod datastructures;
 
 /// Specify a way to set-up and start the simulation.
