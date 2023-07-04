@@ -1,4 +1,4 @@
-use cellular_raza_concepts::errors::CalcError;
+use cellular_raza_concepts::{errors::CalcError, prelude::IndexError};
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -11,12 +11,12 @@ use std::collections::HashMap;
 /// which can then be simply given to the respective threads and handle synchronization.
 /// ```
 /// # use std::collections::HashMap;
-/// # use cellular_raza_core::backend::chili::simulation_flow::{BarrierSync, SyncSubDomains};
+/// # use cellular_raza_core::backend::chili::simulation_flow::{BarrierSync, FromMap, SyncSubDomains};
 /// let map = HashMap::from_iter([
 ///     (0, vec![1]),
 ///     (1, vec![0]),
 /// ]);
-/// let mut syncers = BarrierSync::from_map(map);
+/// let mut syncers = BarrierSync::from_map(&map).unwrap();
 /// assert_eq!(syncers.len(), 2);
 ///
 /// let mut syncer_0 = syncers.remove(&0).unwrap();
@@ -46,31 +46,35 @@ pub struct BarrierSync {
     barrier: hurdles::Barrier,
 }
 
-/// Responsible for syncing the simulation between different threads.
-pub trait SyncSubDomains
+/// Constructs a collection of Items from a map (graph)
+pub trait FromMap<I>
 where
     Self: Sized,
 {
     /// [SubDomains](super::concepts::SubDomain) can be neighboring each other via complicated graphs.
     /// An easy way to represent this is by using a [HashMap]. We want to create Barriers which match
     /// the specified subdomain indices.
-    fn from_map<I>(map: std::collections::HashMap<I, Vec<I>>) -> HashMap<I, Self>
+    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone;
+}
 
+/// Responsible for syncing the simulation between different threads.
+pub trait SyncSubDomains {
     /// Function which forces connected syncers to wait for each other.
     /// This approach does not necessarily require all threads to wait but can mean that
     /// only depending threads wait for each other.
     fn sync(&mut self);
 }
 
-impl SyncSubDomains for BarrierSync {
-    fn from_map<I>(map: std::collections::HashMap<I, Vec<I>>) -> HashMap<I, Self>
+impl<I> FromMap<I> for BarrierSync {
+    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone,
     {
         let barrier = hurdles::Barrier::new(map.len());
-        map.keys()
+        let res = map
+            .keys()
             .map(|i| {
                 (
                     i.clone(),
@@ -79,9 +83,12 @@ impl SyncSubDomains for BarrierSync {
                     },
                 )
             })
-            .collect()
+            .collect();
+        Ok(res)
     }
+}
 
+impl SyncSubDomains for BarrierSync {
     fn sync(&mut self) {
         self.barrier.wait();
     }
@@ -286,7 +293,7 @@ pub mod test_sync {
 
     fn test_single_map<S>(map: HashMap<usize, Vec<usize>>)
     where
-        S: 'static + SyncSubDomains + Send + Sync,
+        S: 'static + SyncSubDomains + FromMap<usize> + Send + Sync,
     {
         // Define the number of threads and iterations to use
         let n_iterations = 1_000;
@@ -298,7 +305,7 @@ pub mod test_sync {
             Arc::new(Mutex::new(Vec::from_iter((0..n_threads).map(|_| 0_usize))));
 
         // Create a barrier from which we
-        let syncers = S::from_map(map);
+        let syncers = S::from_map(&map).unwrap();
         let handles = syncers
             .into_iter()
             .map(|(n_thread, mut syncer)| {
@@ -322,7 +329,7 @@ pub mod test_sync {
 
     fn test_multiple_maps<S>()
     where
-        S: 'static + SyncSubDomains + Send + Sync,
+        S: 'static + SyncSubDomains + FromMap<usize> + Send + Sync,
     {
         let map0 = HashMap::from_iter([(0, vec![1]), (1, vec![0])]);
         test_single_map::<S>(map0);

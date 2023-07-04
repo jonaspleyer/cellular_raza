@@ -36,17 +36,18 @@ impl<I, S, C, A, Sy> From<DecomposedDomain<I, S, C>>
     for Result<SimulationSupervisor<I, S, C, A, Sy>, BoundaryError>
 where
     S: SubDomain<C>,
-    S::VoxelIndex: Eq + Ord,
+    S::VoxelIndex: Eq + Hash + Ord,
     I: Eq + PartialEq + core::hash::Hash + Clone,
     A: Default,
-    Sy: SyncSubDomains,
+    Sy: super::simulation_flow::FromMap<I>,
 {
     // TODO this is not a BoundaryError
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
     ) -> Result<SimulationSupervisor<I, S, C, A, Sy>, BoundaryError> {
-        let mut syncers = Sy::from_map(decomposed_domain.neighbor_map);
+        // TODO do not unwrap
+        let mut syncers = Sy::from_map(&decomposed_domain.neighbor_map).unwrap();
 
         let subdomain_boxes = decomposed_domain
             .index_subdomain_cells
@@ -174,7 +175,7 @@ where
     /// Allows insertion of cells into the subdomain.
     pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), BoundaryError>
     where
-        S::VoxelIndex: Ord,
+        S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
     {
         for cell in new_cells.drain(..) {
