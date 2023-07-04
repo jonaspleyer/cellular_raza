@@ -423,4 +423,74 @@ where
         });
         Ok(())
     }
+
+    pub fn update_mechanics_step_1<Pos, Vel, For, Inf, const N: usize>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        Pos: Clone,
+        Vel: Clone,
+        Inf: Clone,
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
+        For: Clone
+            + core::ops::AddAssign
+            + core::ops::Mul<f64, Output = For>
+            + core::ops::Neg<Output = For>
+            + num::Zero,
+        <S as super::concepts::SubDomain<C>>::VoxelIndex: Ord,
+        Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
+    {
+        self.voxels
+            .iter_mut()
+            .map(|(_, vox)| vox.calculate_force_between_cells_internally())
+            .collect::<Result<(), CalcError>>()?;
+        // Calculate forces for all cells from neighbors
+        // TODO can we do this without memory allocation?
+        let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+
+        for voxel_index in key_iterator {
+            for cell_count in 0..self.voxels[&voxel_index].cells.len() {
+                let cell_pos = self.voxels[&voxel_index].cells[cell_count].0.pos();
+                let cell_vel = self.voxels[&voxel_index].cells[cell_count].0.velocity();
+                let cell_inf = self.voxels[&voxel_index].cells[cell_count]
+                    .0
+                    .get_interaction_information();
+                let mut force = For::zero();
+                let neighbors = self.voxels[&voxel_index].neighbors.clone();
+                for neighbor_index in neighbors {
+                    match self.voxels.get_mut(&neighbor_index) {
+                        Some(vox) => Ok::<(), CalcError>(
+                            force += vox.calculate_force_between_cells_external(
+                                &cell_pos, &cell_vel, &cell_inf,
+                            )?,
+                        ),
+                        None => Ok(self.communicator.send(
+                            &neighbor_index,
+                            PosInformation {
+                                index_sender: voxel_index,
+                                index_receiver: neighbor_index.clone(),
+                                pos: cell_pos.clone(),
+                                vel: cell_vel.clone(),
+                                info: cell_inf.clone(),
+                                count: cell_count,
+                            },
+                        )?),
+                    }?;
+                }
+                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_count]
+                    .1
+                    .add_force(force);
+            }
+        }
+
+        // Calculate custom force of voxel on cell
+        /* TODO
+        self.voxels
+            .iter_mut()
+            .map(|(_, vox)| vox.calculate_custom_force_on_cells())
+            .collect::<Result<(), CalcError>>()?;*/
+        Ok(())
+    }
 }

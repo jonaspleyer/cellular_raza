@@ -348,6 +348,15 @@ where
     }
 }
 
+pub struct PosInformation<Pos, Vel, Inf> {
+    pub pos: Pos,
+    pub vel: Vel,
+    pub info: Option<Inf>,
+    pub count: usize,
+    pub index_sender: VoxelPlainIndex,
+    pub index_receiver: VoxelPlainIndex,
+}
+
 #[cfg(test)]
 pub mod test_sync {
     use super::*;
