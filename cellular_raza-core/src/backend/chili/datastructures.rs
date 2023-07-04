@@ -1,7 +1,8 @@
 use cellular_raza_concepts::errors::{BoundaryError, CalcError};
 use serde::{Deserialize, Serialize};
 
-use std::{hash::Hash, marker::PhantomData};
+use std::collections::HashMap;
+use std::hash::Hash;
 
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -10,12 +11,10 @@ use super::aux_storage::*;
 use super::concepts::*;
 use super::simulation_flow::{BarrierSync, SyncSubDomains};
 
-pub struct SimulationSupervisor<I, S, C, A, Sy>
-where
-    S: SubDomain<C>,
-{
-    subdomain_boxes: Vec<SubDomainBox<S, C, A, Sy>>,
-    phandom_data: PhantomData<I>,
+use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
+
+pub struct SimulationSupervisor<I, Sb> {
+    subdomain_boxes: HashMap<I, Sb>,
 }
 
 /// Stores information related to a voxel of the physical simulation domain.
@@ -36,7 +35,7 @@ impl<I, S, C, A, Sy> From<DecomposedDomain<I, S, C>>
     for Result<SimulationSupervisor<I, S, C, A, Sy>, BoundaryError>
 where
     S: SubDomain<C>,
-    S::VoxelIndex: Eq + Hash + Ord,
+    S::VoxelIndex: Eq + Hash + Ord + Clone,
     I: Eq + PartialEq + core::hash::Hash + Clone,
     A: Default,
     Sy: super::simulation_flow::FromMap<I>,
@@ -45,7 +44,7 @@ where
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> Result<SimulationSupervisor<I, S, C, A, Sy>, BoundaryError> {
+    ) -> Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Sy>>, BoundaryError> {
         // TODO do not unwrap
         let mut syncers = Sy::from_map(&decomposed_domain.neighbor_map).unwrap();
 
@@ -144,7 +143,11 @@ where
     S: SubDomain<C>,
 {
     pub(crate) subdomain: S,
-    pub(crate) voxels: std::collections::BTreeMap<S::VoxelIndex, Voxel<C, A>>,
+    pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
+    pub(crate) voxel_index_to_plain_index:
+        std::collections::HashMap<S::VoxelIndex, VoxelPlainIndex>,
+    pub(crate) plain_index_to_subdomain:
+        std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
     pub(crate) syncer: Sy,
 }
 
