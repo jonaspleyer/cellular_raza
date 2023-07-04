@@ -35,6 +35,152 @@ pub struct Voxel<C, A> {
     pub rng: rand_chacha::ChaCha8Rng,
 }
 
+impl<C, A> Voxel<C, A> {
+    pub fn calculate_force_between_cells_internally<Pos, Vel, For, Inf, const N: usize>(
+        &mut self,
+    ) -> Result<(), CalcError>
+    where
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
+        For: Clone + core::ops::Mul<f64, Output = For> + core::ops::Neg<Output = For>,
+    {
+        for n in 0..self.cells.len() {
+            for m in n + 1..self.cells.len() {
+                let mut cells_mut = self.cells.iter_mut();
+                let (c1, aux1) = cells_mut.nth(n).unwrap();
+                let (c2, aux2) = cells_mut.nth(m - n - 1).unwrap();
+
+                let p1 = c1.pos();
+                let v1 = c1.velocity();
+                let i1 = c1.get_interaction_information();
+
+                let p2 = c2.pos();
+                let v2 = c2.velocity();
+                let i2 = c2.get_interaction_information();
+
+                if let Some(force_result) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2) {
+                    let force = force_result?;
+                    aux1.add_force(-force.clone() * 0.5);
+                    aux2.add_force(force * 0.5);
+                }
+
+                if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
+                    let force = force_result?;
+                    aux1.add_force(force.clone() * 0.5);
+                    aux2.add_force(-force * 0.5);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn calculate_force_between_cells_external<Pos, Vel, For, Inf, const N: usize>(
+        &mut self,
+        ext_pos: &Pos,
+        ext_vel: &Vel,
+        ext_inf: &Option<Inf>,
+    ) -> Result<For, CalcError>
+    where
+        For: Clone
+            + core::ops::AddAssign
+            + num::Zero
+            + core::ops::Mul<f64, Output = For>
+            + core::ops::Neg<Output = For>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
+    {
+        let mut force = For::zero();
+        for (cell, aux_storage) in self.cells.iter_mut() {
+            match cell.calculate_force_between(
+                &cell.pos(),
+                &cell.velocity(),
+                &ext_pos,
+                &ext_vel,
+                &ext_inf,
+            ) {
+                Some(Ok(f)) => {
+                    aux_storage.add_force(-f.clone() * 0.5);
+                    force += f * 0.5;
+                }
+                Some(Err(e)) => return Err(e),
+                None => (),
+            };
+        }
+        Ok(force)
+    }
+
+    pub fn update_cell_cycle_3(&mut self, dt: &f64) -> Result<(), CalcError>
+    where
+        C: cellular_raza_concepts::cycle::Cycle<C> + Id,
+        A: UpdateCycle + Default,
+    {
+        use cellular_raza_concepts::cycle::CycleEvent;
+        // Update the cell individual cells
+        self.cells
+            .iter_mut()
+            .map(|(cbox, aux_storage)| {
+                // Check for cycle events and do update if necessary
+                let mut remaining_events = Vec::new();
+                for event in aux_storage.get_cycle_events() {
+                    match event {
+                        CycleEvent::Division => {
+                            // TODO catch this error
+                            let new_cell = C::divide(&mut self.rng, &mut cbox.cell).unwrap();
+                            self.new_cells.push((new_cell, Some(cbox.get_id())));
+                        }
+                        CycleEvent::Remove => remaining_events.push(event),
+                        CycleEvent::PhasedDeath => {
+                            remaining_events.push(event);
+                        }
+                    };
+                }
+                aux_storage.set_cycle_events(remaining_events);
+                // Update the cell cycle
+                if aux_storage
+                    .get_cycle_events()
+                    .contains(&CycleEvent::PhasedDeath)
+                {
+                    // TODO catch this error!
+                    match C::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)
+                        .unwrap()
+                    {
+                        true => aux_storage.add_cycle_event(CycleEvent::Remove),
+                        false => (),
+                    }
+                } else {
+                    match C::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
+                        Some(event) => aux_storage.add_cycle_event(event),
+                        None => (),
+                    }
+                }
+                Ok(())
+            })
+            .collect::<Result<(), CalcError>>()?;
+
+        // Remove cells which are flagged for death
+        self.cells.retain(|(_, aux_storage)| {
+            !aux_storage.get_cycle_events().contains(&CycleEvent::Remove)
+        });
+
+        // Include new cells
+        self.cells
+            .extend(self.new_cells.drain(..).map(|(cell, parent_id)| {
+                self.id_counter += 1;
+                (
+                    CellBox::new(
+                        CellIdentifier(self.plain_index, self.id_counter),
+                        parent_id,
+                        cell,
+                    ),
+                    A::default(),
+                )
+            }));
+        Ok(())
+    }
+}
+
 impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
     for Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>, BoundaryError>
 where
