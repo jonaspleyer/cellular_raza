@@ -5,11 +5,11 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
 
 use super::aux_storage::*;
 use super::concepts::*;
-use super::simulation_flow::{BarrierSync, SyncSubDomains};
+use super::errors::*;
+use super::simulation_flow::*;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 

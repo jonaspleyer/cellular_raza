@@ -83,6 +83,7 @@ mod test {
         max: f64,
         voxels: std::collections::BTreeMap<usize, [f64; 2]>,
         reflect_at_boundary: (bool, bool),
+        total_voxels: usize,
     }
 
     impl Domain<f64, TestSubDomain> for TestDomain {
@@ -166,10 +167,26 @@ mod test {
                             subdomain_index == 0,
                             subdomain_index == n_subdomains - 1,
                         ),
+                        total_voxels: self.n_voxels,
                     },
                     cells_in_subdomain,
                 ));
             }
+            let mut voxel_index_counter = 0;
+            let voxel_index_to_plain_index: std::collections::HashMap<_, _> = index_subdomain_cells
+                .iter()
+                .map(|(_, subdomain, _)| subdomain.get_all_indices())
+                .flatten()
+                .map(|voxel_index| {
+                    let res = (
+                        voxel_index,
+                        super::super::VoxelPlainIndex(voxel_index_counter),
+                    );
+                    voxel_index_counter += 1;
+                    res
+                })
+                .collect();
+
             let n_subdomains = index_subdomain_cells.len();
             let decomposed_domain = DecomposedDomain {
                 n_subdomains,
