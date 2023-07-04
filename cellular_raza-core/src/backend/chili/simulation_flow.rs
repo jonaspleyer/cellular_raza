@@ -286,6 +286,66 @@ where
     }
 }
 
+pub trait Communicator<T, I>
+where
+    Self: Sized,
+{
+    fn send(&mut self, receiver: &I, message: T) -> Result<(), SimulationError>;
+    fn receive(&mut self) -> Vec<T>;
+}
+
+#[derive(Clone)]
+pub struct ChannelComm<T, I> {
+    senders: std::collections::BTreeMap<I, crossbeam_channel::Sender<T>>,
+    receiver: crossbeam_channel::Receiver<T>,
+}
+
+impl<T, I> FromMap<I> for ChannelComm<T, I>
+where
+    I: Clone + core::hash::Hash + Eq + Ord,
+{
+    fn from_map(map: &HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError> {
+        let channels: HashMap<_, _> = map
+            .keys()
+            .into_iter()
+            .map(|key| {
+                let (s, r) = crossbeam_channel::unbounded::<T>();
+                (key, (s, r))
+            })
+            .collect();
+        let mut comms = HashMap::new();
+        for key in map.keys().into_iter() {
+            let senders = map
+                .get(&key)
+                .ok_or(IndexError("Network of communicators could not be constructed due to incorrect entries in map".into()))?
+                .clone()
+                .into_iter()
+                .map(|connected_key| (key.clone(), channels[&connected_key].0.clone())).collect();
+
+            let comm = ChannelComm {
+                senders,
+                receiver: channels[&key].1.clone(),
+            };
+            comms.insert(key.clone(), comm);
+        }
+        Ok(comms)
+    }
+}
+
+impl<T, I> Communicator<T, I> for ChannelComm<T, I>
+where
+    I: core::hash::Hash + Eq + Ord,
+{
+    fn receive(&mut self) -> Vec<T> {
+        self.receiver.try_iter().collect()
+    }
+
+    fn send(&mut self, receiver: &I, message: T) -> Result<(), SimulationError> {
+        self.senders[&receiver].send(message)?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 pub mod test_sync {
     use super::*;
