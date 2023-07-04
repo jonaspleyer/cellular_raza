@@ -35,22 +35,42 @@ pub struct Voxel<C, A> {
     pub rng: rand_chacha::ChaCha8Rng,
 }
 
-impl<I, S, C, A, Sy> From<DecomposedDomain<I, S, C>>
-    for Result<SimulationSupervisor<I, S, C, A, Sy>, BoundaryError>
+impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
+    for Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>, BoundaryError>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
     I: Eq + PartialEq + core::hash::Hash + Clone,
     A: Default,
     Sy: super::simulation_flow::FromMap<I>,
+    Com: super::simulation_flow::FromMap<I>,
 {
     // TODO this is not a BoundaryError
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Sy>>, BoundaryError> {
+    ) -> Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>, BoundaryError> {
         // TODO do not unwrap
         let mut syncers = Sy::from_map(&decomposed_domain.neighbor_map).unwrap();
+        let mut communicators = Com::from_map(&decomposed_domain.neighbor_map).unwrap();
+        let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
+            .index_subdomain_cells
+            .iter()
+            .enumerate()
+            .map(|(subdomain_index, (_, subdomain, _))| {
+                subdomain
+                    .get_all_indices()
+                    .into_iter()
+                    .map(move |index| (subdomain_index, index))
+            })
+            .flatten()
+            .map(|(subdomain_index, voxel_index)| {
+                (
+                    decomposed_domain.voxel_index_to_plain_index[&voxel_index],
+                    SubDomainPlainIndex(subdomain_index),
+                )
+            })
+            .collect();
 
         let subdomain_boxes = decomposed_domain
             .index_subdomain_cells
@@ -71,7 +91,11 @@ where
                 let syncer = syncers.remove(&index).ok_or(BoundaryError(
                     "Index was not present in subdomain map".into(),
                 ))?;
+                let communicator = communicators.remove(&index).ok_or(BoundaryError(
+                    "Index was not present in subdomain map".into(),
+                ))?;
                 let mut subdomain_box = SubDomainBox {
+                    communicator,
                     subdomain,
                     voxels: voxels.collect(),
                     syncer,
@@ -142,7 +166,7 @@ macro_rules! contains_ident(
 pub use crate::contains_ident;
 
 /// Encapsulates a subdomain with cells and other simulation aspects.
-pub struct SubDomainBox<S, C, A, Sy = BarrierSync>
+pub struct SubDomainBox<S, C, A, Com, Sy = BarrierSync>
 where
     S: SubDomain<C>,
 {
@@ -152,10 +176,11 @@ where
         std::collections::HashMap<S::VoxelIndex, VoxelPlainIndex>,
     pub(crate) plain_index_to_subdomain:
         std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
+    pub(crate) communicator: Com,
     pub(crate) syncer: Sy,
 }
 
-impl<S, C, A, Sy> SubDomainBox<S, C, A, Sy>
+impl<S, C, A, Com, Sy> SubDomainBox<S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
 {
