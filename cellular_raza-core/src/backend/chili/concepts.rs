@@ -69,7 +69,15 @@ pub trait SubDomain<C> {
     type VoxelIndex;
 
     /// If given a cell, we can sort this cell into the corresponding [Voxel].
+    /// This function is supposed to return the correct voxel index of the cell even if this index
+    /// is inside another [SubDomain]. This restriction might be lifted in the future but is still
+    /// required now.
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError>;
+
+    /// Obtains the neighbor voxels of the specified voxel index. This function behaves similarly to
+    /// [SubDomain::get_voxel_index_of] in that it also has to return
+    /// indices which are in other [SubDomains](SubDomain).
+    fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex>;
 
     /// If the subdomain has boundary conditions, this function will enforce them onto the cells.
     /// For the future, we plan to replace this function to additionally obtain information
