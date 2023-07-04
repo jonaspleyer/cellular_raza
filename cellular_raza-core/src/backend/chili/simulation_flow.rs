@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
+use super::{errors::SimulationError, VoxelPlainIndex};
+
 ///
 /// This very simple implementation uses the [Barrier](hurdles::Barrier) struct from the [hurdles] crate
 /// which should in theory perform faster than the [std::sync::Barrier] struct from the standard library.
