@@ -1,7 +1,56 @@
 use cellular_raza_concepts::cycle::CycleEvent;
 use serde::{Deserialize, Serialize};
 
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    ops::{Deref, DerefMut},
+};
+
+use super::CellIdentifier;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CellBox<C> {
+    /// The identifier is composed of two values, one for the voxel index in which the
+    /// object was created and another one which counts how many elements have already
+    /// been created there.
+    pub identifier: CellIdentifier,
+    /// Identifier of the parent cell if this cell was created by cell-division
+    pub parent: Option<CellIdentifier>,
+    /// The cell which is encapsulated by this box.
+    pub cell: C,
+}
+
+impl<C> Deref for CellBox<C> {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        &self.cell
+    }
+}
+
+impl<C> DerefMut for CellBox<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.cell
+    }
+}
+
+impl<C> super::concepts::Id for CellBox<C> {
+    type Identifier = CellIdentifier;
+
+    fn get_id(&self) -> CellIdentifier {
+        self.identifier
+    }
+}
+
+impl<C> CellBox<C> {
+    pub(crate) fn new(identifier: CellIdentifier, parent: Option<CellIdentifier>, cell: C) -> Self {
+        Self {
+            identifier,
+            parent,
+            cell,
+        }
+    }
+}
 
 /// Used to store intermediate information about last positions and velocities.
 /// Can store up to `N` values.
