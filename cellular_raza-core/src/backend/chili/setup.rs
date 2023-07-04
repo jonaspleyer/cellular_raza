@@ -30,6 +30,7 @@ impl<C, D> SimulationSetup<C, D> {
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: Domain<C, S>,
+        S: SubDomain<C>,
     {
         self.domain.decompose(n_subdomains, self.cells)
     }
@@ -44,6 +45,7 @@ impl<C, D> SimulationSetup<C, D> {
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: Domain<C, S>,
+        S: SubDomain<C>,
     {
         todo!();
         let max_n_threads = std::thread::available_parallelism()?;
