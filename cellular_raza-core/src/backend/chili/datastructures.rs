@@ -79,7 +79,7 @@ impl<C, A> Voxel<C, A> {
         &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
-        ext_inf: &Option<Inf>,
+        ext_inf: &Inf,
     ) -> Result<For, CalcError>
     where
         For: Clone

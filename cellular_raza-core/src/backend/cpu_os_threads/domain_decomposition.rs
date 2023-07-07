@@ -82,7 +82,7 @@ pub struct ConcentrationBoundaryInformation<ConcVecExtracellular, Ind> {
 pub struct PosInformation<Pos, Vel, Inf> {
     pub pos: Pos,
     pub vel: Vel,
-    pub info: Option<Inf>,
+    pub info: Inf,
     pub count: usize,
     pub index_sender: PlainIndex,
     pub index_receiver: PlainIndex,
@@ -361,7 +361,7 @@ where
         &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
-        ext_inf: &Option<Inf>,
+        ext_inf: &Inf,
     ) -> Result<For, CalcError>
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
