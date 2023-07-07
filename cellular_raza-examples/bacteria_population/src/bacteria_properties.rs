@@ -18,8 +18,8 @@ pub struct CellSpecificInteraction {
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
-    fn get_interaction_information(&self) -> Option<f64> {
-        Some(self.cell_radius)
+    fn get_interaction_information(&self) -> f64 {
+        self.cell_radius
     }
 
     fn calculate_force_between(
@@ -28,7 +28,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        ext_info: &Option<f64>,
+        ext_radius: &f64,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let min_relative_distance_to_center = 0.3162277660168379;
         let (r, dir) =
@@ -49,30 +49,25 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
                     (r, dir)
                 }
             };
-        match ext_info {
-            Some(ext_radius) => {
-                // Introduce Non-dimensional length variable
-                let sigma = r / (self.cell_radius + ext_radius);
-                let bound = 4.0 + 1.0 / sigma;
-                let spatial_cutoff = (1.0
-                    + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r)
-                        .signum())
-                    * 0.5;
+        // Introduce Non-dimensional length variable
+        let sigma = r / (self.cell_radius + ext_radius);
+        let bound = 4.0 + 1.0 / sigma;
+        let spatial_cutoff = (1.0
+            + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r)
+                .signum())
+            * 0.5;
 
-                // Calculate the strength of the interaction with correct bounds
-                let strength = self.potential_strength
-                    * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
-                        .min(bound)
-                        .max(-bound);
+        // Calculate the strength of the interaction with correct bounds
+        let strength = self.potential_strength
+            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
+                .min(bound)
+                .max(-bound);
 
-                // Calculate only attracting and repelling forces
-                let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-                let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        // Calculate only attracting and repelling forces
+        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
+        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-                Some(Ok(repelling_force + attracting_force))
-            }
-            None => None,
-        }
+        Some(Ok(repelling_force + attracting_force))
     }
 }
 

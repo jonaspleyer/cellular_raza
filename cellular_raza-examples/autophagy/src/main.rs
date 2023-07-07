@@ -55,7 +55,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         _own_vel: &Vector3<f64>,
         ext_pos: &Vector3<f64>,
         _ext_vel: &Vector3<f64>,
-        ext_info: &Option<(f64, Species)>,
+        ext_info: &(f64, Species),
     ) -> Option<Result<Vector3<f64>, CalcError>> {
         let min_relative_distance_to_center = 0.3162277660168379;
         let (r, dir) =
@@ -76,59 +76,55 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
                     (r, dir)
                 }
             };
-        match ext_info {
-            Some((ext_radius, species)) => {
-                // Introduce Non-dimensional length variable
-                let sigma = r / (self.cell_radius + ext_radius);
-                let bound = 4.0 + 1.0 / sigma;
-                let spatial_cutoff = (1.0 + (self.interaction_range - r).signum()) * 0.5;
+        let (ext_radius, species) = ext_info;
+        // Introduce Non-dimensional length variable
+        let sigma = r / (self.cell_radius + ext_radius);
+        let bound = 4.0 + 1.0 / sigma;
+        let spatial_cutoff = (1.0 + (self.interaction_range - r).signum()) * 0.5;
 
-                // Calculate the strength of the interaction with correct bounds
-                let strength = self.potential_strength
-                    * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
-                        .min(bound)
-                        .max(-bound);
+        // Calculate the strength of the interaction with correct bounds
+        let strength = self.potential_strength
+            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
+                .min(bound)
+                .max(-bound);
 
-                // Calculate only attracting and repelling forces
-                let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-                let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        // Calculate only attracting and repelling forces
+        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
+        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-                match (species, &self.species) {
-                    // R11 will bind to cargo
-                    (Species::Cargo, Species::R11) => {
-                        return Some(Ok(repelling_force + attracting_force))
-                    }
-                    (Species::R11, Species::Cargo) => {
-                        return Some(Ok(repelling_force + attracting_force))
-                    }
-
-                    // R11 forms clusters
-                    (Species::R11, Species::R11) => {
-                        return Some(Ok(
-                            repelling_force + self.clustering_strength * attracting_force
-                        ))
-                    }
-
-                    // ATG9 and R11 will bind
-                    (Species::R11, Species::ATG9) => Some(Ok(repelling_force + attracting_force)),
-                    (Species::ATG9, Species::R11) => Some(Ok(repelling_force + attracting_force)),
-
-                    // ATG9 forms clusters
-                    (Species::ATG9, Species::ATG9) => {
-                        return Some(Ok(
-                            repelling_force + self.clustering_strength * attracting_force
-                        ))
-                    }
-
-                    (_, _) => return Some(Ok(repelling_force)),
-                }
+        match (species, &self.species) {
+            // R11 will bind to cargo
+            (Species::Cargo, Species::R11) => {
+                return Some(Ok(repelling_force + attracting_force))
             }
-            None => None,
+            (Species::R11, Species::Cargo) => {
+                return Some(Ok(repelling_force + attracting_force))
+            }
+
+            // R11 forms clusters
+            (Species::R11, Species::R11) => {
+                return Some(Ok(
+                    repelling_force + self.clustering_strength * attracting_force
+                ))
+            }
+
+            // ATG9 and R11 will bind
+            (Species::R11, Species::ATG9) => Some(Ok(repelling_force + attracting_force)),
+            (Species::ATG9, Species::R11) => Some(Ok(repelling_force + attracting_force)),
+
+            // ATG9 forms clusters
+            (Species::ATG9, Species::ATG9) => {
+                return Some(Ok(
+                    repelling_force + self.clustering_strength * attracting_force
+                ))
+            }
+
+            (_, _) => return Some(Ok(repelling_force)),
         }
     }
 
-    fn get_interaction_information(&self) -> Option<(f64, Species)> {
-        Some((self.cell_radius, self.species.clone()))
+    fn get_interaction_information(&self) -> (f64, Species) {
+        (self.cell_radius, self.species.clone())
     }
 }
 

@@ -44,7 +44,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        _ext_info: &Option<InteractionInformation>,
+        _ext_info: &InteractionInformation,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
@@ -62,6 +62,8 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         let force = -dir * strength * spatial_cutoff;
         Some(Ok(force))
     }
+
+    fn get_interaction_information(&self) -> InteractionInformation {}
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
@@ -73,7 +75,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        _ext_info: &Option<InteractionInformation>,
+        _ext_info: &InteractionInformation,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         // Calculate direction between own and other point
         let z = ext_pos - own_pos;
@@ -81,6 +83,8 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
 
         Some(Ok(self.potential_strength * dir))
     }
+
+    fn get_interaction_information(&self) -> InteractionInformation {}
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
