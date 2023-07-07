@@ -128,7 +128,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     }
 }
 
-fn main() {
+fn main() -> Result<(), SimulationError> {
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
@@ -185,7 +185,7 @@ fn main() {
         .collect::<Vec<_>>();
 
     let domain =
-        CartesianCuboid3::from_boundaries_and_n_voxels([0.0; 3], [DOMAIN_SIZE; 3], [2; 3]).unwrap();
+        CartesianCuboid3::from_boundaries_and_n_voxels([0.0; 3], [DOMAIN_SIZE; 3], [2; 3])?;
 
     let time = TimeSetup {
         t_start: 0.0,
@@ -211,5 +211,6 @@ fn main() {
 
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
 
-    supervisor.run_full_sim().unwrap();
+    supervisor.run_full_sim()?;
+    Ok(())
 }
