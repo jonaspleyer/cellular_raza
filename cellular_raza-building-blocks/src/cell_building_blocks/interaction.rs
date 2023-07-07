@@ -14,10 +14,12 @@ impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
         _: &Vel,
         _: &Pos,
         _: &Vel,
-        _ext_information: &Option<()>,
+        _ext_information: &(),
     ) -> Option<Result<For, CalcError>> {
         return None;
     }
+
+    fn get_interaction_information(&self) -> () {}
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -29,7 +31,7 @@ pub struct LennardJones {
 macro_rules! implement_lennard_jones_nd(
     ($dim:literal) =>  {
         impl Interaction<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for LennardJones {
-            fn calculate_force_between(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &Option<()>) -> Option<Result<SVector<f64, $dim>, CalcError>> {
+            fn calculate_force_between(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &()) -> Option<Result<SVector<f64, $dim>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let dir = z/r;
@@ -37,6 +39,8 @@ macro_rules! implement_lennard_jones_nd(
                 let max = 10.0 * self.epsilon / r;
                 return Some(Ok(dir * max.min(val)));
             }
+
+            fn get_interaction_information(&self) -> () {}
         }
     }
 );
@@ -150,16 +154,16 @@ impl<A, R, I1, I2, const D: usize>
         super::mechanics::VertexVector2<D>,
         super::mechanics::VertexVector2<D>,
         super::mechanics::VertexVector2<D>,
-        (Option<I1>, Option<I2>),
+        (I1, I2),
     > for VertexDerivedInteraction<A, R, I1, I2>
 where
     A: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I1>,
     R: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I2>,
 {
-    fn get_interaction_information(&self) -> Option<(Option<I1>, Option<I2>)> {
+    fn get_interaction_information(&self) -> (I1, I2) {
         let i1 = self.outside_interaction.get_interaction_information();
         let i2 = self.inside_interaction.get_interaction_information();
-        Some((i1, i2))
+        (i1, i2)
     }
 
     fn calculate_force_between(
@@ -168,7 +172,7 @@ where
         own_vel: &super::mechanics::VertexVector2<D>,
         ext_pos: &super::mechanics::VertexVector2<D>,
         ext_vel: &super::mechanics::VertexVector2<D>,
-        ext_information: &Option<(Option<I1>, Option<I2>)>,
+        ext_information: &(I1, I2),
     ) -> Option<Result<super::mechanics::VertexVector2<D>, CalcError>> {
         // TODO Reformulate this code:
         // Do not calculate interactions between vertices but rather between
@@ -217,10 +221,7 @@ where
         let mut total_force = ext_pos.clone() * 0.0;
 
         // Match the obtained interaction informations
-        let (inf1, inf2) = match ext_information {
-            Some(x) => x,
-            None => &(None, None),
-        };
+        let (inf1, inf2) = ext_information;
 
         // Pick one point from the external positions
         // and calculate which would be the nearest point on the own positions

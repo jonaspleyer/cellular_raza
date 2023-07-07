@@ -48,9 +48,7 @@ impl Cycle<StandardCell2D> for StandardCell2D {
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, ()> for StandardCell2D {
-    fn get_interaction_information(&self) -> Option<()> {
-        None
-    }
+    fn get_interaction_information(&self) -> () {}
 
     fn calculate_force_between(
         &self,
@@ -58,7 +56,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, ()> for StandardCell2
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        _ext_information: &Option<()>,
+        _ext_information: &(),
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = own_pos - ext_pos;
         let r = z.norm();

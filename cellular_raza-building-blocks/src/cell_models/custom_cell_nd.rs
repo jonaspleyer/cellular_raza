@@ -51,9 +51,7 @@ macro_rules! implement_custom_cell {
         }
 
         impl Interaction<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>, ()> for $name {
-            fn get_interaction_information(&self) -> Option<()> {
-                None
-            }
+            fn get_interaction_information(&self) -> () {}
 
             fn calculate_force_between(
                 &self,
@@ -61,7 +59,7 @@ macro_rules! implement_custom_cell {
                 _own_vel: &SVector<f64, $d>,
                 ext_pos: &SVector<f64, $d>,
                 _ext_vel: &SVector<f64, $d>,
-                _ext_information: &Option<()>,
+                _ext_information: &(),
             ) -> Option<Result<SVector<f64, $d>, CalcError>> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();

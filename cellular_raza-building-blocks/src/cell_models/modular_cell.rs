@@ -92,7 +92,7 @@ where
     For: Force,
     Int: Interaction<Pos, Vel, For, Inf>,
 {
-    fn get_interaction_information(&self) -> Option<Inf> {
+    fn get_interaction_information(&self) -> Inf {
         self.interaction.get_interaction_information()
     }
 
@@ -102,7 +102,7 @@ where
         own_vel: &Vel,
         ext_pos: &Pos,
         ext_vel: &Vel,
-        ext_information: &Option<Inf>,
+        ext_information: &Inf,
     ) -> Option<Result<For, CalcError>> {
         self.interaction.calculate_force_between(
             own_pos,
