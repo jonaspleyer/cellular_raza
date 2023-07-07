@@ -12,9 +12,7 @@ impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::D
 pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     /// Get additional information of cellular properties (ie. for cell-specific interactions).
     /// For now, this can also be used to get the mass of the other cell-agent. In the futuer, we will probably provide a custom function for this.
-    fn get_interaction_information(&self) -> Option<Inf> {
-        None
-    }
+    fn get_interaction_information(&self) -> Inf;
 
     /// Calculates the force (velocity-derivative) on the corresponding external position given external velocity.
     /// By providing velocities, we can calculate terms that are related to friction.
@@ -24,7 +22,7 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
         own_vel: &Vel,
         ext_pos: &Pos,
         ext_vel: &Vel,
-        ext_info: &Option<Inf>,
+        ext_info: &Inf,
     ) -> Option<Result<Force, CalcError>>;
     // TODO
     // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
