@@ -126,6 +126,10 @@ where
         self.cell.set_velocity(velocity);
     }
 
+    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
+        self.cell.set_random_variable(rng)
+    }
+
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {
         self.cell.calculate_increment(force)
     }

@@ -11,7 +11,7 @@ impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::D
 /// Trait describing force-interactions between cellular agents.
 pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     /// Get additional information of cellular properties (ie. for cell-specific interactions).
-    /// For now, this can also be used to get the mass of the other cell-agent. In the futuer, we will probably provide a custom function for this.
+    /// For now, this can also be used to get the mass of the other cell-agent. In the future, we will probably provide a custom function for this.
     fn get_interaction_information(&self) -> Inf;
 
     /// Calculates the force (velocity-derivative) on the corresponding external position given external velocity.

@@ -140,6 +140,13 @@ pub trait Mechanics<Pos, Vel, For> {
     /// Sets the cells current velocity.
     fn set_velocity(&mut self, velocity: &Vel);
 
+    /// Define a new random variable in case that the mechanics type contains a random aspect to its motion.
+    /// By default this function does nothing.
+    #[allow(unused)]
+    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
+        None
+    }
+
     /// Calculate the time-derivative of force and velocity given all the forces that act on the cell.
     /// Simple dampening effects should be included in this trait if not explicitly given by the [Voxel](super::domain::Voxel).
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError>;
