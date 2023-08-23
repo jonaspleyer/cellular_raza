@@ -128,6 +128,55 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MyMechanics {
+    pub pos: Vector3<f64>,
+    pub vel: Vector3<f64>,
+    pub dampening_constant: f64,
+    pub mass: f64,
+    pub random_travel_velocity: f64,
+    pub random_direction_travel: nalgebra::UnitVector3<f64>,
+    pub random_update_time: f64,
+}
+
+impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MyMechanics {
+    fn pos(&self) -> Vector3<f64> {
+        self.pos
+    }
+
+    fn velocity(&self) -> Vector3<f64> {
+        self.vel
+    }
+
+    fn set_pos(&mut self, p: &Vector3<f64>) {
+        self.pos = *p;
+    }
+
+    fn set_velocity(&mut self, v: &Vector3<f64>) {
+        self.vel = *v;
+    }
+
+    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
+        let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+        let psi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+        self.random_direction_travel = nalgebra::UnitVector3::new_normalize(Vector3::from([
+            phi.sin() * psi.cos(),
+            phi.sin() * psi.sin(),
+            phi.cos(),
+        ]));
+        Some(rng.gen_range(0.5..1.5) * self.random_update_time)
+    }
+
+    fn calculate_increment(
+        &self,
+        force: Vector3<f64>,
+    ) -> Result<(Vector3<f64>, Vector3<f64>), CalcError> {
+        let dx = self.vel + self.random_travel_velocity * self.random_direction_travel.into_inner();
+        let dv = force / self.mass - self.dampening_constant * self.vel;
+        Ok((dx, dv))
+    }
+}
+
 fn main() -> Result<(), SimulationError> {
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);

@@ -163,6 +163,8 @@ pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     inc_pos_back_2: Option<Pos>,
     inc_vel_back_1: Option<Vel>,
     inc_vel_back_2: Option<Vel>,
+
+    next_random_mechanics_update: Option<f64>,
 }
 
 impl<Pos, Vel, For, ConcVecIntracellular> Default
@@ -181,6 +183,8 @@ where
             inc_pos_back_2: None,
             inc_vel_back_1: None,
             inc_vel_back_2: None,
+
+            next_random_mechanics_update: Some(0.0),
         }
     }
 }
@@ -633,6 +637,17 @@ where
                     .iter_mut()
                     .map(|(cell, _)| self.domain.apply_boundary(cell))
                     .collect::<Result<(), BoundaryError>>()?;
+
+                vox.cells.iter_mut().for_each(|(cell, aux_storage)| {
+                    if let Some(next_time) = aux_storage.next_random_mechanics_update {
+                        if next_time <= *dt {
+                            aux_storage.next_random_mechanics_update =
+                                cell.set_random_variable(&mut vox.rng);
+                        } else {
+                            aux_storage.next_random_mechanics_update = Some(next_time - dt);
+                        }
+                    }
+                });
 
                 #[cfg(feature = "gradients")]
                 vox.cells
