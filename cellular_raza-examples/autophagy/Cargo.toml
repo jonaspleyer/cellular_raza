@@ -11,3 +11,5 @@ rand_chacha = { version="0.3.1" }
 nalgebra = { version="0.32" }
 cellular_raza = { path="../../cellular_raza", default-features=false }
 num = "0.4"
+itertools = "0.11"
+rayon = "1.7"
