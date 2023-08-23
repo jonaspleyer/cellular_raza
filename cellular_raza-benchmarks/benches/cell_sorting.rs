@@ -57,8 +57,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         let sigma = r / (self.cell_radius + ext_radius);
         let bound = 4.0 + 1.0 / sigma;
         let spatial_cutoff = (1.0
-            + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r)
-                .signum())
+            + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r).signum())
             * 0.5;
 
         // Calculate the strength of the interaction with correct bounds
