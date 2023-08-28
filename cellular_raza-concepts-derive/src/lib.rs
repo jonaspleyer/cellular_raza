@@ -21,31 +21,37 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
     };
     for field in data.fields.iter() {
         // Update Cycle
-        if field.attrs.iter().any(|x| match &x.meta {
-            syn::Meta::Path(path) => path.is_ident("Cycle"),
-            _ => false,
+        if let Some(_) = field.attrs.iter().find_map(|x| match &x.meta {
+            syn::Meta::Path(path) => {
+                if path.is_ident("Cycle") {
+                    Some(path)
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }) {
-            let name = &field.ident;
+            let field_type = &field.ty;
             let res2 = quote! {
                 impl #struct_generics Cycle<#struct_name> for #struct_name #struct_generics {
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: &f64,
-                        cell: &mut Cell,
+                        cell: &mut Self,
                     ) -> Option<CycleEvent> {
-                        self.#name.update_cycle(rng, dt, cell)
+                        #field_type::update_cycle(rng, dt, cell)
                     }
 
-                    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Cell) -> Result<Cell, DivisionError> {
-                        self.#name.divide(rng, cell)
+                    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Self) -> Result<Self, DivisionError> {
+                        #field_type::divide(rng, cell)
                     }
 
                     fn update_conditional_phased_death(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: &f64,
-                        cell: &mut Cell,
+                        cell: &mut Self,
                     ) -> Result<bool, DeathError> {
-                        self.#name.update_conditional_phased_death(rng, dt, cell)
+                        #field_type::update_conditional_phased_death(rng, dt, cell)
                     }
                 }
             };
