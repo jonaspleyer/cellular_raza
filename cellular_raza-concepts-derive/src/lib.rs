@@ -58,23 +58,34 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
             result.extend(TokenStream::from(res2));
         }
         // Update Mechanics
-        else if field.attrs.iter().any(|x| match &x.meta {
-            syn::Meta::Path(path) => path.is_ident("UpdateMechanics"),
-            _ => false,
+        else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+            syn::Meta::List(list) => {
+                if list.path.is_ident("Mechanics") {
+                    Some(list)
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }) {
+            let tokens = list.tokens.clone();
+            let stream = quote!((#tokens));
+            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
+            let mut elems = attr.elems.into_iter();
+            let position = elems.next().unwrap();
+            let velocity = elems.next().unwrap();
+            let force = elems.next().unwrap();
+
+            let tokens = list.tokens.clone();
             let name = &field.ident;
             let res2 = quote! {
-                // TODO this needs! to be checked!!
-                todo!();
-                impl #struct_generics <Pos, Vel, For> Mechanics<Pos, Vel, For> for #struct_name #struct_generics
-                where
-                    #name: Mechanics<Pos, Vel, For>,
+                impl #struct_generics Mechanics<#tokens> for #struct_name #struct_generics
                 {
-                    fn pos(&self) -> Pos {self.#name.pos()}
-                    fn velocity(&self) -> Vel {self.#name.velocity()}
-                    fn set_pos(&mut self, pos: &Pos) {self.#name.set_pos(pos)}
-                    fn set_velocity(&mut self, velocity: &Vel) {self.#name.set_velocity(velocity)}
-                    fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {
+                    fn pos(&self) -> #position {self.#name.pos()}
+                    fn velocity(&self) -> #velocity {self.#name.velocity()}
+                    fn set_pos(&mut self, pos: &#position) {self.#name.set_pos(pos)}
+                    fn set_velocity(&mut self, velocity: &#velocity) {self.#name.set_velocity(velocity)}
+                    fn calculate_increment(&self, force: #force) -> Result<(#position, #velocity), CalcError> {
                         self.#name.calculate_increment(force)
                     }
                 }
