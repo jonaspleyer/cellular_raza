@@ -5,7 +5,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
-#[proc_macro_derive(CellAgent, attributes(Cycle, Mechanics))]
+#[proc_macro_derive(CellAgent, attributes(Cycle, Mechanics, Interaction,))]
 pub fn my_macro(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let ast = parse_macro_input!(input as DeriveInput);
@@ -91,6 +91,49 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
                 }
             };
             result.extend(TokenStream::from(res2));
+        } else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+            syn::Meta::List(list) => {
+                if list.path.is_ident("Interaction") {
+                    Some(list)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }) {
+            let name = field.ident.clone();
+            let tokens = list.tokens.clone();
+            let stream = quote!((#tokens));
+            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
+            let mut elems = attr.elems.into_iter();
+            let position = elems.next().unwrap();
+            let velocity = elems.next().unwrap();
+            let force = elems.next().unwrap();
+            let inf = match elems.next() {
+                Some(t) => t,
+                None => syn::parse2(quote!(())).unwrap(),
+            };
+            let res = quote! {
+                impl Interaction<#position, #velocity, #force, #inf> for #struct_name #struct_generics {
+                    fn get_interaction_information(&self) -> #inf {
+                        self.#name.get_interaction_information()
+                    }
+
+                    fn calculate_force_between(
+                        &self,
+                        own_pos: &#position,
+                        own_vel: &#velocity,
+                        ext_pos: &#position,
+                        ext_vel: &#velocity,
+                        ext_info: &#inf,
+                    ) -> Option<Result<#force, CalcError>> {
+                        self.#name.calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
+                    }
+
+                    // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
+                }
+            };
+            result.extend(TokenStream::from(res));
         }
     }
 
