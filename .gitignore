@@ -6,3 +6,4 @@ out
 *.png
 *.txt
 ffmpeg*
+venv
