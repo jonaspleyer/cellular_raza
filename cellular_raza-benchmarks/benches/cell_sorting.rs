@@ -150,7 +150,7 @@ fn run_simulation(
 fn cell_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("cell_scaling");
 
-    for n_cells in [10, 50, 100, 500, 1000, 5000].into_iter() {
+    for n_cells in [10, 50, 100, 500, 1000, 5000, 10_000, 50_000, 100_000].into_iter() {
         group.bench_with_input(
             BenchmarkId::new("n_cells-domain_size", n_cells),
             &n_cells,
@@ -174,13 +174,13 @@ fn cell_scaling(c: &mut Criterion) {
 fn thread_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("thread_scaling");
 
-    for n_threads in 1..9 {
+    for n_threads in 1..48 {
         group.sample_size(10);
         group.bench_with_input(
             BenchmarkId::new("n_threads", n_threads),
             &n_threads,
             |b, &n_threads| {
-                b.iter(|| run_simulation(1_000, 1_000, n_threads as usize, 100.0, 5, 0.25))
+                b.iter(|| run_simulation(10_000, 10_000, n_threads as usize, 210.0, 5, 0.25))
             },
         );
     }
