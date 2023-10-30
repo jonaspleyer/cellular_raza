@@ -77,7 +77,7 @@ impl StorageConfig {
         }
     }
 
-    pub(crate) fn get_location(&self) -> std::path::PathBuf {
+    pub fn get_location(&self) -> std::path::PathBuf {
         self.location.clone()
     }
 }
