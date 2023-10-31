@@ -9,7 +9,6 @@ decorator==5.1.1
 executing==2.0.1
 fonttools==4.43.1
 idna==3.4
-imageio=2.31.6
 importlib==1.0.4
 ipykernel==6.26.0
 ipython==8.17.0
