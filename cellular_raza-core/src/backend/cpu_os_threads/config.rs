@@ -188,11 +188,11 @@ impl Default for PlottingConfig {
 }
 
 #[derive(Clone)]
-pub struct Strategies<Vox>
+pub struct Strategies<'a, Vox>
 where
-    Vox: Clone,
+    Vox: 'a + Clone,
 {
-    pub voxel_definition_strategies: Option<fn(&mut Vox)>,
+    pub voxel_definition_strategies: &'a dyn Fn(&mut Vox),
 }
 
 impl<
@@ -277,10 +277,11 @@ where
     where
         Cel: Sized,
     {
+        let no_strategy = |v: &mut Vox| {};
         Self::initialize_with_strategies(
             setup,
             Strategies {
-                voxel_definition_strategies: None,
+                voxel_definition_strategies: &no_strategy,
             },
         )
     }
@@ -613,12 +614,7 @@ where
                     >::open_or_create_with_priority(&storage_voxels_path, i as u64, &setup.storage.storage_priority)
                     .unwrap();
 
-                voxels.iter_mut().for_each(|(_, voxelbox)| {
-                    match strategies.voxel_definition_strategies {
-                        Some(strategy) => strategy(&mut voxelbox.voxel),
-                        None => (),
-                    };
-                });
+                voxels.iter_mut().for_each(|(_, voxelbox)| (strategies.voxel_definition_strategies)(&mut voxelbox.voxel));
 
                 // Define the container for many voxels
                 let cont = MultiVoxelContainer {
