@@ -7,14 +7,21 @@ use std::hash::Hash;
 use rand::SeedableRng;
 
 use super::aux_storage::*;
-use super::concepts::*;
 use super::errors::*;
 use super::simulation_flow::*;
+use cellular_raza_concepts::domain_new::*;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 
 pub struct SimulationSupervisor<I, Sb> {
     subdomain_boxes: HashMap<I, Sb>,
+}
+
+/// Simple trait that will be implemented by a
+pub trait Supervisor {
+    type SimulationResult;
+
+    fn solve_full_system(self) -> Self::SimulationResult;
 }
 
 /// Stores information related to a voxel of the physical simulation domain.
@@ -182,7 +189,7 @@ impl<C, A> Voxel<C, A> {
 }
 
 impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
-    for Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>, BoundaryError>
+    for SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
@@ -195,7 +202,7 @@ where
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> Result<SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>, BoundaryError> {
+    ) -> SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>> {
         // TODO do not unwrap
         let mut syncers = Sy::from_map(&decomposed_domain.neighbor_map).unwrap();
         let mut communicators = Com::from_map(&decomposed_domain.neighbor_map).unwrap();
@@ -275,11 +282,24 @@ where
                 subdomain_box.insert_cells(&mut cells)?;
                 Ok((index, subdomain_box))
             })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<HashMap<_, _>, BoundaryError>>()
+            .unwrap();
         let simulation_supervisor = SimulationSupervisor { subdomain_boxes };
-        Ok(simulation_supervisor)
+        simulation_supervisor
     }
 }
+
+/* #[cfg(test)]
+pub mod test_construction {
+    use super::*;
+
+    #[test]
+    fn test_construct() -> Result<(), SimulationError> {
+        let simulation_setup = 1_f64;
+        let mut simulation_result = run_full_simulation!(simulation_setup, [Cycle, Mechanics]).unwrap();
+        panic!("");
+    }
+}*/
 
 #[doc(hidden)]
 #[macro_export]
@@ -297,11 +317,95 @@ where
 /// | `ExtracellularReactions` | [ExtracellularMechanics](cellular_raza_concepts::domain::ExtracellularMechanics) | |
 /// | `Gradients` | [Gradients](cellular_raza_concepts::domain::ExtracellularMechanics) | `ExtracellularReactions` |
 ///
-macro_rules! construct_supervisor(
-    () => {};
+macro_rules! run_full_simulation(
+    ($simulation_setup:ident, $settings:ident, [$($ids:ident),+]) => {{
+        // Also construct the auxiliary storage
+        #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+        // TODO #[derive(cellular_raza_core_derive::AuxStorage)]
+        struct AuxStorage {
+            // TODO insert fields depending on the specified generics
+        }
+
+        println!("#######################################################################\n\n");
+
+        // TODO Implement from decomposerror
+        let mut decomposed_domain = $simulation_setup.decompose($settings.n_threads).unwrap();
+        let n_threads = decomposed_domain.n_subdomains;
+        let mut index_subdomain_cells = decomposed_domain.index_subdomain_cells;
+
+        for (index, subdomain, cells) in index_subdomain_cells.iter_mut() {
+            // Split the subdomains into threads via a function
+
+            // TODO
+            for _ in 0..4 {
+                // Call these update functions individually in each thread
+                $crate::contains_ident!($crate::implement_step_1!(subdomain, Mechanics), Mechanics, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_1!(subdomain, Cycle), Cycle, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_1!(subdomain, Interaction), Interaction, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_1!(subdomain, CellularReactions), CellularReactions, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_1!(subdomain, ExtracellularReactions), ExtracellularReactions, [$($ids),+]);
+
+                // self.sync();
+
+                $crate::contains_ident!($crate::implement_step_2!(subdomain, Mechanics), Mechanics, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_2!(subdomain, Cycle), Cycle, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_2!(subdomain, Interaction), Interaction, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_2!(subdomain, CellularReactions), CellularReactions, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_2!(subdomain, ExtracellularReactions), ExtracellularReactions, [$($ids),+]);
+
+                // self.sync();
+
+                $crate::contains_ident!($crate::implement_step_3!(subdomain, Mechanics), Mechanics, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_3!(subdomain, Cycle), Cycle, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_3!(subdomain, Interaction), Interaction, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_3!(subdomain, CellularReactions), CellularReactions, [$($ids),+]);
+                $crate::contains_ident!($crate::implement_step_3!(subdomain, ExtracellularReactions), ExtracellularReactions, [$($ids),+]);
+
+                // self.sync();
+
+                //self.sort_cells_in_voxels_step_2()?;
+            }
+        }
+
+        // let decomposed_domain = $simulation_setup.decompose()?;
+        // let supervisor = SimulationSupervisor::from(decomposed_domain);
+        println!("\n\n#######################################################################");
+        // SupervisorNew(supervisor)
+        core::result::Result::<_, SimulationError>::Ok(1)
+    }};
 );
 #[doc(inline)]
-pub use crate::construct_supervisor;
+pub use crate::run_full_simulation;
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! implement_step_1(
+    ($me:ident, Mechanics) => {println!("Mechanics 1");};//$me.update_mechanics_step_1()?;};
+    ($me:ident, Cycle) => {};
+    ($me:ident, Interaction) => {};
+    ($me:ident, CellularReactions) => {};
+    ($me:ident, ExtracellularReactions) => {};
+);
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! implement_step_2(
+    ($me:ident, Mechanics) => {println!("Mechanics 2");};
+    ($me:ident, Cycle) => {};
+    ($me:ident, Interaction) => {};
+    ($me:ident, CellularReactions) => {};
+    ($me:ident, ExtracellularReactions) => {};
+);
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! implement_step_3(
+    ($me:ident, Mechanics) => {println!("Mechanics 3");};
+    ($me:ident, Cycle) => {};
+    ($me:ident, Interaction) => {};
+    ($me:ident, CellularReactions) => {};
+    ($me:ident, ExtracellularReactions) => {};
+);
 
 #[doc(hidden)]
 #[macro_export]
@@ -338,7 +442,7 @@ pub use crate::construct_supervisor;
 macro_rules! contains_ident(
     ($expression:expr, $id1:ident, [$($ids:ident),+]) => {
         $(
-            cellular_raza_core_derive::identical!($id1, $ids, $expression);
+            $crate::core_derive::identical!($id1, $ids, $expression);
         )+
     };
 );
@@ -423,25 +527,39 @@ where
         });
         Ok(())
     }
+}
 
-    pub fn update_mechanics_step_1<Pos, Vel, For, Inf, const N: usize>(
-        &mut self,
-    ) -> Result<(), SimulationError>
-    where
-        Pos: Clone,
-        Vel: Clone,
-        Inf: Clone,
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-        A: UpdateMechanics<Pos, Vel, For, N>,
-        For: Clone
-            + core::ops::AddAssign
-            + core::ops::Mul<f64, Output = For>
-            + core::ops::Neg<Output = For>
-            + num::Zero,
-        <S as super::concepts::SubDomain<C>>::VoxelIndex: Ord,
-        Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
-    {
+pub trait SubdomainUpdateMechanics<Pos, Vel, For, Inf, const N: usize, const ON: bool> {
+    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError>;
+}
+
+impl<T, Pos, Vel, For, Inf, const N: usize> SubdomainUpdateMechanics<Pos, Vel, For, Inf, N, false>
+    for T
+{
+    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError> {
+        Ok(())
+    }
+}
+
+impl<S, C, A, Com, Sy, Pos, Vel, For, Inf, const N: usize>
+    SubdomainUpdateMechanics<Pos, Vel, For, Inf, N, true> for SubDomainBox<S, C, A, Com, Sy>
+where
+    S: SubDomain<C>,
+    Pos: Clone,
+    Vel: Clone,
+    Inf: Clone,
+    C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+    C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+    A: UpdateMechanics<Pos, Vel, For, N>,
+    For: Clone
+        + core::ops::AddAssign
+        + core::ops::Mul<f64, Output = For>
+        + core::ops::Neg<Output = For>
+        + num::Zero,
+    <S as SubDomain<C>>::VoxelIndex: Ord,
+    Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
+{
+    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError> {
         self.voxels
             .iter_mut()
             .map(|(_, vox)| vox.calculate_force_between_cells_internally())

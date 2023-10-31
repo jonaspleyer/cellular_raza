@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 /// Identifier for voxels used internally to get rid of user-defined ones.
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-pub struct VoxelPlainIndex(usize);
+// #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+pub type VoxelPlainIndex = u128;
 
 /// Identifer or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
@@ -13,9 +13,6 @@ pub struct CellIdentifier(VoxelPlainIndex, u64);
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
 pub mod aux_storage;
-
-/// Preliminary concepts which are being used for testing.
-pub mod concepts;
 
 pub mod errors;
 

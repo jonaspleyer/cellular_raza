@@ -111,6 +111,9 @@ pub mod cycle;
 /// Traits and types used to define a domain where cells live in.
 pub mod domain;
 
+/// traits and types used to define a domain where cells live in (new Version, will replace [domain] eventually).
+pub mod domain_new;
+
 /// Error types which can arise during the simulation.
 ///
 /// For Backends it may be useful to define a singular error type (eg. `SimulationError`) which should be derivable from errors

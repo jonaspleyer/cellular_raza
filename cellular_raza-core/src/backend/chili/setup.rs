@@ -1,5 +1,6 @@
-use super::concepts::*;
+use cellular_raza_concepts::domain_new::*;
 
+use crate::storage::concepts::StorageOptions;
 use cellular_raza_concepts::errors::DecomposeError;
 
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,14 @@ pub struct SimulationSetup<C, D> {
     pub cells: Vec<C>,
     /// The physical simulation domain which is specified by the [Domain] trait.
     pub domain: D,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Settings {
+    pub n_threads: core::num::NonZeroUsize,
+    pub time: crate::backend::cpu_os_threads::config::TimeSetup,
+    pub storage: crate::backend::cpu_os_threads::config::StorageConfig,
+    pub show_progressbar: bool,
 }
 
 impl<C, D> SimulationSetup<C, D> {
@@ -48,8 +57,8 @@ impl<C, D> SimulationSetup<C, D> {
         S: SubDomain<C>,
     {
         todo!();
-        let max_n_threads = std::thread::available_parallelism()?;
-        self.decompose(max_n_threads.into())
+        // let max_n_threads = std::thread::available_parallelism()?;
+        // self.decompose(max_n_threads.into())
     }
 }
 
@@ -89,21 +98,6 @@ mod test {
     impl Domain<f64, TestSubDomain> for TestDomain {
         type SubDomainIndex = usize;
         type VoxelIndex = VoxelIndex;
-
-        fn get_neighbor_subdomains(
-            &self,
-            index: &Self::SubDomainIndex,
-        ) -> Vec<Self::SubDomainIndex> {
-            if self.n_voxels >= 1 && *index == 0 {
-                vec![1]
-            } else if self.n_voxels >= 1 && *index == self.n_voxels - 1 {
-                vec![self.n_voxels - 1]
-            } else if self.n_voxels >= 1 {
-                vec![index - 1, index + 1]
-            } else {
-                Vec::new()
-            }
-        }
 
         fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
             (0..self.n_voxels).map(|i| VoxelIndex(i)).collect()
@@ -178,10 +172,7 @@ mod test {
                 .map(|(_, subdomain, _)| subdomain.get_all_indices())
                 .flatten()
                 .map(|voxel_index| {
-                    let res = (
-                        voxel_index,
-                        super::super::VoxelPlainIndex(voxel_index_counter),
-                    );
+                    let res = (voxel_index, voxel_index_counter);
                     voxel_index_counter += 1;
                     res
                 })
@@ -303,29 +294,6 @@ mod test {
             subdomain.apply_boundary(&mut cell_outside).unwrap();
             assert!(cell_outside >= min);
             assert!(cell_outside <= max);
-        }
-    }
-
-    #[test]
-    fn test_neighbors() {
-        let min = 0.0;
-        let max = 100.0;
-        let domain = TestDomain {
-            min,
-            max,
-            n_voxels: 8,
-            rng_seed: 0,
-        };
-
-        for i in 0..domain.n_voxels {
-            let neighbor_subdomain_indices = domain.get_neighbor_subdomains(&i);
-            if i == 0 {
-                assert_eq!(neighbor_subdomain_indices, vec![1]);
-            } else if i == domain.n_voxels - 1 {
-                assert_eq!(neighbor_subdomain_indices, vec![domain.n_voxels - 1]);
-            } else {
-                assert_eq!(neighbor_subdomain_indices, vec![i - 1, i + 1]);
-            }
         }
     }
 
