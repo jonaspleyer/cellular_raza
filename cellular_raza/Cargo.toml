@@ -31,8 +31,7 @@ path = "../cellular_raza-concepts-derive"
 version = "0.0.3"
 
 [features]
-default = ["fluid_mechanics", "gradients"]
+default = ["gradients"]
 
 # Simulation aspects
-fluid_mechanics = []
-gradients = ["fluid_mechanics"]
+gradients = []

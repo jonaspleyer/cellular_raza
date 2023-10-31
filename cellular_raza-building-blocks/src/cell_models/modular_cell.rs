@@ -33,7 +33,6 @@ macro_rules! define_no_cellular_reactions {
             fn calculate_intra_and_extracellular_reaction_increment(
                 &self,
                 _internal_concentration_vector: &$conc_vec_intracellular,
-                #[cfg(feature = "fluid_mechanics")]
                 _external_concentration_vector: &$conc_vec_extracellular,
             ) -> Result<
                 ($conc_vec_intracellular, $conc_vec_extracellular),
@@ -148,12 +147,11 @@ where
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
         internal_concentration_vector: &ConcVecIntracellular,
-        #[cfg(feature = "fluid_mechanics")] external_concentration_vector: &ConcVecExtracellular,
+         external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError> {
         self.cellular_reactions
             .calculate_intra_and_extracellular_reaction_increment(
                 internal_concentration_vector,
-                #[cfg(feature = "fluid_mechanics")]
                 external_concentration_vector,
             )
     }

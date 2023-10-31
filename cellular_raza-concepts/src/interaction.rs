@@ -52,6 +52,6 @@ pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVec
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
         internal_concentration_vector: &ConcVecIntracellular,
-        #[cfg(feature = "fluid_mechanics")] external_concentration_vector: &ConcVecExtracellular,
+        external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError>;
 }

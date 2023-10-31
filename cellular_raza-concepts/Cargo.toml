@@ -21,8 +21,7 @@ plotters = { workspace = true }
 rand = { workspace = true }
 
 [features]
-default = ["fluid_mechanics", "gradients"]
+default = ["gradients"]
 
 # Simulation aspects
-fluid_mechanics = []
-gradients = ["fluid_mechanics"]
+gradients = []

@@ -597,7 +597,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                             .map(|ind| {
                                 let min = [$(self.min[$k] +    ind[$k]  as f64*self.dx_voxels[$k]),+];
                                 let max = [$(self.min[$k] + (1+ind[$k]) as f64*self.dx_voxels[$k]),+];
-                                
+
                                 $voxel_name {
                                     min,
                                     max,

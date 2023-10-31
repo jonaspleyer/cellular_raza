@@ -689,7 +689,7 @@ where
                 voxelbox.cells.iter_mut().map(
                     |(cellbox, _aux_storage)| -> Result<(), SimulationError> {
                         let internal_concentration_vector = cellbox.cell.get_intracellular();
-                        #[cfg(feature = "fluid_mechanics")]
+
                         let external_concentration_vector = voxelbox
                             .voxel
                             .get_extracellular_at_point(&cellbox.cell.pos())?;
@@ -697,7 +697,6 @@ where
                             .cell
                             .calculate_intra_and_extracellular_reaction_increment(
                                 &internal_concentration_vector,
-                                #[cfg(feature = "fluid_mechanics")]
                                 &external_concentration_vector,
                             )?;
                         // aux_storage.intracellular_concentration_increment += increment_intracellular;
@@ -735,7 +734,7 @@ where
         Ok(())
     }
 
-    #[cfg(feature = "fluid_mechanics")]
+
     pub fn update_fluid_mechanics_step_1<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -780,7 +779,7 @@ where
         Ok(())
     }
 
-    #[cfg(feature = "fluid_mechanics")]
+
     pub fn update_fluid_mechanics_step_2<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -821,7 +820,7 @@ where
         Ok(())
     }
 
-    #[cfg(feature = "fluid_mechanics")]
+
     pub fn update_fluid_mechanics_step_3<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,
@@ -1197,7 +1196,7 @@ where
     {
         // These methods are used for sending requests and gathering information in general
         // This gathers information of forces acting between cells and send between threads
-        #[cfg(feature = "fluid_mechanics")]
+
         self.update_fluid_mechanics_step_1()?;
 
         // Gather boundary conditions between voxels and domain boundaries and send between threads
@@ -1207,7 +1206,7 @@ where
         // The goal is to have as few as possible synchronizations
         self.barrier.wait();
 
-        #[cfg(feature = "fluid_mechanics")]
+
         self.update_fluid_mechanics_step_2()?;
 
         self.update_cellular_mechanics_step_2()?;
@@ -1217,7 +1216,7 @@ where
         self.update_cellular_reactions(dt)?;
 
         // These are the true update steps where cell agents are modified the order here may play a role!
-        #[cfg(feature = "fluid_mechanics")]
+
         self.update_fluid_mechanics_step_3(dt)?;
 
         self.update_cellular_mechanics_step_3(dt)?;
