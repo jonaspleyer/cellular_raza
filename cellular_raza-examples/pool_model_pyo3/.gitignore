@@ -1,0 +1,7 @@
+target
+out
+*.png
+*.mp4
+Cargo.lock
+__pycache__
+
