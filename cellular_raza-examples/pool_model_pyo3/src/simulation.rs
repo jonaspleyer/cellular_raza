@@ -114,8 +114,8 @@ impl Default for SimulationSettings {
             bacteria_mechanics_velocity_reduction: 2.0,
             bacteria_mechanics_radius: 6.0,
 
-            bacteria_interaction_potential_strength: 1.0,
-            bacteria_interaction_relative_range: 0.5,
+            bacteria_interaction_potential_strength: 0.3,
+            bacteria_interaction_relative_range: 1.5,
 
             bacteria_cycle_division_age_max: 70.0,
             bacteria_cycle_growth_rate: 0.1,
