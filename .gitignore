@@ -6,4 +6,5 @@ out
 *.png
 *.txt
 ffmpeg*
-venv
+.venv
+.vscode
