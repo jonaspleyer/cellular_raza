@@ -5,8 +5,42 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
+/// Derive [concepts](cellular_raza_concepts)
+///
+/// This macro allows to simply derive already implemented concepts
+/// from struct fields.
+/// Currently the only allowed notation is by defining macros with curly braces.
+/// ```ignore
+/// #[derive(CellAgent)]
+/// struct MyCell {
+///     #[Cycle]
+///     cycle: MyCycle,
+///     ...
+/// }
+/// ```
+/// Some attributes also require to specify types as well.
+/// ```ignore
+/// struct MyCell {
+///     #[Mechanics([f64; 3], [f64; 3], [f64; 3])]
+///     interaction: MyMechanics,
+///     ...
+/// }
+/// ```
+/// A summary can be seen in the following table
+///
+/// | Attribute | Type Arguments |
+/// | --- | --- |
+/// | `Cycle` | - |
+/// | Mechanics | `(Pos, Vel, For)` The position, velocity and force types. |
+/// | Interaction | `(Pos, Vel, For, Inf=())` The position, velocity, force and information types. The last one is optional. |
+/// | CellularReactions | `(ConcVecIntracellular, ConcVecExtracellular)` The  types for intra- and extracellular concentraitons. |
+/// | InteractionExtracellularGradient | `(ConcGradientExtracellular,)` The type of extracellular gradient. |
+///
+/// Notice that all type arguments need to be a list.
+/// Thus we need to insert a comma at the end if we only have one entry.
+/// See the `InteractionExtracellularGradient` attribute.
 #[proc_macro_derive(CellAgent, attributes(Cycle, Mechanics, Interaction, CellularReactions,InteractionExtracellularGradient))]
-pub fn my_macro(input: TokenStream) -> TokenStream {
+pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let ast = parse_macro_input!(input as DeriveInput);
 
