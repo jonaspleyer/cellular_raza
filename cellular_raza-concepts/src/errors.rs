@@ -24,6 +24,31 @@ macro_rules! define_errors {
     }
 }
 
+/// Error during decomposition of a SimulationDomain into multiple subdomains
+#[derive(Clone, Debug)]
+pub enum DecomposeError {
+    /// Generic error encountered during domain-decomposition
+    Generic(String),
+    /// [BoundaryError] which is encountered during domain-decomposition
+    BoundaryError(BoundaryError),
+    /// [IndexError] encountered during domain-decomposition
+    IndexError(IndexError),
+}
+
+impl Display for DecomposeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Error for DecomposeError {}
+
+impl From<BoundaryError> for DecomposeError {
+    fn from(value: BoundaryError) -> Self {
+        DecomposeError::BoundaryError(value)
+    }
+}
+
 define_errors!(
     (SetupError, "Occurs during setup of a new simulation"),
     (CalcError, "General Calculation Error"),
@@ -31,10 +56,10 @@ define_errors!(
         StepsizeError,
         "Error occuring when choosing a non-appropriate stepsize"
     ),
-    (
-        DecomposeError,
-        "Error during decomposition of a SimulationDomain into multiple subdomains"
-    ),
+    // (
+    //     DecomposeError,
+    //     "Error during decomposition of a SimulationDomain into multiple subdomains"
+    // ),
     (DivisionError, "Errors related to a cell dividing process"),
     (
         DeathError,
@@ -62,7 +87,7 @@ define_errors!(
 
 impl From<std::io::Error> for DecomposeError {
     fn from(value: std::io::Error) -> Self {
-        DecomposeError(format!("{}", value))
+        DecomposeError::BoundaryError(BoundaryError(format!("{}", value)))
     }
 }
 
