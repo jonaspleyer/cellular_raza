@@ -103,10 +103,10 @@ impl Default for SimulationSettings {
 
             domain_size,
 
-            starting_domain_x_low: domain_size/2.0 - 150.0,
-            starting_domain_x_high: domain_size/2.0 + 150.0,
-            starting_domain_y_low: domain_size/2.0 - 150.0,
-            starting_domain_y_high: domain_size/2.0 + 150.0,
+            starting_domain_x_low: domain_size / 2.0 - 150.0,
+            starting_domain_x_high: domain_size / 2.0 + 150.0,
+            starting_domain_y_low: domain_size / 2.0 - 150.0,
+            starting_domain_y_high: domain_size / 2.0 + 150.0,
 
             // BACTERIA SETTINGS
             n_bacteria_initial: 400,
@@ -133,7 +133,7 @@ impl Default for SimulationSettings {
             degradation_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
             secretion_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
             uptake_rate: [0.05; NUMBER_OF_REACTION_COMPONENTS],
-            
+
             // SIMULATION FLOW SETTINGS
             n_times: 20_001,
             dt: 0.01,
@@ -156,15 +156,23 @@ impl SimulationSettings {
     }
 }
 
-pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std::path::PathBuf, SimulationError> {
+pub fn run_simulation_rs(
+    simulation_settings: SimulationSettings,
+) -> Result<std::path::PathBuf, SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     let cells = (0..simulation_settings.n_bacteria_initial)
         .map(|_| {
-            let x = rng.gen_range(simulation_settings.starting_domain_x_low..simulation_settings.starting_domain_x_high);
-            let y = rng.gen_range(simulation_settings.starting_domain_y_low..simulation_settings.starting_domain_y_high);
+            let x = rng.gen_range(
+                simulation_settings.starting_domain_x_low
+                    ..simulation_settings.starting_domain_x_high,
+            );
+            let y = rng.gen_range(
+                simulation_settings.starting_domain_y_low
+                    ..simulation_settings.starting_domain_y_high,
+            );
 
             let pos = Vector2::from([x, y]);
             Bacteria {
@@ -184,11 +192,14 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
                 ),
                 interaction: BacteriaInteraction {
                     potential_strength: simulation_settings.bacteria_interaction_potential_strength,
-                    relative_interaction_range: simulation_settings.bacteria_interaction_relative_range,
+                    relative_interaction_range: simulation_settings
+                        .bacteria_interaction_relative_range,
                     cell_radius: simulation_settings.bacteria_mechanics_radius,
                 },
                 cellular_reactions: BacteriaReactions {
-                    intracellular_concentrations: simulation_settings.intracellular_concentrations.into(),
+                    intracellular_concentrations: simulation_settings
+                        .intracellular_concentrations
+                        .into(),
                     turnover_rate: simulation_settings.turnover_rate.into(),
                     production_term: simulation_settings.production_term.into(),
                     degradation_rate: simulation_settings.degradation_rate.into(),
@@ -201,12 +212,21 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
         .collect::<Vec<_>>();
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let domain = CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [simulation_settings.domain_size; 2], [3; 2])?;
+    let domain = CartesianCuboid2::from_boundaries_and_n_voxels(
+        [0.0; 2],
+        [simulation_settings.domain_size; 2],
+        [3; 2],
+    )?;
 
     let time = TimeSetup {
         t_start: 0.0,
         t_eval: (0..simulation_settings.n_times)
-            .map(|n| (n as f64 * simulation_settings.dt, n % simulation_settings.save_interval == 0))
+            .map(|n| {
+                (
+                    n as f64 * simulation_settings.dt,
+                    n % simulation_settings.save_interval == 0,
+                )
+            })
             .collect(),
     };
 
@@ -225,19 +245,23 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
         Storage: storage
     );
 
-    let voxel_definition_strategy = |voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>| {
-        voxel.diffusion_constant = ReactionVector::from([simulation_settings.voxel_food_diffusion_constant]);
-        voxel.extracellular_concentrations = ReactionVector::from([simulation_settings.voxel_food_initial_concentration]);
-        voxel.degradation_rate = ReactionVector::zero();
-        voxel.production_rate = ReactionVector::zero();
-    };
+    let voxel_definition_strategy =
+        |voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>| {
+            voxel.diffusion_constant =
+                ReactionVector::from([simulation_settings.voxel_food_diffusion_constant]);
+            voxel.extracellular_concentrations =
+                ReactionVector::from([simulation_settings.voxel_food_initial_concentration]);
+            voxel.degradation_rate = ReactionVector::zero();
+            voxel.production_rate = ReactionVector::zero();
+        };
 
     let strategies = Strategies {
         voxel_definition_strategies: &voxel_definition_strategy,
     };
 
     // let simulation_result = run_full_simulation!(setup, settings, [Mechanics, Interaction, Cycle])?;
-    let mut supervisor = SimulationSupervisor::initialize_with_strategies(simulation_setup, strategies);
+    let mut supervisor =
+        SimulationSupervisor::initialize_with_strategies(simulation_setup, strategies);
 
     let simulation_result = supervisor.run_full_sim().unwrap();
 

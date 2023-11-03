@@ -39,7 +39,16 @@ use syn::{parse_macro_input, DeriveInput};
 /// Notice that all type arguments need to be a list.
 /// Thus we need to insert a comma at the end if we only have one entry.
 /// See the `InteractionExtracellularGradient` attribute.
-#[proc_macro_derive(CellAgent, attributes(Cycle, Mechanics, Interaction, CellularReactions,InteractionExtracellularGradient))]
+#[proc_macro_derive(
+    CellAgent,
+    attributes(
+        Cycle,
+        Mechanics,
+        Interaction,
+        CellularReactions,
+        InteractionExtracellularGradient
+    )
+)]
 pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let ast = parse_macro_input!(input as DeriveInput);
@@ -184,7 +193,10 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
             let mut elems = attr.elems.into_iter();
             let concvecintracellular = elems.next().unwrap();
-            let concvecextracellular = elems.next().or_else(|| Some(concvecintracellular.clone())).unwrap();
+            let concvecextracellular = elems
+                .next()
+                .or_else(|| Some(concvecintracellular.clone()))
+                .unwrap();
             let res = quote! {
                 impl #struct_generics CellularReactions<#concvecintracellular, #concvecextracellular> for #struct_name #struct_generics {
                     fn get_intracellular(&self) -> #concvecintracellular {

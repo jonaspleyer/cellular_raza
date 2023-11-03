@@ -8,11 +8,17 @@ use pyo3::prelude::*;
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
-pub type MyCellType = ModularCell<BacteriaMechanicsModel2D, BacteriaInteraction, BacteriaCycle, BacteriaReactions, GradientSensing>;
+pub type MyCellType = ModularCell<
+    BacteriaMechanicsModel2D,
+    BacteriaInteraction,
+    BacteriaCycle,
+    BacteriaReactions,
+    GradientSensing,
+>;
 
 use cellular_raza::concepts_derive::*;
 
-#[derive(Clone,Debug,Serialize,Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct BacteriaMechanicsModel2D {
     pub pos: Vector2<f64>,
@@ -67,31 +73,33 @@ impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for BacteriaMechanicsMo
         self.vel = *v;
     }
 
-    fn calculate_increment(&self, force: Vector2<f64>) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
+    fn calculate_increment(
+        &self,
+        force: Vector2<f64>,
+    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         let dx = self.vel;
-        let dv = force/self.mass - self.dampening_constant * self.vel;
+        let dv = force / self.mass - self.dampening_constant * self.vel;
         Ok((dx, dv))
     }
 }
-
 
 #[derive(Clone, CellAgent, Deserialize, Serialize)]
 #[pyclass]
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     #[pyo3(get, set)]
-    pub  mechanics: BacteriaMechanicsModel2D,
+    pub mechanics: BacteriaMechanicsModel2D,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
     #[pyo3(get, set)]
-    pub  interaction: BacteriaInteraction,
+    pub interaction: BacteriaInteraction,
     #[Cycle]
     #[pyo3(get, set)]
-    pub  cycle: BacteriaCycle,
+    pub cycle: BacteriaCycle,
     #[CellularReactions(nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>,)]
     #[pyo3(get, set)]
-    pub  cellular_reactions: BacteriaReactions,
+    pub cellular_reactions: BacteriaReactions,
     #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,)]
-    pub  interactionextracellulargradient: NoExtracellularGradientSensing,
+    pub interactionextracellulargradient: NoExtracellularGradientSensing,
 }
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]

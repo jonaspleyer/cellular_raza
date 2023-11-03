@@ -1,7 +1,7 @@
 mod simulation;
 
+use pyo3::{exceptions::PyValueError, prelude::*};
 use simulation::*;
-use pyo3::{prelude::*, exceptions::PyValueError};
 
 /// Python version function of [run_simulation](simulation::run_simulation)
 #[pyfunction]

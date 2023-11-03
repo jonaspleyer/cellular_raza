@@ -155,22 +155,11 @@ fn cell_scaling(c: &mut Criterion) {
         let n_cells = 10 * 4_usize.pow(i);
         // The domain is sliced into voxels of size [18.0; 3]
         // Thus we want to have domains with size that is a multiplicative of 18.0
-        let domain_size = 36_f64 * 4_f64.powf(1.0/3.0 * i as f64);
+        let domain_size = 36_f64 * 4_f64.powf(1.0 / 3.0 * i as f64);
         group.bench_with_input(
             BenchmarkId::new("n_cells-domain_size", n_cells),
             &n_cells,
-            |b, &n_cells| {
-                b.iter(|| {
-                    run_simulation(
-                        n_cells,
-                        n_cells,
-                        1,
-                        domain_size,
-                        10,
-                        0.25,
-                    )
-                })
-            },
+            |b, &n_cells| b.iter(|| run_simulation(n_cells, n_cells, 1, domain_size, 10, 0.25)),
         );
     }
     group.finish();
@@ -193,9 +182,5 @@ fn thread_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    cell_scaling,
-    thread_scaling
-);
+criterion_group!(benches, cell_scaling, thread_scaling);
 criterion_main!(benches);

@@ -734,7 +734,6 @@ where
         Ok(())
     }
 
-
     pub fn update_fluid_mechanics_step_1<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -779,7 +778,6 @@ where
         Ok(())
     }
 
-
     pub fn update_fluid_mechanics_step_2<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -819,7 +817,6 @@ where
 
         Ok(())
     }
-
 
     pub fn update_fluid_mechanics_step_3<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
@@ -1205,7 +1202,6 @@ where
         // Wait for all threads to synchronize.
         // The goal is to have as few as possible synchronizations
         self.barrier.wait();
-
 
         self.update_fluid_mechanics_step_2()?;
 

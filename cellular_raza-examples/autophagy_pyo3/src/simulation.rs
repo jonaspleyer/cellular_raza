@@ -1,12 +1,11 @@
-use pyo3::prelude::{pyclass,pymethods};
 use cellular_raza::prelude::*;
+use pyo3::prelude::{pyclass, pymethods};
 
 use nalgebra::Vector3;
 use num::Zero;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[pyclass]
@@ -129,7 +128,8 @@ impl MyMechanics {
 
     #[setter(random_direction_travel)]
     fn set_random_direction_travel(&mut self, random_direction_travel: [f64; 3]) {
-        self.random_direction_travel = nalgebra::UnitVector3::new_normalize(random_direction_travel.into());
+        self.random_direction_travel =
+            nalgebra::UnitVector3::new_normalize(random_direction_travel.into());
     }
 }
 
@@ -268,7 +268,9 @@ impl SimulationSettings {
     }
 }
 
-pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std::path::PathBuf, SimulationError> {
+pub fn run_simulation_rs(
+    simulation_settings: SimulationSettings,
+) -> Result<std::path::PathBuf, SimulationError> {
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
@@ -284,7 +286,8 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
                 ])
             };
             let vel = Vector3::zero();
-            let (cell_radius, species, interaction_range) = if n < simulation_settings.n_cells_cargo {
+            let (cell_radius, species, interaction_range) = if n < simulation_settings.n_cells_cargo
+            {
                 (
                     simulation_settings.cell_radius_cargo,
                     Species::Cargo,
@@ -316,7 +319,8 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
                     potential_strength: simulation_settings.cell_mechanics_potential_strength,
                     interaction_range,
                     cell_radius,
-                    clustering_strength: simulation_settings.cell_mechanics_relative_clustering_strength,
+                    clustering_strength: simulation_settings
+                        .cell_mechanics_relative_clustering_strength,
                 },
                 cycle: NoCycle {},
                 interaction_extracellular: NoExtracellularGradientSensing {},
@@ -325,13 +329,21 @@ pub fn run_simulation_rs(simulation_settings: SimulationSettings) -> Result<std:
         })
         .collect::<Vec<_>>();
 
-    let domain =
-        CartesianCuboid3::from_boundaries_and_n_voxels([0.0; 3], [simulation_settings.domain_size; 3], [3; 3])?;
+    let domain = CartesianCuboid3::from_boundaries_and_n_voxels(
+        [0.0; 3],
+        [simulation_settings.domain_size; 3],
+        [3; 3],
+    )?;
 
     let time = TimeSetup {
         t_start: 0.0,
         t_eval: (0..simulation_settings.n_times)
-            .map(|n| (n as f64 * simulation_settings.dt, n % simulation_settings.save_interval == 0))
+            .map(|n| {
+                (
+                    n as f64 * simulation_settings.dt,
+                    n % simulation_settings.save_interval == 0,
+                )
+            })
             .collect(),
     };
 

@@ -1,10 +1,10 @@
-mod simulation;
 mod bacteria_properties;
+mod simulation;
 
-use simulation::*;
 use bacteria_properties::*;
+use simulation::*;
 
-use pyo3::{prelude::*, exceptions::PyValueError};
+use pyo3::{exceptions::PyValueError, prelude::*};
 
 /// Python version function of [run_simulation](simulation::run_simulation)
 #[pyfunction]
