@@ -510,10 +510,48 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
 
             fn get_voxel_index(
-                position: nalgebra::SVector<f64, $d>,
+                &self,
+                position: &nalgebra::SVector<f64, $d>,
             ) -> Result<[i64; $d], BoundaryError> {
-                
-                todo!()
+                let mut percent: nalgebra::SVector<f64, $d> = self.max.into();
+                percent -= nalgebra::SVector::<f64, $d>::from(self.min);
+                percent = position.component_div(&percent);
+                let vox = [$(
+                    (percent[$k] * self.n_voxels[$k] as f64).floor() as i64,
+                )+];
+
+                // If the returned voxel is not positive and smaller than the maximum
+                // number of voxel indices this function needs to return an error.
+                if vox
+                    .iter()
+                    .enumerate()
+                    .any(|(i, &p)| p<0 && self.n_voxels[i]<p) {
+                        return Err(
+                            BoundaryError(format!("Cell with position {:?} could not find index in domain with size min: {:?} max: {:?}", position, self.min, self.max))
+                        );
+                } else {
+                    return Ok(vox);
+                }
+            }
+
+            fn get_neighbor_voxel_indices(&self, index: &[i64; $d]) -> Vec<[i64; $d]> {
+                // Create the bounds for the following creation of all the voxel indices
+                let bounds: [[i64; 2]; $d] = [$(
+                    [
+                        max(index[$k] as i32 - 1, 0) as i64,
+                        min(index[$k]+2, self.n_voxels[$k])
+                    ]
+                ),+];
+
+                // Create voxel indices
+                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
+                    .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
+                    .multi_cartesian_product()                  // all possible combinations
+                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
+                    .filter(|ind| ind!=index)                   // filter the elements such that the current index is not included.
+                    .collect();                                 // collect into the correct type
+
+                return v;
             }
         }
 
@@ -533,6 +571,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         where
             C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<f64, $d>, nalgebra::SVector<f64, $d>, nalgebra::SVector<f64, $d>>,
         {
+            // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
             type SubDomainIndex = i64;
             type VoxelIndex = [i64; $d];
 
@@ -561,7 +600,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 let (n, m, average_len);
                 match get_decomp_res(indices.len(), n_subdomains.into()) {
                     Some(res) => (n, m, average_len) = res,
-                    None => return Err(DecomposeError("Could not find a suiting decomposition".to_owned())),
+                    None => return Err(DecomposeError::Generic("Could not find a suiting decomposition".to_owned())),
                 };
 
                 // TODO optimize this!
@@ -584,11 +623,22 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                     .map(|chunk| chunk.collect::<Vec<_>>())
                     .collect();
 
+                // Combine them into one Vector
                 ind_n.append(&mut ind_m);
+
+                // Construct a map from voxel_index to plain_index
+                let voxel_index_to_plain_index: std::collections::HashMap::<Self::VoxelIndex,u128> = ind_n.clone()
+                    .into_iter()
+                    .map(|indices| indices.into_iter())
+                    .flatten()
+                    .enumerate()
+                    .map(|(i, voxel_index)| (voxel_index, i as u128))
+                    .collect();
 
                 // We construct all Voxels which are grouped in their according subdomains
                 // Then we construct the subdomain
-                let mut subdomains_with_index: Vec<_> = ind_n
+                let mut index_subdomain_cells: std::collections::HashMap<Self::SubDomainIndex, (_, Vec<C>)> = ind_n
+                    .clone()
                     .into_iter()
                     .enumerate()
                     .map(|(i, indices)| {
@@ -604,35 +654,108 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                                     ind,
                                 }
                             }).collect::<Vec<_>>();
-                            (i as Self::SubDomainIndex, $subdomain_name {
-                            voxels,
-                        })
+                            (i as Self::SubDomainIndex, ($subdomain_name {voxels,}, Vec::<C>::new()))
                         }
                     ).collect();
 
+                // Construct a map from voxel_index to subdomain_index
+                let voxel_index_to_subdomain_index = ind_n
+                    .clone()
+                    .into_iter()
+                    .enumerate()
+                    .map(|(subdomain_index, voxel_indices)| voxel_indices
+                        .into_iter()
+                        .map(move |voxel_index| (voxel_index, subdomain_index as i64))
+                    )
+                    .flatten()
+                    .collect::<std::collections::HashMap<Self::VoxelIndex, Self::SubDomainIndex>>();
+
                 // Sort the cells into the correct voxels
-                /* let cells_with_index = cells
-                    .into_par_iter()
-                    .map(|cell| )*/
+                cells
+                    .into_iter()
+                    .map(|cell| {
+                        // Get the voxel index of the cell
+                        let voxel_index = self.get_voxel_index(&cell.pos())?;
+                        // Now get the subdomain index of the voxel
+                        let subdomain_index = voxel_index_to_subdomain_index.get(&voxel_index).ok_or(
+                            DecomposeError::IndexError(IndexError(format!("Could not cell with position {:?} in domain {:?}", cell.pos(), self)))
+                        )?;
+                        // Then add the cell to the subdomains cells.
+                        index_subdomain_cells.get_mut(&subdomain_index).ok_or(
+                            DecomposeError::IndexError(IndexError(format!("Could not find subdomain index {:?} internally which should have been there.", subdomain_index)))
+                        )?.1.push(cell);
+                        Ok(())
+
+                    }).collect::<Result<Vec<_>, DecomposeError>>()?;
+
+                //
+                let index_subdomain_cells: Vec<(Self::SubDomainIndex, _, _)> = index_subdomain_cells
+                    .into_iter()
+                    .map(|(index, (subdomain, cells))| (index, subdomain, cells))
+                    .collect();
+
+                let neighbor_map = ind_n
+                    .into_iter()
+                    .enumerate()
+                    .map(|(subdomain_index, voxel_indices)| {
+                        let neighbor_voxels = voxel_indices
+                            .into_iter()
+                            .map(|voxel_index| self.get_neighbor_voxel_indices(&voxel_index))
+                            .flatten();
+                        let neighbor_subdomains = neighbor_voxels
+                            .map(|neighbor_voxel_index| voxel_index_to_subdomain_index
+                                .get(&neighbor_voxel_index)
+                                .and_then(|v| Some(v.clone()))
+                                .ok_or(
+                                    DecomposeError::IndexError(
+                                        IndexError(format!("Could not find neighboring voxel index {:?} internally which should have been initialized.", neighbor_voxel_index))
+                                )
+                            ))
+                            .collect::<Result<Vec<i64>, _>>()
+                            .and_then(|neighbors| Ok(neighbors
+                                .into_iter()
+                                .unique()
+                                .filter(|neighbor_index| *neighbor_index!=subdomain_index as i64)
+                                .collect::<Vec<_>>()))?;
+                        Ok((subdomain_index.clone() as i64, neighbor_subdomains))
+                    })
+                    .collect::<Result<_, DecomposeError>>()?;
 
                 Ok(cellular_raza_concepts::domain_new::DecomposedDomain {
                     n_subdomains: n+m,
-                    index_subdomain_cells: Vec::new(),
-                    neighbor_map: std::collections::HashMap::new(),
+                    index_subdomain_cells,
+                    neighbor_map,
                     rng_seed: self.rng_seed.clone(),
-                    voxel_index_to_plain_index: std::collections::HashMap::new(),
+                    voxel_index_to_plain_index,
                 })
             }
         }
 
         impl<C> cellular_raza_concepts::domain_new::SubDomain<C> for $subdomain_name {
-            type VoxelIndex = [usize; $d];
+            type VoxelIndex = [i64; $d];
 
             fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
                 todo!()
             }
 
-            fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
+            fn get_neighbor_voxel_indices(&self, index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
+                // Create the bounds for the following creation of all the voxel indices
+                /* let bounds: [[i64; 2]; $d] = [$(
+                    [
+                        max(index[$k] as i32 - 1, 0) as i64,
+                        min(index[$k]+2, self.n_voxels[$k])
+                    ]
+                ),+];
+
+                // Create voxel indices
+                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
+                    .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
+                    .multi_cartesian_product()                  // all possible combinations
+                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
+                    .filter(|ind| ind!=index)                   // filter the elements such that the current index is not included.
+                    .collect();                                 // collect into the correct type
+
+                return v;*/
                 todo!()
             }
 

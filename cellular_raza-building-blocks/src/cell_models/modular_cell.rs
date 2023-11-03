@@ -147,7 +147,7 @@ where
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
         internal_concentration_vector: &ConcVecIntracellular,
-         external_concentration_vector: &ConcVecExtracellular,
+        external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError> {
         self.cellular_reactions
             .calculate_intra_and_extracellular_reaction_increment(
