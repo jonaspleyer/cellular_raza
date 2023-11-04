@@ -317,12 +317,13 @@ pub mod test_construction {
 /// | `ExtracellularReactions` | [ExtracellularMechanics](cellular_raza_concepts::domain::ExtracellularMechanics) | |
 /// | `Gradients` | [Gradients](cellular_raza_concepts::domain::ExtracellularMechanics) | `ExtracellularReactions` |
 ///
-macro_rules! run_full_simulation(
+/* macro_rules! run_full_simulation(
     ($simulation_setup:ident, $settings:ident, [$($ids:ident),+]) => {{
         // Also construct the auxiliary storage
         #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
         // TODO #[derive(cellular_raza_core_derive::AuxStorage)]
         struct AuxStorage {
+            $crate::contains_ident!(mechanics: i64, Mechanics, [$($ids),+])
             // TODO insert fields depending on the specified generics
         }
 
@@ -375,7 +376,10 @@ macro_rules! run_full_simulation(
     }};
 );
 #[doc(inline)]
-pub use crate::run_full_simulation;
+pub use crate::run_full_simulation;*/
+
+#[doc(inline)]
+pub use cellular_raza_core_derive::run_full_simulation;
 
 #[doc(hidden)]
 #[macro_export]
