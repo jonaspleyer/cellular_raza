@@ -555,6 +555,11 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
         }
 
+        #[doc ="Subdomain of ["]
+        #[doc = stringify!($domain_name)]
+        #[doc = "]"]
+        ///
+        /// The subdomain contains voxels
         #[derive(Clone, Debug, Deserialize, Serialize)]
         pub struct $subdomain_name {
             pub voxels: Vec<$voxel_name>,
