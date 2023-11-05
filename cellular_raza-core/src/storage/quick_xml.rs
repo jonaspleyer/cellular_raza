@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use core::marker::PhantomData;
 use std::{collections::HashMap, io::Write};
 
+/// Save elements as xml files with [quick_xml].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct XmlStorageInterface<Id, Element> {
+    /// Storag path.
     pub path: std::path::PathBuf,
     storage_instance: u64,
     phantom_id: PhantomData<Id>,

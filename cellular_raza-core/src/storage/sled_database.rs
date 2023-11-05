@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
+/// Use the [sled] database to save results to an embedded database.
 // TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
 #[derive(Clone, Debug)]
 pub struct SledStorageInterface<Id, Element> {

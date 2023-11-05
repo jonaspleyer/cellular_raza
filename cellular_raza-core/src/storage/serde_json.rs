@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use core::marker::PhantomData;
 use std::collections::HashMap;
 
+/// Save elements as json files with [serde_json].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct JsonStorageInterface<Id, Element> {
+    /// Storage path.
     pub path: std::path::PathBuf,
     storage_instance: u64,
     phantom_id: PhantomData<Id>,

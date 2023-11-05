@@ -11,14 +11,23 @@ use super::sled_database::SledStorageInterface;
 /// Error related to storing and reading elements
 #[derive(Debug)]
 pub enum StorageError {
+    /// Error related to File Io operations.
     IoError(std::io::Error),
+    /// Occurs during parsing of json structs.
     SerdeJsonError(serde_json::Error),
+    /// Occurs during parsing of Xml structs.
     QuickXmlError(quick_xml::Error),
+    /// Occurs during parsing of Xml structs.
     FastXmlDeserializeError(quick_xml::DeError),
+    /// Generic error related to the [sled] database.
     SledError(sled::Error),
+    /// Generic serialization error thrown by the [bincode] library.
     SerializeError(Box<bincode::ErrorKind>),
+    /// Initialization error mainly used for initialization of datatbases such as [sled].
     InitError(String),
+    /// Error when parsing file/folder names.
     ParseIntError(std::num::ParseIntError),
+    /// Generic Utf8 error.
     Utf8Error(std::str::Utf8Error),
 }
 
@@ -89,14 +98,22 @@ impl Display for StorageError {
 impl Error for StorageError {}
 
 // TODO implement this correctly
+/// Define how to store results of the simulation.
+///
+/// We currently support saving results in a [sled] databas, as xml files
+/// via [quick_xml] or as a json file by using [serde_json].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum StorageOptions {
+    /// Save results as [sled] database.
     Sled,
+    /// Save results as [json](https://www.json.org/json-en.html) file.
     SerdeJson,
+    /// Svae results as [xml](https://www.xml.org/) file.
     SerdeXml,
 }
 
 impl StorageOptions {
+    /// Which storage option should be used by default.
     pub fn default_priority() -> Vec<Self> {
         return vec![
             StorageOptions::SerdeJson,
@@ -106,12 +123,14 @@ impl StorageOptions {
     }
 }
 
+/// Define how elements and identifiers are saved when being serialized together.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CombinedSaveFormat<Id, Element> {
     pub(super) identifier: Id,
     pub(super) element: Element,
 }
 
+/// Define how batches of elements and identifiers are saved when being serialized.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BatchSaveFormat<Id, Element> {
     pub(super) data: Vec<CombinedSaveFormat<Id, Element>>,
@@ -357,7 +376,12 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     }
 }
 
+/// Provide methods to initialize, store and load single and multiple elements at iterations.
 pub trait StorageInterface<Id, Element> {
+    /// Initializes the current storage device.
+    ///
+    /// In the case of databases, this may alreay result in an IO operation
+    /// while when saving as files such as json or xml folders might be created.
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
@@ -365,6 +389,7 @@ pub trait StorageInterface<Id, Element> {
     where
         Self: Sized;
 
+    /// Saves a single element at given iteration.
     fn store_single_element(
         &self,
         iteration: u64,
@@ -375,6 +400,7 @@ pub trait StorageInterface<Id, Element> {
         Id: Serialize,
         Element: Serialize;
 
+    /// Stores a batch of multiple elements with identifiers all at the same iteration.
     fn store_batch_elements(
         &self,
         iteration: u64,
@@ -392,6 +418,7 @@ pub trait StorageInterface<Id, Element> {
 
     // TODO decide if these functions should be &mut self instead of &self
     // This could be useful when implementing buffers, but maybe unnecessary.
+    /// Loads a single element from the storage solution if the element exists.
     fn load_single_element(
         &self,
         iteration: u64,
@@ -401,6 +428,9 @@ pub trait StorageInterface<Id, Element> {
         Id: Serialize,
         Element: for<'a> Deserialize<'a>;
 
+    /// Loads the elements history, meaning every occurance of the element in the storage.
+    /// This function should provide the results in ordered fashion such that the time
+    /// direction is retained.
     fn load_element_history(
         &self,
         identifier: &Id,
@@ -427,6 +457,9 @@ pub trait StorageInterface<Id, Element> {
         }
     }
 
+    /// Gets a snapshot of all elements at a given iteration.
+    ///
+    /// This function might be useful when implementing how simulations can be restored from saved results.
     fn load_all_elements_at_iteration(
         &self,
         iteration: u64,
@@ -435,8 +468,11 @@ pub trait StorageInterface<Id, Element> {
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>;
 
+    /// Get all iteration values which have been saved.
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError>;
 
+    /// Loads all elements for every iteration.
+    /// This will yield the complete storage and may result in extremely large allocations of memory.
     fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
@@ -453,6 +489,8 @@ pub trait StorageInterface<Id, Element> {
         Ok(all_elements)
     }
 
+    /// Similarly to the [load_all_elements] function, but this function returns all elements
+    /// as their histories.
     fn load_all_element_histories(&self) -> Result<HashMap<Id, HashMap<u64, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
