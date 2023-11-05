@@ -7,7 +7,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
-/// All molecular species
+/// All particle species
 ///
 /// We currently only distinguish between the cargo itself
 /// and freely moving combinations of the receptor and RTG11.
@@ -20,7 +20,8 @@ pub enum Species {
 
 /// Interaction potential depending on the other cells species.
 ///
-/// | Symbol | Variable | Explanation |
+/// # Parameters
+/// | Symbol | Parameter | Description |
 /// | --- | --- | --- |
 /// | $r_\text{interaction}$ | `interaction_range` | Maximal absolute interaction range. |
 /// | $r_\text{cell}$ | `cell_radius` | Current radius of the cell. |
@@ -83,8 +84,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         let (cell_radius_ext, species) = ext_info;
         // Introduce Non-dimensional length variable
         let sigma = r / (self.cell_radius + cell_radius_ext);
-        let spatial_cutoff =
-            (1.0 + (self.interaction_range + cell_radius_ext + self.cell_radius - r).signum()) * 0.5;
+        let spatial_cutoff = (1.0
+            + (self.interaction_range + cell_radius_ext + self.cell_radius - r).signum())
+            * 0.5;
 
         // Calculate the strength of the interaction with correct bounds
         let alpha = 3.0 / 2.0 * (self.interaction_range / (cell_radius_ext + self.cell_radius));
@@ -117,6 +119,30 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     }
 }
 
+/// Random motion of particles
+///
+/// # Parameters
+/// | Symbol | Parameter | Description |
+/// | --- | --- | --- |
+/// | $\vec{x}$ | `pos` | Position of the particle. |
+/// | $\vec{v}$ | `vel` | Velocity of the particle. |
+/// | $\lambda$ | `dampening_constant` | Dampening constant of each particle. |
+/// | $m$ | `mass` | Mass of the particle. |
+/// | $v_r$ | `random_travel_velocity` | The absolute value of velocity which the particle is currently travelling at. |
+/// | $\vec{d}$ | `random_direction_travel` | The direction in which the particle is currently tarvelling. |
+/// | $t_r$ | `random_update_time` | The time until the next update of the random steps will be done. Set this to [f64::INFINITY] to never update the travel direction or velocity. |
+///
+/// # Position and Velocity Update
+/// Positions and velocities are numerically integrated.
+/// The differential equation which is solved corresponds to a euclidean equation of motion with dampening and a random part.
+/// \\begin{align}
+///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
+///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
+/// \\end{align}
+/// By choosing the `random_update_time` $t_r$ larger than the integration step, we can resolve smaller timesteps to more accurately solve the equations.
+/// This procedure is recommended.
+/// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values are changed at discrete time events.
+/// The notation is slightly different to the usually used for stochastic processes.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct MyMechanics {
@@ -205,51 +231,78 @@ impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MyMechanics {
     }
 }
 
+/// All settings which can be configured by the Python interface.
+///
+/// We aim to provide access to even the more lower-level settings
+/// that can influence the results of our simulation.
+/// Not all settings do make sense and some combinations can lead
+/// to numerical integration problems.
+///
+/// For documentation of the individual settings, refer to the linked modules.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
 pub struct SimulationSettings {
+    /// Number of cargo particles in the simulation.
     #[pyo3(get, set)]
     pub n_cells_cargo: usize,
+    /// Number of R11 particles in the simulation.
     #[pyo3(get, set)]
     pub n_cells_r11: usize,
 
+    /// See [MyMechanics]
     #[pyo3(get, set)]
     pub cell_dampening: f64,
+    /// See [MyMechanics]
     #[pyo3(get, set)]
     pub cell_radius_cargo: f64,
+    /// See [MyMechanics]
     #[pyo3(get, set)]
     pub cell_radius_r11: f64,
 
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_interaction_range_cargo: f64,
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_interaction_range_r11: f64,
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_random_travel_velocity: f64,
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_random_update_time: f64,
 
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_potential_strength: f64,
+    /// See [CellSpecificInteraction]
     #[pyo3(get, set)]
     pub cell_mechanics_relative_clustering_strength: f64,
 
+    /// Integration step of the numerical simulation.
     #[pyo3(get, set)]
     pub dt: f64,
+    /// Number of intgration steps done totally.
     #[pyo3(get, set)]
     pub n_times: usize,
+    /// Specifies the frequency at which results are saved as json files.
+    /// Lower the number for more saved results.
     #[pyo3(get, set)]
     pub save_interval: usize,
 
+    /// Number of threads to use in the simulation.
     #[pyo3(get, set)]
     pub n_threads: usize,
 
+    /// See [CartesianCuboid3]
     #[pyo3(get, set)]
     pub domain_size: f64,
 
+    /// Name of the folder to store the results in.
     #[pyo3(get, set)]
     pub storage_name: String,
 
+    /// Do we want to show a progress bar
     #[pyo3(get, set)]
     pub show_progressbar: bool,
 }
@@ -302,6 +355,7 @@ impl SimulationSettings {
     }
 }
 
+/// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
 pub fn run_simulation_rs(
     simulation_settings: SimulationSettings,
 ) -> Result<std::path::PathBuf, SimulationError> {
