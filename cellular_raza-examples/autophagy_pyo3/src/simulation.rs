@@ -7,6 +7,10 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
+/// All molecular species
+///
+/// We currently only distinguish between the cargo itself
+/// and freely moving combinations of the receptor and RTG11.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[pyclass]
 pub enum Species {
@@ -14,19 +18,44 @@ pub enum Species {
     R11,
 }
 
+/// Interaction potential depending on the other cells species.
+///
+/// | Symbol | Variable | Explanation |
+/// | --- | --- | --- |
+/// | $r_\text{interaction}$ | `interaction_range` | Maximal absolute interaction range. |
+/// | $r_\text{cell}$ | `cell_radius` | Current radius of the cell. |
+/// | $V_0$ | `potential_strength` | Strength of attraction and repelling. |
+/// | $C_0$ | `clustering_strength` | Non-dimensional factor that describes how much stronger the attracting force is compared to the repelling force between two [R11](Species::R11) particles. |
+///
+/// # Spatial Cutoff
+/// We impose a spatial cutoff which is calculated via
+/// \\begin{equation}
+///     c = \frac{1}{2}+\frac{1}{2}\text{sgn}\left(r_\text{interaction} + r_\text{cell,ext} + r_\text{cell,int} - r\right)
+/// \\end{equation}
+/// where $\text{sgn}(\dots)$ is the [signum](https://en.wikipedia.org/wiki/Sign_function) operator.
+/// # Potential Shape
+/// The potential is given by a repelling part at the center and an
+/// attracting part when moving further away.
+/// \\begin{align}
+///     \alpha &= \frac{3}{2}\frac{r_\text{interaction}}{r_\text{cell,ext}+r_\text{cell,int}}\\\\
+///     \sigma &= \frac{r}{r_\text{cell,int}+r_\text{cell,ext}}\\\\
+///     \vec{d} &= \vec{r}_\text{int} - \vec{r}_\text{ext}\\\\
+///     F(r) &= \frac{3}{\alpha^2}\left(3(\sigma - 1)^2 - 2\alpha(\sigma-1))\right)
+/// \\end{align}
+/// Here, $\alpha$ describes
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
 pub struct CellSpecificInteraction {
     #[pyo3(get, set)]
-    species: Species,
+    pub species: Species,
     #[pyo3(get, set)]
-    cell_radius: f64,
+    pub cell_radius: f64,
     #[pyo3(get, set)]
-    potential_strength: f64,
+    pub potential_strength: f64,
     #[pyo3(get, set)]
-    interaction_range: f64,
+    pub interaction_range: f64,
     #[pyo3(get, set)]
-    clustering_strength: f64,
+    pub clustering_strength: f64,
 }
 
 impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
@@ -46,14 +75,14 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
             (r, z.normalize())
         };
 
-        let (ext_radius, species) = ext_info;
+        let (cell_radius_ext, species) = ext_info;
         // Introduce Non-dimensional length variable
-        let sigma = r / (self.cell_radius + ext_radius);
+        let sigma = r / (self.cell_radius + cell_radius_ext);
         let spatial_cutoff =
-            (1.0 + (self.interaction_range + ext_radius + self.cell_radius - r).signum()) * 0.5;
+            (1.0 + (self.interaction_range + cell_radius_ext + self.cell_radius - r).signum()) * 0.5;
 
         // Calculate the strength of the interaction with correct bounds
-        let alpha = 3.0 / 2.0 * (self.interaction_range / (ext_radius + self.cell_radius));
+        let alpha = 3.0 / 2.0 * (self.interaction_range / (cell_radius_ext + self.cell_radius));
         let form =
             (3.0 * (sigma - 1.0).powf(2.0) - 2.0 * alpha * (sigma - 1.0)) * 3.0 / alpha.powf(2.0);
         let strength = -self.potential_strength * form.clamp(-1.0, 1.0);
