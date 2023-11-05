@@ -26,6 +26,11 @@ pub enum Species {
 /// | $r_\text{cell}$ | `cell_radius` | Current radius of the cell. |
 /// | $V_0$ | `potential_strength` | Strength of attraction and repelling. |
 /// | $C_0$ | `clustering_strength` | Non-dimensional factor that describes how much stronger the attracting force is compared to the repelling force between two [R11](Species::R11) particles. |
+/// | $\alpha$ | - | Relative interaction range. |
+/// | $\sigma$ | - | Relative distance. |
+/// | $\overrightarrow{d}$ | - | Direction in which the force will be acting. |
+/// | $F(r)$ | - | Shape of the potential curve. |
+/// | $\overrightarrow{F}(\overrightarrow{x_\text{ext}})$ | - | Resulting total force. |
 ///
 /// # Spatial Cutoff
 /// We impose a spatial cutoff which is calculated via
@@ -39,10 +44,10 @@ pub enum Species {
 /// \\begin{align}
 ///     \alpha &= \frac{3}{2}\frac{r_\text{interaction}}{r_\text{cell,ext}+r_\text{cell,int}}\\\\
 ///     \sigma &= \frac{r}{r_\text{cell,int}+r_\text{cell,ext}}\\\\
-///     \vec{d} &= \vec{r}_\text{int} - \vec{r}_\text{ext}\\\\
-///     F(r) &= \frac{3}{\alpha^2}\left(3(\sigma - 1)^2 - 2\alpha(\sigma-1))\right)
+///     \overrightarrow{d} &= \overrightarrow{x_\text{int}} - \overrightarrow{x_\text{ext}}\\\\
+///     F(r) &= \frac{3}{\alpha^2}\left(3(\sigma - 1)^2 - 2\alpha(\sigma-1))\right)\\\\
+///     \overrightarrow{F}(\overrightarrow{x_\text{ext}}) &= F(r) \overrightarrow{d}
 /// \\end{align}
-/// Here, $\alpha$ describes
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
 pub struct CellSpecificInteraction {
