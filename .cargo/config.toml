@@ -1,0 +1,14 @@
+[build]
+incremental = true
+rustflags = "-C target-cpu=native"
+rustdocflags = [ "--html-in-header", "./doc/docs-header.html" ]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+[doc]
+# This is currently not working
+# no-deps = true
