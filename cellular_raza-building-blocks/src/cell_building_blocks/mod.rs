@@ -1,5 +1,8 @@
-// TODO rename module into cell_building_blocks
+/// Collection of cell cycles
 pub mod cycle;
-pub mod death;
+
+/// Collection of physical interactions between cells.
 pub mod interaction;
+
+/// Collection of different physical representations of the cell
 pub mod mechanics;

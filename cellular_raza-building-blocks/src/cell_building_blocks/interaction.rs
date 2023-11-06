@@ -4,6 +4,7 @@ use cellular_raza_concepts::interaction::*;
 use nalgebra::SVector;
 use serde::{Deserialize, Serialize};
 
+/// No interaction of the cell with any other.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NoInteraction {}
 
@@ -22,9 +23,15 @@ impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
     fn get_interaction_information(&self) -> () {}
 }
 
+/// Pure Lennard-Jones interaction potential
+///
+/// This potential has many numerical downsides as it is very unstable to use
+/// and thus only recommended with very small integration steps.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LennardJones {
+    /// Overall interaction strength of the potential.
     pub epsilon: f64,
+    /// Overall range of the potential.
     pub sigma: f64,
 }
 
@@ -49,15 +56,21 @@ implement_lennard_jones_nd!(1);
 implement_lennard_jones_nd!(2);
 implement_lennard_jones_nd!(3);
 
+/// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {
+    /// Interaction potential used when other vertex is outside of current polygon.
     pub outside_interaction: A,
+    /// Interaction potential when vertex is inside current polygon.
     pub inside_interaction: R,
     phantom_inf_1: core::marker::PhantomData<I1>,
     phantom_inf_2: core::marker::PhantomData<I2>,
 }
 
 impl<A, R, I1, I2> VertexDerivedInteraction<A, R, I1, I2> {
+    /// Constructs a new [VertexDerivedInteraction] from two Interaction potentials.
+    ///
+    /// One serves as the inside and one for the outside interaction.
     pub fn from_two_forces(attracting_force: A, repelling_force: R) -> Self
     where
         A: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I1>,

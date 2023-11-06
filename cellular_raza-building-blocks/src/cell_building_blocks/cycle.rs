@@ -3,6 +3,7 @@ use cellular_raza_concepts::cycle::*;
 
 use serde::{Deserialize, Serialize};
 
+/// No cycle of the cell.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NoCycle {}
 
