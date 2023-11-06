@@ -18,6 +18,5 @@ pub mod domain_decomposition;
 /// | CalcError | Solver Accuracy, Bug by user implementation of corresponding function, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
 // TODO implement the handling of these errors!
 pub mod errors;
-pub mod multiple_cell_types;
 pub mod prelude;
 pub mod supervisor;

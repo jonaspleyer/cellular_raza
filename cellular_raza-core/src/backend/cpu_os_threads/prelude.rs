@@ -29,7 +29,6 @@ pub use crate::storage::sled_database::*;
 
 // Initalization of the Simulation
 pub use crate::backend::cpu_os_threads::config::*;
-pub use crate::backend::cpu_os_threads::multiple_cell_types::*;
 pub use crate::backend::cpu_os_threads::supervisor::*;
 
 // Plotting functions
@@ -40,5 +39,4 @@ pub use crate::backend::cpu_os_threads::supervisor::*;
 pub use super::config::*;
 pub use super::domain_decomposition::*;
 pub use super::errors::*;
-pub use super::multiple_cell_types::*;
 pub use super::supervisor::*;
