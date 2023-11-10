@@ -13,7 +13,7 @@ fn run_simulation(simulation_settings: SimulationSettings) -> Result<std::path::
 }
 
 #[pymodule]
-fn autophagy_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn cr_autophagy_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_simulation, m)?)?;
 
     m.add_class::<SimulationSettings>()?;

@@ -1,11 +1,11 @@
 [package]
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
-name = "autophagy_pyo3"
+name = "cr_autophagy_pyo3"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "autophagy_pyo3"
+name = "cr_autophagy_pyo3"
 crate-type = ["cdylib"]
 
 [dependencies]

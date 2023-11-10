@@ -1,1 +1,0 @@
-from autophagy_pyo3 import SimulationSettings, run_simulation

@@ -3,7 +3,7 @@ requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [project]
-name = "autophagy_pyo3"
+name = "cr_autophagy_pyo3"
 version = "0.1.0"
 
 [project.optional-dependencies]

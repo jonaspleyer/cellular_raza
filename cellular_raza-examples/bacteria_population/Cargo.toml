@@ -1,5 +1,5 @@
 [package]
-name = "cellular_raza-example-bacteria-population"
+name = "cr_bacteria_population"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
