@@ -1,5 +1,5 @@
 use crate::cycle::*;
-use crate::errors::CalcError;
+use crate::errors::{CalcError, RngError};
 use crate::interaction::*;
 use crate::mechanics::{Force, Mechanics, Position, Velocity};
 
@@ -126,8 +126,12 @@ where
         self.cell.set_velocity(velocity);
     }
 
-    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
-        self.cell.set_random_variable(rng)
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<Option<f64>, RngError> {
+        self.cell.set_random_variable(rng, dt)
     }
 
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {

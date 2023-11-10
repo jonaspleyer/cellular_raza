@@ -1,5 +1,5 @@
 use cellular_raza_concepts::cycle::{Cycle, CycleEvent};
-use cellular_raza_concepts::errors::CalcError;
+use cellular_raza_concepts::errors::{CalcError, RngError};
 use cellular_raza_concepts::interaction::{
     CellularReactions, Interaction, InteractionExtracellularGradient,
 };
@@ -79,8 +79,12 @@ where
         self.mechanics.velocity()
     }
 
-    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
-        self.mechanics.set_random_variable(rng)
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<Option<f64>, RngError> {
+        self.mechanics.set_random_variable(rng, dt)
     }
 
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {

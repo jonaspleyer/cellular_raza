@@ -1,4 +1,4 @@
-use crate::errors::CalcError;
+use crate::errors::{CalcError, RngError};
 
 use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
@@ -143,8 +143,12 @@ pub trait Mechanics<Pos, Vel, For> {
     /// Define a new random variable in case that the mechanics type contains a random aspect to its motion.
     /// By default this function does nothing.
     #[allow(unused)]
-    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
-        None
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<Option<f64>, RngError> {
+        Ok(None)
     }
 
     /// Calculate the time-derivative of force and velocity given all the forces that act on the cell.

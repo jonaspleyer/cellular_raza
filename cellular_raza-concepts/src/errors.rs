@@ -82,7 +82,11 @@ define_errors!(
         ControllerError,
         "Occurs when incorrectly applying a controller effect"
     ),
-    (DrawingError, "Used to catch errors related to plotting")
+    (DrawingError, "Used to catch errors related to plotting"),
+    (
+        RngError,
+        "Can occur when generating distributions or drawing samples from them."
+    )
 );
 
 impl From<std::io::Error> for DecomposeError {

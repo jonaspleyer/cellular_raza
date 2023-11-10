@@ -126,7 +126,11 @@ impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MyMechanics {
         self.vel = *v;
     }
 
-    fn set_random_variable(&mut self, rng: &mut rand_chacha::ChaCha8Rng) -> Option<f64> {
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<Option<f64>, RngError> {
         let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         let psi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         self.random_direction_travel = nalgebra::UnitVector3::new_normalize(Vector3::from([
@@ -134,7 +138,9 @@ impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MyMechanics {
             phi.sin() * psi.sin(),
             phi.cos(),
         ]));
-        Some(rng.gen_range(0.5..1.5) * self.random_update_time)
+        Ok(Some(
+            rng.gen_range(2.0 * dt..6.0 * dt) * self.random_update_time,
+        ))
     }
 
     fn calculate_increment(

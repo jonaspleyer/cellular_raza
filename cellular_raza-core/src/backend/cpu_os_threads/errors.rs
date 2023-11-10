@@ -48,6 +48,7 @@ pub enum SimulationError {
     DeathError(DeathError),
     BoundaryError(BoundaryError),
     DrawingError(DrawingError),
+    RngError(RngError),
 
     // Less likely but possible to be user errors
     SendError(String),
@@ -73,6 +74,7 @@ impl_from_error! {SimulationError,
     (IndexError, IndexError),
     (IoError, std::io::Error),
     (DrawingError, DrawingError),
+    (RngError, RngError),
     (StorageError, StorageError),
     (ThreadingError, rayon::ThreadPoolBuildError),
     (ConsoleLogError, indicatif::style::TemplateError)
@@ -91,6 +93,7 @@ impl_error_variant! {SimulationError,
     IndexError,
     IoError,
     DrawingError,
+    RngError,
     StorageError,
     ThreadingError,
     ConsoleLogError

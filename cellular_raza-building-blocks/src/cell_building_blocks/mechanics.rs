@@ -1,4 +1,4 @@
-use cellular_raza_concepts::errors::CalcError;
+use cellular_raza_concepts::errors::{CalcError, RngError};
 use cellular_raza_concepts::mechanics::Mechanics;
 
 use itertools::Itertools;
