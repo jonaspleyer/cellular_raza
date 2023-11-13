@@ -11,7 +11,7 @@
 /// The backend controls the simulation flow. Multiple variants could be available in the future.
 pub mod backend;
 
-/// Database interface
+/// Interface and methods to store and load simulation aspects.
 pub mod storage;
 
 // Some re-exports

@@ -1,3 +1,4 @@
+
 use cellular_raza_concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
 use cellular_raza_concepts::domain::Index;
 use cellular_raza_concepts::domain::{
@@ -48,11 +49,7 @@ pub struct ControllerBox<Cont, Obs> {
 }
 
 impl<Cont, Obs> ControllerBox<Cont, Obs> {
-    pub fn measure<'a, I, Cel>(
-        &mut self,
-        thread_index: u32,
-        cells: I,
-    ) -> Result<(), SimulationError>
+    pub fn measure<'a, I, Cel>(&mut self, thread_index: u32, cells: I) -> Result<(), SimulationError>
     where
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
@@ -86,22 +83,243 @@ where
     Dom: Serialize + for<'a> Deserialize<'a>,
     Cont: Serialize + for<'a> Deserialize<'a>,
 {
-    pub(crate) worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
-    pub(crate) multivoxelcontainers: Vec<MVC>,
+    pub worker_threads: Vec<thread::JoinHandle<Result<MVC, SimulationError>>>,
+    pub multivoxelcontainers: Vec<MVC>,
 
-    pub(crate) time: TimeSetup,
-    pub(crate) meta_params: SimulationMetaParams,
-    pub(crate) storage: StorageConfig,
+    pub time: TimeSetup,
+    pub meta_params: SimulationMetaParams,
+    pub storage: StorageConfig,
 
-    pub(crate) domain: DomainBox<Dom>,
+    pub domain: DomainBox<Dom>,
 
     pub config: SimulationConfig,
 
-    pub(crate) meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>,
+    pub meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>,
 
-    pub(crate) controller_box: Arc<std::sync::Mutex<ControllerBox<Cont, Obs>>>,
-    pub(crate) phantom_obs: PhantomData<Obs>,
-    pub(crate) phantom_cont: PhantomData<Cont>,
+    pub controller_box: Arc<std::sync::Mutex<ControllerBox<Cont, Obs>>>,
+    pub phantom_obs: PhantomData<Obs>,
+    pub phantom_cont: PhantomData<Cont>,
+}
+
+#[macro_export]
+macro_rules! run_step_1(
+    ($cont:expr, Mechanics) => {
+        $cont.update_cellular_mechanics_step_1().unwrap();
+    };
+
+    ($cont:expr, FluidMechanics) => {
+        $cont.update_fluid_mechanics_step_1().unwrap();
+    };
+
+    ($cont:expr, $a:ident) => {};
+
+    ($cont:expr, $a:ident, $($ai:ident),+) => {
+        run_step_1!($cont, $a);
+        run_step_1!($cont $(, $ai)+);
+    };
+);
+
+#[macro_export]
+macro_rules! run_step_2(
+    ($cont:expr, Mechanics) => {
+        $cont.update_cellular_mechanics_step_2().unwrap();
+    };
+
+    ($cont:expr, FluidMechanics) => {
+        $cont.update_fluid_mechanics_step_2().unwrap();
+    };
+
+    ($cont:expr, $a:ident) => {};
+
+    ($cont:expr, $a:ident, $($ai:ident),+) => {
+        run_step_2!($cont, $a);
+        run_step_2!($cont $(, $ai)+);
+    };
+);
+
+#[macro_export]
+macro_rules! run_step_3(
+    ($cont:expr, $dt:expr, Mechanics) => {
+        $cont.update_cellular_mechanics_step_3($dt).unwrap();
+    };
+
+    ($cont:expr, $dt:expr, FluidMechanics) => {
+        $cont.update_fluid_mechanics_step_3($dt).unwrap();
+    };
+
+    ($cont:expr, $dt:expr, Reactions) => {
+        $cont.update_cellular_reactions($dt).unwrap();
+    };
+
+    ($cont:expr, $dt:expr, Cycle) => {
+        $cont.update_local_functions($dt).unwrap();
+    };
+
+    ($cont:expr, $dt:expr, $a:ident) => {};
+
+    ($cont:expr, $dt:expr, $a:ident, $($ai:ident),+) => {
+        run_step_3!($cont, $dt, $a);
+        run_step_3!($cont, $dt $(, $ai)+);
+    };
+);
+
+#[macro_export]
+macro_rules! run_full_sim {
+    ($supervisor:expr, CellFeatures=[$($feature:ident),+ $(,)?]) => {
+        // Run the simulation
+        let mut handles = Vec::new();
+        let (mut start_barrier, controller_barrier) = $supervisor.__private_initialize();
+
+        if $supervisor.config.show_progressbar {
+            println!("Running Simulation");
+        }
+
+        for (l, mut cont) in $supervisor.multivoxelcontainers.drain(..).enumerate() {
+            // Clone barriers to use them for synchronization in threads
+            let mut new_start_barrier = start_barrier.clone();
+            let mut controller_barrier_new = controller_barrier.clone();
+
+            // See if we need to save
+            let stop_now_new = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+            // Copy time evaluation points
+            let t_start = $supervisor.time.t_start;
+            let t_eval = $supervisor.time.t_eval.clone();
+
+            // Add bar
+            // let show_progressbar = $supervisor.config.show_progressbar;
+            // let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
+            // let bar = ProgressBar::new(t_eval.len() as u64);
+            // bar.set_style(style);
+
+            let controller_box = $supervisor.controller_box.clone();
+
+            // Spawn a thread for each multivoxelcontainer that is running
+            let handle = std::thread::Builder::new().name(format!("worker_thread_{:03.0}", l)).spawn(move || -> Result<_, SimulationError> {
+                new_start_barrier.wait();
+
+                let mut time = t_start;
+                #[allow(unused)]
+                let mut iteration = 0u64;
+                for (t, save) in t_eval {
+                    let dt = t - time;
+                    time = t;
+
+                    // These methods are used for sending requests and gathering information in general
+                    // This gathers information of forces acting between cells and send between threads
+                    // cont.update_fluid_mechanics_step_1().unwrap();
+
+                    // Gather boundary conditions between voxels and domain boundaries and send between threads
+                    run_step_1!(cont, $($feature),+);//$(,$feature)*);
+
+                    // Wait for all threads to synchronize.
+                    // The goal is to have as few as possible synchronizations
+                    cont.barrier.wait();
+
+                    // 
+                    // cont.update_fluid_mechanics_step_2().unwrap();
+
+                    // cont.update_cellular_mechanics_step_2().unwrap();
+                    run_step_2!(cont, $($feature),+);
+
+                    cont.barrier.wait();
+
+                    // cont.update_cellular_reactions(&dt).unwrap();
+
+                    // These are the true update steps where cell agents are modified the order here may play a role!
+                    // 
+                    // cont.update_fluid_mechanics_step_3(dt).unwrap();
+
+                    // cont.update_cellular_mechanics_step_3(&dt).unwrap();
+
+                    // TODO this currently also does application of domain boundaries and inclusion of new cells which is wrong in general!
+                    // cont.update_local_functions(&dt).unwrap();
+                    run_step_3!(cont, &dt, $($feature),+);
+
+                    // This function needs an additional synchronization step which cannot correctly be done in between the other ones
+                    cont.sort_cells_in_voxels_step_1().unwrap();
+
+                    cont.barrier.wait();
+
+                    cont.sort_cells_in_voxels_step_2().unwrap();
+
+                    // if show_progressbar && cont.mvc_id == 0 {
+                    //     bar.inc(1);
+                    // }
+                    if cont.mvc_id == 0 {
+                        print!("\r{}", iteration);
+                    }
+
+                    // if save_now_new.load(Ordering::Relaxed) {
+                    if save {
+                        cont.save_voxels_to_database(&iteration).unwrap();
+                        cont.save_cells_to_database(&iteration).unwrap();
+                    }
+
+                    // TODO Make sure to only call this if the controller type is not ()
+                    {
+                        controller_box.lock().unwrap().measure(
+                            l as u32,
+                            cont.voxels
+                            .iter()
+                            .flat_map(|vox| vox.1.cells
+                                .iter()
+                                .map(|(cbox, _)| cbox)
+                            )
+                        ).unwrap();
+                        controller_barrier_new.wait();
+                        controller_box.lock().unwrap().adjust(
+                            cont.voxels
+                            .iter_mut()
+                            .flat_map(|vox| vox.1.cells
+                                .iter_mut()
+                                .map(|(cbox, aux_storage)| (cbox, &mut aux_storage.cycle_events))
+                            )
+                        ).unwrap();
+                    }
+
+                    // Check if we are stopping the simulation now
+                    // if stop_now_new.load(Ordering::Relaxed) {
+                    //     // new_barrier.wait();
+                    //     break;
+                    // }
+                    iteration += 1;
+                }
+                // if show_progressbar && cont.mvc_id == 0 {
+                //     bar.finish();
+                // }
+                return Ok(cont);
+            }).unwrap();
+            handles.push(handle);
+        }
+
+        $supervisor.worker_threads = handles;
+
+        // This starts all threads simultanously
+        start_barrier.wait();
+
+        // Collect all threads
+        let mut databases = Vec::new();
+        for thread in $supervisor.worker_threads.drain(..) {
+            let t = thread
+                .join()
+                .expect("Could not join threads after Simulation has finished").unwrap();
+            databases.push((t.storage_cells, t.storage_voxels, t.domain))
+        }
+
+        // Create a simulationresult which can then be used to further plot and analyze results
+        let (storage_cells, storage_voxels, domain) = databases.pop().ok_or(RequestError {
+            message: format!("The threads of the simulation did not yield any handles"),
+        }).unwrap();
+
+        let simulation_result = SimulationResult {
+            storage: $supervisor.storage.clone(),
+            domain,
+            storage_cells,
+            storage_voxels,
+            plotting_config: PlottingConfig::default(),
+        };
+    }
 }
 
 impl<
@@ -153,242 +371,9 @@ where
     Cont: 'static + Serialize + for<'a> Deserialize<'a> + Send + Sync,
     Obs: 'static + Send + Sync,
 {
-    fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
-        &mut self,
-    ) -> Result<(), SimulationError>
-    where
-        Dom: Domain<Cel, Ind, Vox>,
-        Pos: Position,
-        For: Force,
-        Inf: cellular_raza_concepts::interaction::InteractionInformation,
-        Vel: Velocity,
-        ConcVecExtracellular: Concentration,
-        ConcTotalExtracellular: Concentration,
-        ConcVecIntracellular: Concentration,
-        ConcBoundaryExtracellular: Send + Sync,
-        ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
-            + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
-            + AddAssign<ConcVecIntracellular>,
-        Ind: Index,
-        Vox: Voxel<Ind, Pos, Vel, For>,
-        Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
-        Cel: CellAgent<Pos, Vel, For, Inf>
-            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
-            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
-        VoxelBox<
-            Ind,
-            Pos,
-            Vel,
-            For,
-            Vox,
-            Cel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
-        >: Clone,
-        AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
-        Cont: Controller<Cel, Obs>,
-    {
-        let mut handles = Vec::new();
-        let mut start_barrier = Barrier::new(self.multivoxelcontainers.len() + 1);
-        let controller_barrier = Barrier::new(self.multivoxelcontainers.len());
-
-        // Create progress bar and define style
-        if self.config.show_progressbar {
-            println!("Running Simulation");
-        }
-
-        for (l, mut cont) in self.multivoxelcontainers.drain(..).enumerate() {
-            // Clone barriers to use them for synchronization in threads
-            let mut new_start_barrier = start_barrier.clone();
-            let mut controller_barrier_new = controller_barrier.clone();
-
-            // See if we need to save
-            let stop_now_new = Arc::new(AtomicBool::new(false));
-
-            // Copy time evaluation points
-            let t_start = self.time.t_start;
-            let t_eval = self.time.t_eval.clone();
-
-            // Add bar
-            let show_progressbar = self.config.show_progressbar;
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            let bar = ProgressBar::new(t_eval.len() as u64);
-            bar.set_style(style);
-
-            let controller_box = self.controller_box.clone();
-
-            // Spawn a thread for each multivoxelcontainer that is running
-            let handle = thread::Builder::new()
-                .name(format!("worker_thread_{:03.0}", l))
-                .spawn(move || -> Result<_, SimulationError>
-            {
-                new_start_barrier.wait();
-
-                let mut time = t_start;
-                #[allow(unused)]
-                let mut iteration = 0u64;
-                for (t, save) in t_eval {
-                    let dt = t - time;
-                    time = t;
-
-                    match cont.run_full_update(&dt) {
-                        Ok(()) => (),
-                        Err(error) => {
-                            // TODO this is not always an error in update_mechanics!
-                            println!("Encountered error in update_mechanics: {:?}. Stopping simulation.", error);
-                            // Make sure to stop all threads after this iteration.
-                            stop_now_new.store(true, Ordering::Relaxed);
-                        },
-                    }
-
-                    if show_progressbar && cont.mvc_id == 0 {
-                        bar.inc(1);
-                    }
-
-                    // if save_now_new.load(Ordering::Relaxed) {
-                    if save {
-                        cont.save_voxels_to_database(&iteration)?;
-                        cont.save_cells_to_database(&iteration)?;
-                    }
-
-                    // TODO Make sure to only call this if the controller type is not ()
-                    {
-                        controller_box
-                            .lock()
-                            .unwrap()
-                            .measure(
-                                l as u32,
-                                cont.voxels
-                                    .iter()
-                                    .flat_map(|vox| vox.1.cells.iter().map(|(cbox, _)| cbox)),
-                            )
-                            .unwrap();
-                        controller_barrier_new.wait();
-                        controller_box
-                            .lock()
-                            .unwrap()
-                            .adjust(cont.voxels.iter_mut().flat_map(|vox| {
-                                vox.1.cells.iter_mut().map(|(cbox, aux_storage)| {
-                                    (cbox, &mut aux_storage.cycle_events)
-                                })
-                            }))
-                            .unwrap();
-                    }
-
-                    // Check if we are stopping the simulation now
-                    if stop_now_new.load(Ordering::Relaxed) {
-                        // new_barrier.wait();
-                        break;
-                    }
-                    iteration += 1;
-                }
-                if show_progressbar && cont.mvc_id == 0 {
-                    bar.finish();
-                }
-                return Ok(cont);
-            })?;
-            handles.push(handle);
-        }
-
-        // Store worker threads in supervisor
-        self.worker_threads = handles;
-
-        // This starts all threads simultanously
-        start_barrier.wait();
-        Ok(())
-    }
-
-    pub fn run_full_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
-        &mut self,
-    ) -> Result<
-        SimulationResult<
-            Ind,
-            Pos,
-            For,
-            Vel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
-            Vox,
-            Dom,
-            Cel,
-        >,
-        SimulationError,
-    >
-    where
-        Dom: Domain<Cel, Ind, Vox>,
-        Pos: Position,
-        For: Force,
-        Inf: cellular_raza_concepts::interaction::InteractionInformation,
-        Vel: Velocity,
-        ConcVecExtracellular: Concentration,
-        ConcTotalExtracellular: Concentration,
-        ConcBoundaryExtracellular: Send + Sync + 'static,
-        ConcVecIntracellular: Send + Sync + Concentration,
-        ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
-            + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
-            + AddAssign<ConcVecIntracellular>,
-        Ind: Index,
-        Vox: Voxel<Ind, Pos, Vel, For>,
-        Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
-        Cel: CellAgent<Pos, Vel, For, Inf>
-            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
-            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
-        VoxelBox<
-            Ind,
-            Pos,
-            Vel,
-            For,
-            Vox,
-            Cel,
-            ConcVecExtracellular,
-            ConcBoundaryExtracellular,
-            ConcVecIntracellular,
-        >: Clone,
-        AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
-        Cont: Controller<Cel, Obs>,
-    {
-        // Run the simulation
-        self.spawn_worker_threads_and_run_sim()?;
-
-        // Collect all threads
-        let mut databases = Vec::new();
-        for thread in self.worker_threads.drain(..) {
-            let t = thread
-                .join()
-                .expect("Could not join threads after Simulation has finished")?;
-            databases.push((t.storage_cells, t.storage_voxels, t.domain))
-        }
-
-        // Create a simulationresult which can then be used to further plot and analyze results
-        let (storage_cells, storage_voxels, domain) = databases.pop().ok_or(RequestError(
-            format!("The threads of the simulation did not yield any handles"),
-        ))?;
-
-        let simulation_result = SimulationResult {
-            storage: self.storage.clone(),
-            domain,
-            storage_cells,
-            storage_voxels,
-            plotting_config: PlottingConfig::default(),
-        };
-
-        Ok(simulation_result)
+    #[doc(hidden)]
+    pub fn __private_initialize(&self) -> (Barrier, Barrier) {
+        (Barrier::new(self.multivoxelcontainers.len()+1), Barrier::new(self.multivoxelcontainers.len()))
     }
 
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
