@@ -143,97 +143,47 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 /// This procedure is recommended.
 /// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values are changed at discrete time events.
 /// The notation is slightly different to the usually used for stochastic processes.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(CellAgent, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
-pub struct MyMechanics {
-    pub pos: Vector3<f64>,
-    pub vel: Vector3<f64>,
-    #[pyo3(get, set)]
-    pub dampening_constant: f64,
-    #[pyo3(get, set)]
-    pub mass: f64,
-    #[pyo3(get, set)]
-    pub random_travel_velocity: f64,
-    pub random_direction_travel: nalgebra::UnitVector3<f64>,
-    #[pyo3(get, set)]
-    pub random_update_time: f64,
+pub struct Brownian {
+    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
+    pub mechanics: Brownian3D,
 }
 
 #[pymethods]
-impl MyMechanics {
+impl Brownian {
+    #[new]
+    #[pyo3(signature = (pos, diffusion_constant, kb_temperature))]
+    ///
+    /// Creates a new Brownian mechanics model with defined position, diffusion
+    /// constant and temperature.
+    fn new(pos: [f64; 3], diffusion_constant: f64, kb_temperature: f64) -> Self {
+        Brownian {
+            mechanics: Brownian3D::new(
+            pos.into(),
+            diffusion_constant,
+            kb_temperature,
+        )}
+    }
+
     #[getter(pos)]
-    fn get_pos(&self) -> [f64; 3] {
-        self.pos.into()
+    fn get_position(&self) -> [f64; 3] {
+        self.mechanics.pos.into()
     }
 
     #[setter(pos)]
-    fn set_pos(&mut self, pos: [f64; 3]) {
-        self.pos = pos.into();
+    fn set_position(&mut self, pos: [f64; 3]) {
+        self.mechanics.pos = pos.into();
     }
 
-    #[getter(vel)]
-    fn get_vel(&self) -> [f64; 3] {
-        self.vel.into()
+    #[getter(diffusion_constant)]
+    fn get_diffusion_constant(&self) -> f64 {
+        self.mechanics.diffusion_constant
     }
 
-    #[setter(vel)]
-    fn set_vel(&mut self, vel: [f64; 3]) {
-        self.vel = vel.into();
-    }
-
-    #[getter(random_direction_travel)]
-    fn get_random_direction_travel(&self) -> [f64; 3] {
-        self.random_direction_travel.clone_owned().into()
-    }
-
-    #[setter(random_direction_travel)]
-    fn set_random_direction_travel(&mut self, random_direction_travel: [f64; 3]) {
-        self.random_direction_travel =
-            nalgebra::UnitVector3::new_normalize(random_direction_travel.into());
-    }
-}
-
-impl Mechanics<Vector3<f64>, Vector3<f64>, Vector3<f64>> for MyMechanics {
-    fn pos(&self) -> Vector3<f64> {
-        self.pos
-    }
-
-    fn velocity(&self) -> Vector3<f64> {
-        self.vel
-    }
-
-    fn set_pos(&mut self, p: &Vector3<f64>) {
-        self.pos = *p;
-    }
-
-    fn set_velocity(&mut self, v: &Vector3<f64>) {
-        self.vel = *v;
-    }
-
-    fn set_random_variable(
-        &mut self,
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64,
-    ) -> Result<Option<f64>, RngError> {
-        let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
-        let psi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
-        self.random_direction_travel = nalgebra::UnitVector3::new_normalize(Vector3::from([
-            phi.sin() * psi.cos(),
-            phi.sin() * psi.sin(),
-            phi.cos(),
-        ]));
-        Ok(Some(
-            rng.gen_range(2.0 * dt..6.0 * dt) * self.random_update_time,
-        ))
-    }
-
-    fn calculate_increment(
-        &self,
-        force: Vector3<f64>,
-    ) -> Result<(Vector3<f64>, Vector3<f64>), CalcError> {
-        let dx = self.vel + self.random_travel_velocity * self.random_direction_travel.into_inner();
-        let dv = force / self.mass - self.dampening_constant * self.vel;
-        Ok((dx, dv))
+    #[setter(kb_temperature)]
+    fn set_kb_temperature(&mut self, kb_temperature: f64) {
+        self.mechanics.kb_temperature = kb_temperature;
     }
 }
 
@@ -255,13 +205,16 @@ pub struct SimulationSettings {
     #[pyo3(get, set)]
     pub n_cells_r11: usize,
 
-    /// See [MyMechanics]
+    /// See [Brownian]
     #[pyo3(get, set)]
-    pub cell_dampening: f64,
-    /// See [MyMechanics]
+    pub cell_diffusion_constant: f64,
+    /// See [Brownian]
+    #[pyo3(get, set)]
+    pub cell_kb_temperature: f64,
+    /// See [Brownian]
     #[pyo3(get, set)]
     pub cell_radius_cargo: f64,
-    /// See [MyMechanics]
+    /// See [Brownian]
     #[pyo3(get, set)]
     pub cell_radius_r11: f64,
 
@@ -319,14 +272,15 @@ impl Default for SimulationSettings {
         let dt = 0.25;
 
         SimulationSettings {
-            n_cells_cargo: 1,
-            n_cells_r11: 500,
+            n_cells_cargo: 50,
+            n_cells_r11: 200,
 
-            cell_dampening: 1.0,
-            cell_radius_cargo: 10.0,
-            cell_radius_r11,
+            cell_diffusion_constant: 1.0,
+            cell_kb_temperature: 0.2,
+            cell_radius_cargo: 1.5,
+            cell_radius_r11: cell_radius_r11,
 
-            cell_mechanics_interaction_range_cargo: 3.0 * cell_radius_r11,
+            cell_mechanics_interaction_range_cargo: 3.0 * cell_radius_receptor,
             cell_mechanics_interaction_range_r11: 1.0 * cell_radius_r11,
             cell_mechanics_random_travel_velocity: 0.05,
             cell_mechanics_random_update_time: 200. * dt,
@@ -368,10 +322,18 @@ pub fn run_simulation_rs(
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
-    let cells = (0..simulation_settings.n_cells_cargo + simulation_settings.n_cells_r11)
+    let particles = (0..simulation_settings.n_cells_cargo
+        + simulation_settings.n_cells_atg11
+        + simulation_settings.n_cells_receptor)
         .map(|n| {
-            let pos = if n == 0 {
-                Vector3::from([simulation_settings.domain_size / 2.0; 3])
+            let low = 0.4 * simulation_settings.domain_size;
+            let high = 0.6 * simulation_settings.domain_size;
+            let pos = if n < simulation_settings.n_cells_cargo {
+                Vector3::from([
+                    rng.gen_range(low..high),
+                    rng.gen_range(low..high),
+                    rng.gen_range(low..high),
+                ])
             } else {
                 Vector3::from([
                     rng.gen_range(0.0..simulation_settings.domain_size),
@@ -379,7 +341,6 @@ pub fn run_simulation_rs(
                     rng.gen_range(0.0..simulation_settings.domain_size),
                 ])
             };
-            let vel = Vector3::zero();
             let (cell_radius, species, interaction_range) = if n < simulation_settings.n_cells_cargo
             {
                 (
@@ -394,31 +355,20 @@ pub fn run_simulation_rs(
                     simulation_settings.cell_mechanics_interaction_range_r11,
                 )
             };
-            ModularCell {
-                mechanics: MyMechanics {
+            Particle {
+                mechanics: Brownian {mechanics: Brownian3D::new(
                     pos,
-                    vel,
-                    dampening_constant: simulation_settings.cell_dampening,
-                    mass: 4. / 3. * std::f64::consts::PI * cell_radius.powf(3.0),
-                    random_travel_velocity: if n < simulation_settings.n_cells_cargo {
-                        0.0
-                    } else {
-                        simulation_settings.cell_mechanics_random_travel_velocity
-                    },
-                    random_direction_travel: Vector3::<f64>::y_axis(),
-                    random_update_time: simulation_settings.cell_mechanics_random_update_time,
-                },
                 interaction: CellSpecificInteraction {
+                    simulation_settings.cell_diffusion_constant,
+                    simulation_settings.cell_kb_temperature,
+                )},
                     species,
+                    cell_radius,
                     potential_strength: simulation_settings.cell_mechanics_potential_strength,
                     interaction_range,
-                    cell_radius,
                     clustering_strength: simulation_settings
                         .cell_mechanics_relative_clustering_strength,
                 },
-                cycle: NoCycle {},
-                interaction_extracellular: NoExtracellularGradientSensing {},
-                cellular_reactions: NoCellularreactions {},
             }
         })
         .collect::<Vec<_>>();
@@ -450,10 +400,10 @@ pub fn run_simulation_rs(
 
     let simulation_setup = create_simulation_setup!(
         Domain: domain,
-        Cells: cells,
+        Cells: particles,
         Time: time,
         MetaParams: meta_params,
-        Storage: storage
+        Storage: storage.clone()
     );
 
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
