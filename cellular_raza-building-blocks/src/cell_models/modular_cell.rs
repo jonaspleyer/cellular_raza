@@ -21,7 +21,7 @@ pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
 macro_rules! define_no_cellular_reactions {
     ($conc_vec_intracellular:ty, $conc_vec_extracellular:ty) => {
         #[derive(Clone, Debug, Serialize, Deserialize)]
-        pub struct NoCellularreactions {}
+        pub struct NoCellularreactions;
 
         impl<Mec, Int, Cyc, IntExtracellular>
             CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular>
@@ -53,7 +53,10 @@ macro_rules! define_no_cellular_reactions {
     };
 }
 
-define_no_cellular_reactions! {nalgebra::SVector<f64, 1>, nalgebra::SVector<f64, 1>}
+// #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub type Nothing = nalgebra::SVector<f64, 0>;
+
+define_no_cellular_reactions! {Nothing, Nothing}
 
 impl<Pos, Vel, For, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, Vel, For>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
@@ -171,7 +174,7 @@ where
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NoExtracellularGradientSensing {}
+pub struct NoExtracellularGradientSensing;
 
 impl<C, ConcGradientExtracellular> InteractionExtracellularGradient<C, ConcGradientExtracellular>
     for NoExtracellularGradientSensing

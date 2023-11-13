@@ -210,8 +210,8 @@ fn get_cells_at_cargo(
                     clustering_strength,
                 },
                 cycle: NoCycle {},
-                interaction_extracellular: NoExtracellularGradientSensing {},
-                cellular_reactions: NoCellularreactions {},
+                interaction_extracellular: NoExtracellularGradientSensing,
+                cellular_reactions: NoCellularreactions,
             }
         })
         .collect::<Vec<_>>();

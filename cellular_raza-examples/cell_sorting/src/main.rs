@@ -125,8 +125,8 @@ fn main() {
                     cell_radius: CELL_RADIUS,
                 },
                 cycle: NoCycle {},
-                interaction_extracellular: NoExtracellularGradientSensing {},
-                cellular_reactions: NoCellularreactions {},
+                interaction_extracellular: NoExtracellularGradientSensing,
+                cellular_reactions: NoCellularreactions,
             }
         })
         .collect::<Vec<_>>();

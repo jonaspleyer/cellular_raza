@@ -206,7 +206,7 @@ pub fn run_simulation_rs(
                     secretion_rate: simulation_settings.secretion_rate.into(),
                     uptake_rate: simulation_settings.uptake_rate.into(),
                 },
-                interactionextracellulargradient: NoExtracellularGradientSensing {},
+                interactionextracellulargradient: NoExtracellularGradientSensing,
             }
         })
         .collect::<Vec<_>>();
