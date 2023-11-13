@@ -33,18 +33,158 @@ macro_rules! implement_mechanics_model_nd(
                 self.vel = *v;
             }
 
-            fn calculate_increment(&self, force: SVector<f64, $dim>) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $dim>,
+            ) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
                 let dx = self.vel;
-                let dv = force/self.mass - self.dampening_constant * self.vel;
+                let dv = force / self.mass - self.dampening_constant * self.vel;
                 Ok((dx, dv))
             }
         }
-    }
+}
 );
 
 implement_mechanics_model_nd!(MechanicsModel1D, 1);
 implement_mechanics_model_nd!(MechanicsModel2D, 2);
 implement_mechanics_model_nd!(MechanicsModel3D, 3);
+
+/// An empty struct to signalize that no velocity needs to be updated.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NoVelocity;
+
+impl core::ops::Add for NoVelocity {
+    type Output = Self;
+
+    fn add(self, _: Self) -> Self::Output {
+        NoVelocity
+    }
+}
+
+impl<F> core::ops::Mul<F> for NoVelocity {
+    type Output = Self;
+
+    fn mul(self, _: F) -> Self::Output {
+        NoVelocity
+    }
+}
+
+macro_rules! implement_brownian_motion_nd(
+    ($model_name:ident, $dim:literal) => {
+        #[doc = "Brownian motion of particles represented by a spherical potential in "]
+        #[doc =stringify!($dim)]
+        #[doc = " dimensions."]
+        ///
+        /// # Parameters
+        /// | Symbol | Parameter | Description |
+        /// | --- | --- | --- |
+        /// | $\vec{x}$ | `pos` | Position of the particle. |
+        /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
+        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+        ///
+        /// # Position Update
+        /// Positions are numerically integrated.
+        /// We assume an overdamped context, meaning that we utilize the [NoVelocity] struct to
+        /// avoid updating the velocities and save computational resources.
+        /// The differential equation which is solved corresponds to a euclidean equation of motion
+        /// with dampening and a random part.
+        /// \\begin{align}
+        ///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
+        ///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
+        /// \\end{align}
+        /// By choosing the `random_update_time` $t_r$ larger than the integration step, we can
+        /// resolve smaller timesteps to more accurately solve the equations.
+        /// This procedure is recommended.
+        /// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values
+        /// are changed at discrete time events.
+        /// The notation is slightly different to the usually used for stochastic processes.
+        #[derive(Clone, Debug, Deserialize, Serialize)]
+        pub struct $model_name {
+            /// Current position of the particle $\vec{x}$.
+            pub pos: SVector<f64, $dim>,
+            /// Diffusion constant $D$.
+            pub diffusion_constant: f64,
+            /// The product of temperature and boltzmann constant $k_B T$.
+            pub kb_temperature: f64,
+            random_vector: SVector<f64, $dim>,
+        }
+
+        impl $model_name {
+            #[doc = "Constructs a new "]
+            #[doc = stringify!($model_name)]
+            #[doc = " in "]
+            #[doc = stringify!($dim)]
+            #[doc = " dimensions."]
+            pub fn new(
+                pos: SVector<f64, $dim>,
+                diffusion_constant: f64,
+                kb_temperature: f64,
+            ) -> Self {
+                use num::Zero;
+                Self {
+                    pos,
+                    diffusion_constant,
+                    kb_temperature,
+                    random_vector: SVector::<f64, $dim>::zero(),
+                }
+            }
+        }
+
+        impl Mechanics<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for $model_name {
+            fn pos(&self) -> SVector<f64, $dim> {
+                self.pos
+            }
+
+            fn velocity(&self) -> SVector<f64, $dim> {
+                use num::Zero;
+                SVector::<f64, $dim>::zero()
+            }
+
+            fn set_pos(&mut self, pos: &SVector<f64, $dim>) {
+                self.pos = *pos;
+            }
+
+            fn set_velocity(&mut self, _velocity: &SVector<f64, $dim>) {}
+
+            fn set_random_variable(
+                &mut self,
+                rng: &mut rand_chacha::ChaCha8Rng,
+                dt: f64
+            ) -> Result<Option<f64>, RngError> {
+                use rand::Rng;
+
+                let mut random_array = [0_f64; $dim];
+                let distr = match rand_distr::Normal::new(0.0, dt) {
+                    Ok(e) => Ok(e),
+                    Err(e) => Err(RngError(format!("{e}"))),
+                }?;
+                rng
+                    .sample_iter(distr)
+                    .zip(random_array.iter_mut())
+                    .for_each(|(r, arr)| *arr = r);
+                self.random_vector = random_array.into();
+                Ok(Some(dt))
+            }
+
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $dim>
+            ) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
+                use num::Zero;
+                let dx = -self.diffusion_constant/self.kb_temperature*force
+                    + (2.0*self.diffusion_constant).sqrt()*self.random_vector;
+                Ok((
+                    dx,
+                    SVector::<f64, $dim>::zero()
+                ))
+            }
+        }
+    }
+);
+
+implement_brownian_motion_nd!(Brownian1D, 1);
+implement_brownian_motion_nd!(Brownian2D, 2);
+implement_brownian_motion_nd!(Brownian3D, 3);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexMechanics2D<const D: usize> {
