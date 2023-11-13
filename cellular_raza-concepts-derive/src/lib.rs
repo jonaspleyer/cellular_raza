@@ -131,6 +131,12 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                     fn calculate_increment(&self, force: #force) -> Result<(#position, #velocity), CalcError> {
                         self.#name.calculate_increment(force)
                     }
+                    fn set_random_variable(&mut self,
+                        rng: &mut rand_chacha::ChaCha8Rng,
+                        dt: f64,
+                    ) -> Result<Option<f64>, RngError> {
+                        self.#name.set_random_variable(rng, dt)
+                    }
                 }
             };
             result.extend(TokenStream::from(res2));
