@@ -52,46 +52,48 @@ pub fn aux_storage(input: TokenStream) -> TokenStream {
             _ => false,
         }) {
             let name = &field.ident;
-            let generic_args_field = match &field.ty {
+            let generic_args = match &field.ty {
                 syn::Type::Path(path) => {
                     path.path
                         .segments
                         .first()
                         .and_then(|segment| match &segment.arguments {
                             syn::PathArguments::AngleBracketed(arg) => {
-                                Some(arg.args.clone().into_token_stream())
+                                Some(arg.args.clone().into_iter().collect::<Vec<_>>())
                             }
                             _ => None,
                         })
                 }
                 _ => None,
             }
-            .or(Some("".into_token_stream()))
+            .or(Some(Vec::new()))
             .unwrap();
 
+            let position_generic = generic_args[0].clone();
+            let velocity_generic = generic_args[1].clone();
+            let force_generic = generic_args[2].clone();
+
             let res2 = quote! {
-                // TODO these generic parameters <P, V, N> should be inferred if possible
-                // but it does not seem to be possible at this time.
-                impl #struct_generics UpdateMechanics <#generic_args_field> for #struct_name #struct_generics
+                impl #struct_generics UpdateMechanics <#(#generic_args),*> for #struct_name #struct_generics
                 where
                     F: Clone + core::ops::AddAssign<F> + num::Zero,
                 {
-                    fn set_last_position(&mut self, pos: P) {
+                    fn set_last_position(&mut self, pos: #position_generic) {
                         self.#name.set_last_position(pos)
                     }
-                    fn previous_positions(&self) -> std::collections::vec_deque::Iter<P> {
+                    fn previous_positions(&self) -> std::collections::vec_deque::Iter<#position_generic> {
                         self.#name.previous_positions()
                     }
-                    fn set_last_velocity(&mut self, vel: V) {
+                    fn set_last_velocity(&mut self, vel: #velocity_generic) {
                         self.#name.set_last_velocity(vel)
                     }
-                    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V> {
+                    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<#velocity_generic> {
                         self.#name.previous_velocities()
                     }
-                    fn add_force(&mut self, force: F) {
+                    fn add_force(&mut self, force: #force_generic) {
                         self.#name.add_force(force);
                     }
-                    fn get_current_force(&self) -> F {
+                    fn get_current_force(&self) -> #force_generic {
                         self.#name.get_current_force()
                     }
                     fn clear_forces(&mut self) {

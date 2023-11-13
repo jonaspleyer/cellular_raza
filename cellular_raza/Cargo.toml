@@ -18,6 +18,10 @@ autoexamples = false
 path = "../cellular_raza-core"
 version = "0.0.3"
 
+[dependencies.cellular_raza-core-derive]
+path = "../cellular_raza-core-derive"
+version = "0.0.3"
+
 [dependencies.cellular_raza-building-blocks]
 path = "../cellular_raza-building-blocks"
 version = "0.0.3"
