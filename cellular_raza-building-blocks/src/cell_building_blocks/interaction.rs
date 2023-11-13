@@ -148,7 +148,6 @@ fn ray_intersects_line_segment(
         // This value must be between the norm of l2-l1 squared
         let d = (r1 - l1).dot(&(l2 - l1));
         let e = (l2 - l1).norm_squared();
-        println!("Exit early");
         return 0.0 <= d && d <= e;
     }
 

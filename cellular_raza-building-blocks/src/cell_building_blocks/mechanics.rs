@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 macro_rules! implement_mechanics_model_nd(
     ($model_name:ident, $dim:literal) => {
-        #[derive(Clone,Debug,Serialize,Deserialize)]
+        #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct $model_name {
             pub pos: SVector<f64, $dim>,
             pub vel: SVector<f64, $dim>,
