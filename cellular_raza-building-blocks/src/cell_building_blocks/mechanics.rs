@@ -61,122 +61,113 @@ impl<F> core::ops::Mul<F> for NoVelocity {
     }
 }
 
-macro_rules! implement_brownian_motion_nd(
-    ($model_name:ident, $dim:literal) => {
-        #[doc = "Brownian motion of particles represented by a spherical potential in "]
-        #[doc =stringify!($dim)]
-        #[doc = " dimensions."]
-        ///
-        /// # Parameters
-        /// | Symbol | Parameter | Description |
-        /// | --- | --- | --- |
-        /// | $\vec{x}$ | `pos` | Position of the particle. |
-        /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
-        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-        ///
-        /// # Position Update
-        /// Positions are numerically integrated.
-        /// We assume an overdamped context, meaning that we utilize the [NoVelocity] struct to
-        /// avoid updating the velocities and save computational resources.
-        /// The differential equation which is solved corresponds to a euclidean equation of motion
-        /// with dampening and a random part.
-        /// \\begin{align}
-        ///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
-        ///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
-        /// \\end{align}
-        /// By choosing the `random_update_time` $t_r$ larger than the integration step, we can
-        /// resolve smaller timesteps to more accurately solve the equations.
-        /// This procedure is recommended.
-        /// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values
-        /// are changed at discrete time events.
-        /// The notation is slightly different to the usually used for stochastic processes.
-        #[derive(Clone, Debug, Deserialize, Serialize)]
-        pub struct $model_name {
-            /// Current position of the particle $\vec{x}$.
-            pub pos: SVector<f64, $dim>,
-            /// Diffusion constant $D$.
-            pub diffusion_constant: f64,
-            /// The product of temperature and boltzmann constant $k_B T$.
-            pub kb_temperature: f64,
-            random_vector: SVector<f64, $dim>,
-        }
 
-        impl $model_name {
-            #[doc = "Constructs a new "]
-            #[doc = stringify!($model_name)]
-            #[doc = " in "]
-            #[doc = stringify!($dim)]
-            #[doc = " dimensions."]
-            pub fn new(
-                pos: SVector<f64, $dim>,
-                diffusion_constant: f64,
-                kb_temperature: f64,
-            ) -> Self {
-                use num::Zero;
-                Self {
-                    pos,
-                    diffusion_constant,
-                    kb_temperature,
-                    random_vector: SVector::<f64, $dim>::zero(),
-                }
-            }
-        }
+/// Brownian motion of particles represented by a spherical potential in arbitrary dimension.
+///
+/// # Parameters
+/// | Symbol | Parameter | Description |
+/// | --- | --- | --- |
+/// | $\vec{x}$ | `pos` | Position of the particle. |
+/// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
+/// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+///
+/// # Position Update
+/// Positions are numerically integrated.
+/// We assume an overdamped context, meaning that we utilize the [NoVelocity] struct to
+/// avoid updating the velocities and save computational resources.
+/// The differential equation which is solved corresponds to a euclidean equation of motion
+/// with dampening and a random part.
+/// \\begin{align}
+///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
+///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
+/// \\end{align}
+/// By choosing the `random_update_time` $t_r$ larger than the integration step, we can
+/// resolve smaller timesteps to more accurately solve the equations.
+/// This procedure is recommended.
+/// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values
+/// are changed at discrete time events.
+/// The notation is slightly different to the usually used for stochastic processes.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Brownian<const D: usize> {
+    /// Current position of the particle $\vec{x}$.
+    pub pos: SVector<f64, D>,
+    /// Diffusion constant $D$.
+    pub diffusion_constant: f64,
+    /// The product of temperature and boltzmann constant $k_B T$.
+    pub kb_temperature: f64,
+    /// The steps it takes for the particle to update its random vector
+    pub particle_random_update_interval: usize,
+    random_vector: SVector<f64, D>,
+}
 
-        impl Mechanics<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for $model_name {
-            fn pos(&self) -> SVector<f64, $dim> {
-                self.pos
-            }
-
-            fn velocity(&self) -> SVector<f64, $dim> {
-                use num::Zero;
-                SVector::<f64, $dim>::zero()
-            }
-
-            fn set_pos(&mut self, pos: &SVector<f64, $dim>) {
-                self.pos = *pos;
-            }
-
-            fn set_velocity(&mut self, _velocity: &SVector<f64, $dim>) {}
-
-            fn set_random_variable(
-                &mut self,
-                rng: &mut rand_chacha::ChaCha8Rng,
-                dt: f64
-            ) -> Result<Option<f64>, RngError> {
-                use rand::Rng;
-
-                let mut random_array = [0_f64; $dim];
-                let distr = match rand_distr::Normal::new(0.0, dt) {
-                    Ok(e) => Ok(e),
-                    Err(e) => Err(RngError(format!("{e}"))),
-                }?;
-                rng
-                    .sample_iter(distr)
-                    .zip(random_array.iter_mut())
-                    .for_each(|(r, arr)| *arr = r);
-                self.random_vector = random_array.into();
-                Ok(Some(dt))
-            }
-
-            fn calculate_increment(
-                &self,
-                force: SVector<f64, $dim>
-            ) -> Result<(SVector<f64, $dim>, SVector<f64, $dim>), CalcError> {
-                use num::Zero;
-                let dx = -self.diffusion_constant/self.kb_temperature*force
-                    + (2.0*self.diffusion_constant).sqrt()*self.random_vector;
-                Ok((
-                    dx,
-                    SVector::<f64, $dim>::zero()
-                ))
-            }
+impl<const D: usize> Brownian<D> {
+    /// Constructs a new [Brownian] mechanics model for the specified dimension.
+    pub fn new(
+        pos: SVector<f64, D>,
+        diffusion_constant: f64,
+        kb_temperature: f64,
+        particle_random_update_interval: usize,
+    ) -> Self {
+        use num::Zero;
+        Self {
+            pos,
+            diffusion_constant,
+            kb_temperature,
+            particle_random_update_interval,
+            random_vector: SVector::<f64, D>::zero(),
         }
     }
-);
+}
 
-implement_brownian_motion_nd!(Brownian1D, 1);
-implement_brownian_motion_nd!(Brownian2D, 2);
-implement_brownian_motion_nd!(Brownian3D, 3);
+impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for Brownian<D> {
+    fn pos(&self) -> SVector<f64, D> {
+        self.pos
+    }
+
+    fn velocity(&self) -> SVector<f64, D> {
+        use num::Zero;
+        SVector::<f64, D>::zero()
+    }
+
+    fn set_pos(&mut self, pos: &SVector<f64, D>) {
+        self.pos = *pos;
+    }
+
+    fn set_velocity(&mut self, _velocity: &SVector<f64, D>) {}
+
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64
+    ) -> Result<Option<f64>, RngError> {
+        use rand::Rng;
+
+        let mut random_array = [0_f64; D];
+        let distr = match rand_distr::Normal::new(0.0, dt) {
+            Ok(e) => Ok(e),
+            Err(e) => Err(RngError(format!("{e}"))),
+        }?;
+        rng
+            .sample_iter(distr)
+            .zip(random_array.iter_mut())
+            .for_each(|(r, arr)| *arr = r);
+        self.random_vector = random_array.into();
+        Ok(Some(self.particle_random_update_interval as f64 * dt))
+    }
+
+    fn calculate_increment(
+        &self,
+        force: SVector<f64, D>
+    ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
+        use num::Zero;
+        let dx = -self.diffusion_constant/self.kb_temperature*force
+            + (2.0*self.diffusion_constant).sqrt()*self.random_vector;
+        Ok((
+            dx,
+            SVector::<f64, D>::zero()
+        ))
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexMechanics2D<const D: usize> {

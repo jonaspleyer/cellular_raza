@@ -145,25 +145,32 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 /// The notation is slightly different to the usually used for stochastic processes.
 #[derive(CellAgent, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
-pub struct Brownian {
+pub struct Brownian3D {
     #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
-    pub mechanics: Brownian3D,
+    pub mechanics: Brownian<3>,
 }
 
 #[pymethods]
-impl Brownian {
+impl Brownian3D {
     #[new]
-    #[pyo3(signature = (pos, diffusion_constant, kb_temperature))]
+    #[pyo3(signature = (pos, diffusion_constant, kb_temperature, particle_random_update_interval))]
     ///
     /// Creates a new Brownian mechanics model with defined position, diffusion
     /// constant and temperature.
-    fn new(pos: [f64; 3], diffusion_constant: f64, kb_temperature: f64) -> Self {
-        Brownian {
-            mechanics: Brownian3D::new(
-            pos.into(),
-            diffusion_constant,
-            kb_temperature,
-        )}
+    fn new(
+        pos: [f64; 3],
+        diffusion_constant: f64,
+        kb_temperature: f64,
+        particle_random_update_interval: usize,
+    ) -> Self {
+        Brownian3D {
+            mechanics: Brownian::<3>::new(
+                pos.into(),
+                diffusion_constant,
+                kb_temperature,
+                particle_random_update_interval,
+            ),
+        }
     }
 
     #[getter(pos)]
@@ -179,6 +186,16 @@ impl Brownian {
     #[getter(diffusion_constant)]
     fn get_diffusion_constant(&self) -> f64 {
         self.mechanics.diffusion_constant
+    }
+
+    #[setter(diffusion_constant)]
+    fn set_diffusion_constant(&mut self, diffusion_constant: f64) {
+        self.mechanics.diffusion_constant = diffusion_constant;
+    }
+
+    #[getter(kb_temperature)]
+    fn get_kb_temperature(&self) -> f64 {
+        self.mechanics.kb_temperature
     }
 
     #[setter(kb_temperature)]
