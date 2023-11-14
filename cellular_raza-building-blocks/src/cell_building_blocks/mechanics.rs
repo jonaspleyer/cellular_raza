@@ -29,7 +29,9 @@ pub struct NewtonDamped<const D: usize> {
     pub mass: f64,
 }
 
-impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for NewtonDamped<D> {
+impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>>
+    for NewtonDamped<D>
+{
     fn pos(&self) -> SVector<f64, D> {
         self.pos
     }
@@ -75,7 +77,6 @@ impl<F> core::ops::Mul<F> for NoVelocity {
         NoVelocity
     }
 }
-
 
 /// Brownian motion of particles represented by a spherical potential in arbitrary dimension.
 ///
@@ -153,7 +154,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
     fn set_random_variable(
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64
+        dt: f64,
     ) -> Result<Option<f64>, RngError> {
         use rand::Rng;
 
@@ -162,8 +163,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
             Ok(e) => Ok(e),
             Err(e) => Err(RngError(format!("{e}"))),
         }?;
-        rng
-            .sample_iter(distr)
+        rng.sample_iter(distr)
             .zip(random_array.iter_mut())
             .for_each(|(r, arr)| *arr = r);
         self.random_vector = random_array.into();
@@ -172,15 +172,12 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
 
     fn calculate_increment(
         &self,
-        force: SVector<f64, D>
+        force: SVector<f64, D>,
     ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
         use num::Zero;
-        let dx = -self.diffusion_constant/self.kb_temperature*force
-            + (2.0*self.diffusion_constant).sqrt()*self.random_vector;
-        Ok((
-            dx,
-            SVector::<f64, D>::zero()
-        ))
+        let dx = -self.diffusion_constant / self.kb_temperature * force
+            + (2.0 * self.diffusion_constant).sqrt() * self.random_vector;
+        Ok((dx, SVector::<f64, D>::zero()))
     }
 }
 

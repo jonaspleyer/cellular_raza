@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// No interaction of the cell with any other.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NoInteraction {}
+pub struct NoInteraction;
 
 impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
     fn calculate_force_between(
