@@ -101,7 +101,7 @@ fn run_simulation(
                 rng.gen_range(0.0..domain_size),
             ]);
             ModularCell {
-                mechanics: MechanicsModel3D {
+                mechanics: NewtonDamped {
                     pos,
                     vel: Vector3::zero(),
                     dampening_constant: 2.0,

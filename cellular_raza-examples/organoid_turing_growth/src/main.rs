@@ -133,7 +133,7 @@ fn main() {
 
             let pos = Vector2::from([x, y]);
             ModularCell {
-                mechanics: MechanicsModel2D {
+                mechanics: NewtonDamped {
                     pos,
                     vel: Vector2::from([0.0, 0.0]),
                     dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,
@@ -210,7 +210,7 @@ fn main() {
 
             let pos = Vector2::from([x, y]);
             ModularCell {
-                mechanics: MechanicsModel2D {
+                mechanics: NewtonDamped {
                     pos,
                     vel: Vector2::from([0.0, 0.0]),
                     dampening_constant: CELL_MECHANICS_VELOCITY_REDUCTION,

@@ -109,7 +109,7 @@ fn main() {
                 rng.gen_range(0.0..DOMAIN_SIZE),
             ]);
             ModularCell {
-                mechanics: MechanicsModel3D {
+                mechanics: NewtonDamped {
                     pos,
                     vel: Vector3::zero(),
                     dampening_constant: CELL_DAMPENING,

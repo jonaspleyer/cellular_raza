@@ -8,7 +8,7 @@ use rand::Rng;
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 4;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType =
-    ModularCell<MechanicsModel2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
+    ModularCell<NewtonDamped<2>, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct CellSpecificInteraction {
