@@ -104,7 +104,7 @@ fn run_simulation(
                 mechanics: NewtonDamped {
                     pos,
                     vel: Vector3::zero(),
-                    dampening_constant: 2.0,
+                    damping_constant: 2.0,
                     mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {

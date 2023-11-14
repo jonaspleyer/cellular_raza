@@ -6,11 +6,26 @@ use nalgebra::SVector;
 
 use serde::{Deserialize, Serialize};
 
+/// Simple newtonian dynamics governed by mass and damping.
+///
+/// The equation of motion is given by
+/// \\begin{equation}
+///     m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
+/// \\end{equation}
+/// where $\vec{F}$ is calculated by the [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
+/// The parameter $m$ describes the mass of the object while $\lambda$ is the damping constant.
+/// If the cell is growing, we need to increase the mass $m$.
+/// By interacting with the outside world, we can adapt $\lambda$ to external values although this is rarely desirable.
+/// Both operations need to be implemented by other concepts such as [Cycle](cellular_raza_concepts::cycle::Cycle).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewtonDamped<const D: usize> {
+    /// Current position $\vec{x}$ given by a vector of dimension `D`.
     pub pos: SVector<f64, D>,
+    /// Current velocity $\dot{\vec{x}}$ given by a vector of dimension `D`.
     pub vel: SVector<f64, D>,
-    pub dampening_constant: f64,
+    /// Damping constant $\lambda$.
+    pub damping_constant: f64,
+    /// Mass $m$ of the object.
     pub mass: f64,
 }
 
@@ -36,7 +51,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         force: SVector<f64, D>,
     ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
         let dx = self.vel;
-        let dv = force / self.mass - self.dampening_constant * self.vel;
+        let dv = force / self.mass - self.damping_constant * self.vel;
         Ok((dx, dv))
     }
 }

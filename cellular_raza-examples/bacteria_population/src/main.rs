@@ -164,7 +164,7 @@ fn main() {
                 mechanics: NewtonDamped {
                     pos,
                     vel: Vector2::zero(),
-                    dampening_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,
+                    damping_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,
                     mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {

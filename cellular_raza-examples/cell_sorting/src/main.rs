@@ -112,7 +112,7 @@ fn main() {
                 mechanics: NewtonDamped {
                     pos,
                     vel: Vector3::zero(),
-                    dampening_constant: CELL_DAMPENING,
+                    damping_constant: CELL_DAMPENING,
                     mass: 1.0,
                 },
                 interaction: CellSpecificInteraction {
