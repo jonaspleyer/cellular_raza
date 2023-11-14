@@ -23,38 +23,49 @@ impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
     fn get_interaction_information(&self) -> () {}
 }
 
-/// Pure Lennard-Jones interaction potential
+/// Lennard-Jones interaction potential with numerical upper and lower limit.
 ///
 /// This potential has many numerical downsides as it is very unstable to use
-/// and thus only recommended with very small integration steps.
+/// and thus only recommended with extremely small integration steps.
+/// The potential of the interaction is given by
+/// \\begin{equation}
+///     V(r) = 4\epsilon\left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^6\right]
+/// \\end{equation}
+/// where $\epsilon$ determines the overall interaction strength of the potential
+/// and $\sigma$ the shape and interaction range.
+/// The minimum of this potential is at $r_\text{min}=2^{1/6}\sigma$.
+/// For two identically-sized spherical interacting particles $r_\text{min}$ has to align with
+/// the diameter of their size.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct LennardJones {
+pub struct BoundLennardJones<const D: usize> {
     /// Overall interaction strength of the potential.
     pub epsilon: f64,
     /// Overall range of the potential.
     pub sigma: f64,
 }
 
-macro_rules! implement_lennard_jones_nd(
-    ($dim:literal) =>  {
-        impl Interaction<SVector<f64, $dim>, SVector<f64, $dim>, SVector<f64, $dim>> for LennardJones {
-            fn calculate_force_between(&self, own_pos: &SVector<f64, $dim>, _own_vel: &SVector<f64, $dim>, ext_pos: &SVector<f64, $dim>, _ext_vel: &SVector<f64, $dim>, _ext_information: &()) -> Option<Result<SVector<f64, $dim>, CalcError>> {
-                let z = own_pos - ext_pos;
-                let r = z.norm();
-                let dir = z/r;
-                let val = 4.0 * self.epsilon / r * (12.0 * (self.sigma/r).powf(12.0) - 1.0 * (self.sigma/r).powf(1.0));
-                let max = 10.0 * self.epsilon / r;
-                return Some(Ok(dir * max.min(val)));
-            }
-
-            fn get_interaction_information(&self) -> () {}
-        }
+impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>>
+    for BoundLennardJones<D>
+{
+    fn calculate_force_between(
+        &self,
+        own_pos: &SVector<f64, D>,
+        _own_vel: &SVector<f64, D>,
+        ext_pos: &SVector<f64, D>,
+        _ext_vel: &SVector<f64, D>,
+        _ext_information: &(),
+    ) -> Option<Result<SVector<f64, D>, CalcError>> {
+        let z = own_pos - ext_pos;
+        let r = z.norm();
+        let dir = z / r;
+        let val = 4.0 * self.epsilon / r
+            * (12.0 * (self.sigma / r).powf(12.0) - 1.0 * (self.sigma / r).powf(1.0));
+        let max = 10.0 * self.epsilon / r;
+        return Some(Ok(dir * max.min(val)));
     }
-);
 
-implement_lennard_jones_nd!(1);
-implement_lennard_jones_nd!(2);
-implement_lennard_jones_nd!(3);
+    fn get_interaction_information(&self) -> () {}
+}
 
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
