@@ -171,7 +171,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         force: SVector<f64, D>,
     ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
         use num::Zero;
-        let dx = -self.diffusion_constant / self.kb_temperature * force
+        let dx = self.diffusion_constant / self.kb_temperature * force
             + (2.0 * self.diffusion_constant).sqrt() * self.random_vector;
         Ok((dx, SVector::<f64, D>::zero()))
     }
