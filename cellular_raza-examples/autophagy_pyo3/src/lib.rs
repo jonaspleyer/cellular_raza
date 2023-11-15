@@ -1,11 +1,20 @@
 mod simulation;
-
-use pyo3::{exceptions::PyValueError, prelude::*};
 pub use simulation::*;
+
+use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 
 /// Python version function of [run_simulation](simulation::run_simulation)
 #[pyfunction]
-fn run_simulation(simulation_settings: SimulationSettings) -> Result<std::path::PathBuf, PyErr> {
+// TODO
+// #[pyo3(signature = (particles=Vec<Particle> simulation_settings=SimulationSettings))]
+///
+/// Runs a simulation containing particles with the settings given by simulation_settings.
+fn run_simulation(
+    // particles: Vec<Particle>,
+    simulation_settings: SimulationSettings,
+) -> Result<std::path::PathBuf, PyErr> {
+    // println!("{:#?}", particles);
     match run_simulation_rs(simulation_settings) {
         Ok(b) => Ok(b),
         Err(e) => Err(PyValueError::new_err(format!("{:?}", e))),
