@@ -86,23 +86,19 @@ impl<F> core::ops::Mul<F> for NoVelocity {
 /// | $\vec{x}$ | `pos` | Position of the particle. |
 /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
 /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+/// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which
+/// determines how often a new random direction for movement is chosen. |
 ///
 /// # Position Update
-/// Positions are numerically integrated.
-/// We assume an overdamped context, meaning that we utilize the [NoVelocity] struct to
-/// avoid updating the velocities and save computational resources.
-/// The differential equation which is solved corresponds to a euclidean equation of motion
-/// with dampening and a random part.
-/// \\begin{align}
-///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
-///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
-/// \\end{align}
-/// By choosing the `random_update_time` $t_r$ larger than the integration step, we can
+/// We integrate the standard brownian motion stochastic differential equation.
+/// \\begin{equation}
+///     \dot{\vec{x}} = -\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)
+/// \\end{equation}
+/// The variable `update_interval` $n_t$ determines how often a new random direction for travel
+/// is generated.
+/// The new random vector is then also sampled by a distribution with greater width.
+/// If we choose this value larger than one, we can
 /// resolve smaller timesteps to more accurately solve the equations.
-/// This procedure is recommended.
-/// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values
-/// are changed at discrete time events.
-/// The notation is slightly different to the usually used for stochastic processes.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Brownian<const D: usize> {
     /// Current position of the particle $\vec{x}$.
@@ -112,7 +108,7 @@ pub struct Brownian<const D: usize> {
     /// The product of temperature and boltzmann constant $k_B T$.
     pub kb_temperature: f64,
     /// The steps it takes for the particle to update its random vector
-    pub particle_random_update_interval: usize,
+    pub update_interval: usize,
     random_vector: SVector<f64, D>,
 }
 
@@ -122,19 +118,20 @@ impl<const D: usize> Brownian<D> {
         pos: SVector<f64, D>,
         diffusion_constant: f64,
         kb_temperature: f64,
-        particle_random_update_interval: usize,
+        update_interval: usize,
     ) -> Self {
         use num::Zero;
         Self {
             pos,
             diffusion_constant,
             kb_temperature,
-            particle_random_update_interval,
+            update_interval,
             random_vector: SVector::<f64, D>::zero(),
         }
     }
 }
 
+// TODO use NoVelocity struct
 impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for Brownian<D> {
     fn pos(&self) -> SVector<f64, D> {
         self.pos
@@ -159,7 +156,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         use rand::Rng;
 
         let mut random_array = [0_f64; D];
-        let distr = match rand_distr::Normal::new(0.0, dt) {
+        let distr = match rand_distr::Normal::new(0.0, self.update_interval as f64 * dt) {
             Ok(e) => Ok(e),
             Err(e) => Err(RngError(format!("{e}"))),
         }?;
@@ -167,7 +164,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
             .zip(random_array.iter_mut())
             .for_each(|(r, arr)| *arr = r);
         self.random_vector = random_array.into();
-        Ok(Some(self.particle_random_update_interval as f64 * dt))
+        Ok(Some(self.update_interval as f64 * dt))
     }
 
     fn calculate_increment(
