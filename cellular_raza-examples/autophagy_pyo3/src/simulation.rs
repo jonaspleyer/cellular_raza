@@ -7,7 +7,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
-/// All particle species
+/// Particle Species of type Cargo or ATG11Receptor
 ///
 /// We currently only distinguish between the cargo itself
 /// and freely moving combinations of the receptor and ATG11.
@@ -26,7 +26,7 @@ pub enum Species {
 /// | $r_\text{interaction}$ | `interaction_range` | Maximal absolute interaction range. |
 /// | $r_\text{cell}$ | `cell_radius` | Current radius of the cell. |
 /// | $V_0$ | `potential_strength` | Strength of attraction and repelling. |
-/// | $C_0$ | `clustering_strength` | Non-dimensional factor that describes how much stronger the attracting force is compared to the repelling force between two [R11](Species::R11) particles. |
+/// | $C_0$ | `clustering_strength` | Non-dimensional factor that describes how much stronger the attracting force is compared to the repelling force between two [ATG11Receptor](Species::ATG11Receptor) particles. |
 /// | $\alpha$ | - | Relative interaction range. |
 /// | $\sigma$ | - | Relative distance. |
 /// | $\overrightarrow{d}$ | - | Direction in which the force will be acting. |
@@ -145,28 +145,8 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
 
 /// Random motion of particles
 ///
-/// # Parameters
-/// | Symbol | Parameter | Description |
-/// | --- | --- | --- |
-/// | $\vec{x}$ | `pos` | Position of the particle. |
-/// | $\vec{v}$ | `vel` | Velocity of the particle. |
-/// | $\lambda$ | `dampening_constant` | Dampening constant of each particle. |
-/// | $m$ | `mass` | Mass of the particle. |
-/// | $v_r$ | `random_travel_velocity` | The absolute value of velocity which the particle is currently travelling at. |
-/// | $\vec{d}$ | `random_direction_travel` | The direction in which the particle is currently tarvelling. |
-/// | $t_r$ | `random_update_time` | The time until the next update of the random steps will be done. Set this to [f64::INFINITY] to never update the travel direction or velocity. |
-///
-/// # Position and Velocity Update
-/// Positions and velocities are numerically integrated.
-/// The differential equation which is solved corresponds to a euclidean equation of motion with dampening and a random part.
-/// \\begin{align}
-///     \frac{\partial}{\partial t}\vec{x} &= \vec{v}(t) + v_r(t)\vec{d}(t)\\\\
-///     \frac{\partial}{\partial t}\vec{v} &= \frac{1}{m}\vec{F}(x, t) - \lambda\vec{v}(t)
-/// \\end{align}
-/// By choosing the `random_update_time` $t_r$ larger than the integration step, we can resolve smaller timesteps to more accurately solve the equations.
-/// This procedure is recommended.
-/// In this scheme, both $v_r$ and $\vec{d}$ depend on time in the sence that their values are changed at discrete time events.
-/// The notation is slightly different to the usually used for stochastic processes.
+/// This is simply a wrapper class to be used with pyo3.
+/// The documentation of the base struct can be found [here](cellular_raza::building_blocks::prelude::Brownian).
 #[derive(CellAgent, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct Brownian3D {
@@ -177,7 +157,7 @@ pub struct Brownian3D {
 #[pymethods]
 impl Brownian3D {
     #[new]
-    #[pyo3(signature = (pos, diffusion_constant, kb_temperature, particle_random_update_interval))]
+    #[pyo3(signature = (pos, diffusion_constant, kb_temperature, update_interval))]
     ///
     /// Creates a new Brownian mechanics model with defined position, diffusion
     /// constant and temperature.
@@ -185,14 +165,14 @@ impl Brownian3D {
         pos: [f64; 3],
         diffusion_constant: f64,
         kb_temperature: f64,
-        particle_random_update_interval: usize,
+        update_interval: usize,
     ) -> Self {
         Brownian3D {
             mechanics: Brownian::<3>::new(
                 pos.into(),
                 diffusion_constant,
                 kb_temperature,
-                particle_random_update_interval,
+                update_interval,
             ),
         }
     }
