@@ -69,6 +69,9 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
 }
 
 // TODO use const generics instead of macros
+// This can only be done once serde supports deriving Serialize and Deserialize for structs with const generics
+// Otherwise we would have to implement it by hand.
+// Sadly this is currently not possible ...
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
