@@ -30,6 +30,10 @@ version = "0.0.3"
 path = "../cellular_raza-concepts"
 version = "0.0.3"
 
+[dependencies.cellular_raza-concepts-derive]
+path = "../cellular_raza-concepts-derive"
+version = "0.0.3"
+
 [features]
 default = ["gradients"]
 
