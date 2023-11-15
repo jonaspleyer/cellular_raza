@@ -27,8 +27,9 @@ fn cr_autophagy_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
 
     m.add_class::<SimulationSettings>()?;
     m.add_class::<Species>()?;
-    m.add_class::<CellSpecificInteraction>()?;
+    m.add_class::<TypedInteraction>()?;
     m.add_class::<Brownian3D>()?;
+    m.add_class::<Particle>()?;
 
     Ok(())
 }

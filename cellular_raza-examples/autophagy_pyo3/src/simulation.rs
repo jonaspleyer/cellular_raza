@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 /// All particle species
 ///
 /// We currently only distinguish between the cargo itself
-/// and freely moving combinations of the receptor and RTG11.
+/// and freely moving combinations of the receptor and ATG11.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[pyclass]
 pub enum Species {
     Cargo,
-    R11,
+    ATG11Receptor,
 }
 
 /// Interaction potential depending on the other cells species.
@@ -51,7 +51,7 @@ pub enum Species {
 /// \\end{align}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
-pub struct CellSpecificInteraction {
+pub struct TypedInteraction {
     #[pyo3(get, set)]
     pub species: Species,
     #[pyo3(get, set)]
@@ -64,9 +64,27 @@ pub struct CellSpecificInteraction {
     pub clustering_strength: f64,
 }
 
-impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
-    for CellSpecificInteraction
-{
+#[pymethods]
+impl TypedInteraction {
+    #[new]
+    fn new(
+        species: Species,
+        cell_radius: f64,
+        potential_strength: f64,
+        interaction_range: f64,
+        clustering_strength: f64,
+    ) -> Self {
+        Self {
+            species,
+            cell_radius,
+            potential_strength,
+            interaction_range,
+            clustering_strength,
+        }
+    }
+}
+
+impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for TypedInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector3<f64>,
@@ -100,14 +118,20 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 
         match (species, &self.species) {
             // R11 will bind to cargo
-            (Species::Cargo, Species::R11) => return Some(Ok(repelling_force + attracting_force)),
-            (Species::R11, Species::Cargo) => return Some(Ok(repelling_force + attracting_force)),
+            (Species::Cargo, Species::ATG11Receptor) => {
+                return Some(Ok(repelling_force + attracting_force))
+            }
 
             // R11 forms clusters
-            (Species::R11, Species::R11) => {
+            (Species::ATG11Receptor, Species::ATG11Receptor) => {
                 return Some(Ok(
                     repelling_force + self.clustering_strength * attracting_force
                 ))
+            }
+
+            // Cargo also attracts each other
+            (Species::Cargo, Species::Cargo) => {
+                return Some(Ok(repelling_force + attracting_force))
             }
 
             (_, _) => return Some(Ok(repelling_force)),
@@ -218,42 +242,22 @@ pub struct SimulationSettings {
     /// Number of cargo particles in the simulation.
     #[pyo3(get, set)]
     pub n_cells_cargo: usize,
-    /// Number of R11 particles in the simulation.
-    #[pyo3(get, set)]
-    pub n_cells_r11: usize,
 
-    /// See [Brownian]
+    /// Number of Atg11 particles in the simulation.
     #[pyo3(get, set)]
-    pub cell_diffusion_constant: f64,
-    /// See [Brownian]
-    #[pyo3(get, set)]
-    pub cell_kb_temperature: f64,
-    /// See [Brownian]
-    #[pyo3(get, set)]
-    pub cell_radius_cargo: f64,
-    /// See [Brownian]
-    #[pyo3(get, set)]
-    pub cell_radius_r11: f64,
+    pub n_cells_atg11_receptor: usize,
 
-    /// See [CellSpecificInteraction]
+    /// Contains all paramters that all cargo particles will share in common.
+    /// Only the position will be initially randomized. All other parameters will
+    /// be used as is.
     #[pyo3(get, set)]
-    pub cell_mechanics_interaction_range_cargo: f64,
-    /// See [CellSpecificInteraction]
-    #[pyo3(get, set)]
-    pub cell_mechanics_interaction_range_r11: f64,
-    /// See [CellSpecificInteraction]
-    #[pyo3(get, set)]
-    pub cell_mechanics_random_travel_velocity: f64,
-    /// See [CellSpecificInteraction]
-    #[pyo3(get, set)]
-    pub cell_mechanics_random_update_time: f64,
+    pub particle_template_cargo: Particle,
 
-    /// See [CellSpecificInteraction]
+    /// Contains all paramters that all cargo particles will share in common.
+    /// Only the position will be initially randomized. All other parameters will
+    /// be used as is.
     #[pyo3(get, set)]
-    pub cell_mechanics_potential_strength: f64,
-    /// See [CellSpecificInteraction]
-    #[pyo3(get, set)]
-    pub cell_mechanics_relative_clustering_strength: f64,
+    pub particle_template_atg11_receptor: Particle,
 
     /// Integration step of the numerical simulation.
     #[pyo3(get, set)]
@@ -285,31 +289,43 @@ pub struct SimulationSettings {
 
 impl Default for SimulationSettings {
     fn default() -> Self {
-        let cell_radius_r11 = 1.0;
+        let cell_radius_atg11_receptor = 1.0;
         let dt = 0.25;
 
         SimulationSettings {
-            n_cells_cargo: 50,
-            n_cells_r11: 200,
+            n_cells_cargo: 100,
+            n_cells_atg11_receptor: 300,
 
-            cell_diffusion_constant: 1.0,
-            cell_kb_temperature: 0.2,
-            cell_radius_cargo: 1.5,
-            cell_radius_r11: cell_radius_r11,
-
-            cell_mechanics_interaction_range_cargo: 3.0 * cell_radius_receptor,
-            cell_mechanics_interaction_range_r11: 1.0 * cell_radius_r11,
-            cell_mechanics_random_travel_velocity: 0.05,
-            cell_mechanics_random_update_time: 200. * dt,
-
-            cell_mechanics_potential_strength: 2.0,
-            cell_mechanics_relative_clustering_strength: 0.03,
+            particle_template_cargo: Particle {
+                mechanics: Brownian3D {
+                    mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.01, 0.02, 5),
+                },
+                interaction: TypedInteraction {
+                    species: Species::Cargo,
+                    cell_radius: 1.5,
+                    potential_strength: 2.0,
+                    interaction_range: 3.0 * cell_radius_atg11_receptor,
+                    clustering_strength: 0.5,
+                },
+            },
+            particle_template_atg11_receptor: Particle {
+                mechanics: Brownian3D {
+                    mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.5, 0.2, 5),
+                },
+                interaction: TypedInteraction {
+                    species: Species::ATG11Receptor,
+                    cell_radius: cell_radius_atg11_receptor,
+                    potential_strength: 2.0,
+                    interaction_range: 1.0 * cell_radius_atg11_receptor,
+                    clustering_strength: 0.03,
+                },
+            },
 
             dt,
-            n_times: 2_001,
-            save_interval: 2_001,
+            n_times: 20_001,
+            save_interval: 50,
 
-            n_threads: 3,
+            n_threads: 1,
 
             domain_size: 100.0,
 
@@ -332,16 +348,79 @@ impl SimulationSettings {
     }
 }
 
+#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
+#[pyclass]
+pub struct Particle {
+    #[pyo3(get, set)]
+    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
+    pub mechanics: Brownian3D,
+    #[pyo3(get, set)]
+    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
+    pub interaction: TypedInteraction,
+}
+
+#[pymethods]
+impl Particle {
+    #[new]
+    fn new(mechanics: Brownian3D, interaction: TypedInteraction) -> Self {
+        Self {
+            mechanics,
+            interaction,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{:#?}", self)
+    }
+}
+
+impl Cycle<Particle> for Particle {
+    fn divide(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _cell: &mut Particle,
+    ) -> Result<Particle, DivisionError> {
+        panic!()
+    }
+
+    fn update_cycle(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _dt: &f64,
+        _cell: &mut Particle,
+    ) -> Option<CycleEvent> {
+        None
+    }
+}
+
+impl CellularReactions<Nothing, Nothing> for Particle {
+    fn get_intracellular(&self) -> Nothing {
+        Nothing::zero()
+    }
+
+    fn set_intracellular(&mut self, _concentration_vector: Nothing) {}
+
+    fn calculate_intra_and_extracellular_reaction_increment(
+        &self,
+        _internal_concentration_vector: &Nothing,
+        _external_concentration_vector: &Nothing,
+    ) -> Result<(Nothing, Nothing), CalcError> {
+        Ok((Nothing::zero(), Nothing::zero()))
+    }
+}
+
+impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
+    fn sense_gradient(_cell: &mut Particle, _gradient: &Conc) -> Result<(), CalcError> {
+        Ok(())
+    }
+}
+
 /// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
 pub fn run_simulation_rs(
     simulation_settings: SimulationSettings,
 ) -> Result<std::path::PathBuf, SimulationError> {
-    // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
     let particles = (0..simulation_settings.n_cells_cargo
-        + simulation_settings.n_cells_atg11
-        + simulation_settings.n_cells_receptor)
+        + simulation_settings.n_cells_atg11_receptor)
         .map(|n| {
             let low = 0.4 * simulation_settings.domain_size;
             let high = 0.6 * simulation_settings.domain_size;
@@ -358,42 +437,32 @@ pub fn run_simulation_rs(
                     rng.gen_range(0.0..simulation_settings.domain_size),
                 ])
             };
-            let (cell_radius, species, interaction_range) = if n < simulation_settings.n_cells_cargo
-            {
-                (
-                    simulation_settings.cell_radius_cargo,
-                    Species::Cargo,
-                    simulation_settings.cell_mechanics_interaction_range_cargo,
-                )
+            let mut particle = if n < simulation_settings.n_cells_cargo {
+                simulation_settings.particle_template_cargo.clone()
             } else {
-                (
-                    simulation_settings.cell_radius_r11,
-                    Species::R11,
-                    simulation_settings.cell_mechanics_interaction_range_r11,
-                )
+                simulation_settings.particle_template_atg11_receptor.clone()
             };
-            Particle {
-                mechanics: Brownian {mechanics: Brownian3D::new(
-                    pos,
-                interaction: CellSpecificInteraction {
-                    simulation_settings.cell_diffusion_constant,
-                    simulation_settings.cell_kb_temperature,
-                )},
-                    species,
-                    cell_radius,
-                    potential_strength: simulation_settings.cell_mechanics_potential_strength,
-                    interaction_range,
-                    clustering_strength: simulation_settings
-                        .cell_mechanics_relative_clustering_strength,
-                },
-            }
+            particle.mechanics.mechanics.set_pos(&pos);
+            particle
         })
         .collect::<Vec<_>>();
 
-    let domain = CartesianCuboid3::from_boundaries_and_n_voxels(
+    // Calculate the maximal interaction range
+    let interaction_range_max = simulation_settings
+        .particle_template_cargo
+        .interaction
+        .interaction_range
+        .max(
+            simulation_settings
+                .particle_template_atg11_receptor
+                .interaction
+                .interaction_range,
+        );
+
+    let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
         [0.0; 3],
         [simulation_settings.domain_size; 3],
-        [3; 3],
+        [7.0 * interaction_range_max; 3],
     )?;
 
     let time = TimeSetup {
@@ -413,7 +482,6 @@ pub fn run_simulation_rs(
     };
 
     let storage = StorageConfig::from_path("out/autophagy".into());
-    // storage.export_formats = vec![ExportOptions::Vtk];
 
     let simulation_setup = create_simulation_setup!(
         Domain: domain,
@@ -425,7 +493,6 @@ pub fn run_simulation_rs(
 
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
     supervisor.config.show_progressbar = simulation_settings.show_progressbar;
-    // let simulation_result = run_full_simulation!(simulation_setup, [Mechanics, Interaction]);
 
     let simulation_result = supervisor.run_full_sim()?;
     Ok(simulation_result.storage.get_location())
