@@ -612,7 +612,7 @@ where
         Vel: Velocity,
         For: Force,
         Inf: InteractionInformation,
-        Cel: CellAgent<Pos, Vel, For, Inf>
+        Cel: Agent<Pos, Vel, For, Inf>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         Vox: ExtracellularMechanics<
             Ind,

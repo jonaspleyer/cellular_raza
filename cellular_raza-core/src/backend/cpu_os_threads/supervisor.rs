@@ -1,4 +1,4 @@
-use cellular_raza_concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
+use cellular_raza_concepts::cell::{Agent, CellAgentBox, CellularIdentifier};
 use cellular_raza_concepts::domain::Index;
 use cellular_raza_concepts::domain::{
     Concentration, Controller, Domain, ExtracellularMechanics, Voxel,
@@ -179,7 +179,7 @@ where
             ConcTotalExtracellular,
             ConcBoundaryExtracellular,
         >,
-        Cel: CellAgent<Pos, Vel, For, Inf>
+        Cel: Agent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<
@@ -346,7 +346,7 @@ where
             ConcTotalExtracellular,
             ConcBoundaryExtracellular,
         >,
-        Cel: CellAgent<Pos, Vel, For, Inf>
+        Cel: Agent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         VoxelBox<

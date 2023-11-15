@@ -1,5 +1,5 @@
 use crate::storage::concepts::{StorageManager, StorageOptions};
-use cellular_raza_concepts::cell::{CellAgent, CellAgentBox};
+use cellular_raza_concepts::cell::{Agent, CellAgentBox};
 use cellular_raza_concepts::domain::{Domain, Index, Voxel};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
 
@@ -239,7 +239,7 @@ where
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,
     Vox: Voxel<Ind, Pos, Vel, For> + Clone + 'static,
-    Cel: CellAgent<Pos, Vel, For, Inf> + 'static,
+    Cel: Agent<Pos, Vel, For, Inf> + 'static,
     VoxelBox<
         Ind,
         Pos,
