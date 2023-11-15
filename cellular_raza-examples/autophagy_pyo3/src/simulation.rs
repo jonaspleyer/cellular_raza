@@ -57,9 +57,11 @@ pub struct TypedInteraction {
     #[pyo3(get, set)]
     pub cell_radius: f64,
     #[pyo3(get, set)]
-    pub potential_strength: f64,
+    pub epsilon: f64,
     #[pyo3(get, set)]
-    pub interaction_range: f64,
+    pub bound: f64,
+    #[pyo3(get, set)]
+    pub cutoff: f64,
     #[pyo3(get, set)]
     pub clustering_strength: f64,
 }
@@ -70,15 +72,17 @@ impl TypedInteraction {
     fn new(
         species: Species,
         cell_radius: f64,
-        potential_strength: f64,
-        interaction_range: f64,
+        epsilon: f64,
+        bound: f64,
+        cutoff: f64,
         clustering_strength: f64,
     ) -> Self {
         Self {
             species,
             cell_radius,
-            potential_strength,
-            interaction_range,
+            bound,
+            epsilon,
+            cutoff,
             clustering_strength,
         }
     }
@@ -93,28 +97,22 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
         _ext_vel: &Vector3<f64>,
         ext_info: &(f64, Species),
     ) -> Option<Result<Vector3<f64>, CalcError>> {
-        let (r, dir) = {
-            let z = own_pos - ext_pos;
-            let r = z.norm();
-            (r, z.normalize())
-        };
-
         let (cell_radius_ext, species) = ext_info;
-        // Introduce Non-dimensional length variable
-        let sigma = r / (self.cell_radius + cell_radius_ext);
-        let spatial_cutoff = (1.0
-            + (self.interaction_range + cell_radius_ext + self.cell_radius - r).signum())
-            * 0.5;
+        let z = own_pos - ext_pos;
+        let r = z.norm();
+        let dir = z / r;
+        // Calculate sigma from cell radius extern and intern
+        let sigma = cell_radius_ext + self.cell_radius;
 
-        // Calculate the strength of the interaction with correct bounds
-        let alpha = 3.0 / 2.0 * (self.interaction_range / (cell_radius_ext + self.cell_radius));
-        let form =
-            (3.0 * (sigma - 1.0).powf(2.0) - 2.0 * alpha * (sigma - 1.0)) * 3.0 / alpha.powf(2.0);
-        let strength = -self.potential_strength * form.clamp(-1.0, 1.0);
+        let val =
+            4.0 * self.epsilon / r * (12.0 * (sigma / r).powf(12.0) - 1.0 * (sigma / r).powf(1.0));
+        let max = self.bound / r;
+        let q = if self.cutoff >= r { 1.0 } else { 0.0 };
+        let strength = q * max.min(val);
 
         // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        let attracting_force = dir * strength.max(0.0);
+        let repelling_force = dir * strength.min(0.0);
 
         match (species, &self.species) {
             // R11 will bind to cargo
@@ -131,10 +129,12 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
 
             // Cargo also attracts each other
             (Species::Cargo, Species::Cargo) => {
-                return Some(Ok(repelling_force + attracting_force))
+                return Some(Ok(
+                    repelling_force + self.clustering_strength * attracting_force
+                ))
             }
 
-            (_, _) => return Some(Ok(repelling_force)),
+            (_, _) => return Some(Ok(repelling_force + attracting_force)),
         }
     }
 
@@ -303,8 +303,9 @@ impl Default for SimulationSettings {
                 interaction: TypedInteraction {
                     species: Species::Cargo,
                     cell_radius: 1.5,
-                    potential_strength: 2.0,
-                    interaction_range: 3.0 * cell_radius_atg11_receptor,
+                    epsilon: 2.0,
+                    cutoff: 1.25 * cell_radius_atg11_receptor,
+                    bound: 2.0,
                     clustering_strength: 0.5,
                 },
             },
@@ -315,8 +316,9 @@ impl Default for SimulationSettings {
                 interaction: TypedInteraction {
                     species: Species::ATG11Receptor,
                     cell_radius: cell_radius_atg11_receptor,
-                    potential_strength: 2.0,
-                    interaction_range: 1.0 * cell_radius_atg11_receptor,
+                    epsilon: 2.0,
+                    cutoff: 1.0 * cell_radius_atg11_receptor,
+                    bound: 2.0,
                     clustering_strength: 0.03,
                 },
             },
@@ -451,12 +453,12 @@ pub fn run_simulation_rs(
     let interaction_range_max = simulation_settings
         .particle_template_cargo
         .interaction
-        .interaction_range
+        .cutoff
         .max(
             simulation_settings
                 .particle_template_atg11_receptor
                 .interaction
-                .interaction_range,
+                .cutoff,
         );
 
     let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
