@@ -86,8 +86,7 @@ impl<F> core::ops::Mul<F> for NoVelocity {
 /// | $\vec{x}$ | `pos` | Position of the particle. |
 /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
 /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-/// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which
-/// determines how often a new random direction for movement is chosen. |
+/// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
 ///
 /// # Position Update
 /// We integrate the standard brownian motion stochastic differential equation.
