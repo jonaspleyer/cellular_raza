@@ -258,6 +258,10 @@ pub struct SimulationSettings {
     #[pyo3(get, set)]
     pub domain_size: f64,
 
+    /// See [CartesianCuboid3]
+    #[pyo3(get, set)]
+    pub domain_interaction_range: Option<f64>,
+
     /// Name of the folder to store the results in.
     #[pyo3(get, set)]
     pub storage_name: String,
@@ -310,6 +314,7 @@ impl Default for SimulationSettings {
             n_threads: 1,
 
             domain_size: 100.0,
+            domain_interaction_range: Some(25.0),
 
             storage_name: "out/autophagy".into(),
 
@@ -441,10 +446,14 @@ pub fn run_simulation_rs(
                 .cutoff,
         );
 
+    let interaction_range = match simulation_settings.domain_interaction_range {
+        Some(range) => interaction_range_max.max(range),
+        None => interaction_range_max,
+    };
     let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
         [0.0; 3],
         [simulation_settings.domain_size; 3],
-        [7.0 * interaction_range_max; 3],
+        [interaction_range; 3],
     )?;
 
     let time = TimeSetup {
