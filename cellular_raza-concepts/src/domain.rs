@@ -46,7 +46,7 @@ pub trait Domain<C, I, V>: Send + Sync + Serialize + for<'a> Deserialize<'a> {
     fn generate_contiguous_multi_voxel_regions(
         &self,
         n_regions: usize,
-    ) -> Result<(usize, Vec<Vec<(I, V)>>), CalcError>;
+    ) -> Result<Vec<Vec<(I, V)>>, CalcError>;
 }
 
 /// The different types of boundary conditions in a PDE system

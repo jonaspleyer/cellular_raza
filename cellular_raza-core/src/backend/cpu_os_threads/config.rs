@@ -312,11 +312,12 @@ where
         Cel: Sized,
     {
         // Create groups of voxels to put into our MultiVelContainers
-        let (n_threads, voxel_chunks) = <Dom>::generate_contiguous_multi_voxel_regions(
+        let voxel_chunks = <Dom>::generate_contiguous_multi_voxel_regions(
             &setup.domain,
             setup.meta_params.n_threads,
         )
         .unwrap();
+        let n_threads = voxel_chunks.len();
 
         let convert_to_plain_index: BTreeMap<Ind, PlainIndex> = setup
             .domain

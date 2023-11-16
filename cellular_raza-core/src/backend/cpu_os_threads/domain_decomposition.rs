@@ -58,7 +58,7 @@ where
     fn generate_contiguous_multi_voxel_regions(
         &self,
         n_regions: usize,
-    ) -> Result<(usize, Vec<Vec<(Ind, Vox)>>), CalcError> {
+    ) -> Result<Vec<Vec<(Ind, Vox)>>, CalcError> {
         self.domain_raw
             .generate_contiguous_multi_voxel_regions(n_regions)
     }

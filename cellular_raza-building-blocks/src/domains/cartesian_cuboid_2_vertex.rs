@@ -416,13 +416,7 @@ where
     fn generate_contiguous_multi_voxel_regions(
         &self,
         n_regions: usize,
-    ) -> Result<
-        (
-            usize,
-            Vec<Vec<([i64; 2], CartesianCuboidVoxel2Vertex<D, N>)>>,
-        ),
-        CalcError,
-    > {
+    ) -> Result<Vec<Vec<([i64; 2], CartesianCuboidVoxel2Vertex<D, N>)>>, CalcError> {
         // Get all voxel indices
         let indices: Vec<[i64; 2]> = (0..2) // indices supplied in macro invokation
             .map(|i| (0..self.n_vox[i])) // ranges from self.n_vox
@@ -499,7 +493,7 @@ where
 
         ind_n.append(&mut ind_m);
 
-        Ok((n_regions as usize, ind_n))
+        Ok(ind_n)
     }
 }
 

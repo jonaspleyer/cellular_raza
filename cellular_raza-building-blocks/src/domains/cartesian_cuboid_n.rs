@@ -372,7 +372,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 return v;
             }
 
-            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<(usize, Vec<Vec<([i64; $d], $voxel_name<N>)>>), CalcError> {
+            fn generate_contiguous_multi_voxel_regions(&self, n_regions: usize) -> Result<Vec<Vec<([i64; $d], $voxel_name<N>)>>, CalcError> {
                 // Get all voxel indices
                 let indices: Vec<[i64; $d]> = [$($k),+]
                     .iter()                                     // indices supplied in macro invokation
@@ -426,7 +426,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
 
                 ind_n.append(&mut ind_m);
 
-                Ok((n_regions as usize, ind_n))
+                Ok(ind_n)
             }
         }
     }
