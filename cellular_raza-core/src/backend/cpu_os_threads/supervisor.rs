@@ -3,10 +3,11 @@ use cellular_raza_concepts::domain::Index;
 use cellular_raza_concepts::domain::{
     Concentration, Controller, Domain, ExtracellularMechanics, Voxel,
 };
-use cellular_raza_concepts::errors::{ControllerError, DrawingError, RequestError};
+use cellular_raza_concepts::errors::{CalcError, ControllerError, DrawingError, RequestError};
 use cellular_raza_concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
 use cellular_raza_concepts::plotting::{CreatePlottingRoot, PlotSelf};
+use kdam::BarExt;
 
 use super::errors::*;
 use crate::storage::concepts::{StorageInterface, StorageManager};
@@ -38,8 +39,6 @@ use plotters::{
     coord::types::RangedCoordf64,
     prelude::{BitMapBackend, Cartesian2d, DrawingArea},
 };
-
-use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ControllerBox<Cont, Obs> {
@@ -219,9 +218,7 @@ where
 
             // Add bar
             let show_progressbar = self.config.show_progressbar;
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            let bar = ProgressBar::new(t_eval.len() as u64);
-            bar.set_style(style);
+            let mut bar = construct_progress_bar(t_eval.len())?;
 
             let controller_box = self.controller_box.clone();
 
@@ -250,7 +247,7 @@ where
                     }
 
                     if show_progressbar && cont.mvc_id == 0 {
-                        bar.inc(1);
+                        bar.update(1);
                     }
 
                     // if save_now_new.load(Ordering::Relaxed) {
@@ -289,9 +286,6 @@ where
                         break;
                     }
                     iteration += 1;
-                }
-                if show_progressbar && cont.mvc_id == 0 {
-                    bar.finish();
                 }
                 return Ok(cont);
             })?;
@@ -470,6 +464,16 @@ pub struct SimulationResult<
     pub plotting_config: PlottingConfig,
 }
 
+fn construct_progress_bar(n_iterations: usize) -> Result<kdam::Bar, SimulationError> {
+    let style = kdam::BarBuilder::default()
+        .total(n_iterations as usize)
+        .bar_format("{desc}{percentage:3.0}%|{animation}| {count}/{total} [{elapsed}]");
+    //::with_template(PROGRESS_BAR_STYLE)?;
+    Ok(style
+        .build()
+        .or_else(|string| Err(CalcError(format!("{string}"))))?)
+}
+
 impl<
         Ind,
         Pos,
@@ -521,7 +525,7 @@ where
         cell_plotting_func: Cpf,
         voxel_plotting_func: Vpf,
         domain_plotting_func: Dpf,
-        progress_bar: Option<indicatif::ProgressBar>,
+        progress_bar: Option<kdam::Bar>,
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
@@ -584,9 +588,9 @@ where
         chart.present()?;
 
         match progress_bar {
-            Some(bar) => bar.inc(1),
-            None => (),
-        }
+            Some(mut bar) => bar.update(1),
+            _ => Ok(true),
+        };
 
         Ok(())
     }
@@ -715,16 +719,10 @@ where
         Ok(builder.build()?)
     }
 
-    fn build_progress_bar(
-        &self,
-        n_iterations: u64,
-    ) -> Result<Option<indicatif::ProgressBar>, SimulationError> {
+    fn build_progress_bar(&self, n_iterations: u64) -> Result<Option<kdam::Bar>, SimulationError> {
         let mut progress_bar = None;
         if self.plotting_config.show_progressbar {
-            let style = ProgressStyle::with_template(PROGRESS_BAR_STYLE)?;
-            let bar = ProgressBar::new(n_iterations);
-            bar.set_style(style);
-            progress_bar = Some(bar);
+            progress_bar = Some(construct_progress_bar(n_iterations as usize)?);
         }
         Ok(progress_bar)
     }
@@ -795,10 +793,6 @@ where
                 })
                 .collect::<Result<(), SimulationError>>()?;
 
-            match progress_bar {
-                Some(bar) => bar.finish(),
-                None => (),
-            }
             Ok(())
         })
     }

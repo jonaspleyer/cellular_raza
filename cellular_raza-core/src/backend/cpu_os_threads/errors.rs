@@ -59,7 +59,6 @@ pub enum SimulationError {
     IndexError(IndexError),
     IoError(std::io::Error),
     ThreadingError(rayon::ThreadPoolBuildError),
-    ConsoleLogError(indicatif::style::TemplateError),
 }
 
 impl_from_error! {SimulationError,
@@ -76,8 +75,7 @@ impl_from_error! {SimulationError,
     (DrawingError, DrawingError),
     (RngError, RngError),
     (StorageError, StorageError),
-    (ThreadingError, rayon::ThreadPoolBuildError),
-    (ConsoleLogError, indicatif::style::TemplateError)
+    (ThreadingError, rayon::ThreadPoolBuildError)
 }
 
 impl_error_variant! {SimulationError,
@@ -95,8 +93,7 @@ impl_error_variant! {SimulationError,
     DrawingError,
     RngError,
     StorageError,
-    ThreadingError,
-    ConsoleLogError
+    ThreadingError
 }
 
 // Implement the general error property

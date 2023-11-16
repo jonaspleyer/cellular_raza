@@ -24,7 +24,7 @@ num = { workspace = true }
 # ode_integrate = { version="0.0.2" }
 plotters = { workspace = true }
 rayon = { version="1.6" }
-indicatif = { version="0.17", features=["rayon"] }
+kdam = { version="0.5", features = ["template"] }
 
 # Storage
 bincode = "1.3"
