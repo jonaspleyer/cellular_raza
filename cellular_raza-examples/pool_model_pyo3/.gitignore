@@ -4,4 +4,5 @@ out
 *.mp4
 Cargo.lock
 __pycache__
+materials/*.pdf
 
