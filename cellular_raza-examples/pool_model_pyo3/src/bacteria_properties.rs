@@ -200,12 +200,13 @@ impl BacteriaCycle {
 
 impl Cycle<Bacteria> for BacteriaCycle {
     fn update_cycle(
-        _rng: &mut rand_chacha::ChaCha8Rng,
-        _dt: &f64,
-        _cell: &mut Bacteria,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: &f64,
+        cell: &mut Bacteria,
     ) -> Option<CycleEvent> {
+        use rand::Rng;
         // If the cell is not at the maximum size let it grow
-        /* if cell.interaction.cell_radius < cell.cycle.maximum_cell_radius {
+        if cell.interaction.cell_radius < cell.cycle.maximum_cell_radius {
             let growth_difference = (cell.cycle.maximum_cell_radius * cell.cycle.growth_rate * dt)
                 .min(cell.cycle.maximum_cell_radius - cell.interaction.cell_radius);
             cell.cellular_reactions.intracellular_concentrations[0] -=
@@ -232,16 +233,17 @@ impl Cycle<Bacteria> for BacteriaCycle {
             rng.gen_range(0.0..1.0) < relative_division_food_level
         {
             return Some(CycleEvent::Division);
-        }*/
+        }
         None
     }
 
     fn divide(
-        _rng: &mut rand_chacha::ChaCha8Rng,
+        rng: &mut rand_chacha::ChaCha8Rng,
         c1: &mut Bacteria,
     ) -> Result<Bacteria, DivisionError> {
+        use rand::Rng;
         // Clone existing cell
-        /* let mut c2 = c1.clone();
+        let mut c2 = c1.clone();
 
         let r = c1.interaction.cell_radius;
 
@@ -271,8 +273,6 @@ impl Cycle<Bacteria> for BacteriaCycle {
 
         // New cell is completely new so set age to 0
         c2.cycle.age = 0.0;
-        */
-        let c2 = c1.clone();
 
         Ok(c2)
     }
