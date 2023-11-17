@@ -8,15 +8,6 @@ use pyo3::prelude::*;
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
-pub type MyCellType = ModularCell<
-    BacteriaMechanicsModel2D,
-    BacteriaInteraction,
-    BacteriaCycle,
-    BacteriaReactions,
-    GradientSensing,
->;
-
-use cellular_raza::concepts_derive::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
@@ -83,7 +74,7 @@ impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for BacteriaMechanicsMo
     }
 }
 
-#[derive(Clone, CellAgent, Deserialize, Serialize)]
+#[derive(Clone, Debug, CellAgent, Deserialize, Serialize)]
 #[pyclass]
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
@@ -332,12 +323,12 @@ pub struct GradientSensing {}
 
 impl
     InteractionExtracellularGradient<
-        MyCellType,
+        Bacteria,
         nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,
     > for GradientSensing
 {
     fn sense_gradient(
-        _cell: &mut MyCellType,
+        _cell: &mut Bacteria,
         _gradient: &nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,
     ) -> Result<(), CalcError> {
         Ok(())
