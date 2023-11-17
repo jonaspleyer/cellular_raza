@@ -16,7 +16,7 @@ fn run_simulation(simulation_settings: SimulationSettings) -> Result<std::path::
 }
 
 #[pymodule]
-fn pool_model_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn cr_pool_model_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_simulation, m)?)?;
 
     m.add_class::<SimulationSettings>()?;
