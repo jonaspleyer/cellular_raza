@@ -150,10 +150,11 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
                 .max(-bound);
 
         // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        // let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
+        // let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-        Some(Ok(repelling_force + attracting_force))
+        // Some(Ok(repelling_force + attracting_force))
+        Some(Ok(dir * strength * spatial_cutoff))
     }
 }
 
