@@ -179,7 +179,13 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         self.#name.calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
                     }
 
-                    // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
+                    fn is_neighbour(&self, own_pos: &#position, ext_pos: &#position, ext_inf: &#inf) -> Result<bool, CalcError> {
+                        self.#name.is_neighbour(own_pos, ext_pos, ext_inf)
+                    }
+
+                    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+                        self.#name.react_to_neighbours(neighbours)
+                    }
                 }
             };
             result.extend(TokenStream::from(res));

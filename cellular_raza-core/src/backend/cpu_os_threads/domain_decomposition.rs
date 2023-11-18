@@ -158,6 +158,7 @@ pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     force: For,
     intracellular_concentration_increment: ConcVecIntracellular,
     pub(crate) cycle_events: Vec<CycleEvent>,
+    neighbour_count: usize,
 
     inc_pos_back_1: Option<Pos>,
     inc_pos_back_2: Option<Pos>,
@@ -178,6 +179,7 @@ where
             force: For::zero(),
             intracellular_concentration_increment: ConcVecIntracellular::zero(),
             cycle_events: Vec::new(),
+            neighbour_count: 0,
 
             inc_pos_back_1: None,
             inc_pos_back_2: None,
@@ -351,10 +353,20 @@ where
                     aux2.force += force * 0.5;
                 }
 
+                match c1.is_neighbour(&p1, &p2, &i2)? {
+                    true => {aux1.neighbour_count+=1},
+                    false => (),
+                }
+
                 if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
                     let force = force_result?;
                     aux1.force += force.clone() * 0.5;
                     aux2.force -= force * 0.5;
+                }
+
+                match c2.is_neighbour(&p2, &p1, &i1)? {
+                    true => {aux2.neighbour_count+=1},
+                    false => (),
                 }
             }
         }
@@ -391,6 +403,11 @@ where
                 Some(Err(e)) => return Err(e),
                 None => (),
             };
+
+            match cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
+                true => {aux_storage.neighbour_count+=1},
+                false => (),
+            }
         }
         Ok(force)
     }
@@ -652,6 +669,16 @@ where
                         Ok(())
                     })
                     .collect::<Result<Vec<_>, SimulationError>>()?;
+
+                // Set counted neighbors to zero
+                vox.cells
+                    .iter_mut()
+                    .map(|(cell, aux_storage)| {
+                        cell.react_to_neighbours(aux_storage.neighbour_count)?;
+                        aux_storage.neighbour_count = 0;
+                        Ok(())
+                    })
+                    .collect::<Result<(), SimulationError>>()?;
 
                 #[cfg(feature = "gradients")]
                 vox.cells

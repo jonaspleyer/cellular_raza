@@ -122,6 +122,14 @@ where
             ext_information,
         )
     }
+
+    fn is_neighbour(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
+        self.interaction.is_neighbour(own_pos, ext_pos, ext_inf)
+    }
+
+    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+        self.interaction.react_to_neighbours(neighbours)
+    }
 }
 
 impl<Mec, Int, Cyc, React, IntExtracellular> Cycle<Self>
