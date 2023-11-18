@@ -39,3 +39,6 @@ default = ["gradients"]
 
 # Simulation aspects
 gradients = []
+
+# Dependencies
+pyo3 = ["cellular_raza-building-blocks/pyo3"]

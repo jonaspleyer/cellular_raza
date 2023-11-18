@@ -9,13 +9,16 @@ name = "cr_autophagy_pyo3"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.20.0", features = ["extension-module"] }
-serde = { version="1.0", features=["rc"] }
-rand = { version="0.8", features = ["small_rng"] }
-rand_chacha = { version="0.3.1" }
+pyo3 = { version="0.20", features = ["extension-module"] }
+serde = { workspace = true, features=["rc"] }
+rand = { workspace = true, features=["small_rng"] }
+rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
-cellular_raza = { path="../../cellular_raza", default-features=false }
-num = "0.4"
-itertools = "0.11"
+cellular_raza = { path="../../cellular_raza", features=["pyo3"] }
+num = { workspace = true }
+itertools = { workspace = true }
 rayon = "1.7"
-kdam = { version = "0.5" }
+
+[features]
+default = ["pyo3"]
+pyo3 = []

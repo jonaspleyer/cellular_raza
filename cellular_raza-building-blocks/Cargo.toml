@@ -12,15 +12,16 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-plotters = { version="0.3" }
-num = "0.4"
-rand = { version="0.8", features = ["small_rng"] }
+plotters = { workspace = true }
+num = { workspace = true }
+rand = { workspace = true, features=["small_rng"] }
 rand_distr = { version="0.4", features = ["serde1"]}
-rand_chacha = { version="0.3.1", features=["serde1"]}
+rand_chacha = { workspace = true, features=["serde1"]}
 nalgebra = { version="0.32", features=["serde-serialize"]}
-serde = "1.0"
-itertools = { version="0.10" }
+serde = { workspace = true }
+itertools = { workspace = true }
 rayon = { version="1.6" }
+pyo3 = { version = "0.20", optional=true, features=["serde"] }
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
@@ -36,6 +37,7 @@ version = "0.0.3"
 
 [features]
 default = ["gradients"]
+pyo3 = ["dep:pyo3"]
 
 # Simulation aspects
 gradients = []
