@@ -64,6 +64,7 @@ pub struct TypedInteraction {
     pub cutoff: f64,
     #[pyo3(get, set)]
     pub clustering_strength: f64,
+    neighbour_count: usize,
 }
 
 #[pymethods]
@@ -84,6 +85,7 @@ impl TypedInteraction {
             epsilon,
             cutoff,
             clustering_strength,
+            neighbour_count: 0,
         }
     }
 }
@@ -108,7 +110,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
             4.0 * self.epsilon / r * (12.0 * (sigma / r).powf(12.0) - 1.0 * (sigma / r).powf(1.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        let strength = q * max.min(val);
+        let strength = q * max.min(val) * self.neighbour_count as f64 / (1.0 + self.neighbour_count as f64);
 
         // Calculate only attracting and repelling forces
         let attracting_force = dir * strength.max(0.0);
@@ -140,6 +142,18 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
 
     fn get_interaction_information(&self) -> (f64, Species) {
         (self.cell_radius, self.species.clone())
+    }
+
+    fn is_neighbour(&self, own_pos: &Vector3<f64>, ext_pos: &Vector3<f64>, inf: &(f64, Species)) -> Result<bool, CalcError> {
+        match (&self.species, &inf.1) {
+            (Species::ATG11Receptor, Species::ATG11Receptor) => Ok((own_pos - ext_pos).norm() <= self.cutoff),
+            (Species::Cargo, Species::Cargo) => Ok((own_pos - ext_pos).norm() <= self.cutoff),
+            _ => Ok(false),
+        }
+    }
+
+    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+        Ok(self.neighbour_count = neighbours)
     }
 }
 
@@ -284,27 +298,27 @@ impl Default for SimulationSettings {
                 mechanics: Brownian3D {
                     mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.01, 0.02, 5),
                 },
-                interaction: TypedInteraction {
-                    species: Species::Cargo,
-                    cell_radius: 1.5,
-                    epsilon: 2.0,
-                    cutoff: 1.25 * cell_radius_atg11_receptor,
-                    bound: 2.0,
-                    clustering_strength: 0.5,
-                },
+                interaction: TypedInteraction::new(
+                    Species::Cargo,
+                    1.5,
+                    2.0,
+                    1.25 * cell_radius_atg11_receptor,
+                    2.0,
+                    0.5,
+                ),
             },
             particle_template_atg11_receptor: Particle {
                 mechanics: Brownian3D {
                     mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.5, 0.2, 5),
                 },
-                interaction: TypedInteraction {
-                    species: Species::ATG11Receptor,
-                    cell_radius: cell_radius_atg11_receptor,
-                    epsilon: 2.0,
-                    cutoff: 1.0 * cell_radius_atg11_receptor,
-                    bound: 2.0,
-                    clustering_strength: 0.03,
-                },
+                interaction: TypedInteraction::new(
+                    Species::ATG11Receptor,
+                    cell_radius_atg11_receptor,
+                    2.0,
+                    1.0 * cell_radius_atg11_receptor,
+                    2.0,
+                    0.03,
+                ),
             },
 
             dt,
