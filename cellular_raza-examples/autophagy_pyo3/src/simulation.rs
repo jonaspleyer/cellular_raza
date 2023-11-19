@@ -110,7 +110,8 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
             4.0 * self.epsilon / r * (12.0 * (sigma / r).powf(12.0) - 1.0 * (sigma / r).powf(1.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        let strength = q * max.min(val) * self.neighbour_count as f64 / (1.0 + self.neighbour_count as f64);
+        let strength =
+            q * max.min(val) * self.neighbour_count as f64 / (1.0 + self.neighbour_count as f64);
 
         // Calculate only attracting and repelling forces
         let attracting_force = dir * strength.max(0.0);
@@ -144,9 +145,16 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
         (self.cell_radius, self.species.clone())
     }
 
-    fn is_neighbour(&self, own_pos: &Vector3<f64>, ext_pos: &Vector3<f64>, inf: &(f64, Species)) -> Result<bool, CalcError> {
+    fn is_neighbour(
+        &self,
+        own_pos: &Vector3<f64>,
+        ext_pos: &Vector3<f64>,
+        inf: &(f64, Species),
+    ) -> Result<bool, CalcError> {
         match (&self.species, &inf.1) {
-            (Species::ATG11Receptor, Species::ATG11Receptor) => Ok((own_pos - ext_pos).norm() <= self.cutoff),
+            (Species::ATG11Receptor, Species::ATG11Receptor) => {
+                Ok((own_pos - ext_pos).norm() <= self.cutoff)
+            }
             (Species::Cargo, Species::Cargo) => Ok((own_pos - ext_pos).norm() <= self.cutoff),
             _ => Ok(false),
         }
