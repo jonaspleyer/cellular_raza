@@ -1,5 +1,5 @@
 use cellular_raza::prelude::*;
-use pyo3::prelude::{pyclass, pymethods};
+use pyo3::prelude::*;
 
 use nalgebra::Vector3;
 use num::Zero;
@@ -245,13 +245,13 @@ pub struct SimulationSettings {
     /// Only the position will be initially randomized. All other parameters will
     /// be used as is.
     #[pyo3(get, set)]
-    pub particle_template_cargo: Particle,
+    pub particle_template_cargo: Py<ParticleTemplate>,
 
     /// Contains all paramters that all cargo particles will share in common.
     /// Only the position will be initially randomized. All other parameters will
     /// be used as is.
     #[pyo3(get, set)]
-    pub particle_template_atg11_receptor: Particle,
+    pub particle_template_atg11_receptor: Py<ParticleTemplate>,
 
     /// Integration step of the numerical simulation.
     #[pyo3(get, set)]
@@ -285,41 +285,61 @@ pub struct SimulationSettings {
     pub show_progressbar: bool,
 }
 
-impl Default for SimulationSettings {
-    fn default() -> Self {
+#[pymethods]
+impl SimulationSettings {
+    #[new]
+    fn new(py: Python) -> PyResult<Self> {
         let cell_radius_atg11_receptor = 1.0;
         let dt = 0.25;
 
-        SimulationSettings {
+        Ok(SimulationSettings {
             n_cells_cargo: 100,
             n_cells_atg11_receptor: 300,
 
-            particle_template_cargo: Particle {
-                mechanics: Brownian3D {
-                    mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.01, 0.02, 5),
+            particle_template_cargo: Py::new(
+                py,
+                ParticleTemplate {
+                    mechanics: Py::new(
+                        py,
+                        Brownian3D {
+                            mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.01, 0.02, 5),
+                        },
+                    )?,
+                    interaction: Py::new(
+                        py,
+                        TypedInteraction::new(
+                            Species::Cargo,
+                            1.5,
+                            2.0,
+                            1.25 * cell_radius_atg11_receptor,
+                            2.0,
+                            0.5,
+                        ),
+                    )?,
                 },
-                interaction: TypedInteraction::new(
-                    Species::Cargo,
-                    1.5,
-                    2.0,
-                    1.25 * cell_radius_atg11_receptor,
-                    2.0,
-                    0.5,
-                ),
-            },
-            particle_template_atg11_receptor: Particle {
-                mechanics: Brownian3D {
-                    mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.5, 0.2, 5),
+            )?,
+            particle_template_atg11_receptor: Py::new(
+                py,
+                ParticleTemplate {
+                    mechanics: Py::new(
+                        py,
+                        Brownian3D {
+                            mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.5, 0.2, 5),
+                        },
+                    )?,
+                    interaction: Py::new(
+                        py,
+                        TypedInteraction::new(
+                            Species::ATG11Receptor,
+                            cell_radius_atg11_receptor,
+                            2.0,
+                            1.0 * cell_radius_atg11_receptor,
+                            2.0,
+                            0.03,
+                        ),
+                    )?,
                 },
-                interaction: TypedInteraction::new(
-                    Species::ATG11Receptor,
-                    cell_radius_atg11_receptor,
-                    2.0,
-                    1.0 * cell_radius_atg11_receptor,
-                    2.0,
-                    0.03,
-                ),
-            },
+            )?,
 
             dt,
             n_times: 20_001,
@@ -333,41 +353,64 @@ impl Default for SimulationSettings {
             storage_name: "out/autophagy".into(),
 
             show_progressbar: true,
-        }
-    }
-}
-
-#[pymethods]
-impl SimulationSettings {
-    #[new]
-    fn new() -> Self {
-        Self::default()
+        })
     }
 
-    fn __repr__(&self) -> String {
-        format!("{:#?}", self)
+    fn __repr__(&self, py: Python) -> PyResult<String> {
+        Ok(format!(
+            "{:#?}\nparticle_template_cargo:\n{:#?}\nparticle_template_atg11_receptor\n{:#?}",
+            self,
+            self.particle_template_cargo
+                .extract::<ParticleTemplate>(py)?,
+            self.particle_template_atg11_receptor
+                .extract::<ParticleTemplate>(py)?
+        ))
+    }
+
+    #[getter]
+    fn get_particle_template_cargo(&mut self, py: Python) -> Py<ParticleTemplate> {
+        self.particle_template_cargo.clone_ref(py)
     }
 }
 
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
 pub struct Particle {
-    #[pyo3(get, set)]
     #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
     pub mechanics: Brownian3D,
-    #[pyo3(get, set)]
+
     #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
     pub interaction: TypedInteraction,
 }
 
-#[pymethods]
-impl Particle {
-    #[new]
-    fn new(mechanics: Brownian3D, interaction: TypedInteraction) -> Self {
-        Self {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[pyclass]
+pub struct ParticleTemplate {
+    #[pyo3(get, set)]
+    pub mechanics: Py<Brownian3D>,
+
+    #[pyo3(get, set)]
+    pub interaction: Py<TypedInteraction>,
+}
+
+impl ParticleTemplate {
+    fn into_particle(self, py: Python) -> PyResult<Particle> {
+        let mechanics = self.mechanics.extract::<Brownian3D>(py)?;
+        let interaction = self.interaction.extract::<TypedInteraction>(py)?;
+        Ok(Particle {
             mechanics,
             interaction,
-        }
+        })
+    }
+}
+
+#[pymethods]
+impl ParticleTemplate {
+    #[new]
+    fn new(mechanics: Brownian3D, interaction: TypedInteraction, py: Python) -> PyResult<Self> {
+        Ok(Self {
+            mechanics: Py::new(py, mechanics)?,
+            interaction: Py::new(py, interaction)?,
+        })
     }
 
     fn __repr__(&self) -> String {
@@ -415,9 +458,11 @@ impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
 }
 
 /// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
-pub fn run_simulation_rs(
+#[pyfunction]
+pub fn run_simulation(
     simulation_settings: SimulationSettings,
-) -> Result<std::path::PathBuf, SimulationError> {
+    py: Python,
+) -> Result<std::path::PathBuf, pyo3::PyErr> {
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
     let particles = (0..simulation_settings.n_cells_cargo
@@ -438,25 +483,34 @@ pub fn run_simulation_rs(
                     rng.gen_range(0.0..simulation_settings.domain_size),
                 ])
             };
-            let mut particle = if n < simulation_settings.n_cells_cargo {
+            let particle = if n < simulation_settings.n_cells_cargo {
                 simulation_settings.particle_template_cargo.clone()
             } else {
                 simulation_settings.particle_template_atg11_receptor.clone()
             };
-            particle.mechanics.mechanics.set_pos(&pos);
             particle
+                .borrow_mut(py)
+                .mechanics
+                .borrow_mut(py)
+                .mechanics
+                .set_pos(&pos);
+            particle.extract::<ParticleTemplate>(py)?.into_particle(py)
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, pyo3::PyErr>>()?;
 
     // Calculate the maximal interaction range
     let interaction_range_max = simulation_settings
         .particle_template_cargo
+        .borrow(py)
         .interaction
+        .borrow(py)
         .cutoff
         .max(
             simulation_settings
                 .particle_template_atg11_receptor
+                .borrow(py)
                 .interaction
+                .borrow(py)
                 .cutoff,
         );
 
@@ -468,7 +522,12 @@ pub fn run_simulation_rs(
         [0.0; 3],
         [simulation_settings.domain_size; 3],
         [interaction_range; 3],
-    )?;
+    )
+    .or_else(|e| {
+        Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Rust error in construction of simulation domain: {e}"),
+        ))
+    })?;
 
     let time = TimeSetup {
         t_start: 0.0,
@@ -499,6 +558,10 @@ pub fn run_simulation_rs(
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
     supervisor.config.show_progressbar = simulation_settings.show_progressbar;
 
-    let simulation_result = supervisor.run_full_sim()?;
+    let simulation_result = supervisor.run_full_sim().or_else(|e| {
+        Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Rust error in simulation run: {e}"),
+        ))
+    })?;
     Ok(simulation_result.storage.get_location())
 }
