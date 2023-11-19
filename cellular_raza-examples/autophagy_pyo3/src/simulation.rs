@@ -57,11 +57,11 @@ pub struct TypedInteraction {
     #[pyo3(get, set)]
     pub cell_radius: f64,
     #[pyo3(get, set)]
-    pub epsilon: f64,
+    pub strength_repell: f64,
     #[pyo3(get, set)]
-    pub bound: f64,
+    pub strength_attract: f64,
     #[pyo3(get, set)]
-    pub cutoff: f64,
+    pub interaction_range: f64,
     #[pyo3(get, set)]
     pub clustering_strength: f64,
     neighbour_count: usize,
@@ -73,17 +73,17 @@ impl TypedInteraction {
     fn new(
         species: Species,
         cell_radius: f64,
-        epsilon: f64,
-        bound: f64,
-        cutoff: f64,
+        strength_repell: f64,
+        strength_attract: f64,
+        interaction_range: f64,
         clustering_strength: f64,
     ) -> Self {
         Self {
             species,
             cell_radius,
-            bound,
-            epsilon,
-            cutoff,
+            strength_repell,
+            strength_attract,
+            interaction_range,
             clustering_strength,
             neighbour_count: 0,
         }
@@ -100,45 +100,29 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
         ext_info: &(f64, Species),
     ) -> Option<Result<Vector3<f64>, CalcError>> {
         let (cell_radius_ext, species) = ext_info;
-        let z = own_pos - ext_pos;
+        let z = ext_pos - own_pos;
         let r = z.norm();
         let dir = z / r;
-        // Calculate sigma from cell radius extern and intern
-        let sigma = cell_radius_ext + self.cell_radius;
-
-        let val =
-            4.0 * self.epsilon / r * (12.0 * (sigma / r).powf(12.0) - 1.0 * (sigma / r).powf(1.0));
-        let max = self.bound / r;
-        let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        let strength =
-            q * max.min(val) * self.neighbour_count as f64 / (1.0 + self.neighbour_count as f64);
-
-        // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0);
-        let repelling_force = dir * strength.min(0.0);
-
-        match (species, &self.species) {
+        let clustering_strength = match (species, &self.species) {
             // R11 will bind to cargo
-            (Species::Cargo, Species::ATG11Receptor) => {
-                return Some(Ok(repelling_force + attracting_force))
-            }
+            (Species::Cargo, Species::ATG11Receptor) => 1.0,
 
             // R11 forms clusters
-            (Species::ATG11Receptor, Species::ATG11Receptor) => {
-                return Some(Ok(
-                    repelling_force + self.clustering_strength * attracting_force
-                ))
-            }
+            (Species::ATG11Receptor, Species::ATG11Receptor) => self.clustering_strength,
 
             // Cargo also attracts each other
-            (Species::Cargo, Species::Cargo) => {
-                return Some(Ok(
-                    repelling_force + self.clustering_strength * attracting_force
-                ))
-            }
+            (Species::Cargo, Species::Cargo) => self.clustering_strength,
 
-            (_, _) => return Some(Ok(repelling_force + attracting_force)),
-        }
+            (_, _) => 1.0,
+        };
+        let force = if r <= self.cell_radius + cell_radius_ext {
+            self.strength_repell * dir
+        } else if r <= self.interaction_range + self.cell_radius + cell_radius_ext {
+            - clustering_strength * self.strength_attract * dir
+        } else {
+            Vector3::<f64>::zero()
+        };
+        Some(Ok(force))
     }
 
     fn get_interaction_information(&self) -> (f64, Species) {
@@ -153,9 +137,11 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
     ) -> Result<bool, CalcError> {
         match (&self.species, &inf.1) {
             (Species::ATG11Receptor, Species::ATG11Receptor) => {
-                Ok((own_pos - ext_pos).norm() <= self.cutoff)
+                Ok((own_pos - ext_pos).norm() <= self.cell_radius + self.interaction_range)
             }
-            (Species::Cargo, Species::Cargo) => Ok((own_pos - ext_pos).norm() <= self.cutoff),
+            (Species::Cargo, Species::Cargo) => {
+                Ok((own_pos - ext_pos).norm() <= self.cell_radius + self.interaction_range)
+            }
             _ => Ok(false),
         }
     }
@@ -323,7 +309,14 @@ impl SimulationSettings {
                     mechanics: Py::new(
                         py,
                         Langevin3D {
-                            mechanics: Langevin::<3>::new(Vector3::<f64>::zero(), Vector3::<f64>::zero(), 1.25 * cell_radius_atg11_receptor, 0.01, 0.02, 5),
+                            mechanics: Langevin::<3>::new(
+                                Vector3::<f64>::zero(),
+                                Vector3::<f64>::zero(),
+                                1.25 * cell_radius_atg11_receptor,
+                                0.01,
+                                0.02,
+                                5,
+                            ),
                         },
                     )?,
                     interaction: Py::new(
@@ -345,7 +338,14 @@ impl SimulationSettings {
                     mechanics: Py::new(
                         py,
                         Langevin3D {
-                            mechanics: Langevin::<3>::new(Vector3::<f64>::zero(), Vector3::<f64>::zero(), cell_radius_atg11_receptor, 0.5, 0.2, 5),
+                            mechanics: Langevin::<3>::new(
+                                Vector3::<f64>::zero(),
+                                Vector3::<f64>::zero(),
+                                cell_radius_atg11_receptor,
+                                0.5,
+                                0.2,
+                                5,
+                            ),
                         },
                     )?,
                     interaction: Py::new(
@@ -520,25 +520,37 @@ pub fn run_simulation(
         .collect::<Result<Vec<_>, pyo3::PyErr>>()?;
 
     // Calculate the maximal interaction range
-    let interaction_range_max = simulation_settings
+    let interaction_range_max = (simulation_settings
         .particle_template_cargo
         .borrow(py)
         .interaction
         .borrow(py)
-        .cutoff
+        .interaction_range
+        + simulation_settings
+            .particle_template_cargo
+            .borrow(py)
+            .interaction
+            .borrow(py)
+            .cell_radius)
         .max(
             simulation_settings
                 .particle_template_atg11_receptor
                 .borrow(py)
                 .interaction
                 .borrow(py)
-                .cutoff,
+                .interaction_range
+                + simulation_settings
+                    .particle_template_atg11_receptor
+                    .borrow(py)
+                    .interaction
+                    .borrow(py)
+                    .cell_radius,
         );
 
-    let interaction_range = match simulation_settings.domain_interaction_range {
-        Some(range) => interaction_range_max.max(range),
-        None => interaction_range_max,
-    };
+    let interaction_range = simulation_settings
+        .domain_interaction_range
+        .or_else(|| Some(interaction_range_max))
+        .unwrap();
     let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
         [0.0; 3],
         [simulation_settings.domain_size; 3],
