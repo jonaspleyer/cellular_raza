@@ -168,31 +168,34 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for T
 /// Random motion of particles
 ///
 /// This is simply a wrapper class to be used with pyo3.
-/// The documentation of the base struct can be found [here](cellular_raza::building_blocks::prelude::Brownian).
+/// The documentation of the base struct can be found [here](cellular_raza::building_blocks::prelude::Langevin).
 #[derive(CellAgent, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
-pub struct Brownian3D {
+pub struct Langevin3D {
     #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
-    pub mechanics: Brownian<3>,
+    pub mechanics: Langevin<3>,
 }
 
 #[pymethods]
-impl Brownian3D {
+impl Langevin3D {
     #[new]
-    #[pyo3(signature = (pos, diffusion_constant, kb_temperature, update_interval))]
+    #[pyo3(signature = (pos, mass, damping, kb_temperature, update_interval))]
     ///
-    /// Creates a new Brownian mechanics model with defined position, diffusion
-    /// constant and temperature.
+    /// Creates a new Langevin mechanics model with defined position, damping
+    /// constant, mass and temperature.
     fn new(
         pos: [f64; 3],
-        diffusion_constant: f64,
+        mass: f64,
+        damping: f64,
         kb_temperature: f64,
         update_interval: usize,
     ) -> Self {
-        Brownian3D {
-            mechanics: Brownian::<3>::new(
+        Langevin3D {
+            mechanics: Langevin::<3>::new(
                 pos.into(),
-                diffusion_constant,
+                [0.0; 3].into(),
+                mass,
+                damping,
                 kb_temperature,
                 update_interval,
             ),
@@ -209,14 +212,24 @@ impl Brownian3D {
         self.mechanics.pos = pos.into();
     }
 
-    #[getter(diffusion_constant)]
-    fn get_diffusion_constant(&self) -> f64 {
-        self.mechanics.diffusion_constant
+    #[getter(damping)]
+    fn get_damping(&self) -> f64 {
+        self.mechanics.damping
     }
 
-    #[setter(diffusion_constant)]
-    fn set_diffusion_constant(&mut self, diffusion_constant: f64) {
-        self.mechanics.diffusion_constant = diffusion_constant;
+    #[setter(damping)]
+    fn set_damping(&mut self, damping: f64) {
+        self.mechanics.damping = damping;
+    }
+
+    #[getter(mass)]
+    fn get_mass(&self) -> f64 {
+        self.mechanics.mass
+    }
+
+    #[setter(mass)]
+    fn set_mass(&mut self, mass: f64) {
+        self.mechanics.mass = mass;
     }
 
     #[getter(kb_temperature)]
@@ -309,8 +322,8 @@ impl SimulationSettings {
                 ParticleTemplate {
                     mechanics: Py::new(
                         py,
-                        Brownian3D {
-                            mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.01, 0.02, 5),
+                        Langevin3D {
+                            mechanics: Langevin::<3>::new(Vector3::<f64>::zero(), Vector3::<f64>::zero(), 1.25 * cell_radius_atg11_receptor, 0.01, 0.02, 5),
                         },
                     )?,
                     interaction: Py::new(
@@ -331,8 +344,8 @@ impl SimulationSettings {
                 ParticleTemplate {
                     mechanics: Py::new(
                         py,
-                        Brownian3D {
-                            mechanics: Brownian::<3>::new(Vector3::<f64>::zero(), 0.5, 0.2, 5),
+                        Langevin3D {
+                            mechanics: Langevin::<3>::new(Vector3::<f64>::zero(), Vector3::<f64>::zero(), cell_radius_atg11_receptor, 0.5, 0.2, 5),
                         },
                     )?,
                     interaction: Py::new(
@@ -384,7 +397,7 @@ impl SimulationSettings {
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 pub struct Particle {
     #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
-    pub mechanics: Brownian3D,
+    pub mechanics: Langevin3D,
 
     #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
     pub interaction: TypedInteraction,
@@ -394,7 +407,7 @@ pub struct Particle {
 #[pyclass]
 pub struct ParticleTemplate {
     #[pyo3(get, set)]
-    pub mechanics: Py<Brownian3D>,
+    pub mechanics: Py<Langevin3D>,
 
     #[pyo3(get, set)]
     pub interaction: Py<TypedInteraction>,
@@ -402,7 +415,7 @@ pub struct ParticleTemplate {
 
 impl ParticleTemplate {
     fn into_particle(self, py: Python) -> PyResult<Particle> {
-        let mechanics = self.mechanics.extract::<Brownian3D>(py)?;
+        let mechanics = self.mechanics.extract::<Langevin3D>(py)?;
         let interaction = self.interaction.extract::<TypedInteraction>(py)?;
         Ok(Particle {
             mechanics,
@@ -414,7 +427,7 @@ impl ParticleTemplate {
 #[pymethods]
 impl ParticleTemplate {
     #[new]
-    fn new(mechanics: Brownian3D, interaction: TypedInteraction, py: Python) -> PyResult<Self> {
+    fn new(mechanics: Langevin3D, interaction: TypedInteraction, py: Python) -> PyResult<Self> {
         Ok(Self {
             mechanics: Py::new(py, mechanics)?,
             interaction: Py::new(py, interaction)?,
