@@ -130,6 +130,25 @@ impl<const D: usize> Brownian<D> {
     }
 }
 
+fn generate_random_vector<const D: usize>(
+    update_interval: usize,
+    dt: f64,
+    rng: &mut rand_chacha::ChaCha8Rng,
+    distribution_width: f64,
+) -> Result<SVector<f64, D>, RngError> {
+    use rand::Rng;
+
+    let mut random_array = [0_f64; D];
+    let distr = match rand_distr::Normal::new(0.0, distribution_width) {
+        Ok(e) => Ok(e),
+        Err(e) => Err(RngError(format!("{e}"))),
+    }?;
+    rng.sample_iter(distr)
+        .zip(random_array.iter_mut())
+        .for_each(|(r, arr)| *arr = r);
+    Ok(random_array.into())
+}
+
 // TODO use NoVelocity struct
 impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for Brownian<D> {
     fn pos(&self) -> SVector<f64, D> {
@@ -152,17 +171,12 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
     ) -> Result<Option<f64>, RngError> {
-        use rand::Rng;
-
-        let mut random_array = [0_f64; D];
-        let distr = match rand_distr::Normal::new(0.0, self.update_interval as f64 * dt) {
-            Ok(e) => Ok(e),
-            Err(e) => Err(RngError(format!("{e}"))),
-        }?;
-        rng.sample_iter(distr)
-            .zip(random_array.iter_mut())
-            .for_each(|(r, arr)| *arr = r);
-        self.random_vector = random_array.into();
+        self.random_vector = generate_random_vector(
+            self.update_interval,
+            dt,
+            rng,
+            self.update_interval as f64 * dt,
+        )?;
         Ok(Some(self.update_interval as f64 * dt))
     }
 
@@ -174,6 +188,79 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         let dx = self.diffusion_constant / self.kb_temperature * force
             + 2_f64.sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
         Ok((dx, SVector::<f64, D>::zero()))
+    }
+}
+
+// TODO
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Langevin<const D: usize> {
+    pub pos: SVector<f64, D>,
+    pub vel: SVector<f64, D>,
+    pub mass: f64,
+    pub damping: f64,
+    pub kb_temperature: f64,
+    pub update_interval: usize,
+    random_vector: SVector<f64, D>,
+}
+
+impl<const D: usize> Langevin<D> {
+    /// Creates a new [Langevin] struct from position, velocity, mass, damping,
+    /// kb_temperature and the update interval of the mechanics aspect.
+    pub fn new(
+        pos: SVector<f64, D>,
+        vel: SVector<f64, D>,
+        mass: f64,
+        damping: f64,
+        kb_temperature: f64,
+        update_interval: usize,
+    ) -> Self {
+        Self {
+            pos,
+            vel,
+            mass,
+            damping,
+            kb_temperature,
+            update_interval,
+            random_vector: [0.0; D].into(),
+        }
+    }
+}
+
+impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for Langevin<D> {
+    fn pos(&self) -> SVector<f64, D> {
+        self.pos
+    }
+
+    fn velocity(&self) -> SVector<f64, D> {
+        self.vel
+    }
+
+    fn set_pos(&mut self, pos: &SVector<f64, D>) {
+        self.pos = *pos;
+    }
+
+    fn set_velocity(&mut self, velocity: &SVector<f64, D>) {
+        self.vel = *velocity;
+    }
+
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<Option<f64>, RngError> {
+        self.random_vector =
+            generate_random_vector(self.update_interval, dt, rng, 2.0 * self.kb_temperature)?;
+        Ok(Some(self.update_interval as f64 * dt))
+    }
+
+    fn calculate_increment(
+        &self,
+        force: SVector<f64, D>,
+    ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
+        let dx = self.vel;
+        let dv =
+            -self.damping / self.mass * self.vel + 1.0 / self.mass * (self.random_vector + force);
+        Ok((dx, dv))
     }
 }
 
