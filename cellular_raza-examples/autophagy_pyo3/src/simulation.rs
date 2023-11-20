@@ -352,7 +352,7 @@ impl SimulationSettings {
             n_threads: 1,
 
             domain_size: 100.0,
-            domain_interaction_range: Some(25.0),
+            domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
 
@@ -505,7 +505,7 @@ pub fn run_simulation(
         .borrow(py)
         .interaction
         .borrow(py)
-        .interaction_range
+        .cutoff
         + simulation_settings
             .particle_template_cargo
             .borrow(py)
@@ -518,7 +518,7 @@ pub fn run_simulation(
                 .borrow(py)
                 .interaction
                 .borrow(py)
-                .interaction_range
+                .cutoff
                 + simulation_settings
                     .particle_template_atg11_receptor
                     .borrow(py)
@@ -527,15 +527,18 @@ pub fn run_simulation(
                     .cell_radius,
         );
 
-    let interaction_range = simulation_settings
-        .domain_interaction_range
-        .or_else(|| Some(interaction_range_max))
-        .unwrap();
-    let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
-        [0.0; 3],
-        [simulation_settings.domain_size; 3],
-        [interaction_range; 3],
-    )
+    let domain = match simulation_settings.domain_n_voxels {
+        Some(n_voxels) => CartesianCuboid3::from_boundaries_and_n_voxels(
+            [0.0; 3],
+            [simulation_settings.domain_size; 3],
+            [n_voxels; 3],
+        ),
+        None => CartesianCuboid3::from_boundaries_and_interaction_ranges(
+            [0.0; 3],
+            [simulation_settings.domain_size; 3],
+            [interaction_range_max; 3],
+        ),
+    }
     .or_else(|e| {
         Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
             format!("Rust error in construction of simulation domain: {e}"),
