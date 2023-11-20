@@ -137,7 +137,7 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
         let r = z.norm();
         let dir = z / r;
         let val = 4.0 * self.epsilon / r
-            * (12.0 * (self.sigma / r).powf(12.0) - 1.0 * (self.sigma / r).powf(1.0));
+            * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
         return Some(Ok(dir * q * max.min(val)));
