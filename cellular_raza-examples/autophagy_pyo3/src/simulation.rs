@@ -50,20 +50,15 @@ pub enum Species {
 ///     \overrightarrow{F}(\overrightarrow{x_\text{ext}}) &= F(r) \overrightarrow{d}
 /// \\end{align}
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct TypedInteraction {
-    #[pyo3(get, set)]
     pub species: Species,
-    #[pyo3(get, set)]
     pub cell_radius: f64,
-    #[pyo3(get, set)]
-    pub strength_repell: f64,
-    #[pyo3(get, set)]
-    pub strength_attract: f64,
-    #[pyo3(get, set)]
-    pub interaction_range: f64,
-    #[pyo3(get, set)]
-    pub clustering_strength: f64,
+    pub potential_width: f64,
+    pub well_depth: f64,
+    pub cutoff: f64,
+    pub bound: f64,
+    pub avidity: f64,
     neighbour_count: usize,
 }
 
@@ -238,57 +233,45 @@ impl Langevin3D {
 ///
 /// For documentation of the individual settings, refer to the linked modules.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct SimulationSettings {
     /// Number of cargo particles in the simulation.
-    #[pyo3(get, set)]
     pub n_cells_cargo: usize,
 
     /// Number of Atg11 particles in the simulation.
-    #[pyo3(get, set)]
     pub n_cells_atg11_receptor: usize,
 
     /// Contains all paramters that all cargo particles will share in common.
     /// Only the position will be initially randomized. All other parameters will
     /// be used as is.
-    #[pyo3(get, set)]
     pub particle_template_cargo: Py<ParticleTemplate>,
 
     /// Contains all paramters that all cargo particles will share in common.
     /// Only the position will be initially randomized. All other parameters will
     /// be used as is.
-    #[pyo3(get, set)]
     pub particle_template_atg11_receptor: Py<ParticleTemplate>,
 
     /// Integration step of the numerical simulation.
-    #[pyo3(get, set)]
     pub dt: f64,
     /// Number of intgration steps done totally.
-    #[pyo3(get, set)]
     pub n_times: usize,
     /// Specifies the frequency at which results are saved as json files.
     /// Lower the number for more saved results.
-    #[pyo3(get, set)]
     pub save_interval: usize,
 
     /// Number of threads to use in the simulation.
-    #[pyo3(get, set)]
     pub n_threads: usize,
 
     /// See [CartesianCuboid3]
-    #[pyo3(get, set)]
     pub domain_size: f64,
 
     /// See [CartesianCuboid3]
-    #[pyo3(get, set)]
-    pub domain_interaction_range: Option<f64>,
+    pub domain_n_voxels: Option<usize>,
 
     /// Name of the folder to store the results in.
-    #[pyo3(get, set)]
     pub storage_name: String,
 
     /// Do we want to show a progress bar
-    #[pyo3(get, set)]
     pub show_progressbar: bool,
 }
 
@@ -399,17 +382,14 @@ pub struct Particle {
     #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
     pub mechanics: Langevin3D,
 
-    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
+    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species))]
     pub interaction: TypedInteraction,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct ParticleTemplate {
-    #[pyo3(get, set)]
     pub mechanics: Py<Langevin3D>,
-
-    #[pyo3(get, set)]
     pub interaction: Py<TypedInteraction>,
 }
 
