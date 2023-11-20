@@ -68,74 +68,78 @@ impl TypedInteraction {
     fn new(
         species: Species,
         cell_radius: f64,
-        strength_repell: f64,
-        strength_attract: f64,
-        interaction_range: f64,
-        clustering_strength: f64,
+        potential_width: f64,
+        well_depth: f64,
+        cutoff: f64,
+        bound: f64,
+        avidity: f64,
     ) -> Self {
         Self {
             species,
             cell_radius,
-            strength_repell,
-            strength_attract,
-            interaction_range,
-            clustering_strength,
+            potential_width,
+            well_depth,
+            cutoff,
+            bound,
+            avidity,
             neighbour_count: 0,
         }
     }
 }
 
-impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)> for TypedInteraction {
+impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)>
+    for TypedInteraction
+{
     fn calculate_force_between(
         &self,
         own_pos: &Vector3<f64>,
         _own_vel: &Vector3<f64>,
         ext_pos: &Vector3<f64>,
         _ext_vel: &Vector3<f64>,
-        ext_info: &(f64, Species),
+        ext_info: &(f64, usize, Species),
     ) -> Option<Result<Vector3<f64>, CalcError>> {
-        let (cell_radius_ext, species) = ext_info;
-        let z = ext_pos - own_pos;
+        let (cell_radius_ext, ext_neighbour_count, species) = ext_info;
+        let z = own_pos - ext_pos;
         let r = z.norm();
         let dir = z / r;
-        let clustering_strength = match (species, &self.species) {
-            // R11 will bind to cargo
-            (Species::Cargo, Species::ATG11Receptor) => 1.0,
-
+        let e = (-(r - self.cell_radius - cell_radius_ext) / self.potential_width).exp();
+        let strength = -2.0 / self.potential_width * self.well_depth * (1.0 - e) * e;
+        let strength_modulator = match (species, &self.species) {
             // R11 forms clusters
-            (Species::ATG11Receptor, Species::ATG11Receptor) => self.clustering_strength,
+            (Species::ATG11Receptor, Species::ATG11Receptor) => 1.0,
 
             // Cargo also attracts each other
-            (Species::Cargo, Species::Cargo) => self.clustering_strength,
+            (Species::Cargo, Species::Cargo) => 1.0,
 
-            (_, _) => 1.0,
+            (_, _) => {
+                let n = 2.0;
+                let alpha = 1.0;
+                let nc = self.neighbour_count.min(*ext_neighbour_count);
+                let s = (nc as f64 / alpha).powf(n) / (1.0 + (nc as f64 / alpha).powf(n));
+                //2.0 * self.neighbour_count as f64/(1.0 + self.neighbour_count as f64)
+                self.avidity * (1.0 + s)
+            }
         };
-        let force = if r <= self.cell_radius + cell_radius_ext {
-            self.strength_repell * dir
-        } else if r <= self.interaction_range + self.cell_radius + cell_radius_ext {
-            - clustering_strength * self.strength_attract * dir
-        } else {
-            Vector3::<f64>::zero()
-        };
+        let force = strength_modulator * strength.min(self.bound) * dir;
         Some(Ok(force))
     }
 
-    fn get_interaction_information(&self) -> (f64, Species) {
-        (self.cell_radius, self.species.clone())
+    fn get_interaction_information(&self) -> (f64, usize, Species) {
+        (self.cell_radius, self.neighbour_count, self.species.clone())
     }
 
     fn is_neighbour(
         &self,
         own_pos: &Vector3<f64>,
         ext_pos: &Vector3<f64>,
-        inf: &(f64, Species),
+        inf: &(f64, usize, Species),
     ) -> Result<bool, CalcError> {
-        match (&self.species, &inf.1) {
+        match (&self.species, &inf.2) {
             (Species::ATG11Receptor, Species::ATG11Receptor) => {
-                Ok((own_pos - ext_pos).norm() <= self.cell_radius + self.interaction_range)
+                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + inf.0))
             }
             (Species::Cargo, Species::Cargo) => {
-                Ok((own_pos - ext_pos).norm() <= self.cell_radius + self.interaction_range)
+                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + inf.0))
             }
             _ => Ok(false),
         }
@@ -306,11 +310,12 @@ impl SimulationSettings {
                         py,
                         TypedInteraction::new(
                             Species::Cargo,
-                            1.5,
-                            2.0,
-                            1.25 * cell_radius_atg11_receptor,
-                            2.0,
-                            0.5,
+                            1.5, // cell radius
+                            2.0, // potential width
+                            2.0, // well depth
+                            3.0, // cutoff
+                            2.0, // bound
+                            0.5, // avidity
                         ),
                     )?,
                 },
@@ -336,10 +341,11 @@ impl SimulationSettings {
                         TypedInteraction::new(
                             Species::ATG11Receptor,
                             cell_radius_atg11_receptor,
-                            2.0,
-                            1.0 * cell_radius_atg11_receptor,
-                            2.0,
-                            0.03,
+                            2.0,                              // potential width
+                            2.0,                              // well depth
+                            2.0 * cell_radius_atg11_receptor, // cutoff
+                            2.0,                              // bound
+                            0.5,                              // avidity
                         ),
                     )?,
                 },
