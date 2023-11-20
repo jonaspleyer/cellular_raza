@@ -103,8 +103,8 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         let r = z.norm();
         let dir = z / r;
         let e = (-(r - self.cell_radius - cell_radius_ext) / self.potential_width).exp();
-        let strength = -2.0 / self.potential_width * self.well_depth * (1.0 - e) * e;
-        let strength_modulator = match (species, &self.species) {
+        let strength = 2.0 / self.potential_width * self.well_depth * (1.0 - e) * e;
+        let mut strength_modulator = match (species, &self.species) {
             // R11 forms clusters
             (Species::ATG11Receptor, Species::ATG11Receptor) => 1.0,
 
@@ -120,6 +120,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
                 self.avidity * (1.0 + s)
             }
         };
+        if r>= self.cutoff {
+            strength_modulator = 0.0;
+        }
         let force = strength_modulator * strength.min(self.bound) * dir;
         Some(Ok(force))
     }
