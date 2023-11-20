@@ -4,8 +4,12 @@ use cellular_raza_concepts::interaction::*;
 use nalgebra::SVector;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 /// No interaction of the cell with any other.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct NoInteraction;
 
 impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {

@@ -6,6 +6,9 @@ use nalgebra::SVector;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 /// Simple newtonian dynamics governed by mass and damping.
 ///
 /// The equation of motion is given by
@@ -60,6 +63,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
 
 /// An empty struct to signalize that no velocity needs to be updated.
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct NoVelocity;
 
 impl core::ops::Add for NoVelocity {
