@@ -111,7 +111,8 @@ impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
 /// Plotly.newPlot('myDiv', [trace], layout, options);
 /// </script>
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BoundLennardJones<const D: usize> {
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+pub struct BoundLennardJones {
     /// Interaction strength $\epsilon$ of the potential.
     pub epsilon: f64,
     /// Overall size $\sigma$ of the object of the potential.
@@ -123,7 +124,7 @@ pub struct BoundLennardJones<const D: usize> {
 }
 
 impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>>
-    for BoundLennardJones<D>
+    for BoundLennardJones
 {
     fn calculate_force_between(
         &self,

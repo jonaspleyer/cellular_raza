@@ -13,7 +13,7 @@
 //! # use cellular_raza_building_blocks::prelude::*;
 //! struct MyAgent {
 //!     mechanics: NewtonDamped<2>,
-//!     interaction: BoundLennardJones<2>,
+//!     interaction: BoundLennardJones,
 //! }
 //! ```
 //! Furthermore, we can derive desired concepts by using the [CellAgent](cellular_raza_concepts_derive::CellAgent)
@@ -28,7 +28,7 @@
 //!     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
 //!     mechanics: NewtonDamped<2>,
 //!     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
-//!     interaction: BoundLennardJones<2>,
+//!     interaction: BoundLennardJones,
 //! }
 //! # let mut agent = MyAgent {
 //! #     mechanics: NewtonDamped {
