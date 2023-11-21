@@ -4,6 +4,7 @@ use cellular_raza_concepts::mechanics::Mechanics;
 use itertools::Itertools;
 use nalgebra::SVector;
 
+use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "pyo3")]
@@ -135,22 +136,16 @@ impl<const D: usize> Brownian<D> {
 }
 
 fn generate_random_vector<const D: usize>(
-    update_interval: usize,
-    dt: f64,
     rng: &mut rand_chacha::ChaCha8Rng,
     distribution_width: f64,
 ) -> Result<SVector<f64, D>, RngError> {
-    use rand::Rng;
-
-    let mut random_array = [0_f64; D];
     let distr = match rand_distr::Normal::new(0.0, distribution_width) {
         Ok(e) => Ok(e),
         Err(e) => Err(RngError(format!("{e}"))),
     }?;
-    rng.sample_iter(distr)
-        .zip(random_array.iter_mut())
-        .for_each(|(r, arr)| *arr = r);
-    Ok(random_array.into())
+    let random_dir = SVector::<f64, D>::new_random().normalize();
+    let amplitude = distr.sample(rng);
+    Ok(amplitude * random_dir)
 }
 
 // TODO use NoVelocity struct
@@ -175,12 +170,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
     ) -> Result<Option<f64>, RngError> {
-        self.random_vector = generate_random_vector(
-            self.update_interval,
-            dt,
-            rng,
-            self.update_interval as f64 * dt,
-        )?;
+        self.random_vector = generate_random_vector(rng, self.update_interval as f64 * dt)?;
         Ok(Some(self.update_interval as f64 * dt))
     }
 
@@ -252,8 +242,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
     ) -> Result<Option<f64>, RngError> {
-        self.random_vector =
-            generate_random_vector(self.update_interval, dt, rng, 2.0 * self.kb_temperature)?;
+        self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;
         Ok(Some(self.update_interval as f64 * dt))
     }
 

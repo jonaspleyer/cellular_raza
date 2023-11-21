@@ -17,7 +17,7 @@ num = { workspace = true }
 rand = { workspace = true, features=["small_rng"] }
 rand_distr = { version="0.4", features = ["serde1"]}
 rand_chacha = { workspace = true, features=["serde1"]}
-nalgebra = { version="0.32", features=["serde-serialize"]}
+nalgebra = { version="0.32", features=["serde-serialize", "rand"]}
 serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
