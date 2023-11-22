@@ -136,6 +136,27 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
     }
 }
 
+#[pymethods]
+impl TypedInteraction {
+    #[new]
+    fn new(
+        species: Species,
+        cell_radius: f64,
+        potential_strength: f64,
+        interaction_range: f64,
+        clustering_strength: f64,
+    ) -> Self {
+        Self {
+            species,
+            cell_radius,
+            potential_strength,
+            interaction_range,
+            clustering_strength,
+            neighbour_count: 0,
+        }
+    }
+}
+
 /// Random motion of particles
 ///
 /// This is simply a wrapper class to be used with pyo3.
@@ -211,6 +232,16 @@ impl Langevin3D {
     #[setter(kb_temperature)]
     fn set_kb_temperature(&mut self, kb_temperature: f64) {
         self.mechanics.kb_temperature = kb_temperature;
+    }
+
+    #[getter(update_interval)]
+    fn get_update_interval(&self) -> usize {
+        self.mechanics.update_interval
+    }
+
+    #[setter(update_interval)]
+    fn set_update_interval(&mut self, update_interval: usize) {
+        self.mechanics.update_interval = update_interval;
     }
 }
 
