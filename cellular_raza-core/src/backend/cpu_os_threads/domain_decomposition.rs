@@ -354,7 +354,7 @@ where
                 }
 
                 match c1.is_neighbour(&p1, &p2, &i2)? {
-                    true => {aux1.neighbour_count+=1},
+                    true => aux1.neighbour_count += 1,
                     false => (),
                 }
 
@@ -365,7 +365,7 @@ where
                 }
 
                 match c2.is_neighbour(&p2, &p1, &i1)? {
-                    true => {aux2.neighbour_count+=1},
+                    true => aux2.neighbour_count += 1,
                     false => (),
                 }
             }
@@ -405,7 +405,7 @@ where
             };
 
             match cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
-                true => {aux_storage.neighbour_count+=1},
+                true => aux_storage.neighbour_count += 1,
                 false => (),
             }
         }
