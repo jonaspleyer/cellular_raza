@@ -488,6 +488,20 @@ impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
     }
 }
 
+fn save_simulation_settings(path: &std::path::PathBuf, simulation_settings: &SimulationSettings) -> PyResult<()> {
+    // Also save the SimulationSettings into the same folder
+    let mut save_path = path.clone();
+    save_path.push("simulation_settings.json");
+    let f = std::fs::File::create(save_path)?;
+    let writer = std::io::BufWriter::new(f);
+    serde_json::to_writer_pretty(writer, &simulation_settings).or_else(|e| {
+        Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("serde_json error in writing simulation settings to file: {e}")
+        ))
+    })?;
+    Ok(())
+}
+
 /// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
 #[pyfunction]
 pub fn run_simulation(
@@ -607,11 +621,13 @@ pub fn run_simulation(
         Cells: particles,
         Time: time,
         MetaParams: meta_params,
-        Storage: storage.clone()
+        Storage: storage
     );
 
     let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
     supervisor.config.show_progressbar = simulation_settings.show_progressbar;
+
+    save_simulation_settings(&supervisor.storage.get_location(), &simulation_settings)?;
 
     let simulation_result = supervisor.run_full_sim().or_else(|e| {
         Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
