@@ -5,9 +5,14 @@ from pathlib import Path
 from cr_autophagy_pyo3 import *
 import multiprocessing as mp
 import numpy as np
+from types import SimpleNamespace
 
 def get_last_output_path(name = "autophagy"):
     return Path("out") / name / sorted(os.listdir(Path("out") / name))[-1]
+
+def get_simulation_settings(output_path):
+    f = open(output_path / "simulation_settings.json")
+    return json.load(f, object_hook=lambda d: SimpleNamespace(**d))
 
 def _combine_batches(run_directory):
     # Opens all batches in a given directory and stores
