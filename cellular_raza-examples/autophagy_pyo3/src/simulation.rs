@@ -19,72 +19,25 @@ pub enum Species {
 }
 
 /// Interaction potential depending on the other cells species.
-///
-/// # Parameters
-/// | Symbol | Parameter | Description |
-/// | --- | --- | --- |
-/// | $r_\text{interaction}$ | `interaction_range` | Maximal absolute interaction range. |
-/// | $r_\text{cell}$ | `cell_radius` | Current radius of the cell. |
-/// | $V_0$ | `potential_strength` | Strength of attraction and repelling. |
-/// | $C_0$ | `clustering_strength` | Non-dimensional factor that describes how much stronger the attracting force is compared to the repelling force between two [ATG11Receptor](Species::ATG11Receptor) particles. |
-/// | $\alpha$ | - | Relative interaction range. |
-/// | $\sigma$ | - | Relative distance. |
-/// | $\overrightarrow{d}$ | - | Direction in which the force will be acting. |
-/// | $F(r)$ | - | Shape of the potential curve. |
-/// | $\overrightarrow{F}(\overrightarrow{x_\text{ext}})$ | - | Resulting total force. |
-///
-/// # Spatial Cutoff
-/// We impose a spatial cutoff which is calculated via
-/// \\begin{equation}
-///     c = \frac{1}{2}+\frac{1}{2}\text{sgn}\left(r_\text{interaction} + r_\text{cell,ext} + r_\text{cell,int} - r\right)
-/// \\end{equation}
-/// where $\text{sgn}(\dots)$ is the [signum](https://en.wikipedia.org/wiki/Sign_function) operator.
-/// # Potential Shape
-/// The potential is given by a repelling part at the center and an
-/// attracting part when moving further away.
-/// \\begin{align}
-///     \alpha &= \frac{3}{2}\frac{r_\text{interaction}}{r_\text{cell,ext}+r_\text{cell,int}}\\\\
-///     \sigma &= \frac{r}{r_\text{cell,int}+r_\text{cell,ext}}\\\\
-///     \overrightarrow{d} &= \overrightarrow{x_\text{int}} - \overrightarrow{x_\text{ext}}\\\\
-///     F(r) &= \frac{3}{\alpha^2}\left(3(\sigma - 1)^2 - 2\alpha(\sigma-1))\right)\\\\
-///     \overrightarrow{F}(\overrightarrow{x_\text{ext}}) &= F(r) \overrightarrow{d}
-/// \\end{align}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct TypedInteraction {
     pub species: Species,
     pub cell_radius: f64,
-    pub potential_width: f64,
-    pub well_depth: f64,
-    pub cutoff: f64,
-    pub bound: f64,
-    pub avidity: f64,
+    pub potential_strength: f64,
+    pub interaction_range: f64,
+    pub clustering_strength: f64,
     neighbour_count: usize,
 }
 
-#[pymethods]
-impl TypedInteraction {
-    #[new]
-    fn new(
-        species: Species,
-        cell_radius: f64,
-        potential_width: f64,
-        well_depth: f64,
-        cutoff: f64,
-        bound: f64,
-        avidity: f64,
-    ) -> Self {
-        Self {
-            species,
-            cell_radius,
-            potential_width,
-            well_depth,
-            cutoff,
-            bound,
-            avidity,
-            neighbour_count: 0,
-        }
-    }
+fn calcualte_avidity(own_neighbour_count: usize, ext_neighbour_count: usize) -> f64 {
+    let n = 2.0;
+    let alpha = 1.0;
+    let nc = own_neighbour_count.min(ext_neighbour_count);
+    let s = (nc as f64 / alpha).powf(n) / (1.0 + (nc as f64 / alpha).powf(n));
+    //2.0 * self.neighbour_count as f64/(1.0 + self.neighbour_count as f64)
+    let avidity = 1.3 * s; // * self.avidity
+    avidity
 }
 
 impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)>
@@ -98,33 +51,63 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         _ext_vel: &Vector3<f64>,
         ext_info: &(f64, usize, Species),
     ) -> Option<Result<Vector3<f64>, CalcError>> {
-        let (cell_radius_ext, ext_neighbour_count, species) = ext_info;
-        let z = own_pos - ext_pos;
-        let r = z.norm();
-        let dir = z / r;
-        let e = (-(r - self.cell_radius - cell_radius_ext) / self.potential_width).exp();
-        let strength = 2.0 / self.potential_width * self.well_depth * (1.0 - e) * e;
-        let mut strength_modulator = match (species, &self.species) {
-            // R11 forms clusters
-            (Species::ATG11Receptor, Species::ATG11Receptor) => 1.0,
+        // Calculate radius and direction
+        let min_relative_distance_to_center = 0.3162277660168379;
+        let (r, dir) =
+            match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
+                false => {
+                    let z = own_pos - ext_pos;
+                    let r = z.norm();
+                    (r, z.normalize())
+                }
+                true => {
+                    let dir = match own_pos == ext_pos {
+                        true => {
+                            return None;
+                        }
+                        false => (own_pos - ext_pos).normalize(),
+                    };
+                    let r = self.cell_radius * min_relative_distance_to_center;
+                    (r, dir)
+                }
+            };
+        let (ext_radius, ext_neighbour_count, ext_species) = ext_info;
+        // Introduce Non-dimensional length variable
+        let sigma = r / (self.cell_radius + ext_radius);
+        let bound = 4.0 + 1.0 / sigma;
+        let spatial_cutoff = (1.0
+            + (self.interaction_range + self.cell_radius + ext_radius - r).signum())
+            * 0.5;
 
-            // Cargo also attracts each other
-            (Species::Cargo, Species::Cargo) => 1.0,
+        // Calculate the strength of the interaction with correct bounds
+        let strength = self.potential_strength
+            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
+                .min(bound)
+                .max(-bound);
 
-            (_, _) => {
-                let n = 2.0;
-                let alpha = 1.0;
-                let nc = self.neighbour_count.min(*ext_neighbour_count);
-                let s = (nc as f64 / alpha).powf(n) / (1.0 + (nc as f64 / alpha).powf(n));
-                //2.0 * self.neighbour_count as f64/(1.0 + self.neighbour_count as f64)
-                self.avidity * (1.0 + s)
+        // Calculate only attracting and repelling forces
+        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
+        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+
+        let avidity = calcualte_avidity(self.neighbour_count, *ext_neighbour_count);
+
+        match (ext_species, &self.species) {
+            // R11 will bind to cargo
+            (Species::Cargo, Species::ATG11Receptor) | (Species::ATG11Receptor, Species::Cargo) => {
+                return Some(Ok(repelling_force + avidity * attracting_force))
             }
-        };
-        if r>= self.cutoff {
-            strength_modulator = 0.0;
+
+            // R11 forms clusters
+            (Species::ATG11Receptor, Species::ATG11Receptor) => {
+                return Some(Ok(
+                    repelling_force + self.clustering_strength * attracting_force
+                ))
+            }
+
+            (Species::Cargo, Species::Cargo) => {
+                return Some(Ok(repelling_force + attracting_force))
+            }
         }
-        let force = strength_modulator * strength.min(self.bound) * dir;
-        Some(Ok(force))
     }
 
     fn get_interaction_information(&self) -> (f64, usize, Species) {
@@ -135,14 +118,14 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         &self,
         own_pos: &Vector3<f64>,
         ext_pos: &Vector3<f64>,
-        inf: &(f64, usize, Species),
+        ext_inf: &(f64, usize, Species),
     ) -> Result<bool, CalcError> {
-        match (&self.species, &inf.2) {
+        match (&self.species, &ext_inf.2) {
             (Species::ATG11Receptor, Species::ATG11Receptor) => {
-                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + inf.0))
+                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + ext_inf.0))
             }
             (Species::Cargo, Species::Cargo) => {
-                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + inf.0))
+                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + ext_inf.0))
             }
             _ => Ok(false),
         }
