@@ -143,9 +143,8 @@ fn generate_random_vector<const D: usize>(
         Ok(e) => Ok(e),
         Err(e) => Err(RngError(format!("{e}"))),
     }?;
-    let random_dir = SVector::<f64, D>::new_random().normalize();
-    let amplitude = distr.sample(rng);
-    Ok(amplitude * random_dir)
+    let random_dir = SVector::<f64, D>::from_distribution(&distr, rng);
+    Ok(random_dir)
 }
 
 // TODO use NoVelocity struct
