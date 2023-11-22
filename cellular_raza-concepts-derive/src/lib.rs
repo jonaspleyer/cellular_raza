@@ -50,6 +50,9 @@ use syn::{parse_macro_input, DeriveInput};
     )
 )]
 pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
+    // TODO modularize this into multiple functions responsible for implementing the individual
+    // aspects and document/comment them accordingly
+
     // Parse the input tokens into a syntax tree
     let ast = parse_macro_input!(input as DeriveInput);
 
@@ -82,11 +85,11 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         dt: &f64,
                         cell: &mut Self,
                     ) -> Option<CycleEvent> {
-                        #field_type::update_cycle(rng, dt, cell)
+                        <#field_type as Cycle<#struct_name>>::update_cycle(rng, dt, cell)
                     }
 
                     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Self) -> Result<Self, DivisionError> {
-                        #field_type::divide(rng, cell)
+                        <#field_type as Cycle<#struct_name>>::divide(rng, cell)
                     }
 
                     fn update_conditional_phased_death(
@@ -94,7 +97,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         dt: &f64,
                         cell: &mut Self,
                     ) -> Result<bool, DeathError> {
-                        #field_type::update_conditional_phased_death(rng, dt, cell)
+                        <#field_type as Cycle<#struct_name>>::update_conditional_phased_death(rng, dt, cell)
                     }
                 }
             };
@@ -121,21 +124,30 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
 
             let tokens = list.tokens.clone();
             let name = &field.ident;
+            let field_type = &field.ty.clone();
             let res2 = quote! {
                 impl #struct_generics Mechanics<#tokens> for #struct_name #struct_generics
                 {
-                    fn pos(&self) -> #position {self.#name.pos()}
-                    fn velocity(&self) -> #velocity {self.#name.velocity()}
-                    fn set_pos(&mut self, pos: &#position) {self.#name.set_pos(pos)}
-                    fn set_velocity(&mut self, velocity: &#velocity) {self.#name.set_velocity(velocity)}
+                    fn pos(&self) -> #position {
+                        <#field_type as Mechanics<#tokens>>::pos(&self.#name)
+                    }
+                    fn velocity(&self) -> #velocity {
+                        <#field_type as Mechanics<#tokens>>::velocity(&self.#name)
+                    }
+                    fn set_pos(&mut self, pos: &#position) {
+                        <#field_type as Mechanics<#tokens>>::set_pos(&mut self.#name, pos)
+                    }
+                    fn set_velocity(&mut self, velocity: &#velocity) {
+                        <#field_type as Mechanics<#tokens>>::set_velocity(&mut self.#name, velocity)
+                    }
                     fn calculate_increment(&self, force: #force) -> Result<(#position, #velocity), CalcError> {
-                        self.#name.calculate_increment(force)
+                        <#field_type as Mechanics<#tokens>>::calculate_increment(&self.#name, force)
                     }
                     fn set_random_variable(&mut self,
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: f64,
                     ) -> Result<Option<f64>, RngError> {
-                        self.#name.set_random_variable(rng, dt)
+                        <#field_type as Mechanics<#tokens>>::set_random_variable(&mut self.#name, rng, dt)
                     }
                 }
             };
@@ -151,6 +163,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             _ => None,
         }) {
             let name = field.ident.clone();
+            let field_type = field.ty.clone();
             let tokens = list.tokens.clone();
             let stream = quote!((#tokens));
             let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
@@ -165,7 +178,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             let res = quote! {
                 impl #struct_generics Interaction<#position, #velocity, #force, #inf> for #struct_name #struct_generics {
                     fn get_interaction_information(&self) -> #inf {
-                        self.#name.get_interaction_information()
+                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::get_interaction_information(&self.#name)
                     }
 
                     fn calculate_force_between(
@@ -176,15 +189,15 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         ext_vel: &#velocity,
                         ext_info: &#inf,
                     ) -> Option<Result<#force, CalcError>> {
-                        self.#name.calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
+                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::calculate_force_between(&self.#name, own_pos, own_vel, ext_pos, ext_vel, ext_info)
                     }
 
                     fn is_neighbour(&self, own_pos: &#position, ext_pos: &#position, ext_inf: &#inf) -> Result<bool, CalcError> {
-                        self.#name.is_neighbour(own_pos, ext_pos, ext_inf)
+                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::is_neighbour(&self.#name, own_pos, ext_pos, ext_inf)
                     }
 
                     fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
-                        self.#name.react_to_neighbours(neighbours)
+                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::react_to_neighbours(&mut self.#name, neighbours)
                     }
                 }
             };
@@ -200,6 +213,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             _ => None,
         }) {
             let name = field.ident.clone();
+            let field_type = field.ty.clone();
             let tokens = list.tokens.clone();
             let stream = quote!((#tokens));
             let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
@@ -212,11 +226,11 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             let res = quote! {
                 impl #struct_generics CellularReactions<#concvecintracellular, #concvecextracellular> for #struct_name #struct_generics {
                     fn get_intracellular(&self) -> #concvecintracellular {
-                        self.#name.get_intracellular()
+                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::get_intracellular(&self.#name)
                     }
 
                     fn set_intracellular(&mut self, concentration_vector: #concvecintracellular) {
-                        self.#name.set_intracellular(concentration_vector);
+                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::set_intracellular(&mut self.#name, concentration_vector);
                     }
 
                     fn calculate_intra_and_extracellular_reaction_increment(
@@ -224,7 +238,8 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         internal_concentration_vector: &#concvecintracellular,
                         external_concentration_vector: &#concvecextracellular,
                     ) -> Result<(#concvecintracellular, #concvecextracellular), CalcError> {
-                        self.#name.calculate_intra_and_extracellular_reaction_increment(
+                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::calculate_intra_and_extracellular_reaction_increment(
+                            &self.#name,
                             internal_concentration_vector,
                             external_concentration_vector
                         )
@@ -254,7 +269,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                         cell: &mut #struct_name #struct_generics,
                         gradient: &#concgradientextracellular,
                     ) -> Result<(), CalcError> {
-                        #field_type::sense_gradient(cell, gradient)
+                        <#field_type as InteractionExtracellularGradient<#struct_name #struct_generics, #concgradientextracellular>>::sense_gradient(cell, gradient)
                     }
                 }
             };
