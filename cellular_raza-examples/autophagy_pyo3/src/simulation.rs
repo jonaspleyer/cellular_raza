@@ -299,11 +299,47 @@ pub struct SimulationSettings {
     pub show_progressbar: bool,
 }
 
+fn create_particle_template(
+    py: Python,
+    species: Species,
+    cell_radius: f64,
+    damping: f64,
+    kb_temperature: f64,
+    update_interval: usize,
+    potential_strength: f64,
+    interaction_range: f64,
+    clustering_strength: f64,
+) -> PyResult<ParticleTemplate> {
+    Ok(ParticleTemplate {
+        mechanics: Py::new(
+            py,
+            Langevin3D::new(
+                [0.0; 3],                // pos
+                cell_radius.powf(3_f64), // mass
+                damping,                 // damping
+                kb_temperature,          // kb_temperature
+                update_interval,         // update_interval
+            ),
+        )?,
+        interaction: Py::new(
+            py,
+            TypedInteraction::new(
+                species,             // species
+                cell_radius,         // cell_radius
+                potential_strength,  // potential_strength
+                interaction_range,   // interaction_range
+                clustering_strength, // clustering_strength
+            ),
+        )?,
+    })
+}
+
 #[pymethods]
 impl SimulationSettings {
     #[new]
     fn new(py: Python) -> PyResult<Self> {
-        let cell_radius_atg11_receptor = 1.0;
+        let cell_radius_atg11_receptor: f64 = 1.0;
+        let cell_radius_cargo: f64 = 1.5 * cell_radius_atg11_receptor;
         let dt = 0.25;
 
         Ok(SimulationSettings {
@@ -312,63 +348,31 @@ impl SimulationSettings {
 
             particle_template_cargo: Py::new(
                 py,
-                ParticleTemplate {
-                    mechanics: Py::new(
-                        py,
-                        Langevin3D {
-                            mechanics: Langevin::<3>::new(
-                                Vector3::<f64>::zero(),
-                                Vector3::<f64>::zero(),
-                                1.25 * cell_radius_atg11_receptor,
-                                0.01,
-                                0.02,
-                                5,
-                            ),
-                        },
-                    )?,
-                    interaction: Py::new(
-                        py,
-                        TypedInteraction::new(
-                            Species::Cargo,
-                            1.5, // cell radius
-                            2.0, // potential width
-                            2.0, // well depth
-                            3.0, // cutoff
-                            2.0, // bound
-                            0.5, // avidity
-                        ),
-                    )?,
-                },
+                create_particle_template(
+                    py,
+                    Species::Cargo,          // species
+                    cell_radius_cargo,       // cell_radius
+                    1.5,                     // damping
+                    0.0,                     // kb_temperature
+                    5,                       // update_interval
+                    0.01,                    // potential_strength
+                    0.8 * cell_radius_cargo, // interaction_range
+                    1.3,                     // clustering_strength
+                )?,
             )?,
             particle_template_atg11_receptor: Py::new(
                 py,
-                ParticleTemplate {
-                    mechanics: Py::new(
-                        py,
-                        Langevin3D {
-                            mechanics: Langevin::<3>::new(
-                                Vector3::<f64>::zero(),
-                                Vector3::<f64>::zero(),
-                                cell_radius_atg11_receptor,
-                                0.5,
-                                0.2,
-                                5,
-                            ),
-                        },
-                    )?,
-                    interaction: Py::new(
-                        py,
-                        TypedInteraction::new(
-                            Species::ATG11Receptor,
-                            cell_radius_atg11_receptor,
-                            2.0,                              // potential width
-                            2.0,                              // well depth
-                            2.0 * cell_radius_atg11_receptor, // cutoff
-                            2.0,                              // bound
-                            0.5,                              // avidity
-                        ),
-                    )?,
-                },
+                create_particle_template(
+                    py,
+                    Species::ATG11Receptor,           // species
+                    cell_radius_atg11_receptor,       // cell_radius
+                    0.5,                              // damping
+                    0.02,                             // kb_temperature
+                    5,                                // update_interval
+                    0.02,                             // potential_strength
+                    0.8 * cell_radius_atg11_receptor, // interaction_range
+                    1.3,                              // clustering_strength
+                )?,
             )?,
 
             dt,
@@ -539,26 +543,28 @@ pub fn run_simulation(
         .borrow(py)
         .interaction
         .borrow(py)
-        .cutoff
-        + simulation_settings
-            .particle_template_cargo
-            .borrow(py)
-            .interaction
-            .borrow(py)
-            .cell_radius)
+        .interaction_range
+        + 2.0
+            * simulation_settings
+                .particle_template_cargo
+                .borrow(py)
+                .interaction
+                .borrow(py)
+                .cell_radius)
         .max(
             simulation_settings
                 .particle_template_atg11_receptor
                 .borrow(py)
                 .interaction
                 .borrow(py)
-                .cutoff
-                + simulation_settings
-                    .particle_template_atg11_receptor
-                    .borrow(py)
-                    .interaction
-                    .borrow(py)
-                    .cell_radius,
+                .interaction_range
+                + 2.0
+                    * simulation_settings
+                        .particle_template_atg11_receptor
+                        .borrow(py)
+                        .interaction
+                        .borrow(py)
+                        .cell_radius,
         );
 
     let domain = match simulation_settings.domain_n_voxels {
