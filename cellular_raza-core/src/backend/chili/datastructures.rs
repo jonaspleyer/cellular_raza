@@ -377,9 +377,8 @@ pub mod test_construction {
 );
 #[doc(inline)]
 pub use crate::run_full_simulation;*/
-
-#[doc(inline)]
-pub use cellular_raza_core_derive::run_full_simulation;
+// #[doc(inline)]
+// pub use cellular_raza_core_derive::run_full_simulation;
 
 #[doc(hidden)]
 #[macro_export]

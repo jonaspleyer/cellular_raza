@@ -90,7 +90,7 @@ where
 
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
-    pub(crate) storage: StorageConfig,
+    pub storage: StorageConfig,
 
     pub(crate) domain: DomainBox<Dom>,
 
