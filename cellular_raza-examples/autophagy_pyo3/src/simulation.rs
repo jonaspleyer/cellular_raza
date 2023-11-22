@@ -286,6 +286,9 @@ pub struct SimulationSettings {
     /// See [CartesianCuboid3]
     pub domain_size: f64,
 
+    /// Size of the centered cuboid in which the cargo cells will be placed initially
+    pub domain_size_cargo: f64,
+
     /// See [CartesianCuboid3]
     pub domain_n_voxels: Option<usize>,
 
@@ -375,6 +378,7 @@ impl SimulationSettings {
             n_threads: 1,
 
             domain_size: 100.0,
+            domain_size_cargo: 20.0,
             domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
@@ -492,8 +496,9 @@ pub fn run_simulation(
     let particles = (0..simulation_settings.n_cells_cargo
         + simulation_settings.n_cells_atg11_receptor)
         .map(|n| {
-            let low = 0.4 * simulation_settings.domain_size;
-            let high = 0.6 * simulation_settings.domain_size;
+            let middle = simulation_settings.domain_size / 2.0;
+            let low = middle - 0.5 * simulation_settings.domain_size_cargo;
+            let high = middle + 0.5 * simulation_settings.domain_size_cargo;
             let pos = if n < simulation_settings.n_cells_cargo {
                 Vector3::from([
                     rng.gen_range(low..high),
@@ -501,11 +506,17 @@ pub fn run_simulation(
                     rng.gen_range(low..high),
                 ])
             } else {
-                Vector3::from([
-                    rng.gen_range(0.0..simulation_settings.domain_size),
-                    rng.gen_range(0.0..simulation_settings.domain_size),
-                    rng.gen_range(0.0..simulation_settings.domain_size),
-                ])
+                // We do not want to spawn the ATG11Receptor particles in the middle where the cargo
+                // will be placed. Thus we calculate where else we can spawn them.
+                let mut loc = [middle; 3];
+                while loc.iter().all(|x| low <= *x && *x <= high) {
+                    loc = [
+                        rng.gen_range(0.0..simulation_settings.domain_size),
+                        rng.gen_range(0.0..simulation_settings.domain_size),
+                        rng.gen_range(0.0..simulation_settings.domain_size),
+                    ];
+                }
+                Vector3::from(loc)
             };
             let particle = if n < simulation_settings.n_cells_cargo {
                 simulation_settings.particle_template_cargo.clone()
