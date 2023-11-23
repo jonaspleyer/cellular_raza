@@ -353,9 +353,9 @@ impl SimulationSettings {
                     1.5,                     // damping
                     0.0,                     // kb_temperature
                     5,                       // update_interval
-                    0.01,                    // potential_strength
+                    0.03,                    // potential_strength
                     0.8 * cell_radius_cargo, // interaction_range
-                    1.3,                     // clustering_strength
+                    1.0,                     // clustering_strength
                     1.0,                     // avidity
                 )?,
             )?,
@@ -366,11 +366,11 @@ impl SimulationSettings {
                     Species::ATG11Receptor,           // species
                     cell_radius_atg11_receptor,       // cell_radius
                     0.5,                              // damping
-                    0.02,                             // kb_temperature
+                    0.0025,                           // kb_temperature
                     5,                                // update_interval
                     0.02,                             // potential_strength
                     0.8 * cell_radius_atg11_receptor, // interaction_range
-                    1.3,                              // clustering_strength
+                    0.2,                              // clustering_strength
                     1.0,                              // avidity
                 )?,
             )?,
