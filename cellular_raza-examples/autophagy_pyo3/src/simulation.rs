@@ -491,7 +491,10 @@ impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
     }
 }
 
-fn save_simulation_settings(path: &std::path::PathBuf, simulation_settings: &SimulationSettings) -> PyResult<()> {
+fn save_simulation_settings(
+    path: &std::path::PathBuf,
+    simulation_settings: &SimulationSettings,
+) -> PyResult<()> {
     // Also save the SimulationSettings into the same folder
     let mut save_path = path.clone();
     save_path.push("simulation_settings.json");
@@ -499,7 +502,7 @@ fn save_simulation_settings(path: &std::path::PathBuf, simulation_settings: &Sim
     let writer = std::io::BufWriter::new(f);
     serde_json::to_writer_pretty(writer, &simulation_settings).or_else(|e| {
         Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
-            format!("serde_json error in writing simulation settings to file: {e}")
+            format!("serde_json error in writing simulation settings to file: {e}"),
         ))
     })?;
     Ok(())
