@@ -290,6 +290,9 @@ pub struct SimulationSettings {
 
     /// Do we want to show a progress bar
     pub show_progressbar: bool,
+
+    /// The seed with which the simulation is initially configured
+    pub random_seed: u64,
 }
 
 fn create_particle_template(
@@ -385,6 +388,8 @@ impl SimulationSettings {
             storage_name: "out/autophagy".into(),
 
             show_progressbar: true,
+
+            random_seed: 1,
         })
     }
 
@@ -506,7 +511,7 @@ pub fn run_simulation(
     simulation_settings: SimulationSettings,
     py: Python,
 ) -> Result<std::path::PathBuf, pyo3::PyErr> {
-    let mut rng = ChaCha8Rng::seed_from_u64(1);
+    let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
 
     let particles = (0..simulation_settings.n_cells_cargo
         + simulation_settings.n_cells_atg11_receptor)
