@@ -1,4 +1,6 @@
+mod particle_properties;
 mod simulation;
+use particle_properties::*;
 pub use simulation::*;
 
 use pyo3::prelude::*;
