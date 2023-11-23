@@ -27,17 +27,16 @@ pub struct TypedInteraction {
     pub potential_strength: f64,
     pub interaction_range: f64,
     pub clustering_strength: f64,
+    pub avidity: f64,
     neighbour_count: usize,
 }
 
-fn calcualte_avidity(own_neighbour_count: usize, ext_neighbour_count: usize) -> f64 {
-    let n = 2.0;
-    let alpha = 1.0;
+fn calculate_avidity(own_neighbour_count: usize, ext_neighbour_count: usize) -> f64 {
+    let n = 20.0;
+    let alpha = 16.0;
     let nc = own_neighbour_count.min(ext_neighbour_count);
     let s = (nc as f64 / alpha).powf(n) / (1.0 + (nc as f64 / alpha).powf(n));
-    //2.0 * self.neighbour_count as f64/(1.0 + self.neighbour_count as f64)
-    let avidity = 1.3 * s; // * self.avidity
-    avidity
+    s
 }
 
 impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)>
@@ -88,7 +87,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
         let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-        let avidity = calcualte_avidity(self.neighbour_count, *ext_neighbour_count);
+        let avidity = self.avidity * calculate_avidity(self.neighbour_count, *ext_neighbour_count);
 
         match (ext_species, &self.species) {
             // R11 will bind to cargo
@@ -144,6 +143,7 @@ impl TypedInteraction {
         potential_strength: f64,
         interaction_range: f64,
         clustering_strength: f64,
+        avidity: f64,
     ) -> Self {
         Self {
             species,
@@ -151,6 +151,7 @@ impl TypedInteraction {
             potential_strength,
             interaction_range,
             clustering_strength,
+            avidity,
             neighbour_count: 0,
         }
     }
@@ -308,6 +309,7 @@ fn create_particle_template(
     potential_strength: f64,
     interaction_range: f64,
     clustering_strength: f64,
+    avidity: f64,
 ) -> PyResult<ParticleTemplate> {
     Ok(ParticleTemplate {
         mechanics: Py::new(
@@ -328,6 +330,7 @@ fn create_particle_template(
                 potential_strength,  // potential_strength
                 interaction_range,   // interaction_range
                 clustering_strength, // clustering_strength
+                avidity,             // avidity
             ),
         )?,
     })
@@ -357,6 +360,7 @@ impl SimulationSettings {
                     0.01,                    // potential_strength
                     0.8 * cell_radius_cargo, // interaction_range
                     1.3,                     // clustering_strength
+                    1.0,                     // avidity
                 )?,
             )?,
             particle_template_atg11_receptor: Py::new(
@@ -371,6 +375,7 @@ impl SimulationSettings {
                     0.02,                             // potential_strength
                     0.8 * cell_radius_atg11_receptor, // interaction_range
                     1.3,                              // clustering_strength
+                    1.0,                              // avidity
                 )?,
             )?,
 
