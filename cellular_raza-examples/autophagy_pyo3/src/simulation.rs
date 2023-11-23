@@ -279,8 +279,21 @@ pub struct SimulationSettings {
     /// See [CartesianCuboid3]
     pub domain_size: f64,
 
-    /// Size of the centered cuboid in which the cargo cells will be placed initially
-    pub domain_size_cargo: f64,
+    /// Lower boundary of the cuboid in which the cargo cells will be placed initially
+    pub domain_cargo_low: [f64; 3],
+
+    /// Upper boundary of the cuboid in which the cargo cells will be placed initially
+    pub domain_cargo_high: [f64; 3],
+
+    /// Lower boundary of the cuboid in which the cargo cells will be placed initially
+    pub domain_r11_low: [f64; 3],
+
+    /// Upper boundary of the cuboid in which the cargo cells will be placed initially
+    pub domain_r11_high: [f64; 3],
+
+    /// Determines if the r11 particles will be placed outside of the domain of the
+    /// cargo particles.
+    pub domain_r11_avoid_cargo: bool,
 
     /// See [CartesianCuboid3]
     pub domain_n_voxels: Option<usize>,
@@ -382,7 +395,11 @@ impl SimulationSettings {
             n_threads: 1,
 
             domain_size: 100.0,
-            domain_size_cargo: 20.0,
+            domain_cargo_low: [40.0; 3],
+            domain_cargo_high: [60.0; 3],
+            domain_r11_low: [0.0; 3],
+            domain_r11_high: [100.0; 3],
+            domain_r11_avoid_cargo: true,
             domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
@@ -508,54 +525,109 @@ fn save_simulation_settings(
     Ok(())
 }
 
-/// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
-#[pyfunction]
-pub fn run_simulation(
-    simulation_settings: SimulationSettings,
-    py: Python,
-) -> Result<std::path::PathBuf, pyo3::PyErr> {
-    let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
-
-    let particles = (0..simulation_settings.n_cells_cargo
-        + simulation_settings.n_cells_atg11_receptor)
-        .map(|n| {
-            let middle = simulation_settings.domain_size / 2.0;
-            let low = middle - 0.5 * simulation_settings.domain_size_cargo;
-            let high = middle + 0.5 * simulation_settings.domain_size_cargo;
-            let pos = if n < simulation_settings.n_cells_cargo {
-                Vector3::from([
-                    rng.gen_range(low..high),
-                    rng.gen_range(low..high),
-                    rng.gen_range(low..high),
-                ])
-            } else {
-                // We do not want to spawn the ATG11Receptor particles in the middle where the cargo
-                // will be placed. Thus we calculate where else we can spawn them.
-                let mut loc = [middle; 3];
-                while loc.iter().all(|x| low <= *x && *x <= high) {
-                    loc = [
-                        rng.gen_range(0.0..simulation_settings.domain_size),
-                        rng.gen_range(0.0..simulation_settings.domain_size),
-                        rng.gen_range(0.0..simulation_settings.domain_size),
-                    ];
+fn generate_particle_pos(
+    simulation_settings: &SimulationSettings,
+    rng: &mut ChaCha8Rng,
+    n: usize,
+) -> PyResult<Vector3<f64>> {
+    let pos = if n < simulation_settings.n_cells_cargo {
+        Vector3::from([
+            rng.gen_range(
+                simulation_settings.domain_cargo_low[0].max(0.0)
+                    ..simulation_settings.domain_cargo_high[0].min(simulation_settings.domain_size),
+            ),
+            rng.gen_range(
+                simulation_settings.domain_cargo_low[1].max(0.0)
+                    ..simulation_settings.domain_cargo_high[1].min(simulation_settings.domain_size),
+            ),
+            rng.gen_range(
+                simulation_settings.domain_cargo_low[2].max(0.0)
+                    ..simulation_settings.domain_cargo_high[2].min(simulation_settings.domain_size),
+            ),
+        ])
+    } else {
+        // We do not want to spawn the R11 particles in the middle where the cargo
+        // will be placed. Thus we calculate where else we can spawn them.
+        let mut loc = [0.0; 3];
+        // Initially choose the location of the R11 particle
+        for i in 0..3 {
+            // Restrict it to at minimum 0.0 and at maximum the size of the domain
+            let low = simulation_settings.domain_r11_low[i].max(0.0);
+            let high = simulation_settings.domain_r11_high[i].min(simulation_settings.domain_size);
+            loc[i] = rng.gen_range(low..high);
+        }
+        if simulation_settings.domain_r11_avoid_cargo {
+            // Determine if the position chosen landed in the cargo region
+            if loc.iter().enumerate().all(|(i, x)| {
+                simulation_settings.domain_cargo_low[i] <= *x
+                    && *x <= simulation_settings.domain_cargo_high[i]
+            }) {
+                // Choose one direction at random
+                let j = rng.gen_range(0_usize..3_usize);
+                // The cargo and r11 intervals must be intercepting
+                // thus we divide the region into 2 subintervals both not containing the
+                // cargo region.
+                let r_low = simulation_settings.domain_r11_low[j].max(0.0);
+                let r_high = simulation_settings.domain_r11_high[j].min(simulation_settings.domain_size);
+                let c_low = simulation_settings.domain_cargo_low[j].max(0.0);
+                let c_high = simulation_settings.domain_cargo_high[j].min(simulation_settings.domain_size);
+                // First check that the r11 interval is not completely contained
+                // inside the cargo interval
+                if c_low <= r_low && r_high <= c_high {
+                    return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                        format!(
+                            "Error in definition of cargo and r11 domain while avoiding each other: Cargo_low: {:?} Cargo_high: {:?} R11_low: {:?} R11_high: {:?}",
+                            simulation_settings.domain_cargo_low,
+                            simulation_settings.domain_cargo_high,
+                            simulation_settings.domain_r11_low,
+                            simulation_settings.domain_r11_high,
+                        ),
+                    ));
                 }
-                Vector3::from(loc)
-            };
-            let particle = if n < simulation_settings.n_cells_cargo {
-                simulation_settings.particle_template_cargo.clone()
-            } else {
-                simulation_settings.particle_template_atg11_receptor.clone()
-            };
-            particle
-                .borrow_mut(py)
-                .mechanics
-                .borrow_mut(py)
-                .mechanics
-                .set_pos(&pos);
-            particle.extract::<ParticleTemplate>(py)?.into_particle(py)
-        })
-        .collect::<Result<Vec<_>, pyo3::PyErr>>()?;
+                // Check if the Cargo interval is fully contained in the R11 interval
+                if r_low < c_low && c_high < r_high {
+                    // We now know that we need to create 2 distinct intervals to sample
+                    // for the R11 particle
+                    let i1_low = r_low;
+                    let i1_high = c_low;
+                    let i1_dist = i1_high - i1_low;
+                    let i2_low = c_high;
+                    let i2_high = r_high;
+                    let i2_dist = i2_high - i2_low;
 
+                    // Calculate the probability to be in interval i1
+                    let p = i1_dist / (i1_dist + i2_dist);
+                    if rng.gen_bool(p) {
+                        // We are in interval i1
+                        loc[j] = rng.gen_range(i1_low..i1_high);
+                    } else {
+                        // We are in interval i2
+                        loc[j] = rng.gen_range(i2_low..i2_high);
+                    }
+                }
+                // Otherwise check if the cargo interval is lower than the R11 interval
+                else if c_low <= r_low {
+                    let i1_low = c_high;
+                    let i1_high = r_high;
+                    loc[j] = rng.gen_range(i1_low..i1_high);
+                }
+                // The only remaining option is r_high <= c_high
+                else {
+                    let i1_low = r_low;
+                    let i1_high = c_low;
+                    loc[j] = rng.gen_range(i1_low..i1_high);
+                }
+            }
+        }
+        Vector3::from(loc)
+    };
+    Ok(pos)
+}
+
+fn calculate_interaction_range_max(
+    simulation_settings: &SimulationSettings,
+    py: Python,
+) -> PyResult<f64> {
     // Calculate the maximal interaction range
     let interaction_range_max = (simulation_settings
         .particle_template_cargo
@@ -585,6 +657,37 @@ pub fn run_simulation(
                         .borrow(py)
                         .cell_radius,
         );
+    Ok(interaction_range_max)
+}
+
+/// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
+#[pyfunction]
+pub fn run_simulation(
+    simulation_settings: SimulationSettings,
+    py: Python,
+) -> Result<std::path::PathBuf, pyo3::PyErr> {
+    let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
+
+    let particles = (0..simulation_settings.n_cells_cargo
+        + simulation_settings.n_cells_atg11_receptor)
+        .map(|n| {
+            let pos = generate_particle_pos(&simulation_settings, &mut rng, n)?;
+            let particle = if n < simulation_settings.n_cells_cargo {
+                simulation_settings.particle_template_cargo.clone()
+            } else {
+                simulation_settings.particle_template_atg11_receptor.clone()
+            };
+            particle
+                .borrow_mut(py)
+                .mechanics
+                .borrow_mut(py)
+                .mechanics
+                .set_pos(&pos);
+            particle.extract::<ParticleTemplate>(py)?.into_particle(py)
+        })
+        .collect::<Result<Vec<_>, pyo3::PyErr>>()?;
+
+    let interaction_range_max = calculate_interaction_range_max(&simulation_settings, py)?;
 
     let domain = match simulation_settings.domain_n_voxels {
         Some(n_voxels) => CartesianCuboid3::from_boundaries_and_n_voxels(
@@ -620,7 +723,8 @@ pub fn run_simulation(
         n_threads: simulation_settings.n_threads,
     };
 
-    let storage = StorageConfig::from_path("out/autophagy".into());
+    let storage =
+        StorageConfig::from_path(simulation_settings.storage_name.clone().into());
 
     let simulation_setup = create_simulation_setup!(
         Domain: domain,
