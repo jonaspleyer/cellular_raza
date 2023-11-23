@@ -96,14 +96,10 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
             }
 
             // R11 forms clusters
-            (Species::ATG11Receptor, Species::ATG11Receptor) => {
+            (Species::ATG11Receptor, Species::ATG11Receptor) | (Species::Cargo, Species::Cargo) => {
                 return Some(Ok(
                     repelling_force + self.clustering_strength * attracting_force
                 ))
-            }
-
-            (Species::Cargo, Species::Cargo) => {
-                return Some(Ok(repelling_force + attracting_force))
             }
         }
     }
@@ -119,10 +115,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         ext_inf: &(f64, usize, Species),
     ) -> Result<bool, CalcError> {
         match (&self.species, &ext_inf.2) {
-            (Species::ATG11Receptor, Species::ATG11Receptor) => {
-                Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + ext_inf.0))
-            }
-            (Species::Cargo, Species::Cargo) => {
+            (Species::ATG11Receptor, Species::ATG11Receptor) | (Species::Cargo, Species::Cargo) => {
                 Ok((own_pos - ext_pos).norm() <= 2.0 * (self.cell_radius + ext_inf.0))
             }
             _ => Ok(false),
