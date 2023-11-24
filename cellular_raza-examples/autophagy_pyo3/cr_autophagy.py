@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pyvista as pv
 import matplotlib.pyplot as plt
 import tqdm
+import copy
 
 
 def get_last_output_path(name = "autophagy"):
@@ -72,17 +73,26 @@ def generate_spheres(output_path: Path, iteration):
     # df = df[df["iteration"]==iteration]
 
     # Create a dataset for pyvista for plotting
-    pset = pv.PolyData(np.array([np.array(x) for x in df["element.cell.mechanics.mechanics.pos"]]))
+    pos_cargo = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.mechanics.mechanics.pos"]
+    pos_r11 = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.mechanics.mechanics.pos"]
+    pset_cargo = pv.PolyData(np.array([np.array(x) for x in pos_cargo]))
+    pset_r11 = pv.PolyData(np.array([np.array(x) for x in pos_r11]))
 
     # Extend dataset by species and diameter
-    pset.point_data["diameter"] = 2.0*df["element.cell.interaction.cell_radius"]
-    pset.point_data["species"] = df["element.cell.interaction.species"]
+    pset_cargo.point_data["diameter"] = 2.0*df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.interaction.cell_radius"]
+    pset_cargo.point_data["species"] = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.interaction.species"]
+    pset_cargo.point_data["neighbour_count1"] = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.interaction.neighbour_count"]
+
+    pset_r11.point_data["diameter"] = 2.0*df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.interaction.cell_radius"]
+    pset_r11.point_data["species"] = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.interaction.species"]
+    pset_r11.point_data["neighbour_count2"] = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.interaction.neighbour_count"]
 
     # Create spheres glyphs from dataset
     sphere = pv.Sphere()
-    spheres = pset.glyph(geom=sphere, scale="diameter", orient=False)
+    spheres_cargo = pset_cargo.glyph(geom=sphere, scale="diameter", orient=False)
+    spheres_r11 = pset_r11.glyph(geom=sphere, scale="diameter", orient=False)
 
-    return spheres
+    return spheres_cargo, spheres_r11
 
 
 def save_snapshot(output_path: Path, iteration):
@@ -92,38 +102,54 @@ def save_snapshot(output_path: Path, iteration):
     opath = ofolder / "snapshot_{:08}.png".format(iteration)
     if os.path.isfile(opath):
         return
-    spheres = generate_spheres(output_path, iteration)
+    (cargo, r11) = generate_spheres(output_path, iteration)
 
     try:
         if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
             jupyter_backend = 'none'
     except:
         jupyter_backend = None
-    spheres.plot(
-        off_screen=True,
-        screenshot=opath,
-        scalars="species",
-        scalar_bar_args={
-            "title":"Species",
-        },
-        cpos=[
-            (
-                -1.5*simulation_settings.domain_size,
-                -1.5*simulation_settings.domain_size,
-                -1.5*simulation_settings.domain_size
-            ),(
-                25,
-                25,
-                25
-            ),(
-                0.0,
-                0.0,
-                0.0
-            )
-        ],
-        # TODO possibly enable this if needed again
-        jupyter_backend=jupyter_backend,
+
+    # Now display all information
+    plotter = pv.Plotter(off_screen=True)
+    ds = 1.5*simulation_settings.domain_size
+    plotter.camera_position = [
+        (-ds, -ds, -ds),
+        (ds, ds, ds),
+        (0, 0, 0)
+    ]
+
+    scalar_bar_args1=dict(
+        title="Neighbours Cargo",
+        title_font_size=20,
+        width=0.4,
+        position_x=0.55,
+        label_font_size=16,
+        shadow=True,
+        italic=True,
+        fmt="%.0f",
+        font_family="arial",
     )
+    scalar_bar_args2=copy.deepcopy(scalar_bar_args1)
+    scalar_bar_args2["title"] = "Neighbours R11"
+
+    plotter.add_mesh(
+        cargo,
+        scalars="neighbour_count1",
+        cmap="Blues",
+        clim=[0,12],
+        scalar_bar_args=scalar_bar_args1,
+    )
+    plotter.add_mesh(
+        r11,
+        scalars="neighbour_count2",
+        cmap="Oranges",
+        clim=[0,12],
+        scalar_bar_args=scalar_bar_args2,
+    )
+    plotter.screenshot(opath)
+    plotter.close()
+    # jupyter_backend=jupyter_backend
 
 
 def __save_snapshot_helper(args):
