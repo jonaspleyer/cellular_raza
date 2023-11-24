@@ -183,7 +183,7 @@ fn main() {
         MetaParams: SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        Storage: StorageConfig::from_path("out/kidney_organoid_model".to_owned().into()),
+        Storage: StorageConfig::from_path(std::path::Path::new("out/kidney_organoid_model")),
     );
 
     let strategies = Strategies {

@@ -208,7 +208,7 @@ fn main() {
         SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        StorageConfig::from_path("out/bacteria_population".to_owned().into()),
+        StorageConfig::from_path(std::path::Path::new("out/bacteria_population")),
         CellNumberController {
             target_cell_number: 15_000,
             stored_ids: std::collections::HashSet::new(),

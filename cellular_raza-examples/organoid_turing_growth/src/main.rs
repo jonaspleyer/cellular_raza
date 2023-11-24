@@ -292,7 +292,7 @@ fn main() {
         SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        StorageConfig::from_path("out/organoid_turing_growth".to_owned().into()),
+        StorageConfig::from_path(std::path::Path::new("out/organoid_turing_growth")),
         (),
     );
 

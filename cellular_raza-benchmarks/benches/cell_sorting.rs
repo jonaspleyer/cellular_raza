@@ -136,7 +136,7 @@ fn run_simulation(
 
     let meta_params = SimulationMetaParams { n_threads };
 
-    let storage = StorageConfig::from_path("out/cell_sorting".into());
+    let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
 
     let simulation_setup = SimulationSetup::new(domain, cells, time, meta_params, storage, ());
 

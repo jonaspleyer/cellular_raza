@@ -149,7 +149,7 @@ fn main() {
         n_threads: N_THREADS,
     };
 
-    let storage = StorageConfig::from_path("out/cell_sorting".into());
+    let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
 
     let simulation_setup = SimulationSetup::new(domain, cells, time, meta_params, storage, ());
 

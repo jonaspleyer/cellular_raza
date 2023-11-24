@@ -234,7 +234,7 @@ pub fn run_simulation_rs(
         n_threads: simulation_settings.n_threads,
     };
 
-    let storage = StorageConfig::from_path("out/pool_model".into());
+    let storage = StorageConfig::from_path(std::path::Path::new("out/pool_model"));
     // storage.export_formats = vec![ExportOptions::Vtk];
 
     let simulation_setup = create_simulation_setup!(

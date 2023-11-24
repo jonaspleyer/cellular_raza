@@ -56,9 +56,10 @@ pub struct StorageConfig {
 }
 
 impl StorageConfig {
-    pub fn from_path(path: std::path::PathBuf) -> Self {
+    /// Create a new [StorageConfig] from a given path where to save results
+    pub fn from_path(path: &std::path::Path) -> Self {
         Self {
-            location: path,
+            location: path.into(),
             storage_priority: StorageOptions::default_priority(),
         }
     }

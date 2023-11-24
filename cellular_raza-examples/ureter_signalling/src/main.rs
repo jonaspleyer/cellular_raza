@@ -298,7 +298,7 @@ fn main() {
         SimulationMetaParams {
             n_threads: N_THREADS,
         },
-        StorageConfig::from_path("out/ureter_signalling".to_owned().into()),
+        StorageConfig::from_path(std::path::Path::new("out/ureter_signalling")),
         (),
     );
 
