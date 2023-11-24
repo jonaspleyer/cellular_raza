@@ -4,7 +4,6 @@ use cellular_raza::prelude::*;
 use pyo3::prelude::*;
 
 use nalgebra::Vector3;
-use num::Zero;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
@@ -24,17 +23,30 @@ pub struct SimulationSettings {
     pub n_cells_cargo: usize,
 
     /// Number of Atg11 particles in the simulation.
-    pub n_cells_atg11_receptor: usize,
+    pub n_cells_r11: usize,
 
-    /// Contains all paramters that all cargo particles will share in common.
-    /// Only the position will be initially randomized. All other parameters will
-    /// be used as is.
-    pub particle_template_cargo: Py<ParticleTemplate>,
+    pub cell_radius_cargo: f64,
+    pub cell_radius_r11: f64,
 
-    /// Contains all paramters that all cargo particles will share in common.
-    /// Only the position will be initially randomized. All other parameters will
-    /// be used as is.
-    pub particle_template_atg11_receptor: Py<ParticleTemplate>,
+    pub mass_cargo: f64,
+    pub mass_r11: f64,
+
+    pub damping_cargo: f64,
+    pub damping_r11: f64,
+
+    pub kb_temperature_cargo: f64,
+    pub kb_temperature_r11: f64,
+
+    pub update_interval: usize,
+
+    pub potential_strength_cargo_cargo: f64,
+    pub potential_strength_r11_r11: f64,
+    pub potential_strength_cargo_r11: f64,
+    pub potential_strength_cargo_r11_avidity: f64,
+
+    pub interaction_range_cargo_cargo: f64,
+    pub interaction_range_r11_r11: f64,
+    pub interaction_range_r11_cargo: f64,
 
     /// Integration step of the numerical simulation.
     pub dt: f64,
@@ -79,86 +91,40 @@ pub struct SimulationSettings {
     pub random_seed: u64,
 }
 
-fn create_particle_template(
-    py: Python,
-    species: Species,
-    cell_radius: f64,
-    damping: f64,
-    kb_temperature: f64,
-    update_interval: usize,
-    potential_strength: f64,
-    interaction_range: f64,
-    clustering_strength: f64,
-    avidity: f64,
-) -> PyResult<ParticleTemplate> {
-    Ok(ParticleTemplate {
-        mechanics: Py::new(
-            py,
-            Langevin3D::new(
-                [0.0; 3],                // pos
-                cell_radius.powf(3_f64), // mass
-                damping,                 // damping
-                kb_temperature,          // kb_temperature
-                update_interval,         // update_interval
-            ),
-        )?,
-        interaction: Py::new(
-            py,
-            TypedInteraction::new(
-                species,             // species
-                cell_radius,         // cell_radius
-                potential_strength,  // potential_strength
-                interaction_range,   // interaction_range
-                clustering_strength, // clustering_strength
-                avidity,             // avidity
-            ),
-        )?,
-    })
-}
-
 #[pymethods]
 impl SimulationSettings {
     #[new]
-    fn new(py: Python) -> PyResult<Self> {
-        let cell_radius_atg11_receptor: f64 = 1.0;
-        let cell_radius_cargo: f64 = 1.5 * cell_radius_atg11_receptor;
+    fn new() -> Self {
+        let cell_radius_r11: f64 = 1.0;
+        let cell_radius_cargo: f64 = 1.5 * cell_radius_r11;
         let dt = 0.25;
 
-        Ok(SimulationSettings {
+        SimulationSettings {
             n_cells_cargo: 100,
-            n_cells_atg11_receptor: 300,
+            n_cells_r11: 300,
 
-            particle_template_cargo: Py::new(
-                py,
-                create_particle_template(
-                    py,
-                    Species::Cargo,          // species
-                    cell_radius_cargo,       // cell_radius
-                    1.5,                     // damping
-                    0.0,                     // kb_temperature
-                    5,                       // update_interval
-                    0.03,                    // potential_strength
-                    0.8 * cell_radius_cargo, // interaction_range
-                    1.0,                     // clustering_strength
-                    1.0,                     // avidity
-                )?,
-            )?,
-            particle_template_atg11_receptor: Py::new(
-                py,
-                create_particle_template(
-                    py,
-                    Species::R11,                     // species
-                    cell_radius_atg11_receptor,       // cell_radius
-                    0.5,                              // damping
-                    0.0025,                           // kb_temperature
-                    5,                                // update_interval
-                    0.02,                             // potential_strength
-                    0.8 * cell_radius_atg11_receptor, // interaction_range
-                    0.2,                              // clustering_strength
-                    1.0,                              // avidity
-                )?,
-            )?,
+            cell_radius_cargo,
+            cell_radius_r11,
 
+            mass_cargo: 4.0 / 3.0 * std::f64::consts::PI * cell_radius_cargo.powf(3.0),
+            mass_r11: 4.0 / 3.0 * std::f64::consts::PI * cell_radius_r11.powf(3.0),
+
+            damping_cargo: 1.5,
+            damping_r11: 1.5,
+
+            kb_temperature_cargo: 0.0,
+            kb_temperature_r11: 0.002,
+
+            update_interval: 5,
+
+            potential_strength_cargo_cargo: 0.03,
+            potential_strength_r11_r11: 0.002,
+            potential_strength_cargo_r11: 0.0,
+            potential_strength_cargo_r11_avidity: 5.0 * 0.03,
+
+            interaction_range_cargo_cargo: 0.8 * cell_radius_cargo,
+            interaction_range_r11_r11: 0.8 * cell_radius_r11,
+            interaction_range_r11_cargo: 2.0 * cell_radius_cargo,
             dt,
             n_times: 20_001,
             save_interval: 50,
@@ -178,104 +144,11 @@ impl SimulationSettings {
             show_progressbar: true,
 
             random_seed: 1,
-        })
-    }
-
-    fn __repr__(&self, py: Python) -> PyResult<String> {
-        Ok(format!(
-            "{:#?}\nparticle_template_cargo:\n{:#?}\nparticle_template_atg11_receptor\n{:#?}",
-            self,
-            self.particle_template_cargo
-                .extract::<ParticleTemplate>(py)?,
-            self.particle_template_atg11_receptor
-                .extract::<ParticleTemplate>(py)?
-        ))
-    }
-
-    #[getter]
-    fn get_particle_template_cargo(&mut self, py: Python) -> Py<ParticleTemplate> {
-        self.particle_template_cargo.clone_ref(py)
-    }
-}
-
-#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
-pub struct Particle {
-    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
-    pub mechanics: Langevin3D,
-
-    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species))]
-    pub interaction: TypedInteraction,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass(get_all, set_all)]
-pub struct ParticleTemplate {
-    pub mechanics: Py<Langevin3D>,
-    pub interaction: Py<TypedInteraction>,
-}
-
-impl ParticleTemplate {
-    fn into_particle(self, py: Python) -> PyResult<Particle> {
-        let mechanics = self.mechanics.extract::<Langevin3D>(py)?;
-        let interaction = self.interaction.extract::<TypedInteraction>(py)?;
-        Ok(Particle {
-            mechanics,
-            interaction,
-        })
-    }
-}
-
-#[pymethods]
-impl ParticleTemplate {
-    #[new]
-    fn new(mechanics: Langevin3D, interaction: TypedInteraction, py: Python) -> PyResult<Self> {
-        Ok(Self {
-            mechanics: Py::new(py, mechanics)?,
-            interaction: Py::new(py, interaction)?,
-        })
+        }
     }
 
     fn __repr__(&self) -> String {
         format!("{:#?}", self)
-    }
-}
-
-impl Cycle<Particle> for Particle {
-    fn divide(
-        _rng: &mut rand_chacha::ChaCha8Rng,
-        _cell: &mut Particle,
-    ) -> Result<Particle, DivisionError> {
-        panic!()
-    }
-
-    fn update_cycle(
-        _rng: &mut rand_chacha::ChaCha8Rng,
-        _dt: &f64,
-        _cell: &mut Particle,
-    ) -> Option<CycleEvent> {
-        None
-    }
-}
-
-impl CellularReactions<Nothing, Nothing> for Particle {
-    fn get_intracellular(&self) -> Nothing {
-        Nothing::zero()
-    }
-
-    fn set_intracellular(&mut self, _concentration_vector: Nothing) {}
-
-    fn calculate_intra_and_extracellular_reaction_increment(
-        &self,
-        _internal_concentration_vector: &Nothing,
-        _external_concentration_vector: &Nothing,
-    ) -> Result<(Nothing, Nothing), CalcError> {
-        Ok((Nothing::zero(), Nothing::zero()))
-    }
-}
-
-impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
-    fn sense_gradient(_cell: &mut Particle, _gradient: &Conc) -> Result<(), CalcError> {
-        Ok(())
     }
 }
 
@@ -339,9 +212,11 @@ fn generate_particle_pos(
                 // thus we divide the region into 2 subintervals both not containing the
                 // cargo region.
                 let r_low = simulation_settings.domain_r11_low[j].max(0.0);
-                let r_high = simulation_settings.domain_r11_high[j].min(simulation_settings.domain_size);
+                let r_high =
+                    simulation_settings.domain_r11_high[j].min(simulation_settings.domain_size);
                 let c_low = simulation_settings.domain_cargo_low[j].max(0.0);
-                let c_high = simulation_settings.domain_cargo_high[j].min(simulation_settings.domain_size);
+                let c_high =
+                    simulation_settings.domain_cargo_high[j].min(simulation_settings.domain_size);
                 // First check that the r11 interval is not completely contained
                 // inside the cargo interval
                 if c_low <= r_low && r_high <= c_high {
@@ -395,70 +270,97 @@ fn generate_particle_pos(
     Ok(pos)
 }
 
-fn calculate_interaction_range_max(
-    simulation_settings: &SimulationSettings,
-    py: Python,
-) -> PyResult<f64> {
+fn calculate_interaction_range_max(simulation_settings: &SimulationSettings) -> PyResult<f64> {
     // Calculate the maximal interaction range
-    let interaction_range_max = (simulation_settings
-        .particle_template_cargo
-        .borrow(py)
-        .interaction
-        .borrow(py)
-        .interaction_range
-        + 2.0
-            * simulation_settings
-                .particle_template_cargo
-                .borrow(py)
-                .interaction
-                .borrow(py)
-                .cell_radius)
-        .max(
-            simulation_settings
-                .particle_template_atg11_receptor
-                .borrow(py)
-                .interaction
-                .borrow(py)
-                .interaction_range
-                + 2.0
-                    * simulation_settings
-                        .particle_template_atg11_receptor
-                        .borrow(py)
-                        .interaction
-                        .borrow(py)
-                        .cell_radius,
-        );
-    Ok(interaction_range_max)
+    let i1 = simulation_settings.interaction_range_cargo_cargo;
+    let i2 = simulation_settings.interaction_range_r11_cargo;
+    let i3 = simulation_settings.interaction_range_r11_r11;
+    let imax = i1.max(i2).max(i3);
+
+    let r1 = simulation_settings.cell_radius_cargo;
+    let r2 = simulation_settings.cell_radius_r11;
+    let rmax = r1.max(r2);
+
+    Ok(2.0 * rmax + imax)
+}
+
+fn create_particle_mechanics(
+    simulation_settings: &SimulationSettings,
+    rng: &mut ChaCha8Rng,
+    n: usize,
+) -> PyResult<Langevin3D> {
+    let pos = generate_particle_pos(simulation_settings, rng, n)?;
+    let mass = if n < simulation_settings.n_cells_cargo {
+        simulation_settings.mass_cargo
+    } else {
+        simulation_settings.mass_r11
+    };
+    let damping = if n < simulation_settings.n_cells_cargo {
+        simulation_settings.damping_cargo
+    } else {
+        simulation_settings.damping_r11
+    };
+    let kb_temperature = if n < simulation_settings.n_cells_cargo {
+        simulation_settings.kb_temperature_cargo
+    } else {
+        simulation_settings.kb_temperature_r11
+    };
+    Ok(Langevin3D {
+        mechanics: Langevin::new(
+            pos,
+            [0.0; 3].into(),
+            mass,
+            damping,
+            kb_temperature,
+            simulation_settings.update_interval,
+        ),
+    })
+}
+
+fn create_particle_interaction(
+    simulation_settings: &SimulationSettings,
+    n: usize,
+) -> PyResult<TypedInteraction> {
+    Ok(TypedInteraction::new(
+        if n < simulation_settings.n_cells_cargo {
+            Species::Cargo
+        } else {
+            Species::R11
+        },
+        if n < simulation_settings.n_cells_cargo {
+            simulation_settings.cell_radius_cargo
+        } else {
+            simulation_settings.cell_radius_r11
+        },
+        simulation_settings.potential_strength_cargo_cargo,
+        simulation_settings.potential_strength_r11_r11,
+        simulation_settings.potential_strength_cargo_r11,
+        simulation_settings.potential_strength_cargo_r11_avidity,
+        simulation_settings.interaction_range_cargo_cargo,
+        simulation_settings.interaction_range_r11_r11,
+        simulation_settings.interaction_range_r11_cargo,
+    ))
 }
 
 /// Takes [SimulationSettings], runs the full simulation and returns the string of the output directory.
 #[pyfunction]
 pub fn run_simulation(
     simulation_settings: SimulationSettings,
-    py: Python,
 ) -> Result<std::path::PathBuf, pyo3::PyErr> {
     let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
 
-    let particles = (0..simulation_settings.n_cells_cargo
-        + simulation_settings.n_cells_atg11_receptor)
+    let particles = (0..simulation_settings.n_cells_cargo + simulation_settings.n_cells_r11)
         .map(|n| {
-            let pos = generate_particle_pos(&simulation_settings, &mut rng, n)?;
-            let particle = if n < simulation_settings.n_cells_cargo {
-                simulation_settings.particle_template_cargo.clone()
-            } else {
-                simulation_settings.particle_template_atg11_receptor.clone()
-            };
-            particle
-                .borrow_mut(py)
-                .mechanics
-                .borrow_mut(py)
-                .mechanics
-                .set_pos(&pos);
-            particle.extract::<ParticleTemplate>(py)?.into_particle(py)
+            let mechanics = create_particle_mechanics(&simulation_settings, &mut rng, n)?;
+            let interaction = create_particle_interaction(&simulation_settings, n)?;
+            Ok(Particle {
+                mechanics,
+                interaction,
+            })
         })
         .collect::<Result<Vec<_>, pyo3::PyErr>>()?;
 
-    let interaction_range_max = calculate_interaction_range_max(&simulation_settings, py)?;
+    let interaction_range_max = calculate_interaction_range_max(&simulation_settings)?;
 
     let domain = match simulation_settings.domain_n_voxels {
         Some(n_voxels) => CartesianCuboid3::from_boundaries_and_n_voxels(
@@ -494,8 +396,7 @@ pub fn run_simulation(
         n_threads: simulation_settings.n_threads,
     };
 
-    let storage =
-        StorageConfig::from_path(simulation_settings.storage_name.clone().into());
+    let storage = StorageConfig::from_path(std::path::Path::new(&simulation_settings.storage_name));
 
     let simulation_setup = create_simulation_setup!(
         Domain: domain,

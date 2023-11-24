@@ -1,5 +1,6 @@
 use cellular_raza::prelude::*;
 use nalgebra::Vector3;
+use num::Zero;
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -20,10 +21,13 @@ pub enum Species {
 pub struct TypedInteraction {
     pub species: Species,
     pub cell_radius: f64,
-    pub potential_strength: f64,
-    pub interaction_range: f64,
-    pub clustering_strength: f64,
-    pub avidity: f64,
+    pub potential_strength_cargo_cargo: f64,
+    pub potential_strength_r11_r11: f64,
+    pub potential_strength_cargo_r11: f64,
+    pub potential_strength_cargo_r11_avidity: f64,
+    pub interaction_range_cargo_cargo: f64,
+    pub interaction_range_r11_r11: f64,
+    pub interaction_range_r11_cargo: f64,
     neighbour_count: usize,
 }
 
@@ -70,32 +74,48 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
         // Introduce Non-dimensional length variable
         let sigma = r / (self.cell_radius + ext_radius);
         let bound = 4.0 + 1.0 / sigma;
-        let spatial_cutoff =
-            (1.0 + (self.interaction_range + self.cell_radius + ext_radius - r).signum()) * 0.5;
+        let calculate_cutoff = |interaction_range| {
+            if interaction_range + self.cell_radius + ext_radius >= r {
+                1.0
+            } else {
+                0.0
+            }
+        };
 
         // Calculate the strength of the interaction with correct bounds
-        let strength = self.potential_strength
-            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
-                .min(bound)
-                .max(-bound);
+        let strength = ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
+            .min(bound)
+            .max(-bound);
 
         // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
-
-        let avidity = self.avidity * calculate_avidity(self.neighbour_count, *ext_neighbour_count);
+        let attracting_force = dir * strength.max(0.0);
+        let repelling_force = dir * strength.min(0.0);
 
         match (ext_species, &self.species) {
             // R11 will bind to cargo
             (Species::Cargo, Species::R11) | (Species::R11, Species::Cargo) => {
-                return Some(Ok(repelling_force + avidity * attracting_force))
+                let avidity = self.potential_strength_cargo_r11_avidity
+                    * calculate_avidity(self.neighbour_count, *ext_neighbour_count);
+                let cutoff = calculate_cutoff(self.interaction_range_r11_cargo);
+                let force = cutoff
+                    * self.potential_strength_cargo_r11
+                    * (repelling_force + avidity * attracting_force);
+                Some(Ok(force))
             }
 
             // R11 forms clusters
-            (Species::R11, Species::R11) | (Species::Cargo, Species::Cargo) => {
-                return Some(Ok(
-                    repelling_force + self.clustering_strength * attracting_force
-                ))
+            (Species::Cargo, Species::Cargo) => {
+                let cutoff = calculate_cutoff(self.interaction_range_cargo_cargo);
+                Some(Ok(cutoff
+                    * self.potential_strength_cargo_cargo
+                    * (repelling_force + attracting_force)))
+            }
+
+            (Species::R11, Species::R11) => {
+                let cutoff = calculate_cutoff(self.interaction_range_r11_r11);
+                Some(Ok(cutoff
+                    * self.potential_strength_r11_r11
+                    * (repelling_force + attracting_force)))
             }
         }
     }
@@ -129,18 +149,24 @@ impl TypedInteraction {
     pub fn new(
         species: Species,
         cell_radius: f64,
-        potential_strength: f64,
-        interaction_range: f64,
-        clustering_strength: f64,
-        avidity: f64,
+        potential_strength_cargo_cargo: f64,
+        potential_strength_r11_r11: f64,
+        potential_strength_cargo_r11: f64,
+        potential_strength_cargo_r11_avidity: f64,
+        interaction_range_cargo_cargo: f64,
+        interaction_range_r11_r11: f64,
+        interaction_range_r11_cargo: f64,
     ) -> Self {
         Self {
             species,
             cell_radius,
-            potential_strength,
-            interaction_range,
-            clustering_strength,
-            avidity,
+            potential_strength_cargo_cargo,
+            potential_strength_r11_r11,
+            potential_strength_cargo_r11,
+            potential_strength_cargo_r11_avidity,
+            interaction_range_cargo_cargo,
+            interaction_range_r11_r11,
+            interaction_range_r11_cargo,
             neighbour_count: 0,
         }
     }
