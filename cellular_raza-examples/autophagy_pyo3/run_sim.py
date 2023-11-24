@@ -4,7 +4,7 @@ import cr_autophagy as cra
 simulation_settings = SimulationSettings()
 
 # Settings Cargo
-simulation_settings.n_cells_cargo=10
+simulation_settings.n_cells_cargo=20
 simulation_settings.cell_radius_cargo = 1.5
 
 # Settings R11
@@ -23,10 +23,13 @@ simulation_settings.n_times = 10_001
 simulation_settings.save_interval = 100
 
 # Domain
+# simulation_settings.domain_size = 50
+# simulation_settings.domain_cargo_low = [40]*3
+# simulation_settings.domain_cargo_high = [60]*3
 ds = 40
 simulation_settings.domain_size = ds
-cs = 4
-xs = 0.25
+cs = 3
+xs = 0.4
 simulation_settings.domain_r11_low =    [ds/2 - cs, ds/2 - xs - 2*cs, ds/2 - cs]
 simulation_settings.domain_r11_high =   [ds/2 + cs, ds/2 - xs,        ds/2 + cs]
 simulation_settings.domain_cargo_low =  [ds/2 - cs, ds/2 + xs,        ds/2 - cs]
