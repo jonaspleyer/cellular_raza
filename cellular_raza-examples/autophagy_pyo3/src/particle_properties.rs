@@ -259,3 +259,51 @@ impl Langevin3D {
         self.mechanics.update_interval = update_interval;
     }
 }
+
+#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
+pub struct Particle {
+    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
+    pub mechanics: Langevin3D,
+
+    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species))]
+    pub interaction: TypedInteraction,
+}
+
+impl Cycle<Particle> for Particle {
+    fn divide(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _cell: &mut Particle,
+    ) -> Result<Particle, DivisionError> {
+        panic!()
+    }
+
+    fn update_cycle(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _dt: &f64,
+        _cell: &mut Particle,
+    ) -> Option<CycleEvent> {
+        None
+    }
+}
+
+impl CellularReactions<Nothing, Nothing> for Particle {
+    fn get_intracellular(&self) -> Nothing {
+        Nothing::zero()
+    }
+
+    fn set_intracellular(&mut self, _concentration_vector: Nothing) {}
+
+    fn calculate_intra_and_extracellular_reaction_increment(
+        &self,
+        _internal_concentration_vector: &Nothing,
+        _external_concentration_vector: &Nothing,
+    ) -> Result<(Nothing, Nothing), CalcError> {
+        Ok((Nothing::zero(), Nothing::zero()))
+    }
+}
+
+impl<Conc> InteractionExtracellularGradient<Particle, Conc> for Particle {
+    fn sense_gradient(_cell: &mut Particle, _gradient: &Conc) -> Result<(), CalcError> {
+        Ok(())
+    }
+}
