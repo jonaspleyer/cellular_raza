@@ -1,6 +1,7 @@
 // Imports from this crate
 use cellular_raza_concepts::domain::*;
 use cellular_raza_concepts::errors::*;
+use cellular_raza_concepts::interaction::Volume;
 use cellular_raza_concepts::plotting::*;
 
 // Imports from std and core
@@ -175,6 +176,12 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 pub production_rate: SVector<f64, N>,
                 pub degradation_rate: SVector<f64, N>,
                 domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>,
+        }
+
+        impl<const N: usize> Volume for $voxel_name<N> {
+            fn get_volume(&self) -> f64 {
+                self.min.iter().zip(self.max.iter()).map(|(x, y)| y-x).product()
+            }
         }
 
         impl<const N: usize> $voxel_name<N> {

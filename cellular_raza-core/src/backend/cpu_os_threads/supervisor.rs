@@ -4,7 +4,9 @@ use cellular_raza_concepts::domain::{
     Concentration, Controller, Domain, ExtracellularMechanics, Voxel,
 };
 use cellular_raza_concepts::errors::{CalcError, ControllerError, DrawingError, RequestError};
-use cellular_raza_concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
+use cellular_raza_concepts::interaction::{
+    CellularReactions, InteractionExtracellularGradient, Volume,
+};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
 use cellular_raza_concepts::plotting::{CreatePlottingRoot, PlotSelf};
 use kdam::BarExt;
@@ -171,16 +173,17 @@ where
         Ind: Index,
         Vox: Voxel<Ind, Pos, Vel, For>,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            > + Volume,
         Cel: Agent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
-            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
+            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>
+            + Volume,
         VoxelBox<
             Ind,
             Pos,
@@ -333,16 +336,17 @@ where
         Ind: Index,
         Vox: Voxel<Ind, Pos, Vel, For>,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            > + Volume,
         Cel: Agent<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
-            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
+            + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>
+            + Volume,
         VoxelBox<
             Ind,
             Pos,
@@ -385,6 +389,8 @@ where
         Ok(simulation_result)
     }
 
+    // TODO do not clone these variables!
+    // Find a way to deserialize the struct with only referencing the variables
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: Clone,

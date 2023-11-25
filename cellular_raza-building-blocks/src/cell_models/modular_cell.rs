@@ -1,7 +1,7 @@
 use cellular_raza_concepts::cycle::{Cycle, CycleEvent};
 use cellular_raza_concepts::errors::{CalcError, RngError};
 use cellular_raza_concepts::interaction::{
-    CellularReactions, Interaction, InteractionExtracellularGradient,
+    CellularReactions, Interaction, InteractionExtracellularGradient, Volume,
 };
 use cellular_raza_concepts::mechanics::{Force, Mechanics, Position, Velocity};
 
@@ -16,6 +16,7 @@ pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
     pub interaction_extracellular: IntExtracellular,
     pub cycle: Cyc,
     pub cellular_reactions: React,
+    pub volume: f64,
 }
 
 macro_rules! define_no_cellular_reactions {
@@ -129,6 +130,14 @@ where
 
     fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
         self.interaction.react_to_neighbours(neighbours)
+    }
+}
+
+impl<Mec, Int, Cyc, React, IntExtracellular> Volume
+    for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
+{
+    fn get_volume(&self) -> f64 {
+        self.volume
     }
 }
 

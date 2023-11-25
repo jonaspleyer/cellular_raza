@@ -319,6 +319,12 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
     }
 }
 
+impl Volume for Bacteria {
+    fn get_volume(&self) -> f64 {
+        4.0 / 3.0 * std::f64::consts::PI * self.interaction.cell_radius.powf(3.0)
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GradientSensing {}
 

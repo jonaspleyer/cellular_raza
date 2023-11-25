@@ -274,6 +274,25 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                 }
             };
             result.extend(TokenStream::from(res));
+        } else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+            syn::Meta::List(list) => {
+                if list.path.is_ident("CellVolume") {
+                    Some(list)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }) {
+            let field_type = &field.ty;
+            let res = quote! {
+                impl Volume<#struct_name #struct_generics> for #struct_name #struct_generics {
+                    fn get_volume(&self) -> f64 {
+                        <#field_type as CellVolume<#struct_name #struct_generics>>::get_volume(&self)
+                    }
+                }
+            };
+            result.extend(TokenStream::from(res));
         }
     }
 

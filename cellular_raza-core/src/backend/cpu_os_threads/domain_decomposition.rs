@@ -704,15 +704,17 @@ where
     where
         ConcVecIntracellular: std::ops::AddAssign + Mul<f64, Output = ConcVecIntracellular>,
         Cel: Mechanics<Pos, Vel, For>
-            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>,
+            + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
+            + Volume,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            > + Volume,
+        ConcVecExtracellular: core::ops::Mul<f64, Output = ConcVecExtracellular>,
     {
         self.voxels
             .iter_mut()
@@ -730,10 +732,16 @@ where
                                 &internal_concentration_vector,
                                 &external_concentration_vector,
                             )?;
+
+                        let cell_volume = cellbox.cell.get_volume();
+                        let voxel_volume = voxelbox.voxel.get_volume();
+                        let cell_to_voxel_volume = cell_volume / voxel_volume;
+
                         // aux_storage.intracellular_concentration_increment += increment_intracellular;
-                        voxelbox
-                            .extracellular_concentration_increments
-                            .push((cellbox.cell.pos(), increment_extracellular));
+                        voxelbox.extracellular_concentration_increments.push((
+                            cellbox.cell.pos(),
+                            increment_extracellular * cell_to_voxel_volume,
+                        ));
                         // TODO these reactions are currently on the same timescale as the fluid-dynamics but we should consider how this may change if we have different time-scales here
                         // ALso the solver is currently simply an euler stepper.
                         // This should be altered to have something like an (adaptive) Runge Kutta or Dopri (or better)
@@ -1212,15 +1220,16 @@ where
             + Interaction<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>
+            + Volume
             + Clone,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            > + Volume,
     {
         // These methods are used for sending requests and gathering information in general
         // This gathers information of forces acting between cells and send between threads

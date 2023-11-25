@@ -143,6 +143,12 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
     }
 }
 
+impl Volume for Particle {
+    fn get_volume(&self) -> f64 {
+        1.0
+    }
+}
+
 #[pymethods]
 impl TypedInteraction {
     #[new]

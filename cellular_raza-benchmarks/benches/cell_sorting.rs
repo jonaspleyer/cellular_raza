@@ -119,6 +119,7 @@ fn run_simulation(
                 cycle: NoCycle {},
                 interaction_extracellular: NoExtracellularGradientSensing,
                 cellular_reactions: NoCellularreactions,
+                volume: 0.0,
             }
         })
         .collect::<Vec<_>>();
