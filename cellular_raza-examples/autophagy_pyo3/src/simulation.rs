@@ -3,7 +3,6 @@ use super::particle_properties::*;
 use cellular_raza::prelude::*;
 use pyo3::prelude::*;
 
-use nalgebra::Vector3;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
@@ -173,9 +172,9 @@ fn generate_particle_pos(
     simulation_settings: &SimulationSettings,
     rng: &mut ChaCha8Rng,
     n: usize,
-) -> PyResult<Vector3<f64>> {
+) -> PyResult<[f64; 3]> {
     let pos = if n < simulation_settings.n_cells_cargo {
-        Vector3::from([
+        [
             rng.gen_range(
                 simulation_settings.domain_cargo_low[0].max(0.0)
                     ..simulation_settings.domain_cargo_high[0].min(simulation_settings.domain_size),
@@ -188,7 +187,7 @@ fn generate_particle_pos(
                 simulation_settings.domain_cargo_low[2].max(0.0)
                     ..simulation_settings.domain_cargo_high[2].min(simulation_settings.domain_size),
             ),
-        ])
+        ]
     } else {
         // We do not want to spawn the R11 particles in the middle where the cargo
         // will be placed. Thus we calculate where else we can spawn them.
@@ -265,7 +264,7 @@ fn generate_particle_pos(
                 }
             }
         }
-        Vector3::from(loc)
+        loc
     };
     Ok(pos)
 }
@@ -305,16 +304,14 @@ fn create_particle_mechanics(
     } else {
         simulation_settings.kb_temperature_r11
     };
-    Ok(Langevin3D {
-        mechanics: Langevin::new(
-            pos,
-            [0.0; 3].into(),
-            mass,
-            damping,
-            kb_temperature,
-            simulation_settings.update_interval,
-        ),
-    })
+    Ok(Langevin3D::new(
+        pos,
+        [0.0; 3].into(),
+        mass,
+        damping,
+        kb_temperature,
+        simulation_settings.update_interval,
+    ))
 }
 
 fn create_particle_interaction(

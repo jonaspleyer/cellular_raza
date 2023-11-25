@@ -4,7 +4,6 @@ use cellular_raza_concepts::mechanics::Mechanics;
 use itertools::Itertools;
 use nalgebra::SVector;
 
-use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "pyo3")]
@@ -184,6 +183,157 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
     }
 }
 
+macro_rules! define_langevin_nd(
+    ($struct_name:ident, $d:literal) => {
+        /// Langevin dynamics in
+        #[doc = stringify!($d)]
+        /// dimensions
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[derive(Clone, Debug, Deserialize, Serialize)]
+        pub struct $struct_name {
+            /// Current position
+            pub pos: SVector<f64, $d>,
+            /// Current velocity
+            pub vel: SVector<f64, $d>,
+            /// Mass of the object
+            pub mass: f64,
+            /// Damping constant
+            pub damping: f64,
+            /// Product of Boltzmann constant and temperature
+            pub kb_temperature: f64,
+            /// Number of steps to do before updating the internal random vector again
+            pub update_interval: usize,
+            random_vector: SVector<f64, $d>,
+        }
+
+        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name {
+            fn pos(&self) -> SVector<f64, $d> {
+                self.pos
+            }
+
+            fn set_pos(&mut self, pos: &SVector<f64, $d>) {
+                self.pos = *pos;
+            }
+
+            fn velocity(&self) -> SVector<f64, $d> {
+                self.vel
+            }
+
+            fn set_velocity(&mut self, velocity: &SVector<f64, $d>) {
+                self.vel = *velocity;
+            }
+
+            fn set_random_variable(
+                &mut self,
+                rng: &mut rand_chacha::ChaCha8Rng,
+                dt: f64,
+            ) -> Result<Option<f64>, RngError> {
+                self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;// TODO * self.update_interval as f64 * dt)?;
+                Ok(Some(self.update_interval as f64 * dt))
+            }
+
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $d>,
+            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                let dx = self.vel;
+                let dv =
+                    -self.damping / self.mass * self.vel + 1.0 / self.mass * (self.random_vector + force);
+                Ok((dx, dv))
+            }
+        }
+
+        #[cfg_attr(feature = "pyo3", pymethods)]
+        impl $struct_name {
+            /// Creates a new [Langevin] struct from position, velocity, mass, damping,
+            /// kb_temperature and the update interval of the mechanics aspect.
+            #[new]
+            pub fn new(
+                pos: [f64; $d],
+                vel: [f64; $d],
+                mass: f64,
+                damping: f64,
+                kb_temperature: f64,
+                update_interval: usize,
+            ) -> Self {
+                Self {
+                    pos: pos.into(),
+                    vel: vel.into(),
+                    mass,
+                    damping,
+                    kb_temperature,
+                    update_interval,
+                    random_vector: [0.0; $d].into(),
+                }
+            }
+
+            #[getter(pos)]
+            /// Get position of object
+            pub fn get_position(&self) -> [f64; $d] {
+                self.pos.into()
+            }
+
+            #[setter(pos)]
+            /// Set position of object
+            pub fn set_position(&mut self, pos: [f64; $d]) {
+                self.pos = pos.into();
+            }
+
+            #[getter(damping)]
+            /// Get damping constant of object
+            pub fn get_damping(&self) -> f64 {
+                self.damping
+            }
+
+            #[setter(damping)]
+            /// Set the damping constant of the object
+            pub fn set_damping(&mut self, damping: f64) {
+                self.damping = damping;
+            }
+
+            #[getter(mass)]
+            /// Get mass of the object
+            pub fn get_mass(&self) -> f64 {
+                self.mass
+            }
+
+            #[setter(mass)]
+            /// Set mass of the object
+            pub fn set_mass(&mut self, mass: f64) {
+                self.mass = mass;
+            }
+
+            #[getter(kb_temperature)]
+            /// Get the product of Boltzmann constant and temperature
+            pub fn get_kb_temperature(&self) -> f64 {
+                self.kb_temperature
+            }
+
+            #[setter(kb_temperature)]
+            /// Define product of Boltzmann constant and temperature
+            pub fn set_kb_temperature(&mut self, kb_temperature: f64) {
+                self.kb_temperature = kb_temperature;
+            }
+
+            #[getter(update_interval)]
+            /// Get the update interval after which a new random vector is chosen
+            pub fn get_update_interval(&self) -> usize {
+                self.update_interval
+            }
+
+            #[setter(update_interval)]
+            /// Sets the update interval
+            pub fn set_update_interval(&mut self, update_interval: usize) {
+                self.update_interval = update_interval;
+            }
+        }
+    }
+);
+
+define_langevin_nd!(Langevin1D, 1);
+define_langevin_nd!(Langevin2D, 2);
+define_langevin_nd!(Langevin3D, 3);
+
 // TODO
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Langevin<const D: usize> {
@@ -241,7 +391,7 @@ impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
     ) -> Result<Option<f64>, RngError> {
-        self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;
+        self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?; // TODO * self.update_interval as f64 * dt)?;
         Ok(Some(self.update_interval as f64 * dt))
     }
 
