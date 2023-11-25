@@ -98,8 +98,8 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, usize, Species)
                     * calculate_avidity(self.neighbour_count, *ext_neighbour_count);
                 let cutoff = calculate_cutoff(self.interaction_range_r11_cargo);
                 let force = cutoff
-                    * self.potential_strength_cargo_r11
-                    * (repelling_force + avidity * attracting_force);
+                    * (self.potential_strength_cargo_cargo * repelling_force
+                        + (self.potential_strength_cargo_r11 + avidity) * attracting_force);
                 Some(Ok(force))
             }
 
