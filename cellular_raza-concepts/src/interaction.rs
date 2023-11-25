@@ -67,3 +67,7 @@ pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVec
         external_concentration_vector: &ConcVecExtracellular,
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError>;
 }
+
+pub trait Volume {
+    fn get_volume(&self) -> f64;
+}
