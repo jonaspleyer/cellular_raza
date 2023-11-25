@@ -21,8 +21,10 @@ use serde::{Deserialize, Serialize};
 
 use rayon::prelude::*;
 
+/// Contains non-volatile configurations such as display settings etc.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationConfig {
+    /// Shows a progressbar when running the simulation.
     pub show_progressbar: bool,
 }
 
@@ -37,22 +39,30 @@ impl Default for SimulationConfig {
 /// # Store meta parameters for simulation
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationMetaParams {
+    /// Number of threads to use for parallelization. This number may be limited by the
+    /// available number of voxels.
     pub n_threads: usize,
 }
 
 // TODO rethink how to specify time points to save
 // we need to frequently save cells and environment
 // Sometimes we need full snapshots for recovery purposes
+/// Contains information about the discretization of time and when to save results.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TimeSetup {
+    /// Initial time point of the simulation.
     pub t_start: f64,
+    /// Time points at which to evaluate the simulation. The additional [bool]
+    /// determines if we also save the results.
     pub t_eval: Vec<(f64, bool)>,
 }
 
+/// Contains settings on how to handle storing results.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     location: std::path::PathBuf,
     storage_priority: Vec<StorageOptions>,
+    add_date: bool,
 }
 
 impl StorageConfig {
@@ -61,23 +71,40 @@ impl StorageConfig {
         Self {
             location: path.into(),
             storage_priority: StorageOptions::default_priority(),
+            add_date: true,
         }
     }
 
+    /// Set the priority in which to store and look for results.
+    /// Supplying an empty vector will lead to not storing any results.
     pub fn storage_priority(self, storage_priority: Vec<StorageOptions>) -> Self {
         Self {
             location: self.location,
             storage_priority,
+            add_date: self.add_date,
         }
     }
 
-    pub fn location(self, location: &std::path::PathBuf) -> Self {
+    /// Modify the location where to save
+    pub fn location(self, location: &std::path::Path) -> Self {
         Self {
-            location: location.clone(),
+            location: location.into(),
             storage_priority: self.storage_priority,
+            add_date: self.add_date,
         }
     }
 
+    /// Determines whether a date should be added to the name of the output folder
+    /// By default this is true to avoid conflicts with previously run simulations.
+    pub fn add_date(self, add_date: bool) -> Self {
+        Self {
+            location: self.location,
+            storage_priority: self.storage_priority,
+            add_date,
+        }
+    }
+
+    /// Retrieve the storage location
     pub fn get_location(&self) -> std::path::PathBuf {
         self.location.clone()
     }
@@ -137,6 +164,7 @@ macro_rules! create_simulation_setup (
 pub use crate::create_simulation_setup;
 
 impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
+    /// Construct a new [SimulationSetup] which is required to initialize the [SimulationSupervisor].
     pub fn new<V>(
         domain: Dom,
         cells: V,
@@ -159,21 +187,31 @@ impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
     }
 }
 
+/// Style of the progress bar. To show a bar see [SimulationConfig] and [PlottingConfig].
 pub const PROGRESS_BAR_STYLE: &str =
     "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
 
+/// Image type used for saving results to a file.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ImageType {
+    /// Saves images as ".png" file.
     BitMap,
     // TODO
     // Svg,
 }
 
+/// Contains settings for plotting results.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PlottingConfig {
+    /// Image size in pixels. The plotting function of the underlying simulation domain
+    /// may choose to modifiy this parameter.
     pub image_size: u32,
+    /// The number of threads used for plotting. Notice that this number is not the same as
+    /// in [SimulationMetaParams].
     pub n_threads: Option<usize>,
+    /// The [ImageType] to export.
     pub image_type: ImageType,
+    /// Shows a progressbar while exporting images.
     pub show_progressbar: bool,
 }
 
@@ -188,11 +226,13 @@ impl Default for PlottingConfig {
     }
 }
 
+/// Contains methods to modify voxels when initializing the simulation domain.
 #[derive(Clone)]
 pub struct Strategies<'a, Vox>
 where
     Vox: 'a + Clone,
 {
+    /// Strategies for the modification of existing voxels before the simulation has started.
     pub voxel_definition_strategies: &'a dyn Fn(&mut Vox),
 }
 
@@ -254,6 +294,7 @@ where
     >: Clone,
     Cont: Serialize + for<'a> Deserialize<'a>,
 {
+    /// Construct a new [SimulationSupervisor] from a given [SimulationSetup].
     pub fn initialize_from_setup(
         setup: SimulationSetup<Dom, Cel, Cont>,
     ) -> SimulationSupervisor<
@@ -278,7 +319,7 @@ where
     where
         Cel: Sized,
     {
-        let no_strategy = |v: &mut Vox| {};
+        let no_strategy = |_: &mut Vox| {};
         Self::initialize_with_strategies(
             setup,
             Strategies {
@@ -287,6 +328,7 @@ where
         )
     }
 
+    /// Construct a new [SimulationSupervisor] from a given [SimulationSetup] with [Strategies].
     pub fn initialize_with_strategies(
         mut setup: SimulationSetup<Dom, Cel, Cont>,
         strategies: Strategies<Vox>,
