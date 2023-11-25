@@ -42,9 +42,9 @@ def get_particles_at_iter(output_path: Path, iteration):
     if run_directory != None:
         df = pd.json_normalize(_combine_batches(run_directory))
         df["identifier"] = df["identifier"].apply(lambda x: tuple(x))
-        df["element.cell.mechanics.mechanics.pos"] = df["element.cell.mechanics.mechanics.pos"].apply(lambda x: np.array(x, dtype=float))
-        df["element.cell.mechanics.mechanics.vel"] = df["element.cell.mechanics.mechanics.vel"].apply(lambda x: np.array(x, dtype=float))
-        df["element.cell.mechanics.mechanics.random_vector"] = df["element.cell.mechanics.mechanics.random_vector"].apply(lambda x: np.array(x))
+        df["element.cell.mechanics.pos"] = df["element.cell.mechanics.pos"].apply(lambda x: np.array(x, dtype=float))
+        df["element.cell.mechanics.vel"] = df["element.cell.mechanics.vel"].apply(lambda x: np.array(x, dtype=float))
+        df["element.cell.mechanics.random_vector"] = df["element.cell.mechanics.random_vector"].apply(lambda x: np.array(x))
         return df
     else:
         raise ValueError(f"Could not find iteration {iteration} in saved results")
@@ -73,8 +73,8 @@ def generate_spheres(output_path: Path, iteration):
     # df = df[df["iteration"]==iteration]
 
     # Create a dataset for pyvista for plotting
-    pos_cargo = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.mechanics.mechanics.pos"]
-    pos_r11 = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.mechanics.mechanics.pos"]
+    pos_cargo = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.mechanics.pos"]
+    pos_r11 = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.mechanics.pos"]
     pset_cargo = pv.PolyData(np.array([np.array(x) for x in pos_cargo]))
     pset_r11 = pv.PolyData(np.array([np.array(x) for x in pos_r11]))
 
@@ -120,7 +120,7 @@ def save_snapshot(output_path: Path, iteration):
     ]
 
     scalar_bar_args1=dict(
-        title="Neighbours Cargo",
+        title="Neighbours",
         title_font_size=20,
         width=0.4,
         position_x=0.55,
@@ -130,8 +130,8 @@ def save_snapshot(output_path: Path, iteration):
         fmt="%.0f",
         font_family="arial",
     )
-    scalar_bar_args2=copy.deepcopy(scalar_bar_args1)
-    scalar_bar_args2["title"] = "Neighbours R11"
+    # scalar_bar_args2=copy.deepcopy(scalar_bar_args1)
+    # scalar_bar_args2["title"] = "Neighbours R11"
 
     plotter.add_mesh(
         cargo,
@@ -145,7 +145,7 @@ def save_snapshot(output_path: Path, iteration):
         scalars="neighbour_count2",
         cmap="Oranges",
         clim=[0,12],
-        scalar_bar_args=scalar_bar_args2,
+        scalar_bar_args=scalar_bar_args1,
     )
     plotter.screenshot(opath)
     plotter.close()
@@ -169,9 +169,9 @@ def save_all_snapshots(output_path: Path, threads=1, show_bar=True):
 def save_scatter_snapshot(output_path: Path, iteration):
     df = get_particles_at_iter(output_path, iteration)
 
-    cargo_at_end = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.mechanics.mechanics.pos"]
+    cargo_at_end = df[df["element.cell.interaction.species"]=="Cargo"]["element.cell.mechanics.pos"]
     cargo_at_end = np.array([np.array(elem) for elem in cargo_at_end])
-    non_cargo_at_end = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.mechanics.mechanics.pos"]
+    non_cargo_at_end = df[df["element.cell.interaction.species"]!="Cargo"]["element.cell.mechanics.pos"]
     non_cargo_at_end = np.array([np.array(elem) for elem in non_cargo_at_end])
     cargo_middle = np.average(non_cargo_at_end, axis=0)
 
