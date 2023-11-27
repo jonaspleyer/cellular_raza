@@ -177,7 +177,7 @@ pub fn identical(tokenstream: TokenStream) -> TokenStream {
     }
 }
 
-#[derive(Clone, Debug)]
+/* #[derive(Clone, Debug)]
 enum Aspect {
     Mechanics,
     Cycle,
@@ -255,4 +255,4 @@ pub fn run_full_simulation(input: TokenStream) -> TokenStream {
         struct AuxStorage {}
         1_u8
     }))
-}
+}*/
