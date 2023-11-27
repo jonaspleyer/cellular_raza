@@ -1,4 +1,5 @@
 // Imports from this crate
+use cellular_raza_concepts::interaction::Volume;
 use cellular_raza_concepts::domain::*;
 use cellular_raza_concepts::errors::*;
 use cellular_raza_concepts::plotting::*;
@@ -313,6 +314,12 @@ impl<const D: usize, const N: usize>
         _neighbor_index: &[i64; 2],
     ) -> Result<BoundaryCondition<SVector<f64, N>>, IndexError> {
         Ok(BoundaryCondition::Value(self.extracellular_concentrations))
+    }
+}
+
+impl<const D: usize, const N: usize> Volume for CartesianCuboidVoxel2Vertex<D, N> {
+    fn get_volume(&self) -> f64 {
+        self.min.iter().zip(self.max.iter()).map(|(x, y)| y-x).product()
     }
 }
 
