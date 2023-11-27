@@ -243,7 +243,8 @@ macro_rules! define_langevin_nd(
             }
         }
 
-        #[cfg_attr(feature = "pyo3", pymethods)]
+        #[cfg(feature = "pyo3")]
+        #[pymethods]
         impl $struct_name {
             /// Creates a new [Langevin] struct from position, velocity, mass, damping,
             /// kb_temperature and the update interval of the mechanics aspect.
