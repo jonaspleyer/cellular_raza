@@ -167,6 +167,7 @@ fn main() {
                     CELL_FOOD_UPTAKE_RATE,
                 ]),
             },
+            volume: 4.0/3.0*std::f64::consts::PI*CELL_MECHANICS_AREA,// TODO
         })
         .collect::<Vec<_>>();
 

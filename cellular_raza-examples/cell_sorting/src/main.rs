@@ -127,6 +127,7 @@ fn main() {
                 cycle: NoCycle {},
                 interaction_extracellular: NoExtracellularGradientSensing,
                 cellular_reactions: NoCellularreactions,
+                volume: 4.0/3.0*std::f64::consts::PI*CELL_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();

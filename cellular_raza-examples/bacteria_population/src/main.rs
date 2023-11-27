@@ -191,6 +191,7 @@ fn main() {
                     secretion_rate: ReactionVector::zero(),
                     uptake_rate: ReactionVector::from([BACTERIA_FOOD_UPTAKE_RATE]),
                 },
+                volume: 4.0/3.0*std::f64::consts::PI*BACTERIA_MECHANICS_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();
