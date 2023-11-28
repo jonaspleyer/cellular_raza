@@ -21,6 +21,7 @@ pub struct SimulationSettings {
     pub voxel_food_initial_concentration: f64,
 
     pub domain_size: f64,
+    pub domain_n_voxels: Option<usize>,
 
     pub starting_domain_x_low: f64,
     pub starting_domain_x_high: f64,
@@ -56,6 +57,7 @@ impl SimulationSettings {
             voxel_food_initial_concentration: 12.0,
 
             domain_size,
+            domain_n_voxels: None,
 
             starting_domain_x_low: domain_size / 2.0 - 150.0,
             starting_domain_x_high: domain_size / 2.0 + 150.0,
@@ -200,11 +202,23 @@ pub fn run_simulation(
         .collect::<PyResult<Vec<_>>>()?;
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let domain = CartesianCuboid2::from_boundaries_and_n_voxels(
-        [0.0; 2],
-        [simulation_settings.domain_size; 2],
-        [3; 2],
-    )?;
+    let domain = match simulation_settings.domain_n_voxels {
+        Some(n_voxels) => CartesianCuboid2::from_boundaries_and_n_voxels(
+            [0.0; 2],
+            [simulation_settings.domain_size; 2],
+            [n_voxels; 2],
+        ),
+        None => CartesianCuboid2::from_boundaries_and_interaction_ranges(
+            [0.0; 2],
+            [simulation_settings.domain_size; 2],
+            [3.0 * interaction.relative_interaction_range * interaction.cell_radius; 2],
+        ),
+    }
+    .or_else(|e| {
+        Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Rust error in construction of simulation domain: {e}"),
+        ))
+    })?;
 
     let time = TimeSetup {
         t_start: 0.0,
