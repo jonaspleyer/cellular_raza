@@ -62,6 +62,7 @@ pub struct TimeSetup {
 pub struct StorageConfig {
     location: std::path::PathBuf,
     storage_priority: Vec<StorageOptions>,
+    #[cfg(feature = "timestamp")]
     add_date: bool,
 }
 
@@ -71,6 +72,7 @@ impl StorageConfig {
         Self {
             location: path.into(),
             storage_priority: StorageOptions::default_priority(),
+            #[cfg(feature = "timestamp")]
             add_date: true,
         }
     }
@@ -81,6 +83,7 @@ impl StorageConfig {
         Self {
             location: self.location,
             storage_priority,
+            #[cfg(feature = "timestamp")]
             add_date: self.add_date,
         }
     }
@@ -90,12 +93,14 @@ impl StorageConfig {
         Self {
             location: location.into(),
             storage_priority: self.storage_priority,
+            #[cfg(feature = "timestamp")]
             add_date: self.add_date,
         }
     }
 
     /// Determines whether a date should be added to the name of the output folder
     /// By default this is true to avoid conflicts with previously run simulations.
+    #[cfg(feature = "timestamp")]
     pub fn add_date(self, add_date: bool) -> Self {
         Self {
             location: self.location,
@@ -522,10 +527,16 @@ where
             })
             .collect();
 
-        // Format the current time
-        let date = chrono::Local::now().format("%Y-%m-%d-%H:%M:%S");
-        let location_with_time = setup.storage.location.join(format!("{}", date));
-        setup.storage.location = location_with_time.into();
+        let storage_location = setup.storage.location;
+        // Format the current time if feature is active
+        #[cfg(feature = "timestamp")]
+        let storage_location = if setup.storage.add_date {
+            let date = chrono::Local::now().format("%Y-%m-%d-%H:%M:%S");
+            storage_location.join(format!("{}", date))
+        } else {
+            storage_location
+        };
+        setup.storage.location = storage_location.into();
 
         // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
