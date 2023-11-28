@@ -4,6 +4,9 @@ use cellular_raza_concepts::errors::*;
 use cellular_raza_concepts::interaction::Volume;
 use cellular_raza_concepts::plotting::*;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 // Imports from std and core
 use core::cmp::{max, min};
 
@@ -79,6 +82,8 @@ macro_rules! define_and_implement_cartesian_cuboid {
         #[doc = stringify!($d)]
         #[doc = "` dimensions"]
         #[derive(Clone,Debug,Serialize,Deserialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $name {
             min: [f64; $d],
             max: [f64; $d],
@@ -443,6 +448,8 @@ macro_rules! implement_cartesian_cuboid_domain_new {
     ($d: literal, $domain_name: ident, $subdomain_name: ident, $voxel_name: ident, $($k: expr),+) => {
         // TODO
         #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $domain_name {
             pub min: [f64; $d],
             pub max: [f64; $d],
@@ -571,11 +578,15 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         ///
         /// The subdomain contains voxels
         #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $subdomain_name {
             pub voxels: Vec<$voxel_name>,
         }
 
         #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $voxel_name {
             pub min: [f64; $d],
             pub max: [f64; $d],
