@@ -9,7 +9,7 @@ use rand_chacha::ChaCha8Rng;
 
 use serde::{Deserialize, Serialize};
 
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError};
 
 use crate::bacteria_properties::*;
 
@@ -23,10 +23,8 @@ pub struct SimulationSettings {
     pub domain_size: f64,
     pub domain_n_voxels: Option<usize>,
 
-    pub starting_domain_x_low: f64,
-    pub starting_domain_x_high: f64,
-    pub starting_domain_y_low: f64,
-    pub starting_domain_y_high: f64,
+    pub starting_domain_low: [f64; 2],
+    pub starting_domain_high: [f64; 2],
 
     // BACTERIA SETTINGS
     pub n_bacteria_initial: usize,
@@ -45,6 +43,27 @@ pub struct SimulationSettings {
 
 #[pymethods]
 impl SimulationSettings {
+    #[setter(starting_domain_low)]
+    fn set_starting_domain_low(&mut self, starting_domain_low: [f64; 2]) -> PyResult<()> {
+        if starting_domain_low.iter().any(|x| x < &0.0) || starting_domain_low.iter().any(|x| x> &self.domain_size) {
+            return Err(PyValueError::new_err(
+                format!("Cannot set starting domain lower bound below 0!"),
+            ));
+        }
+        Ok(self.starting_domain_low = starting_domain_low)
+    }
+
+    #[setter(starting_domain_high)]
+    fn set_starting_domain_high(&mut self, starting_domain_high: [f64; 2]) -> PyResult<()> {
+        if starting_domain_high.iter().any(|x| x>&self.domain_size) {
+            return Err(pyo3::exceptions::PyUserWarning::new_err(
+                format!("Trying to set upper bound of starting domain {starting_domain_high:?} above domain_size!
+                Setting starting domain upper bound to domain_size {}", self.domain_size)
+            ));
+        }
+        Ok(self.starting_domain_high = [self.domain_size; 2])
+    }
+
     #[new]
     fn new(py: Python) -> PyResult<Self> {
         let domain_size = 2_000.0;
@@ -59,10 +78,8 @@ impl SimulationSettings {
             domain_size,
             domain_n_voxels: None,
 
-            starting_domain_x_low: domain_size / 2.0 - 150.0,
-            starting_domain_x_high: domain_size / 2.0 + 150.0,
-            starting_domain_y_low: domain_size / 2.0 - 150.0,
-            starting_domain_y_high: domain_size / 2.0 + 150.0,
+            starting_domain_low: [domain_size / 2.0 - 150.0; 2],
+            starting_domain_high: [domain_size / 2.0 + 150.0; 2],
 
             // BACTERIA SETTINGS
             n_bacteria_initial: 400,
@@ -178,12 +195,12 @@ pub fn run_simulation(
     let cells = (0..simulation_settings.n_bacteria_initial)
         .map(|_| {
             let x = rng.gen_range(
-                simulation_settings.starting_domain_x_low
-                    ..simulation_settings.starting_domain_x_high,
+                simulation_settings.starting_domain_low[0]
+                    ..simulation_settings.starting_domain_high[0],
             );
             let y = rng.gen_range(
-                simulation_settings.starting_domain_y_low
-                    ..simulation_settings.starting_domain_y_high,
+                simulation_settings.starting_domain_low[1]
+                    ..simulation_settings.starting_domain_high[1],
             );
 
             // Set new position of bacteria
