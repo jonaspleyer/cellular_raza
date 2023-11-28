@@ -139,6 +139,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
         // Introduce Non-dimensional length variable
         let sigma = r / (self.cell_radius + ext_radius);
         let bound = 4.0 + 1.0 / sigma;
+
         let spatial_cutoff = (1.0
             + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r).signum())
             * 0.5;

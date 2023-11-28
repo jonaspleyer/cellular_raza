@@ -199,7 +199,7 @@ fn main() {
 
                     bmp4_hill: 0.00,
                 },
-                volume: 4.0/3.0*std::f64::consts::PI*CELL_MECHANICS_RADIUS.powf(3.0),
+                volume: 4.0 / 3.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();
@@ -272,7 +272,7 @@ fn main() {
 
                     bmp4_hill: 0.02,
                 },
-                volume: 4.0/3.0*std::f64::consts::PI*CELL_MECHANICS_RADIUS.powf(3.0),
+                volume: 4.0 / 3.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();

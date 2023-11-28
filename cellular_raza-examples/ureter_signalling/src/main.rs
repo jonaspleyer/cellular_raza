@@ -280,7 +280,7 @@ fn main() {
                     p3: CELL_TURING_PATTERN_K3,
                     p4: CELL_TURING_PATTERN_K4,
                 },
-                volume: 4.0/3.0*std::f64::consts::PI*CELL_MECHANICS_RADIUS.powf(3.0),
+                volume: 4.0 / 3.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();
