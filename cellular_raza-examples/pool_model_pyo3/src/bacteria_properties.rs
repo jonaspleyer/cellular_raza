@@ -110,7 +110,6 @@ pub struct BacteriaCycle {
     pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
-    pub lack_phase_active: bool,
     pub lack_phase_transition_rate: f64,
 }
 
@@ -121,14 +120,12 @@ impl BacteriaCycle {
         food_consumption: f64,
         food_to_volume_conversion: f64,
         volume_division_threshold: f64,
-        lack_phase_active: bool,
         lack_phase_transition_rate: f64,
     ) -> Self {
         BacteriaCycle {
             food_consumption,
             food_to_volume_conversion,
             volume_division_threshold,
-            lack_phase_active,
             lack_phase_transition_rate,
         }
     }

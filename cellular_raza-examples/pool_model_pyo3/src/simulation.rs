@@ -95,7 +95,6 @@ impl SimulationSettings {
                     food_consumption: 0.001 / dt,
                     food_to_volume_conversion: 0.001,
                     volume_division_threshold: 1.5 * bacteria_volume,
-                    lack_phase_active: true,
                     lack_phase_transition_rate: 0.0005,
                 },
             )?,
@@ -103,7 +102,7 @@ impl SimulationSettings {
             bacteria_reactions: Py::new(
                 py,
                 BacteriaReactions {
-                    lack_phase_active: false,
+                    lack_phase_active: true,
                     intracellular_concentrations: [1.0; NUMBER_OF_REACTION_COMPONENTS].into(),
                     turnover_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
                     production_term: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
