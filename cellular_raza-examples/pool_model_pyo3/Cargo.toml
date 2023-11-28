@@ -15,5 +15,5 @@ rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
 num = { workspace = true }
-cellular_raza = { path="../../cellular_raza", features=["default"] }
+cellular_raza = { path="../../cellular_raza", features=["default", "pyo3"] }
 plotters = { workspace = true }
