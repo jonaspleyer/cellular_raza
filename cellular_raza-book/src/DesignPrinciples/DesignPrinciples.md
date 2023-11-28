@@ -1,3 +1,13 @@
+```admonish quote title=""
+  "An idiot admires complexity, a genius admires simplicity.
+  A physicist tries to make it simple.
+  For an idiot anything the more complicated it is the more he will admire it.
+  If you make something so clusterfucked he can't understand it he's gonna think you're a god cause you made it so complicated nobody can understand it.
+  That's how they write journals in Academics, they try to make it so complicated people think you're a genius."
+
+  --- Terry Davis[^note], Creator of Temple OS
+```
+
 # Design Principles
 `cellular_raza` arose from a personal need which could not be satisfied by other frameworks.
 Agent-based models are particularly useful in the context of modeling pattern formation and self-organization.
@@ -49,3 +59,7 @@ This means that results of a simulation will not only be deterministic as explai
     The generated unique identifiers of cells and voxels may be an exception!
     This behaviour can be backend-dependent.
 ```
+
+[^note]:[Terry Davis](https://en.wikipedia.org/wiki/Terry_A._Davis) was a controversial figure and mentally ill.
+The author does not share his views or statements.
+The quote was chosen in particular for its raw expressiveness of thought.
