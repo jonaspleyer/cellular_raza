@@ -110,8 +110,8 @@ pub struct BacteriaCycle {
     pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
-    pub lag_phase_active: bool,
-    pub lag_phase_transition_rate: f64,
+    pub lack_phase_active: bool,
+    pub lack_phase_transition_rate: f64,
 }
 
 #[pymethods]
@@ -121,15 +121,15 @@ impl BacteriaCycle {
         food_consumption: f64,
         food_to_volume_conversion: f64,
         volume_division_threshold: f64,
-        lag_phase_active: bool,
-        lag_phase_transition_rate: f64,
+        lack_phase_active: bool,
+        lack_phase_transition_rate: f64,
     ) -> Self {
         BacteriaCycle {
             food_consumption,
             food_to_volume_conversion,
             volume_division_threshold,
-            lag_phase_active,
-            lag_phase_transition_rate,
+            lack_phase_active,
+            lack_phase_transition_rate,
         }
     }
 }
@@ -153,10 +153,10 @@ impl Cycle<Bacteria> for BacteriaCycle {
     ) -> Option<CycleEvent> {
         use rand::Rng;
         // Check if we are in lag phase and if so check if we want to convert to active state
-        if cell.cellular_reactions.lag_phase_active {
-            let p = rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate);
+        if cell.cellular_reactions.lack_phase_active {
+            let p = rng.gen_bool(dt * cell.cycle.lack_phase_transition_rate);
             if p {
-                cell.cellular_reactions.lag_phase_active = false;
+                cell.cellular_reactions.lack_phase_active = false;
             }
         }
         // Grow the cell if we are not in lag phase
@@ -227,7 +227,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[pyclass]
 pub struct BacteriaReactions {
-    pub lag_phase_active: bool,
+    pub lack_phase_active: bool,
     pub intracellular_concentrations: ReactionVector,
     pub turnover_rate: ReactionVector,
     pub production_term: ReactionVector,
@@ -303,7 +303,7 @@ impl BacteriaReactions {
 
     #[new]
     pub fn new(
-        lag_phase_active: bool,
+        lack_phase_active: bool,
         intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
         turnover_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
         production_term: [f64; NUMBER_OF_REACTION_COMPONENTS],
@@ -312,7 +312,7 @@ impl BacteriaReactions {
         uptake_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
     ) -> Self {
         Self {
-            lag_phase_active,
+            lack_phase_active,
             intracellular_concentrations: intracellular_concentrations.into(),
             turnover_rate: turnover_rate.into(),
             production_term: production_term.into(),
@@ -330,7 +330,7 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
         external_concentration_vector: &ReactionVector,
     ) -> Result<(ReactionVector, ReactionVector), CalcError> {
         // If we are in lag phase, we simply return a zero-vector
-        if self.lag_phase_active {
+        if self.lack_phase_active {
             return Ok((ReactionVector::zero(), ReactionVector::zero()));
         }
 
