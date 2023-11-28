@@ -16,6 +16,8 @@ use crate::bacteria_properties::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct SimulationSettings {
+    pub random_seed: u64,
+
     // DOMAIN SETTINGS
     pub voxel_food_diffusion_constant: f64,
     pub voxel_food_initial_concentration: f64,
@@ -71,6 +73,8 @@ impl SimulationSettings {
         let bacteria_volume = std::f64::consts::PI * bacteria_radius.powf(2.0);
         let dt = 0.01;
         Ok(Self {
+            random_seed: 1,
+
             // DOMAIN SETTINGS
             voxel_food_diffusion_constant: 0.02,
             voxel_food_initial_concentration: 12.0,
@@ -183,7 +187,7 @@ pub fn run_simulation(
     py: Python,
 ) -> PyResult<std::path::PathBuf> {
     // Fix random seed
-    let mut rng = ChaCha8Rng::seed_from_u64(2);
+    let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     let mechanics: Langevin2D = simulation_settings.bacteria_mechanics.extract(py)?;
@@ -250,6 +254,7 @@ pub fn run_simulation(
 
     let meta_params = SimulationMetaParams {
         n_threads: simulation_settings.n_threads,
+        rng_seed: simulation_settings.random_seed,
     };
 
     let storage = StorageConfig::from_path(std::path::Path::new("out/pool_model"));
