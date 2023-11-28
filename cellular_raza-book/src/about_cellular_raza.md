@@ -86,7 +86,7 @@ Agent-based models are designed to be used bottom-up, meaning cellular processes
 
 ## Etymology
 The name `cellular_raza` is an artistic combination of "cell" and ["tabula rasa"](https://en.wikipedia.org/wiki/Tabula_rasa).
-While the original intent was to describe the simulation tool as written with from a "blank slate", many of the interpretations from the wikipedia article are interesting and fitting. The logo has the [Rust](https://www.rust-lang.org/) symbol embedded, but when referring to the package in text, the snake case version `cellular_raza` in a monospaced font should be used.
+While the original intent was to describe the simulation tool as written from a "blank slate", many of the interpretations from the wikipedia article are interesting and fitting. The logo has the [Rust](https://www.rust-lang.org/) symbol embedded, but when referring to the package in text, the snake case version `cellular_raza` in a monospaced font should be used.
 
 <!-- TODO check these points and possibly attach them to another subsection -->
 ## What this crate does not aim to offer
