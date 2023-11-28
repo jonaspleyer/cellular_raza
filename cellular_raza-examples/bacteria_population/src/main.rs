@@ -52,7 +52,7 @@ pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 250;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 14;
+pub const N_THREADS: usize = 1;
 pub const N_PLOTTING_THREADS: usize = 14;
 
 mod bacteria_properties;
@@ -191,7 +191,7 @@ fn main() {
                     secretion_rate: ReactionVector::zero(),
                     uptake_rate: ReactionVector::from([BACTERIA_FOOD_UPTAKE_RATE]),
                 },
-                volume: 4.0/3.0*std::f64::consts::PI*BACTERIA_MECHANICS_RADIUS.powf(3.0),
+                volume: (DOMAIN_SIZE / 151.0).powf(2.0), //2.0*std::f64::consts::PI*BACTERIA_MECHANICS_RADIUS.powf(2.0),
             }
         })
         .collect::<Vec<_>>();
