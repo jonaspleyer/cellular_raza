@@ -14,91 +14,45 @@ use pyo3::prelude::*;
 use crate::bacteria_properties::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct SimulationSettings {
     // DOMAIN SETTINGS
-    #[pyo3(get, set)]
     pub voxel_food_diffusion_constant: f64,
-    #[pyo3(get, set)]
     pub voxel_food_initial_concentration: f64,
 
-    #[pyo3(get, set)]
     pub domain_size: f64,
 
-    #[pyo3(get, set)]
     pub starting_domain_x_low: f64,
-    #[pyo3(get, set)]
     pub starting_domain_x_high: f64,
-    #[pyo3(get, set)]
     pub starting_domain_y_low: f64,
-    #[pyo3(get, set)]
     pub starting_domain_y_high: f64,
 
     // BACTERIA SETTINGS
-    #[pyo3(get, set)]
     pub n_bacteria_initial: usize,
-
-    #[pyo3(get, set)]
-    pub bacteria_mechanics_velocity_reduction: f64,
-    #[pyo3(get, set)]
-    pub bacteria_mechanics_radius: f64,
-
-    #[pyo3(get, set)]
-    pub bacteria_interaction_potential_strength: f64,
-    #[pyo3(get, set)]
-    pub bacteria_interaction_relative_range: f64,
-
-    #[pyo3(get, set)]
-    pub bacteria_cycle_division_age_max: f64,
-    #[pyo3(get, set)]
-    pub bacteria_cycle_growth_rate: f64,
-    #[pyo3(get, set)]
-    pub bacteria_cycle_food_threshold: f64,
-    #[pyo3(get, set)]
-    pub bacteria_cycle_food_growth_rate_multiplier: f64,
-    #[pyo3(get, set)]
-    pub bacteria_cycle_food_division_threshold: f64,
-
-    #[pyo3(get, set)]
-    pub bacteria_food_initial_concentration: f64,
-    #[pyo3(get, set)]
-    pub bacteria_food_turnover_rate: f64,
-    #[pyo3(get, set)]
-    pub bacteria_food_uptake_rate: f64,
-
-    #[pyo3(get, set)]
-    pub intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    #[pyo3(get, set)]
-    pub turnover_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    #[pyo3(get, set)]
-    pub production_term: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    #[pyo3(get, set)]
-    pub degradation_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    #[pyo3(get, set)]
-    pub secretion_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    #[pyo3(get, set)]
-    pub uptake_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
+    pub bacteria_mechanics: Py<Langevin2D>,
+    pub bacteria_interaction: Py<BacteriaInteraction>,
+    pub bacteria_cycle: Py<BacteriaCycle>,
+    pub bacteria_reactions: Py<BacteriaReactions>,
 
     // SIMULATION FLOW SETTINGS
-    #[pyo3(get, set)]
     pub n_times: usize,
-    #[pyo3(get, set)]
     pub dt: f64,
-    #[pyo3(get, set)]
     pub t_start: f64,
-    #[pyo3(get, set)]
     pub save_interval: usize,
-    #[pyo3(get, set)]
     pub n_threads: usize,
 }
 
-impl Default for SimulationSettings {
-    fn default() -> Self {
-        let domain_size = 3_000.0;
-        let bacteria_food_initial_concentration = 1.0;
-        Self {
+#[pymethods]
+impl SimulationSettings {
+    #[new]
+    fn new(py: Python) -> PyResult<Self> {
+        let domain_size = 2_000.0;
+        let bacteria_radius: f64 = 6.0;
+        let bacteria_volume = std::f64::consts::PI * bacteria_radius.powf(2.0);
+        let dt = 0.01;
+        Ok(Self {
             // DOMAIN SETTINGS
-            voxel_food_diffusion_constant: 25.0,
+            voxel_food_diffusion_constant: 0.02,
             voxel_food_initial_concentration: 12.0,
 
             domain_size,
@@ -111,13 +65,53 @@ impl Default for SimulationSettings {
             // BACTERIA SETTINGS
             n_bacteria_initial: 400,
 
-            bacteria_mechanics_velocity_reduction: 2.0,
-            bacteria_mechanics_radius: 6.0,
+            bacteria_mechanics: Py::new(
+                py,
+                Langevin2D::new(
+                    [0.0; 2], // pos
+                    [0.0; 2], // vel
+                    // For this field also see the dedicated [volume_to_mass] function!
+                    0.1 * bacteria_volume, // mass
+                    0.5,                   // damping
+                    0.01,                  // kb_temperature
+                    5,                     // update_interval
+                ),
+            )?,
 
-            bacteria_interaction_potential_strength: 0.3,
-            bacteria_interaction_relative_range: 1.5,
+            bacteria_interaction: Py::new(
+                py,
+                BacteriaInteraction {
+                    potential_strength: 0.02,
+                    relative_interaction_range: 1.0,
+                    cell_radius: bacteria_radius,
+                },
+            )?,
 
-            bacteria_cycle_division_age_max: 70.0,
+            bacteria_cycle: Py::new(
+                py,
+                BacteriaCycle {
+                    food_consumption: 0.001 / dt,
+                    food_to_volume_conversion: 0.001,
+                    volume_division_threshold: 1.5 * bacteria_volume,
+                    lack_phase_active: true,
+                    lack_phase_transition_rate: 0.0005,
+                },
+            )?,
+
+            bacteria_reactions: Py::new(
+                py,
+                BacteriaReactions {
+                    lack_phase_active: false,
+                    intracellular_concentrations: [1.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    turnover_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    production_term: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    degradation_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    secretion_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    uptake_rate: [0.002; NUMBER_OF_REACTION_COMPONENTS].into(),
+                },
+            )?,
+
+            /* bacteria_cycle_division_age_max: 70.0,
             bacteria_cycle_growth_rate: 0.1,
             bacteria_cycle_food_threshold: 2.0,
             bacteria_cycle_food_growth_rate_multiplier: 10.0,
@@ -133,22 +127,14 @@ impl Default for SimulationSettings {
             degradation_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
             secretion_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
             uptake_rate: [0.05; NUMBER_OF_REACTION_COMPONENTS],
-
+            */
             // SIMULATION FLOW SETTINGS
             n_times: 20_001,
-            dt: 0.01,
+            dt,
             t_start: 0.0,
             save_interval: 250,
             n_threads: 1,
-        }
-    }
-}
-
-#[pymethods]
-impl SimulationSettings {
-    #[new]
-    fn new() -> Self {
-        Self::default()
+        })
     }
 
     fn __repr__(&self) -> String {
