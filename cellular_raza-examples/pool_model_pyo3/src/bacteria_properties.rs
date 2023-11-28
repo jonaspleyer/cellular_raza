@@ -39,6 +39,13 @@ pub struct BacteriaInteraction {
     pub cell_radius: f64,
 }
 
+#[pymethods]
+impl BacteriaInteraction {
+    fn __repr__(&self) -> String {
+        format!("{self:#?}")
+    }
+}
+
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInteraction {
     fn get_interaction_information(&self) -> f64 {
         self.cell_radius
@@ -95,41 +102,34 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct BacteriaCycle {
-    #[pyo3(get, set)]
-    pub age: f64,
-    #[pyo3(get, set)]
-    pub division_age: f64,
-    #[pyo3(get, set)]
-    pub maximum_cell_radius: f64,
-    #[pyo3(get, set)]
-    pub growth_rate: f64,
-    #[pyo3(get, set)]
-    pub food_threshold: f64,
-    #[pyo3(get, set)]
-    pub food_growth_rate_multiplier: f64,
-    #[pyo3(get, set)]
-    pub food_division_threshold: f64,
+    /// Consumption of food over a period of time. In units $\frac{\text{food}}{\text{time}}$.
+    pub food_consumption: f64,
+    /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
+    pub food_to_volume_conversion: f64,
+    /// Threshold for the volume when the cell should divide
+    pub volume_division_threshold: f64,
+    pub lag_phase_active: bool,
+    pub lag_phase_transition_rate: f64,
 }
 
+#[pymethods]
 impl BacteriaCycle {
+    #[new]
     pub fn new(
-        division_age: f64,
-        maximum_cell_radius: f64,
-        growth_rate: f64,
-        food_threshold: f64,
-        food_growth_rate_multiplier: f64,
-        food_division_threshold: f64,
+        food_consumption: f64,
+        food_to_volume_conversion: f64,
+        volume_division_threshold: f64,
+        lag_phase_active: bool,
+        lag_phase_transition_rate: f64,
     ) -> Self {
         BacteriaCycle {
-            age: 0.0,
-            division_age,
-            maximum_cell_radius,
-            growth_rate,
-            food_threshold,
-            food_growth_rate_multiplier,
-            food_division_threshold,
+            food_consumption,
+            food_to_volume_conversion,
+            volume_division_threshold,
+            lag_phase_active,
+            lag_phase_transition_rate,
         }
     }
 }
