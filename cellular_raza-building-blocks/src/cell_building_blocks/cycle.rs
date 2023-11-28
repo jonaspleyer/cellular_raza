@@ -20,6 +20,6 @@ impl<Cel> Cycle<Cel> for NoCycle {
         _: &mut rand_chacha::ChaCha8Rng,
         _: &mut Cel,
     ) -> Result<Cel, cellular_raza_concepts::errors::DivisionError> {
-        panic!("This function should never be called. This is a backend error. Please report!")
+        panic!("This is the divide() function of the NoCycle struct which should never be called. This is a backend error. Please report!")
     }
 }

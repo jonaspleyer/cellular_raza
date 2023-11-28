@@ -327,6 +327,10 @@ macro_rules! define_langevin_nd(
             pub fn set_update_interval(&mut self, update_interval: usize) {
                 self.update_interval = update_interval;
             }
+
+            fn __repr__(&self) -> String {
+                format!("{self:#?}")
+            }
         }
     }
 );
