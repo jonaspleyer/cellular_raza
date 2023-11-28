@@ -157,6 +157,23 @@ impl SimulationSettings {
 }
 
 pub fn run_simulation_rs(
+fn save_simulation_settings(
+    path: &std::path::PathBuf,
+    simulation_settings: &SimulationSettings,
+) -> PyResult<()> {
+    // Also save the SimulationSettings into the same folder
+    let mut save_path = path.clone();
+    save_path.push("simulation_settings.json");
+    let f = std::fs::File::create(save_path)?;
+    let writer = std::io::BufWriter::new(f);
+    serde_json::to_writer_pretty(writer, &simulation_settings).or_else(|e| {
+        Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("serde_json error in writing simulation settings to file: {e}"),
+        ))
+    })?;
+    Ok(())
+}
+
     simulation_settings: SimulationSettings,
 ) -> Result<std::path::PathBuf, SimulationError> {
     // Fix random seed
@@ -262,6 +279,8 @@ pub fn run_simulation_rs(
     // let simulation_result = run_full_simulation!(setup, settings, [Mechanics, Interaction, Cycle])?;
     let mut supervisor =
         SimulationSupervisor::initialize_with_strategies(simulation_setup, strategies);
+
+    save_simulation_settings(&supervisor.storage.get_location(), &simulation_settings)?;
 
     let simulation_result = supervisor.run_full_sim().unwrap();
 

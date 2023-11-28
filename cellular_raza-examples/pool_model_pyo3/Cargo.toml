@@ -17,3 +17,4 @@ nalgebra = { version="0.32" }
 num = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default", "pyo3"] }
 plotters = { workspace = true }
+serde_json = { version="1.0" }
