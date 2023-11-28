@@ -9,77 +9,12 @@ use pyo3::prelude::*;
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[pyclass]
-pub struct BacteriaMechanicsModel2D {
-    pub pos: Vector2<f64>,
-    pub vel: Vector2<f64>,
-    #[pyo3(get, set)]
-    pub dampening_constant: f64,
-    #[pyo3(get, set)]
-    pub mass: f64,
-}
-
-#[pymethods]
-impl BacteriaMechanicsModel2D {
-    #[getter(pos)]
-    fn py_get_pos(&self) -> [f64; 2] {
-        self.pos.into()
-    }
-
-    #[setter(pos)]
-    fn py_set_pos(&mut self, pos: [f64; 2]) {
-        self.pos = pos.into();
-    }
-
-    #[getter(vel)]
-    fn py_get_vel(&self) -> [f64; 2] {
-        self.vel.into()
-    }
-
-    #[setter(vel)]
-    fn py_set_vel(&mut self, vel: [f64; 2]) {
-        self.vel = vel.into();
-    }
-
-    fn __repr__(&self) -> String {
-        format!("{:#?}", self)
-    }
-}
-
-impl Mechanics<Vector2<f64>, Vector2<f64>, Vector2<f64>> for BacteriaMechanicsModel2D {
-    fn pos(&self) -> Vector2<f64> {
-        self.pos
-    }
-
-    fn velocity(&self) -> Vector2<f64> {
-        self.vel
-    }
-
-    fn set_pos(&mut self, p: &Vector2<f64>) {
-        self.pos = *p;
-    }
-
-    fn set_velocity(&mut self, v: &Vector2<f64>) {
-        self.vel = *v;
-    }
-
-    fn calculate_increment(
-        &self,
-        force: Vector2<f64>,
-    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
-        let dx = self.vel;
-        let dv = force / self.mass - self.dampening_constant * self.vel;
-        Ok((dx, dv))
-    }
-}
-
-#[derive(Clone, Debug, CellAgent, Deserialize, Serialize)]
+#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     #[pyo3(get, set)]
-    pub mechanics: BacteriaMechanicsModel2D,
+    pub mechanics: Langevin2D,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
     #[pyo3(get, set)]
     pub interaction: BacteriaInteraction,
