@@ -152,33 +152,34 @@ impl Cycle<Bacteria> for BacteriaCycle {
         cell: &mut Bacteria,
     ) -> Option<CycleEvent> {
         use rand::Rng;
-        // If the cell is not at the maximum size let it grow
-        if cell.interaction.cell_radius < cell.cycle.maximum_cell_radius {
-            let growth_difference = (cell.cycle.maximum_cell_radius * cell.cycle.growth_rate * dt)
-                .min(cell.cycle.maximum_cell_radius - cell.interaction.cell_radius);
-            cell.cellular_reactions.intracellular_concentrations[0] -=
-                cell.cycle.food_growth_rate_multiplier * growth_difference
-                    / cell.cycle.maximum_cell_radius;
-            cell.interaction.cell_radius += growth_difference;
+        // Check if we are in lag phase and if so check if we want to convert to active state
+        if cell.cellular_reactions.lag_phase_active {
+            let p = rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate);
+            if p {
+                cell.cellular_reactions.lag_phase_active = false;
+            }
+        }
+        // Grow the cell if we are not in lag phase
+        else {
+            // Calculate how much food was consumed. Also make sure that we do not take away
+            // more than was inside the cell and that is always a positive amount
+            let mut food_consumed = cell.cellular_reactions.intracellular_concentrations[0];
+            food_consumed = food_consumed.min(cell.cycle.food_consumption * dt);
+            food_consumed = food_consumed.max(0.0);
+
+            // Reduce intracellular amount by the calculated consumed food
+            cell.cellular_reactions.intracellular_concentrations[0] -= food_consumed;
+
+            // Calculate the volume and from this the radial increment
+            let volume_increment = cell.cycle.food_to_volume_conversion * food_consumed;
+            let radial_increment = (volume_increment / std::f64::consts::PI).powf(0.5);
+
+            // Set the cells radius and mass
+            cell.interaction.cell_radius += radial_increment;
+            cell.mechanics.mass = cell.volume_to_mass(cell.get_volume());
         }
 
-        // Increase the age of the cell and divide if possible
-        cell.cycle.age += dt;
-
-        // Calculate the modifier (between 0.0 and 1.0) based on food threshold
-        let relative_division_food_level = ((cell.get_intracellular()[0]
-            - cell.cycle.food_division_threshold)
-            / (cell.cycle.food_threshold - cell.cycle.food_division_threshold))
-            .clamp(0.0, 1.0);
-
-        if
-        // Check if the cell has aged enough
-        cell.cycle.age > cell.cycle.division_age &&
-            // Check if the cell has grown enough
-            cell.interaction.cell_radius >= cell.cycle.maximum_cell_radius &&
-            // Random selection but chance increased when significantly above the food threshold
-            rng.gen_range(0.0..1.0) < relative_division_food_level
-        {
+        if cell.get_volume() >= cell.cycle.volume_division_threshold {
             return Some(CycleEvent::Division);
         }
         None
@@ -196,7 +197,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
 
         // Make both cells smaller
         // ALso keep old cell larger
-        let relative_size_difference = 0.2;
+        let relative_size_difference = 0.0;
         c1.interaction.cell_radius *= (1.0 + relative_size_difference) / std::f64::consts::SQRT_2;
         c2.interaction.cell_radius *= (1.0 - relative_size_difference) / std::f64::consts::SQRT_2;
 
@@ -209,17 +210,15 @@ impl Cycle<Bacteria> for BacteriaCycle {
         let offset = dir_vec * r / std::f64::consts::SQRT_2;
         let old_pos = c1.pos();
 
+        // Reduce the food present in the bacteria
+        // let reduce = 0.5*c1.cycle.volume_division_threshold/c1.cycle.food_to_volume_conversion;
+        // c1.cellular_reactions.intracellular_concentrations[0] -= (1.0 + relative_size_difference) * reduce;
+        // c2.cellular_reactions.intracellular_concentrations[0] -= (1.0 - relative_size_difference) * reduce;
+        c1.cellular_reactions.intracellular_concentrations[0] = 0.0;
+        c2.cellular_reactions.intracellular_concentrations[0] = 0.0;
+
         c1.set_pos(&(old_pos + offset));
         c2.set_pos(&(old_pos - offset));
-
-        // Decrease the amount of food in the cells
-        c1.cellular_reactions.intracellular_concentrations *=
-            (1.0 + relative_size_difference) * 0.5;
-        c2.cellular_reactions.intracellular_concentrations *=
-            (1.0 - relative_size_difference) * 0.5;
-
-        // New cell is completely new so set age to 0
-        c2.cycle.age = 0.0;
 
         Ok(c2)
     }
