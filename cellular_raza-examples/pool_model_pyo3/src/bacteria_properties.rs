@@ -134,6 +134,17 @@ impl BacteriaCycle {
     }
 }
 
+#[pymethods]
+impl Bacteria {
+    pub fn volume_to_mass(&self, volume: f64) -> f64 {
+        0.1 * volume
+    }
+
+    pub fn mass_to_volume(&self, mass: f64) -> f64 {
+        10.0 * mass
+    }
+}
+
 impl Cycle<Bacteria> for BacteriaCycle {
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
