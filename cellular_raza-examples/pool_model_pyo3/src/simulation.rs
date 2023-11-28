@@ -142,7 +142,6 @@ impl SimulationSettings {
     }
 }
 
-pub fn run_simulation_rs(
 fn save_simulation_settings(
     path: &std::path::PathBuf,
     simulation_settings: &SimulationSettings,
@@ -160,12 +159,21 @@ fn save_simulation_settings(
     Ok(())
 }
 
+#[pyfunction]
+pub fn run_simulation(
     simulation_settings: SimulationSettings,
-) -> Result<std::path::PathBuf, SimulationError> {
+    py: Python,
+) -> PyResult<std::path::PathBuf> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
+    let mechanics: Langevin2D = simulation_settings.bacteria_mechanics.extract(py)?;
+    let cycle: BacteriaCycle = simulation_settings.bacteria_cycle.extract(py)?;
+    let interaction: BacteriaInteraction = simulation_settings.bacteria_interaction.extract(py)?;
+    let cellular_reactions: BacteriaReactions =
+        simulation_settings.bacteria_reactions.extract(py)?;
+
     let cells = (0..simulation_settings.n_bacteria_initial)
         .map(|_| {
             let x = rng.gen_range(
@@ -177,42 +185,19 @@ fn save_simulation_settings(
                     ..simulation_settings.starting_domain_y_high,
             );
 
+            // Set new position of bacteria
             let pos = Vector2::from([x, y]);
-            Bacteria {
-                mechanics: BacteriaMechanicsModel2D {
-                    pos,
-                    vel: Vector2::zero(),
-                    dampening_constant: simulation_settings.bacteria_mechanics_velocity_reduction,
-                    mass: 1.0,
-                },
-                cycle: BacteriaCycle::new(
-                    rng.gen_range(0.0..simulation_settings.bacteria_cycle_division_age_max),
-                    simulation_settings.bacteria_mechanics_radius,
-                    simulation_settings.bacteria_cycle_growth_rate,
-                    simulation_settings.bacteria_cycle_food_threshold,
-                    simulation_settings.bacteria_cycle_food_growth_rate_multiplier,
-                    simulation_settings.bacteria_cycle_food_division_threshold,
-                ),
-                interaction: BacteriaInteraction {
-                    potential_strength: simulation_settings.bacteria_interaction_potential_strength,
-                    relative_interaction_range: simulation_settings
-                        .bacteria_interaction_relative_range,
-                    cell_radius: simulation_settings.bacteria_mechanics_radius,
-                },
-                cellular_reactions: BacteriaReactions {
-                    intracellular_concentrations: simulation_settings
-                        .intracellular_concentrations
-                        .into(),
-                    turnover_rate: simulation_settings.turnover_rate.into(),
-                    production_term: simulation_settings.production_term.into(),
-                    degradation_rate: simulation_settings.degradation_rate.into(),
-                    secretion_rate: simulation_settings.secretion_rate.into(),
-                    uptake_rate: simulation_settings.uptake_rate.into(),
-                },
+            let mut mechanics_new = mechanics.clone();
+            mechanics_new.set_pos(&pos);
+            Ok(Bacteria {
+                mechanics: mechanics_new,
+                cycle: cycle.clone(),
+                interaction: interaction.clone(),
+                cellular_reactions: cellular_reactions.clone(),
                 interactionextracellulargradient: NoExtracellularGradientSensing,
-            }
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<PyResult<Vec<_>>>()?;
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
     let domain = CartesianCuboid2::from_boundaries_and_n_voxels(
