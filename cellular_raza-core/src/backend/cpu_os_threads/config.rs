@@ -58,6 +58,14 @@ pub struct TimeSetup {
 }
 
 /// Contains settings on how to handle storing results.
+///
+/// ```rust
+/// # use cellular_raza_core::storage::concepts::StorageOptions;
+/// # use cellular_raza_core::backend::cpu_os_threads::config::StorageConfig;
+/// let output_path = std::path::PathBuf::from("my_output_directory");
+/// let storage_config = StorageConfig::from_path(&output_path)
+///     .storage_priority(vec![StorageOptions::SerdeJson]);
+/// ```
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     location: std::path::PathBuf,
@@ -79,34 +87,23 @@ impl StorageConfig {
 
     /// Set the priority in which to store and look for results.
     /// Supplying an empty vector will lead to not storing any results.
-    pub fn storage_priority(self, storage_priority: Vec<StorageOptions>) -> Self {
-        Self {
-            location: self.location,
-            storage_priority,
-            #[cfg(feature = "timestamp")]
-            add_date: self.add_date,
-        }
+    pub fn storage_priority(mut self, storage_priority: Vec<StorageOptions>) -> Self {
+        self.storage_priority = storage_priority;
+        self
     }
 
     /// Modify the location where to save
-    pub fn location(self, location: &std::path::Path) -> Self {
-        Self {
-            location: location.into(),
-            storage_priority: self.storage_priority,
-            #[cfg(feature = "timestamp")]
-            add_date: self.add_date,
-        }
+    pub fn location(mut self, location: &std::path::Path) -> Self {
+        self.location = location.into();
+        self
     }
 
     /// Determines whether a date should be added to the name of the output folder
     /// By default this is true to avoid conflicts with previously run simulations.
     #[cfg(feature = "timestamp")]
-    pub fn add_date(self, add_date: bool) -> Self {
-        Self {
-            location: self.location,
-            storage_priority: self.storage_priority,
-            add_date,
-        }
+    pub fn add_date(mut self, add_date: bool) -> Self {
+        self.add_date = add_date;
+        self
     }
 
     /// Retrieve the storage location
