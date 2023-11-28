@@ -391,6 +391,7 @@ pub fn run_simulation(
 
     let meta_params = SimulationMetaParams {
         n_threads: simulation_settings.n_threads,
+        ..Default::default()
     };
 
     let storage = StorageConfig::from_path(std::path::Path::new(&simulation_settings.storage_name));

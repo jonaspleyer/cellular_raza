@@ -135,7 +135,10 @@ fn run_simulation(
         t_eval: (0..n_times).map(|n| (n as f64 * dt, false)).collect(),
     };
 
-    let meta_params = SimulationMetaParams { n_threads };
+    let meta_params = SimulationMetaParams {
+        n_threads,
+        ..Default::default()
+    };
 
     let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
 

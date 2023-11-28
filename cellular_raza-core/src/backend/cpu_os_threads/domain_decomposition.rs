@@ -224,6 +224,7 @@ where
         voxel: Vox,
         neighbors: Vec<PlainIndex>,
         cells: Vec<CellAgentBox<Cel>>,
+        rng_seed: u64,
     ) -> VoxelBox<
         Ind,
         Pos,
@@ -248,7 +249,7 @@ where
                 .collect(),
             new_cells: Vec::new(),
             id_counter: n_cells,
-            rng: ChaCha8Rng::seed_from_u64(plain_index as u64 * 10),
+            rng: ChaCha8Rng::seed_from_u64(rng_seed),
             extracellular_concentration_increments: Vec::new(),
             concentration_boundaries: Vec::new(),
         }

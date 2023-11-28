@@ -298,6 +298,7 @@ fn main() {
         },
         SimulationMetaParams {
             n_threads: N_THREADS,
+            ..Default::default()
         },
         StorageConfig::from_path(std::path::Path::new("out/ureter_signalling")),
         (),

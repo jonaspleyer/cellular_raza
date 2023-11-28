@@ -42,6 +42,17 @@ pub struct SimulationMetaParams {
     /// Number of threads to use for parallelization. This number may be limited by the
     /// available number of voxels.
     pub n_threads: usize,
+    /// Sets the initial random seed of whole simulation
+    pub rng_seed: u64,
+}
+
+impl Default for SimulationMetaParams {
+    fn default() -> Self {
+        Self {
+            n_threads: 1,
+            rng_seed: 0,
+        }
+    }
 }
 
 // TODO rethink how to specify time points to save
@@ -546,6 +557,9 @@ where
             .unwrap();
 
         // Create all multivoxelcontainers
+        use rand::{SeedableRng, RngCore};
+        use rand_chacha::ChaCha8Rng;
+        let mut rng_generator = ChaCha8Rng::seed_from_u64(setup.meta_params.rng_seed);
         multivoxelcontainers = voxel_and_cell_boxes
             .into_iter()
             .enumerate()
@@ -593,6 +607,7 @@ where
                             voxel,
                             neighbors,
                             cells,
+                            rng_generator.next_u64(),
                         );
                         (plain_index, vbox)
                     })

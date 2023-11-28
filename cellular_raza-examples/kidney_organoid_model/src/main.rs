@@ -183,6 +183,7 @@ fn main() {
         },
         MetaParams: SimulationMetaParams {
             n_threads: N_THREADS,
+            ..Default::default()
         },
         Storage: StorageConfig::from_path(std::path::Path::new("out/kidney_organoid_model")),
     );

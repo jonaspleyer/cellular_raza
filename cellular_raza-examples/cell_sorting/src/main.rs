@@ -148,6 +148,7 @@ fn main() {
 
     let meta_params = SimulationMetaParams {
         n_threads: N_THREADS,
+        ..Default::default()
     };
 
     let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
