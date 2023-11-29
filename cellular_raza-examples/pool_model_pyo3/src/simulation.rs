@@ -9,9 +9,26 @@ use rand_chacha::ChaCha8Rng;
 
 use serde::{Deserialize, Serialize};
 
-use pyo3::{prelude::*, exceptions::PyValueError};
+use pyo3::prelude::*;
 
 use crate::bacteria_properties::*;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[pyclass(get_all, set_all)]
+pub struct Domain {
+    pub diffusion_constants: [f64; NUMBER_OF_REACTION_COMPONENTS],
+    pub initial_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
+
+    pub size: f64,
+    pub n_voxels: Option<usize>,
+}
+
+#[pymethods]
+impl Domain {
+    fn __repr__(&self) -> String {
+        format!("{self:#?}")
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
@@ -19,14 +36,7 @@ pub struct SimulationSettings {
     pub random_seed: u64,
 
     // DOMAIN SETTINGS
-    pub voxel_food_diffusion_constant: f64,
-    pub voxel_food_initial_concentration: f64,
-
-    pub domain_size: f64,
-    pub domain_n_voxels: Option<usize>,
-
-    pub starting_domain_low: [f64; 2],
-    pub starting_domain_high: [f64; 2],
+    pub domain: Py<Domain>,
 
     // BACTERIA SETTINGS
     pub n_bacteria_initial: usize,
@@ -45,27 +55,6 @@ pub struct SimulationSettings {
 
 #[pymethods]
 impl SimulationSettings {
-    #[setter(starting_domain_low)]
-    fn set_starting_domain_low(&mut self, starting_domain_low: [f64; 2]) -> PyResult<()> {
-        if starting_domain_low.iter().any(|x| x < &0.0) || starting_domain_low.iter().any(|x| x> &self.domain_size) {
-            return Err(PyValueError::new_err(
-                format!("Cannot set starting domain lower bound below 0!"),
-            ));
-        }
-        Ok(self.starting_domain_low = starting_domain_low)
-    }
-
-    #[setter(starting_domain_high)]
-    fn set_starting_domain_high(&mut self, starting_domain_high: [f64; 2]) -> PyResult<()> {
-        if starting_domain_high.iter().any(|x| x>&self.domain_size) {
-            return Err(pyo3::exceptions::PyUserWarning::new_err(
-                format!("Trying to set upper bound of starting domain {starting_domain_high:?} above domain_size!
-                Setting starting domain upper bound to domain_size {}", self.domain_size)
-            ));
-        }
-        Ok(self.starting_domain_high = [self.domain_size; 2])
-    }
-
     #[new]
     fn new(py: Python) -> PyResult<Self> {
         let domain_size = 2_000.0;
@@ -76,14 +65,16 @@ impl SimulationSettings {
             random_seed: 1,
 
             // DOMAIN SETTINGS
-            voxel_food_diffusion_constant: 0.02,
-            voxel_food_initial_concentration: 12.0,
+            domain: Py::new(
+                py,
+                Domain {
+                    diffusion_constants: [20.0, 15.0],
+                    initial_concentrations: [12.0, 0.0],
 
-            domain_size,
-            domain_n_voxels: None,
-
-            starting_domain_low: [domain_size / 2.0 - 150.0; 2],
-            starting_domain_high: [domain_size / 2.0 + 150.0; 2],
+                    size: domain_size,
+                    n_voxels: None,
+                },
+            )?,
 
             // BACTERIA SETTINGS
             n_bacteria_initial: 400,
@@ -192,17 +183,12 @@ pub fn run_simulation(
     let interaction: BacteriaInteraction = simulation_settings.bacteria_interaction.extract(py)?;
     let cellular_reactions: BacteriaReactions =
         simulation_settings.bacteria_reactions.extract(py)?;
+    let domain_setup: Domain = simulation_settings.domain.extract(py)?;
 
     let cells = (0..simulation_settings.n_bacteria_initial)
         .map(|_| {
-            let x = rng.gen_range(
-                simulation_settings.starting_domain_low[0]
-                    ..simulation_settings.starting_domain_high[0],
-            );
-            let y = rng.gen_range(
-                simulation_settings.starting_domain_low[1]
-                    ..simulation_settings.starting_domain_high[1],
-            );
+            let x = rng.gen_range(0.0..domain_setup.size);
+            let y = rng.gen_range(0.0..domain_setup.size);
 
             // Set new position of bacteria
             let pos = Vector2::from([x, y]);
@@ -213,21 +199,21 @@ pub fn run_simulation(
                 cycle: cycle.clone(),
                 interaction: interaction.clone(),
                 cellular_reactions: cellular_reactions.clone(),
-                interactionextracellulargradient: NoExtracellularGradientSensing,
+                interactionextracellulargradient: GradientSensing,
             })
         })
         .collect::<PyResult<Vec<_>>>()?;
 
     // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let domain = match simulation_settings.domain_n_voxels {
+    let domain = match domain_setup.n_voxels {
         Some(n_voxels) => CartesianCuboid2::from_boundaries_and_n_voxels(
             [0.0; 2],
-            [simulation_settings.domain_size; 2],
+            [domain_setup.size; 2],
             [n_voxels; 2],
         ),
         None => CartesianCuboid2::from_boundaries_and_interaction_ranges(
             [0.0; 2],
-            [simulation_settings.domain_size; 2],
+            [domain_setup.size; 2],
             [2.0 * interaction.cell_radius; 2],
         ),
     }
@@ -267,10 +253,9 @@ pub fn run_simulation(
 
     let voxel_definition_strategy =
         |voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>| {
-            voxel.diffusion_constant =
-                ReactionVector::from([simulation_settings.voxel_food_diffusion_constant]);
+            voxel.diffusion_constant = ReactionVector::from([domain_setup.diffusion_constants]);
             voxel.extracellular_concentrations =
-                ReactionVector::from([simulation_settings.voxel_food_initial_concentration]);
+                ReactionVector::from([domain_setup.initial_concentrations]);
             voxel.degradation_rate = ReactionVector::zero();
             voxel.production_rate = ReactionVector::zero();
         };
