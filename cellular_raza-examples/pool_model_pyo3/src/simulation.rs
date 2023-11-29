@@ -57,10 +57,10 @@ pub struct SimulationSettings {
 impl SimulationSettings {
     #[new]
     fn new(py: Python) -> PyResult<Self> {
-        let domain_size = 2_000.0;
+        let domain_size = 1_000.0;
         let bacteria_radius: f64 = 6.0;
         let bacteria_volume = std::f64::consts::PI * bacteria_radius.powf(2.0);
-        let dt = 0.01;
+
         Ok(Self {
             random_seed: 1,
 
@@ -68,8 +68,8 @@ impl SimulationSettings {
             domain: Py::new(
                 py,
                 Domain {
-                    diffusion_constants: [20.0, 15.0],
-                    initial_concentrations: [12.0, 0.0],
+                    diffusion_constants: [2.0, 0.2],
+                    initial_concentrations: [1.0, 0.0],
 
                     size: domain_size,
                     n_voxels: None,
@@ -77,7 +77,7 @@ impl SimulationSettings {
             )?,
 
             // BACTERIA SETTINGS
-            n_bacteria_initial: 400,
+            n_bacteria_initial: 250,
 
             bacteria_mechanics: Py::new(
                 py,
@@ -87,7 +87,7 @@ impl SimulationSettings {
                     // For this field also see the dedicated [volume_to_mass] function!
                     0.1 * bacteria_volume, // mass
                     0.5,                   // damping
-                    0.01,                  // kb_temperature
+                    0.1,                   // kb_temperature
                     5,                     // update_interval
                 ),
             )?,
@@ -95,7 +95,7 @@ impl SimulationSettings {
             bacteria_interaction: Py::new(
                 py,
                 BacteriaInteraction {
-                    potential_strength: 0.02,
+                    potential_strength: 0.5,
                     cell_radius: bacteria_radius,
                 },
             )?,
@@ -103,9 +103,9 @@ impl SimulationSettings {
             bacteria_cycle: Py::new(
                 py,
                 BacteriaCycle {
-                    food_to_volume_conversion: 0.001,
+                    food_to_volume_conversion: 1e-5,
                     volume_division_threshold: 2.0 * bacteria_volume,
-                    lag_phase_transition_rate: 0.0005,
+                    lag_phase_transition_rate: 0.0001,
                 },
             )?,
 
@@ -113,18 +113,18 @@ impl SimulationSettings {
                 py,
                 BacteriaReactions {
                     lag_phase_active: true,
-                    intracellular_concentrations: [1.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    production_rates: [0.0, 0.01].into(),
-                    uptake_rates: [0.001, 0.002].into(),
+                    intracellular_concentrations: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    production_rates: [0.0, 0.0].into(),
+                    uptake_rates: [0.01, 0.0].into(),
                     inhibitions: [0.0, 0.1].into(),
                 },
             )?,
 
             // SIMULATION FLOW SETTINGS
-            n_times: 20_001,
-            dt,
+            n_times: 50_001,
+            dt: 0.5,
             t_start: 0.0,
-            save_interval: 250,
+            save_interval: 1_000,
             n_threads: 1,
         })
     }
