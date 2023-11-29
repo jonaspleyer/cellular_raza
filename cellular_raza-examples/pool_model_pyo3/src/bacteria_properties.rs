@@ -10,32 +10,25 @@ pub const NUMBER_OF_REACTION_COMPONENTS: usize = 2;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
-    #[pyo3(get, set)]
     pub mechanics: Langevin2D,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
-    #[pyo3(get, set)]
     pub interaction: BacteriaInteraction,
     #[Cycle]
-    #[pyo3(get, set)]
     pub cycle: BacteriaCycle,
     #[CellularReactions(nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>,)]
-    #[pyo3(get, set)]
     pub cellular_reactions: BacteriaReactions,
     #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,)]
     pub interactionextracellulargradient: NoExtracellularGradientSensing,
 }
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct BacteriaInteraction {
-    #[pyo3(get, set)]
     pub potential_strength: f64,
-    #[pyo3(get, set)]
     pub relative_interaction_range: f64,
-    #[pyo3(get, set)]
     pub cell_radius: f64,
 }
 
