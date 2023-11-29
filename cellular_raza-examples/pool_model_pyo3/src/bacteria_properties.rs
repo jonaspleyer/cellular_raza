@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use pyo3::prelude::*;
 
-pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
+pub const NUMBER_OF_REACTION_COMPONENTS: usize = 2;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
@@ -224,13 +224,11 @@ impl Cycle<Bacteria> for BacteriaCycle {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[pyclass]
 pub struct BacteriaReactions {
-    pub lack_phase_active: bool,
+    pub lag_phase_active: bool,
     pub intracellular_concentrations: ReactionVector,
-    pub turnover_rate: ReactionVector,
-    pub production_term: ReactionVector,
-    pub degradation_rate: ReactionVector,
-    pub secretion_rate: ReactionVector,
-    pub uptake_rate: ReactionVector,
+    pub uptake_rates: ReactionVector,
+    pub production_rates: ReactionVector,
+    pub inhibitions: ReactionVector,
 }
 
 #[pymethods]
@@ -244,28 +242,13 @@ impl BacteriaReactions {
     }
 
     #[setter]
-    pub fn set_turnover_rate(&mut self, turnover_rate: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.turnover_rate = turnover_rate.into();
+    pub fn set_uptake_rates(&mut self, uptake_rates: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
+        self.uptake_rates = uptake_rates.into();
     }
 
     #[setter]
-    pub fn set_production_term(&mut self, production_term: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.production_term = production_term.into();
-    }
-
-    #[setter]
-    pub fn set_degradation_rate(&mut self, degradation_rate: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.degradation_rate = degradation_rate.into();
-    }
-
-    #[setter]
-    pub fn set_secretion_rate(&mut self, secretion_rate: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.secretion_rate = secretion_rate.into();
-    }
-
-    #[setter]
-    pub fn set_uptake_rate(&mut self, uptake_rate: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.uptake_rate = uptake_rate.into();
+    pub fn set_inhibitions(&mut self, inhibitions: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
+        self.inhibitions = inhibitions.into();
     }
 
     #[getter]
@@ -274,48 +257,29 @@ impl BacteriaReactions {
     }
 
     #[getter]
-    pub fn get_turnover_rate(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.turnover_rate.into()
+    pub fn get_uptake_rates(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
+        self.uptake_rates.into()
     }
 
     #[getter]
-    pub fn get_production_term(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.production_term.into()
-    }
-
-    #[getter]
-    pub fn get_degradation_rate(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.degradation_rate.into()
-    }
-
-    #[getter]
-    pub fn get_secretion_rate(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.secretion_rate.into()
-    }
-
-    #[getter]
-    pub fn get_uptake_rate(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.uptake_rate.into()
+    pub fn get_inhibitions(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
+        self.inhibitions.into()
     }
 
     #[new]
     pub fn new(
-        lack_phase_active: bool,
+        lag_phase_active: bool,
         intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        turnover_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        production_term: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        degradation_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        secretion_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        uptake_rate: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        uptake_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        production_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        inhibitions: [f64; NUMBER_OF_REACTION_COMPONENTS],
     ) -> Self {
         Self {
-            lack_phase_active,
+            lag_phase_active,
             intracellular_concentrations: intracellular_concentrations.into(),
-            turnover_rate: turnover_rate.into(),
-            production_term: production_term.into(),
-            degradation_rate: degradation_rate.into(),
-            secretion_rate: secretion_rate.into(),
-            uptake_rate: uptake_rate.into(),
+            uptake_rates: uptake_rates.into(),
+            production_rates: production_rates.into(),
+            inhibitions: inhibitions.into(),
         }
     }
 }
@@ -323,27 +287,25 @@ impl BacteriaReactions {
 impl CellularReactions<ReactionVector> for BacteriaReactions {
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
-        internal_concentration_vector: &ReactionVector,
+        _internal_concentration_vector: &ReactionVector,
         external_concentration_vector: &ReactionVector,
     ) -> Result<(ReactionVector, ReactionVector), CalcError> {
         // If we are in lag phase, we simply return a zero-vector
-        if self.lack_phase_active {
+        if self.lag_phase_active {
             return Ok((ReactionVector::zero(), ReactionVector::zero()));
         }
 
-        let mut increment_extracellular = ReactionVector::zero();
-        let mut increment_intracellular = ReactionVector::zero();
+        let inhib = self.inhibitions
+            .component_mul(&external_concentration_vector)
+            .add_scalar(1.0);
 
-        for i in 0..NUMBER_OF_REACTION_COMPONENTS {
-            let uptake = self.uptake_rate[i] * external_concentration_vector[i];
-            let secretion = self.secretion_rate[i] * internal_concentration_vector[i];
-            increment_extracellular[i] = secretion - uptake;
-            increment_intracellular[i] = self.production_term[i]
-                - increment_extracellular[i]
-                - self.turnover_rate[i] * internal_concentration_vector[i];
-        }
+        let inc_int = self.uptake_rates
+            .component_mul(&external_concentration_vector)
+            .component_div(&inhib);
 
-        Ok((increment_intracellular, increment_extracellular))
+        let inc_ext = self.production_rates - inc_int;
+
+        Ok((inc_int, inc_ext))
     }
 
     fn get_intracellular(&self) -> ReactionVector {

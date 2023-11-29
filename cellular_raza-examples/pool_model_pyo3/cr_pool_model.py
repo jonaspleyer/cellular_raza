@@ -38,11 +38,9 @@ def _convert_entries(df, element_path):
         df["element.cell.mechanics.vel"] = df["element.cell.mechanics.vel"].apply(lambda x: np.array(x))
         df["element.cell.mechanics.random_vector"] = df["element.cell.mechanics.random_vector"].apply(lambda x: np.array(x))
         df["element.cell.cellular_reactions.intracellular_concentrations"] = df["element.cell.cellular_reactions.intracellular_concentrations"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.turnover_rate"] = df["element.cell.cellular_reactions.turnover_rate"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.production_term"] = df["element.cell.cellular_reactions.production_term"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.degradation_rate"] = df["element.cell.cellular_reactions.degradation_rate"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.secretion_rate"] = df["element.cell.cellular_reactions.secretion_rate"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.uptake_rate"] = df["element.cell.cellular_reactions.uptake_rate"].apply(lambda x: np.array(x))
+        df["element.cell.cellular_reactions.production_rates"] = df["element.cell.cellular_reactions.production_rates"].apply(lambda x: np.array(x))
+        df["element.cell.cellular_reactions.uptake_rates"] = df["element.cell.cellular_reactions.uptake_rates"].apply(lambda x: np.array(x))
+        df["element.cell.cellular_reactions.inhibitions"] = df["element.cell.cellular_reactions.inhibitions"].apply(lambda x: np.array(x))
         df["element.cell.interactionextracellulargradient"] = df["element.cell.interactionextracellulargradient"].apply(lambda x: np.array(x))
 
     if element_path == "voxel_storage":

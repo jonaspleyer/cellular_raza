@@ -123,13 +123,11 @@ impl SimulationSettings {
             bacteria_reactions: Py::new(
                 py,
                 BacteriaReactions {
-                    lack_phase_active: true,
+                    lag_phase_active: true,
                     intracellular_concentrations: [1.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    turnover_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    production_term: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    degradation_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    secretion_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    uptake_rate: [0.002; NUMBER_OF_REACTION_COMPONENTS].into(),
+                    production_rates: [0.0, 0.01].into(),
+                    uptake_rates: [0.001, 0.002].into(),
+                    inhibitions: [0.0, 0.1].into(),
                 },
             )?,
 
