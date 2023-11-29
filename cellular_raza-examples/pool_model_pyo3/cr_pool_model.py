@@ -8,6 +8,8 @@ import numpy as np
 from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import tqdm
+import matplotlib
+from matplotlib import pyplot as plt
 
 
 def get_last_output_path(name = "pool_model"):
@@ -90,26 +92,101 @@ def __iter_to_elements(args):
 
 
 def get_elements_at_all_iterations(output_path: Path, element_path="cell_storage", threads=1):
+    if threads<=0:
+        threads = os.cpu_count()
     dir = Path(output_path) / element_path / "json"
     # runs = [(x, dir) for x in os.listdir(dir)]
     pool = mp.Pool(threads)
-    result = list(pool.map(__iter_to_elements, map(lambda iteration: (output_path, iteration, element_path), get_all_iterations(output_path, element_path))))
+    all_iterations = get_all_iterations(output_path, element_path)
+    result = list(tqdm.tqdm(pool.imap(__iter_to_elements, map(lambda iteration: (output_path, iteration, element_path), all_iterations)), total=len(all_iterations)))
     return pd.concat(result)
 
 
-def save_snapshot(output_path: Path, iteration):
-    pass
+def save_snapshot(output_path, iteration, overwrite=False):
+    save_path = Path(output_path) / "snapshot_{:08}.png".format(iteration)
+    if overwrite==False and os.path.isfile(save_path):
+        return None
+
+    # Get simulation settings and particles at the specified iteration
+    simulation_settings = get_simulation_settings(output_path)
+    df_cells = get_elements_at_iter(output_path, iteration, element_path="cell_storage")
+    df_voxels = get_elements_at_iter(output_path, iteration, element_path="voxel_storage")
+
+    # Get positions as large numpy array
+    positions = np.array([np.array(x) for x in df_cells["element.cell.mechanics.pos"]])
+    s = np.array([x for x in df_cells["element.cell.interaction.cell_radius"]])
+    c = np.array([x for x in df_cells["element.cell.cellular_reactions.intracellular_concentrations"]])[:,1]
+    norm = matplotlib.colors.Normalize(
+        vmin=0,
+        vmax=c.max(),
+        clip=True,
+    )
+    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=matplotlib.cm.summer)
+    c = mapper.to_rgba(c.max() - c)
+
+    # Define limits for domain from simulation settings
+    xlims = np.array([0.0, simulation_settings.domain.size])
+    ylims = np.array([0.0, simulation_settings.domain.size])
+
+    figsize_x = 16
+    figsize_y = (ylims[1]-ylims[0])/(xlims[1]-xlims[0])*figsize_x
+
+    fig, ax = plt.subplots(figsize=(figsize_x, figsize_y))
+
+    # Plot rectangles for background
+    # Create color mapper for background
+    nutrients_min = 0.0
+    norm2 = matplotlib.colors.Normalize(
+        vmin=nutrients_min,
+        vmax=simulation_settings.domain.initial_concentrations[0],
+        clip=True
+    )
+    mapper2 = matplotlib.cm.ScalarMappable(norm=norm2, cmap=matplotlib.cm.cividis)
+
+    def plot_rectangle(entry):
+        x_min = entry["element.voxel.min"]
+        x_max = entry["element.voxel.max"]
+        conc = entry["element.voxel.extracellular_concentrations"][0]
+
+        xy = [x_min[0], x_min[1]]
+        dx = x_max[0] - x_min[0]
+        dy = x_max[1] - x_min[1]
+        color = mapper2.to_rgba(conc) if not np.isnan(conc) else "red"
+        rectangle = matplotlib.patches.Rectangle(xy, width=dx, height=dy, color=color)
+        ax.add_patch(rectangle)
+
+    df_voxels.apply(plot_rectangle, axis=1)
+
+    # Plot circles for bacteria
+    for pos, si, ci in zip(positions, s, c):
+        if si!=None:
+            circle = plt.Circle(pos, radius=si, facecolor=ci, edgecolor='k')
+            ax.add_patch(circle)
+        else:
+            print("Warning: Skip drawing bacteria with None radius!")
+
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+
+    fig.tight_layout()
+
+    fig.savefig(save_path)
+    plt.close(fig)
+    del df_cells
+    del df_voxels
+    del positions
 
 
-def __save_snapshot_helper(args):
-    return save_snapshot(*args)
+def __save_snapshot_helper(all_args):
+    return save_snapshot(*all_args[0], **all_args[1])
 
 
-def save_all_snapshots(output_path: Path, threads=1, show_bar=True):
+def save_all_snapshots(output_path: Path, threads=1, show_bar=True, **kwargs):
     if threads<=0:
         threads = os.cpu_count()
-    output_iterations = [(output_path, iteration) for iteration in get_all_iterations(output_path)]
+    all_args = [((output_path, iteration), kwargs) for iteration in get_all_iterations(output_path)]
+    chunksize = max(int(len(all_args)/threads), 5)
     if show_bar:
-        list(tqdm.tqdm(mp.Pool(threads).imap(__save_snapshot_helper, output_iterations), total=len(output_iterations)))
+        _ = list(tqdm.tqdm(mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize), total=len(all_args)))
     else:
-        mp.Pool(threads).imap(__save_snapshot_helper, output_iterations)
+        mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize)
