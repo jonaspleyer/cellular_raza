@@ -104,7 +104,15 @@ def get_elements_at_all_iterations(output_path: Path, element_path="cell_storage
 
 
 def save_snapshot(output_path, iteration, overwrite=False):
-    save_path = Path(output_path) / "snapshot_{:08}.png".format(iteration)
+    # Save images in dedicated images folder
+    save_folder = Path(output_path) / "images"
+    # Create folder if it does not exist
+    save_folder.mkdir(parents=True, exist_ok=True)
+
+    # Create save path from new save folder
+    save_path = save_folder / "snapshot_{:08}.png".format(iteration)
+
+    # If the image is present we do not proceed unless the overwrite flag is active
     if overwrite==False and os.path.isfile(save_path):
         return None
 
@@ -117,6 +125,8 @@ def save_snapshot(output_path, iteration, overwrite=False):
     positions = np.array([np.array(x) for x in df_cells["element.cell.mechanics.pos"]])
     s = np.array([x for x in df_cells["element.cell.interaction.cell_radius"]])
     c = np.array([x for x in df_cells["element.cell.cellular_reactions.intracellular_concentrations"]])[:,1]
+
+    # Create a new norm for generating colors from matplotlib colorscales
     norm = matplotlib.colors.Normalize(
         vmin=0,
         vmax=c.max(),
@@ -129,6 +139,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
     xlims = np.array([0.0, simulation_settings.domain.size])
     ylims = np.array([0.0, simulation_settings.domain.size])
 
+    # Define the overall size of the figure and adapt to if the domain was not symmetric
     figsize_x = 16
     figsize_y = (ylims[1]-ylims[0])/(xlims[1]-xlims[0])*figsize_x
 
@@ -144,6 +155,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
     )
     mapper2 = matplotlib.cm.ScalarMappable(norm=norm2, cmap=matplotlib.cm.cividis)
 
+    # Helper function to plot a single rectangle patch onto the canvas
     def plot_rectangle(entry):
         x_min = entry["element.voxel.min"]
         x_max = entry["element.voxel.max"]
@@ -156,6 +168,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
         rectangle = matplotlib.patches.Rectangle(xy, width=dx, height=dy, color=color)
         ax.add_patch(rectangle)
 
+    # Applies the previously defined plot_rectangle function to all voxels.
     df_voxels.apply(plot_rectangle, axis=1)
 
     # Plot circles for bacteria
@@ -166,12 +179,18 @@ def save_snapshot(output_path, iteration, overwrite=False):
         else:
             print("Warning: Skip drawing bacteria with None radius!")
 
+    # Sets correct boundaries for our domain
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
 
-    fig.tight_layout()
+    # Hide axes
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
 
-    fig.savefig(save_path)
+    # Save figure and cut off excess white space
+    fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
+
+    # Close the figure and free memory
     plt.close(fig)
     del df_cells
     del df_voxels
