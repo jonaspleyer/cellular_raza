@@ -21,7 +21,7 @@ pub struct Bacteria {
     #[CellularReactions(nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>,)]
     pub cellular_reactions: BacteriaReactions,
     #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,)]
-    pub interactionextracellulargradient: NoExtracellularGradientSensing,
+    pub interactionextracellulargradient: GradientSensing,
 }
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
@@ -288,7 +288,8 @@ impl Volume for Bacteria {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GradientSensing {}
+#[pyclass]
+pub struct GradientSensing;
 
 impl
     InteractionExtracellularGradient<
