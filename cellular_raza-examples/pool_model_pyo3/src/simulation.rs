@@ -120,23 +120,6 @@ impl SimulationSettings {
                 },
             )?,
 
-            /* bacteria_cycle_division_age_max: 70.0,
-            bacteria_cycle_growth_rate: 0.1,
-            bacteria_cycle_food_threshold: 2.0,
-            bacteria_cycle_food_growth_rate_multiplier: 10.0,
-            bacteria_cycle_food_division_threshold: bacteria_food_initial_concentration * 0.8,
-
-            bacteria_food_initial_concentration,
-            bacteria_food_turnover_rate: 0.025,
-            bacteria_food_uptake_rate: 0.05,
-
-            intracellular_concentrations: [1.0; NUMBER_OF_REACTION_COMPONENTS],
-            turnover_rate: [0.025; NUMBER_OF_REACTION_COMPONENTS],
-            production_term: [0.0; NUMBER_OF_REACTION_COMPONENTS],
-            degradation_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
-            secretion_rate: [0.0; NUMBER_OF_REACTION_COMPONENTS],
-            uptake_rate: [0.05; NUMBER_OF_REACTION_COMPONENTS],
-            */
             // SIMULATION FLOW SETTINGS
             n_times: 20_001,
             dt,
