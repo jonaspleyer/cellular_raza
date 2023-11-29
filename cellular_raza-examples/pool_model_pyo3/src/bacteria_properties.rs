@@ -28,7 +28,6 @@ pub struct Bacteria {
 #[pyclass(get_all, set_all)]
 pub struct BacteriaInteraction {
     pub potential_strength: f64,
-    pub relative_interaction_range: f64,
     pub cell_radius: f64,
 }
 
@@ -54,14 +53,14 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = ext_pos - own_pos;
         let r = z.norm();
-        let sigma = r/(self.cell_radius + ext_radius);
+        let sigma = r / (self.cell_radius + ext_radius);
         if sigma < 1.0 {
             let q = 0.2;
             let dir = z.normalize();
-            let modifier = (1.0+q)/(q + sigma);
-            return Some(Ok(self.potential_strength * dir * modifier))
+            let modifier = (1.0 + q) / (q + sigma);
+            return Some(Ok(self.potential_strength * dir * modifier));
         } else {
-            return Some(Ok(Vector2::zero()))
+            return Some(Ok(Vector2::zero()));
         }
     }
 }

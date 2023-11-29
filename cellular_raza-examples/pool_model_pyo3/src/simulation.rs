@@ -105,7 +105,6 @@ impl SimulationSettings {
                 py,
                 BacteriaInteraction {
                     potential_strength: 0.02,
-                    relative_interaction_range: 1.0,
                     cell_radius: bacteria_radius,
                 },
             )?,
@@ -229,7 +228,7 @@ pub fn run_simulation(
         None => CartesianCuboid2::from_boundaries_and_interaction_ranges(
             [0.0; 2],
             [simulation_settings.domain_size; 2],
-            [3.0 * interaction.relative_interaction_range * interaction.cell_radius; 2],
+            [2.0 * interaction.cell_radius; 2],
         ),
     }
     .or_else(|e| {
