@@ -59,45 +59,17 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
         _ext_vel: &Vector2<f64>,
         ext_radius: &f64,
     ) -> Option<Result<Vector2<f64>, CalcError>> {
-        let min_relative_distance_to_center = 0.3162277660168379;
-        let (r, dir) =
-            match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
-                false => {
-                    let z = own_pos - ext_pos;
-                    let r = z.norm();
-                    (r, z.normalize())
-                }
-                true => {
-                    let dir = match own_pos == ext_pos {
-                        true => {
-                            return None;
-                        }
-                        false => (own_pos - ext_pos).normalize(),
-                    };
-                    let r = self.cell_radius * min_relative_distance_to_center;
-                    (r, dir)
-                }
-            };
-        // Introduce Non-dimensional length variable
-        let sigma = r / (self.cell_radius + ext_radius);
-        let bound = 4.0 + 1.0 / sigma;
-
-        let spatial_cutoff = (1.0
-            + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r).signum())
-            * 0.5;
-
-        // Calculate the strength of the interaction with correct bounds
-        let strength = self.potential_strength
-            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
-                .min(bound)
-                .max(-bound);
-
-        // Calculate only attracting and repelling forces
-        // let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        // let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
-
-        // Some(Ok(repelling_force + attracting_force))
-        Some(Ok(dir * strength * spatial_cutoff))
+        let z = ext_pos - own_pos;
+        let r = z.norm();
+        let sigma = r/(self.cell_radius + ext_radius);
+        if sigma < 1.0 {
+            let q = 0.2;
+            let dir = z.normalize();
+            let modifier = (1.0+q)/(q + sigma);
+            return Some(Ok(self.potential_strength * dir * modifier))
+        } else {
+            return Some(Ok(Vector2::zero()))
+        }
     }
 }
 
