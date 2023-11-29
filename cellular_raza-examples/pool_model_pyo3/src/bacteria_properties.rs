@@ -68,8 +68,6 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaCycle {
-    /// Consumption of food over a period of time. In units $\frac{\text{food}}{\text{time}}$.
-    pub food_consumption: f64,
     /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
     pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
@@ -81,13 +79,11 @@ pub struct BacteriaCycle {
 impl BacteriaCycle {
     #[new]
     pub fn new(
-        food_consumption: f64,
         food_to_volume_conversion: f64,
         volume_division_threshold: f64,
         lag_phase_transition_rate: f64,
     ) -> Self {
         BacteriaCycle {
-            food_consumption,
             food_to_volume_conversion,
             volume_division_threshold,
             lag_phase_transition_rate,
@@ -122,21 +118,31 @@ impl Cycle<Bacteria> for BacteriaCycle {
         }
         // Grow the cell if we are not in lag phase
         else {
-            // Calculate how much food was consumed. Also make sure that we do not take away
-            // more than was inside the cell and that is always a positive amount
-            let mut food_consumed = cell.cellular_reactions.intracellular_concentrations[0];
-            food_consumed = food_consumed.min(cell.cycle.food_consumption * dt);
-            food_consumed = food_consumed.max(0.0);
+            let cell_volume = cell.get_volume();
+            // Calculate available food
+            let food_available =
+                cell.cellular_reactions.intracellular_concentrations[0] * cell_volume;
 
-            // Reduce intracellular amount by the calculated consumed food
-            cell.cellular_reactions.intracellular_concentrations[0] -= food_consumed;
+            // Calculate the total volume increment from the available food
+            let volume_increment_available = food_available * cell.cycle.food_to_volume_conversion;
 
-            // Calculate the volume and from this the radial increment
-            let volume_increment = cell.cycle.food_to_volume_conversion * food_consumed;
-            let radial_increment = (volume_increment / std::f64::consts::PI).powf(0.5);
+            // Calculate the actual increment we will do
+            // It is either the total increment or by the difference to volume_division_threshold.
+            // The last condition makes sure that we have not already exceeded the division threshold
+            let volume_increment = volume_increment_available
+                .min((cell.cycle.volume_division_threshold - cell_volume).max(0.0));
 
-            // Set the cells radius and mass
+            // Grow the cell
+            let radial_increment = (volume_increment / std::f64::consts::PI).sqrt();
             cell.interaction.cell_radius += radial_increment;
+
+            // Reduce intracellular amount by the calculated consumed food.
+            // Notice that we still divide by the old cell volume and not
+            // the newer one which originates from the increased radius.
+            let food_consumed = volume_increment / cell.cycle.food_to_volume_conversion;
+            cell.cellular_reactions.intracellular_concentrations[0] -= food_consumed / cell_volume;
+
+            // Set the cells new mass. Now we use the new volume
             cell.mechanics.mass = cell.volume_to_mass(cell.get_volume());
         }
 
@@ -157,10 +163,8 @@ impl Cycle<Bacteria> for BacteriaCycle {
         let r = c1.interaction.cell_radius;
 
         // Make both cells smaller
-        // ALso keep old cell larger
-        let relative_size_difference = 0.0;
-        c1.interaction.cell_radius *= (1.0 + relative_size_difference) / std::f64::consts::SQRT_2;
-        c2.interaction.cell_radius *= (1.0 - relative_size_difference) / std::f64::consts::SQRT_2;
+        c1.interaction.cell_radius /= std::f64::consts::SQRT_2;
+        c2.interaction.cell_radius /= std::f64::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
         let angle_1 = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
@@ -171,12 +175,11 @@ impl Cycle<Bacteria> for BacteriaCycle {
         let offset = dir_vec * r / std::f64::consts::SQRT_2;
         let old_pos = c1.pos();
 
-        // Reduce the food present in the bacteria
-        // let reduce = 0.5*c1.cycle.volume_division_threshold/c1.cycle.food_to_volume_conversion;
-        // c1.cellular_reactions.intracellular_concentrations[0] -= (1.0 + relative_size_difference) * reduce;
-        // c2.cellular_reactions.intracellular_concentrations[0] -= (1.0 - relative_size_difference) * reduce;
-        c1.cellular_reactions.intracellular_concentrations[0] = 0.0;
-        c2.cellular_reactions.intracellular_concentrations[0] = 0.0;
+        // Increase the remaining food in the bacteria by the fraction of volumes
+        // from before and after the division. This exactly coincides with factor 2
+        // since we half the volume of the cell
+        c1.cellular_reactions.intracellular_concentrations[0] *= 2.0;
+        c2.cellular_reactions.intracellular_concentrations[0] *= 2.0;
 
         c1.set_pos(&(old_pos + offset));
         c2.set_pos(&(old_pos - offset));
@@ -188,6 +191,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[pyclass]
 pub struct BacteriaReactions {
+    #[pyo3(get, set)]
     pub lag_phase_active: bool,
     pub intracellular_concentrations: ReactionVector,
     pub uptake_rates: ReactionVector,
@@ -259,11 +263,13 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
             return Ok((ReactionVector::zero(), ReactionVector::zero()));
         }
 
-        let inhib = self.inhibitions
+        let inhib = self
+            .inhibitions
             .component_mul(&external_concentration_vector)
             .add_scalar(1.0);
 
-        let inc_int = self.uptake_rates
+        let inc_int = self
+            .uptake_rates
             .component_mul(&external_concentration_vector)
             .component_div(&inhib);
 

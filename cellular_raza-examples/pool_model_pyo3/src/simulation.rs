@@ -103,10 +103,9 @@ impl SimulationSettings {
             bacteria_cycle: Py::new(
                 py,
                 BacteriaCycle {
-                    food_consumption: 0.001 / dt,
                     food_to_volume_conversion: 0.001,
-                    volume_division_threshold: 1.5 * bacteria_volume,
-                    lack_phase_transition_rate: 0.0005,
+                    volume_division_threshold: 2.0 * bacteria_volume,
+                    lag_phase_transition_rate: 0.0005,
                 },
             )?,
 
