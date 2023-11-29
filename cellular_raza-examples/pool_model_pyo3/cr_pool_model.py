@@ -6,10 +6,8 @@ from cr_pool_model_pyo3 import *
 import multiprocessing as mp
 import numpy as np
 from types import SimpleNamespace
-import pyvista as pv
 import matplotlib.pyplot as plt
 import tqdm
-import copy
 
 
 def get_last_output_path(name = "pool_model"):
