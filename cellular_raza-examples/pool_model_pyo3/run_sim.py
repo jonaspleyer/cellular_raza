@@ -25,7 +25,7 @@ simulation_settings.bacteria_reactions.uptake_rate = [0.002]
 simulation_settings.bacteria_reactions.intracellular_concentrations = [0]
 
 # Bacteria - Cycle
-simulation_settings.bacteria_cycle.lack_phase_transition_rate = 0.00001
+simulation_settings.bacteria_cycle.lag_phase_transition_rate = 0.0001
 
 # General Settings
 simulation_settings.n_threads = 1

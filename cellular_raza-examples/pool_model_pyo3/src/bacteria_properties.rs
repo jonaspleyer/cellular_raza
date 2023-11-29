@@ -110,7 +110,7 @@ pub struct BacteriaCycle {
     pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
-    pub lack_phase_transition_rate: f64,
+    pub lag_phase_transition_rate: f64,
 }
 
 #[pymethods]
@@ -120,13 +120,13 @@ impl BacteriaCycle {
         food_consumption: f64,
         food_to_volume_conversion: f64,
         volume_division_threshold: f64,
-        lack_phase_transition_rate: f64,
+        lag_phase_transition_rate: f64,
     ) -> Self {
         BacteriaCycle {
             food_consumption,
             food_to_volume_conversion,
             volume_division_threshold,
-            lack_phase_transition_rate,
+            lag_phase_transition_rate,
         }
     }
 }
@@ -150,10 +150,10 @@ impl Cycle<Bacteria> for BacteriaCycle {
     ) -> Option<CycleEvent> {
         use rand::Rng;
         // Check if we are in lag phase and if so check if we want to convert to active state
-        if cell.cellular_reactions.lack_phase_active {
-            let p = rng.gen_bool(dt * cell.cycle.lack_phase_transition_rate);
+        if cell.cellular_reactions.lag_phase_active {
+            let p = rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate);
             if p {
-                cell.cellular_reactions.lack_phase_active = false;
+                cell.cellular_reactions.lag_phase_active = false;
             }
         }
         // Grow the cell if we are not in lag phase

@@ -44,7 +44,7 @@ We transition with the probability $p=lambda Delta t$ from the lag-phase to the 
 ```rs
 let q = rng.gen_range(0.0..1.0);
 if q <= self.transition_rate * dt {
-    self.is_in_lack_phase = false;
+    self.is_in_lag_phase = false;
 }
 ```
 Afterwards, we divide regularly as long as enough nutrients are present
