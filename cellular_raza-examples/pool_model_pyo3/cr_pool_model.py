@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import tqdm
 import matplotlib
 from matplotlib import pyplot as plt
+import gc
 
 
 def get_last_output_path(name = "pool_model"):
@@ -175,6 +176,9 @@ def save_snapshot(output_path, iteration, overwrite=False):
     del df_cells
     del df_voxels
     del positions
+    del fig
+    del ax
+    gc.collect()
 
 
 def __save_snapshot_helper(all_args):
