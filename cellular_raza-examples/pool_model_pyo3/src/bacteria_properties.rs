@@ -24,7 +24,7 @@ pub struct Bacteria {
     pub interactionextracellulargradient: GradientSensing,
 }
 
-#[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaInteraction {
     pub potential_strength: f64,
