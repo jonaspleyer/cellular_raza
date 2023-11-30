@@ -539,7 +539,7 @@ where
         // Format the current time if feature is active
         #[cfg(feature = "timestamp")]
         let storage_location = if setup.storage.add_date {
-            let date = chrono::Local::now().format("%Y-%m-%d-%H:%M:%S");
+            let date = chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S");
             storage_location.join(format!("{}", date))
         } else {
             storage_location
