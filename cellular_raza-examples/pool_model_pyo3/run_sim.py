@@ -3,13 +3,13 @@ from cr_pool_model_pyo3 import *
 simulation_settings = SimulationSettings()
 
 # Domain
-simulation_settings.domain.size = 1_000
+simulation_settings.domain.size = 250
 
 simulation_settings.domain.initial_concentrations = [2.0, 0]
 simulation_settings.domain.diffusion_constants = [1.0, 0]
 
 # Bacteria - General
-simulation_settings.n_bacteria_initial = 250
+simulation_settings.n_bacteria_initial = 1
 
 # Bacteria - Interaction & Mechanics
 simulation_settings.bacteria_mechanics.kb_temperature = 0.01

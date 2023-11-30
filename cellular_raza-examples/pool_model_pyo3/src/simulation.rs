@@ -57,8 +57,8 @@ pub struct SimulationSettings {
 impl SimulationSettings {
     #[new]
     fn new(py: Python) -> PyResult<Self> {
-        let domain_size = 1_000.0;
-        let bacteria_radius: f64 = 6.0;
+        let domain_size = 250.0;
+        let bacteria_radius: f64 = 1.5;
         let bacteria_volume = std::f64::consts::PI * bacteria_radius.powf(2.0);
 
         Ok(Self {
