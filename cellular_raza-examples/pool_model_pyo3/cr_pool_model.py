@@ -147,13 +147,14 @@ def save_snapshot(output_path, iteration, overwrite=False):
 
     # Plot rectangles for background
     # Create color mapper for background
-    nutrients_min = 0.0
+    nutrients_min = -0.2*simulation_settings.domain.initial_concentrations[0]
+    nutrients_max = simulation_settings.domain.initial_concentrations[0]
     norm2 = matplotlib.colors.Normalize(
         vmin=nutrients_min,
-        vmax=simulation_settings.domain.initial_concentrations[0],
+        vmax=nutrients_max,
         clip=True
     )
-    mapper2 = matplotlib.cm.ScalarMappable(norm=norm2, cmap=matplotlib.cm.cividis)
+    mapper2 = matplotlib.cm.ScalarMappable(norm=norm2, cmap=matplotlib.cm.grey)
 
     # Helper function to plot a single rectangle patch onto the canvas
     def plot_rectangle(entry):
@@ -187,6 +188,30 @@ def save_snapshot(output_path, iteration, overwrite=False):
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
+    # Calculate labels and dimensions for length scale
+    x_locs = ax.get_xticks()
+    y_locs = ax.get_yticks()
+
+    x_low = np.min(x_locs[x_locs>0])/4
+    y_low = np.min(y_locs[y_locs>0])/4
+    dy = (y_locs[1]-y_locs[0])/10
+    dx = (x_locs[1] - x_locs[0])/2
+
+    # Plot three rectangles as a length scale
+    rectangle1 = matplotlib.patches.Rectangle([x_low,        y_low], width=dx, height=dy, facecolor="grey", edgecolor="black")
+    rectangle2 = matplotlib.patches.Rectangle([x_low +   dx, y_low], width=dx, height=dy, facecolor="white", edgecolor="black")
+    rectangle3 = matplotlib.patches.Rectangle([x_low + 2*dx, y_low], width=dx, height=dy, facecolor="grey", edgecolor="black")
+    rectangle4 = matplotlib.patches.Rectangle([x_low,   dy + y_low], width=3*dx, height=dy, facecolor="white", edgecolor="black")
+    ax.add_patch(rectangle1)
+    ax.add_patch(rectangle2)
+    ax.add_patch(rectangle3)
+    ax.add_patch(rectangle4)
+    ax.annotate(f"{dx:5.0f}µm", (x_low +   dx/2, y_low+dy/2), ha='center', va='center')
+    ax.annotate(f"{dx:5.0f}µm", (x_low + 3*dx/2, y_low+dy/2), ha='center', va='center')
+    ax.annotate(f"{dx:5.0f}µm", (x_low + 5*dx/2, y_low+dy/2), ha='center', va='center')
+    # Create rectangle to show number of agents
+    ax.annotate(f"Agents: {len(positions):10.0f}", (x_low+3*dx/2, y_low+3*dy/2), ha='center', va='center')
+
     # Save figure and cut off excess white space
     fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
 
@@ -210,6 +235,6 @@ def save_all_snapshots(output_path: Path, threads=1, show_bar=True, **kwargs):
     all_args = [((output_path, iteration), kwargs) for iteration in get_all_iterations(output_path)]
     chunksize = max(int(len(all_args)/threads), 5)
     if show_bar:
-        _ = list(tqdm.tqdm(mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize), total=len(all_args)))
+        _ = list(tqdm.tqdm(mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize), total=np.ceil(len(all_args)/chunksize)))
     else:
         mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize)
