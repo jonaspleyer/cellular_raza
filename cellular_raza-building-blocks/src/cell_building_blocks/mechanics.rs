@@ -138,58 +138,6 @@ impl<F> core::ops::Mul<F> for NoVelocity {
     }
 }
 
-/// Brownian motion of particles represented by a spherical potential in arbitrary dimension.
-///
-/// # Parameters
-/// | Symbol | Parameter | Description |
-/// | --- | --- | --- |
-/// | $\vec{x}$ | `pos` | Position of the particle. |
-/// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
-/// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-/// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
-///
-/// # Position Update
-/// We integrate the standard brownian motion stochastic differential equation.
-/// \\begin{equation}
-///     \dot{\vec{x}} = -\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)
-/// \\end{equation}
-/// The variable `update_interval` $n_t$ determines how often a new random direction for travel
-/// is generated.
-/// The new random vector is then also sampled by a distribution with greater width.
-/// If we choose this value larger than one, we can
-/// resolve smaller timesteps to more accurately solve the equations.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Brownian<const D: usize> {
-    /// Current position of the particle $\vec{x}$.
-    pub pos: SVector<f64, D>,
-    /// Diffusion constant $D$.
-    pub diffusion_constant: f64,
-    /// The product of temperature and boltzmann constant $k_B T$.
-    pub kb_temperature: f64,
-    /// The steps it takes for the particle to update its random vector
-    pub update_interval: usize,
-    random_vector: SVector<f64, D>,
-}
-
-impl<const D: usize> Brownian<D> {
-    /// Constructs a new [Brownian] mechanics model for the specified dimension.
-    pub fn new(
-        pos: SVector<f64, D>,
-        diffusion_constant: f64,
-        kb_temperature: f64,
-        update_interval: usize,
-    ) -> Self {
-        use num::Zero;
-        Self {
-            pos,
-            diffusion_constant,
-            kb_temperature,
-            update_interval,
-            random_vector: SVector::<f64, D>::zero(),
-        }
-    }
-}
-
 fn generate_random_vector<const D: usize>(
     rng: &mut rand_chacha::ChaCha8Rng,
     distribution_width: f64,
@@ -202,42 +150,105 @@ fn generate_random_vector<const D: usize>(
     Ok(random_dir)
 }
 
-// TODO use NoVelocity struct
-impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>> for Brownian<D> {
-    fn pos(&self) -> SVector<f64, D> {
-        self.pos
-    }
+macro_rules! implement_brownian_mechanis(
+    ($struct_name:ident, $d:literal) => {
+        /// Brownian motion of particles represented by a spherical potential in arbitrary dimension.
+        ///
+        /// # Parameters
+        /// | Symbol | Parameter | Description |
+        /// | --- | --- | --- |
+        /// | $\vec{x}$ | `pos` | Position of the particle. |
+        /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
+        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+        /// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
+        ///
+        /// # Position Update
+        /// We integrate the standard brownian motion stochastic differential equation.
+        /// \\begin{equation}
+        ///     \dot{\vec{x}} = -\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)
+        /// \\end{equation}
+        /// The variable `update_interval` $n_t$ determines how often a new random direction for travel
+        /// is generated.
+        /// The new random vector is then also sampled by a distribution with greater width.
+        /// If we choose this value larger than one, we can
+        /// resolve smaller timesteps to more accurately solve the equations.
+        #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        pub struct $struct_name {
+            /// Current position of the particle $\vec{x}$.
+            pub pos: SVector<f64, $d>,
+            /// Diffusion constant $D$.
+            pub diffusion_constant: f64,
+            /// The product of temperature and boltzmann constant $k_B T$.
+            pub kb_temperature: f64,
+            /// The steps it takes for the particle to update its random vector
+            pub update_interval: usize,
+            random_vector: SVector<f64, $d>,
+        }
 
-    fn velocity(&self) -> SVector<f64, D> {
-        use num::Zero;
-        SVector::<f64, D>::zero()
-    }
+        #[cfg_attr(feature = "pyo3", pymethods)]
+        impl $struct_name {
+            /// Constructs a new [Brownian] mechanics model for the specified dimension.
+            #[new]
+            pub fn new(
+                pos: [f64; $d],
+                diffusion_constant: f64,
+                kb_temperature: f64,
+                update_interval: usize,
+            ) -> Self {
+                use num::Zero;
+                Self {
+                    pos: pos.into(),
+                    diffusion_constant,
+                    kb_temperature,
+                    update_interval,
+                    random_vector: SVector::<f64, $d>::zero(),
+                }
+            }
+        }
 
-    fn set_pos(&mut self, pos: &SVector<f64, D>) {
-        self.pos = *pos;
-    }
+        // TODO use NoVelocity struct
+        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name {
+            fn pos(&self) -> SVector<f64, $d> {
+                self.pos
+            }
 
-    fn set_velocity(&mut self, _velocity: &SVector<f64, D>) {}
+            fn velocity(&self) -> SVector<f64, $d> {
+                use num::Zero;
+                SVector::<f64, $d>::zero()
+            }
 
-    fn set_random_variable(
-        &mut self,
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64,
-    ) -> Result<Option<f64>, RngError> {
-        self.random_vector = generate_random_vector(rng, self.update_interval as f64 * dt)?;
-        Ok(Some(self.update_interval as f64 * dt))
-    }
+            fn set_pos(&mut self, pos: &SVector<f64, $d>) {
+                self.pos = *pos;
+            }
 
-    fn calculate_increment(
-        &self,
-        force: SVector<f64, D>,
-    ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
-        use num::Zero;
-        let dx = self.diffusion_constant / self.kb_temperature * force
-            + 2_f64.sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
-        Ok((dx, SVector::<f64, D>::zero()))
+            fn set_velocity(&mut self, _velocity: &SVector<f64, $d>) {}
+
+            fn set_random_variable(
+                &mut self,
+                rng: &mut rand_chacha::ChaCha8Rng,
+                dt: f64,
+            ) -> Result<Option<f64>, RngError> {
+                self.random_vector = generate_random_vector(rng, self.update_interval as f64 * dt)?;
+                Ok(Some(self.update_interval as f64 * dt))
+            }
+
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $d>,
+            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                use num::Zero;
+                let dx = self.diffusion_constant / self.kb_temperature * force
+                    + 2_f64.sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
+                Ok((dx, SVector::<f64, $d>::zero()))
+            }
+        }
     }
-}
+);
+
+implement_brownian_mechanis!(Brownian1D, 1);
+implement_brownian_mechanis!(Brownian2D, 2);
+implement_brownian_mechanis!(Brownian3D, 3);
 
 macro_rules! define_langevin_nd(
     ($struct_name:ident, $d:literal) => {
