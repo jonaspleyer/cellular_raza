@@ -39,11 +39,7 @@ def _convert_entries(df, element_path):
         df["element.id"] = df["element.id"].apply(lambda x: np.array(x))
         df["element.cell.mechanics.pos"] = df["element.cell.mechanics.pos"].apply(lambda x: np.array(x))
         df["element.cell.mechanics.vel"] = df["element.cell.mechanics.vel"].apply(lambda x: np.array(x))
-        df["element.cell.mechanics.random_vector"] = df["element.cell.mechanics.random_vector"].apply(lambda x: np.array(x))
         df["element.cell.cellular_reactions.intracellular_concentrations"] = df["element.cell.cellular_reactions.intracellular_concentrations"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.production_rates"] = df["element.cell.cellular_reactions.production_rates"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.uptake_rates"] = df["element.cell.cellular_reactions.uptake_rates"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.inhibitions"] = df["element.cell.cellular_reactions.inhibitions"].apply(lambda x: np.array(x))
         df["element.cell.interactionextracellulargradient"] = df["element.cell.interactionextracellulargradient"].apply(lambda x: np.array(x))
 
     if element_path == "voxel_storage":
@@ -124,16 +120,17 @@ def save_snapshot(output_path, iteration, overwrite=False):
     # Get positions as large numpy array
     positions = np.array([np.array(x) for x in df_cells["element.cell.mechanics.pos"]])
     s = np.array([x for x in df_cells["element.cell.interaction.cell_radius"]])
-    c = np.array([x for x in df_cells["element.cell.cellular_reactions.intracellular_concentrations"]])[:,1]
+    # c = np.array([x for x in df_cells["element.cell.cellular_reactions.intracellular_concentrations"]])[:,1]
+    c = ["#252B33" if x else "#D14027" for x in df_cells["element.cell.cellular_reactions.species"]=="S1"]
 
     # Create a new norm for generating colors from matplotlib colorscales
-    norm = matplotlib.colors.Normalize(
-        vmin=0,
-        vmax=c.max(),
-        clip=True,
-    )
-    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=matplotlib.cm.summer)
-    c = mapper.to_rgba(c.max() - c)
+    # norm = matplotlib.colors.Normalize(
+    #     vmin=0,
+    #     vmax=c.max(),
+    #     clip=True,
+    # )
+    # mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=matplotlib.cm.summer)
+    # c = mapper.to_rgba(c.max() - c)
 
     # Define limits for domain from simulation settings
     xlims = np.array([0.0, simulation_settings.domain.size])
