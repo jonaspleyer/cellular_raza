@@ -39,7 +39,8 @@ pub struct SimulationSettings {
     pub domain: Py<Domain>,
 
     // BACTERIA SETTINGS
-    pub n_bacteria_initial: usize,
+    pub n_bacteria_initial_1: usize,
+    pub n_bacteria_initial_2: usize,
     pub bacteria_mechanics: Py<NewtonDamped2D>,
     pub bacteria_interaction: Py<BacteriaInteraction>,
     pub bacteria_cycle: Py<BacteriaCycle>,
@@ -80,7 +81,8 @@ impl SimulationSettings {
             )?,
 
             // BACTERIA SETTINGS
-            n_bacteria_initial: 250,
+            n_bacteria_initial_1: 5,
+            n_bacteria_initial_2: 5,
 
             bacteria_mechanics: Py::new(
                 py,
@@ -106,7 +108,8 @@ impl SimulationSettings {
                 BacteriaCycle {
                     food_to_volume_conversion: 1e-5,
                     volume_division_threshold: 2.0 * bacteria_volume,
-                    lag_phase_transition_rate: 0.0001,
+                    lag_phase_transition_rate_1: 0.005,
+                    lag_phase_transition_rate_2: 0.008,
                 },
             )?,
 
@@ -173,20 +176,24 @@ pub fn run_simulation(
         simulation_settings.bacteria_reactions.extract(py)?;
     let domain_setup: Domain = simulation_settings.domain.extract(py)?;
 
-    let cells = (0..simulation_settings.n_bacteria_initial)
-        .map(|_| {
+    let cells = (0..simulation_settings.n_bacteria_initial_1+simulation_settings.n_bacteria_initial_2)
+        .map(|n_cell| {
             let x = rng.gen_range(0.0..domain_setup.size);
             let y = rng.gen_range(0.0..domain_setup.size);
 
             // Set new position of bacteria
             let pos = Vector2::from([x, y]);
             let mut mechanics_new = mechanics.clone();
+            let mut cellular_reactions_new = cellular_reactions.clone();
+            if n_cell >= simulation_settings.n_bacteria_initial_1 {
+                cellular_reactions_new.species = Species::S2;
+            }
             mechanics_new.set_pos(&pos);
             Ok(Bacteria {
                 mechanics: mechanics_new,
                 cycle: cycle.clone(),
                 interaction: interaction.clone(),
-                cellular_reactions: cellular_reactions.clone(),
+                cellular_reactions: cellular_reactions_new,
                 interactionextracellulargradient: GradientSensing,
             })
         })
