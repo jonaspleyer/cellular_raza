@@ -15,6 +15,7 @@ fn cr_pool_model_pyo3(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<BacteriaInteraction>()?;
     m.add_class::<cellular_raza::building_blocks::cell_building_blocks::mechanics::Langevin2D>()?;
     m.add_class::<BacteriaReactions>()?;
+    m.add_class::<Species>()?;
 
     Ok(())
 }

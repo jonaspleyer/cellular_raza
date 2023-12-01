@@ -114,6 +114,8 @@ impl SimulationSettings {
                 py,
                 BacteriaReactions {
                     lag_phase_active: true,
+                    // By default we make the cells species 1
+                    species: Species::S1,
                     intracellular_concentrations: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
                     production_rates: [0.0, 0.0].into(),
                     uptake_rates: [0.01, 0.0].into(),

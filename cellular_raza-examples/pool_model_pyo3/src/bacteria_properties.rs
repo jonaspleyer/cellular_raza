@@ -191,11 +191,20 @@ impl Cycle<Bacteria> for BacteriaCycle {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[pyclass]
+pub enum Species {
+    S1,
+    S2
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[pyclass]
 pub struct BacteriaReactions {
     #[pyo3(get, set)]
     pub lag_phase_active: bool,
+    #[pyo3(get, set)]
+    pub species: Species,
     pub intracellular_concentrations: ReactionVector,
     pub uptake_rates: ReactionVector,
     pub production_rates: ReactionVector,
@@ -240,6 +249,7 @@ impl BacteriaReactions {
     #[new]
     pub fn new(
         lag_phase_active: bool,
+        species: Species,
         intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
         uptake_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
         production_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
@@ -247,6 +257,7 @@ impl BacteriaReactions {
     ) -> Self {
         Self {
             lag_phase_active,
+            species,
             intracellular_concentrations: intracellular_concentrations.into(),
             uptake_rates: uptake_rates.into(),
             production_rates: production_rates.into(),
