@@ -195,19 +195,24 @@ def save_snapshot(output_path, iteration, overwrite=False):
     dx = (x_locs[1] - x_locs[0])/2
 
     # Plot three rectangles as a length scale
-    rectangle1 = matplotlib.patches.Rectangle([x_low,        y_low], width=dx, height=dy, facecolor="grey", edgecolor="black")
-    rectangle2 = matplotlib.patches.Rectangle([x_low +   dx, y_low], width=dx, height=dy, facecolor="white", edgecolor="black")
-    rectangle3 = matplotlib.patches.Rectangle([x_low + 2*dx, y_low], width=dx, height=dy, facecolor="grey", edgecolor="black")
-    rectangle4 = matplotlib.patches.Rectangle([x_low,   dy + y_low], width=3*dx, height=dy, facecolor="white", edgecolor="black")
+    rectangle1 = matplotlib.patches.Rectangle([x_low,                y_low], width=    dx, height=dy, facecolor="grey", edgecolor="black")
+    rectangle2 = matplotlib.patches.Rectangle([x_low +     dx,       y_low], width=    dx, height=dy, facecolor="white", edgecolor="black")
+    rectangle3 = matplotlib.patches.Rectangle([x_low +   2*dx,       y_low], width=    dx, height=dy, facecolor="grey", edgecolor="black")
+    rectangle4 = matplotlib.patches.Rectangle([x_low,           dy + y_low], width=1.5*dx, height=dy, facecolor="white", edgecolor="black")
+    rectangle5 = matplotlib.patches.Rectangle([x_low + 1.5*dx,  dy + y_low], width=1.5*dx, height=dy, facecolor="white", edgecolor="black")
     ax.add_patch(rectangle1)
     ax.add_patch(rectangle2)
     ax.add_patch(rectangle3)
     ax.add_patch(rectangle4)
+    ax.add_patch(rectangle5)
     ax.annotate(f"{dx:5.0f}µm", (x_low +   dx/2, y_low+dy/2), ha='center', va='center')
     ax.annotate(f"{dx:5.0f}µm", (x_low + 3*dx/2, y_low+dy/2), ha='center', va='center')
     ax.annotate(f"{dx:5.0f}µm", (x_low + 5*dx/2, y_low+dy/2), ha='center', va='center')
     # Create rectangle to show number of agents
-    ax.annotate(f"Agents: {len(positions):10.0f}", (x_low+3*dx/2, y_low+3*dy/2), ha='center', va='center')
+    n_bacteria_1 = np.sum(df_cells["element.cell.cellular_reactions.species"]=="S1")
+    n_bacteria_2 = len(positions) - n_bacteria_1
+    ax.annotate(f"Agents: S1 {n_bacteria_1:6.0f}", (x_low+1.5*dx/2, y_low+3*dy/2), ha='center', va='center')
+    ax.annotate(f"Agents: S2 {n_bacteria_2:6.0f}", (x_low+4.5*dx/2, y_low+3*dy/2), ha='center', va='center')
 
     # Save figure and cut off excess white space
     fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
