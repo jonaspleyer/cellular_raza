@@ -13,7 +13,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 #[pyclass(get_all, set_all)]
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
-    pub mechanics: Langevin2D,
+    pub mechanics: NewtonDamped2D,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
     pub interaction: BacteriaInteraction,
     #[Cycle]

@@ -40,7 +40,7 @@ pub struct SimulationSettings {
 
     // BACTERIA SETTINGS
     pub n_bacteria_initial: usize,
-    pub bacteria_mechanics: Py<Langevin2D>,
+    pub bacteria_mechanics: Py<NewtonDamped2D>,
     pub bacteria_interaction: Py<BacteriaInteraction>,
     pub bacteria_cycle: Py<BacteriaCycle>,
     pub bacteria_reactions: Py<BacteriaReactions>,
@@ -84,14 +84,12 @@ impl SimulationSettings {
 
             bacteria_mechanics: Py::new(
                 py,
-                Langevin2D::new(
-                    [0.0; 2], // pos
-                    [0.0; 2], // vel
-                    // For this field also see the dedicated [volume_to_mass] function!
-                    1.09 * bacteria_volume, // mass
+                // For the mass conversion also see the dedicated [volume_to_mass] function!
+                NewtonDamped2D::new(
+                    [0.0; 2],               // pos
+                    [0.0; 2],               // vel
                     0.5,                    // damping
-                    0.1,                    // kb_temperature
-                    5,                      // update_interval
+                    1.09 * bacteria_volume, // mass
                 ),
             )?,
 
@@ -166,7 +164,7 @@ pub fn run_simulation(
     let mut rng = ChaCha8Rng::seed_from_u64(simulation_settings.random_seed);
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
-    let mechanics: Langevin2D = simulation_settings.bacteria_mechanics.extract(py)?;
+    let mechanics: NewtonDamped2D = simulation_settings.bacteria_mechanics.extract(py)?;
     let cycle: BacteriaCycle = simulation_settings.bacteria_cycle.extract(py)?;
     let interaction: BacteriaInteraction = simulation_settings.bacteria_interaction.extract(py)?;
     let cellular_reactions: BacteriaReactions =
