@@ -161,7 +161,7 @@ fn main() {
 
             let pos = Vector2::from([x, y]);
             ModularCell {
-                mechanics: NewtonDamped {
+                mechanics: NewtonDamped2D {
                     pos,
                     vel: Vector2::zero(),
                     damping_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,

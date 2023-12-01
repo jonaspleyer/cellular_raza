@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType =
-    ModularCell<NewtonDamped<2>, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
+    ModularCell<NewtonDamped2D, CellSpecificInteraction, OwnCycle, OwnReactions, GradientSensing>;
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct CellSpecificInteraction {

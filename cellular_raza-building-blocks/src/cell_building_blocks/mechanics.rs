@@ -9,57 +9,113 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-/// Simple newtonian dynamics governed by mass and damping.
-///
-/// The equation of motion is given by
-/// \\begin{equation}
-///     m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
-/// \\end{equation}
-/// where $\vec{F}$ is calculated by the [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
-/// The parameter $m$ describes the mass of the object while $\lambda$ is the damping constant.
-/// If the cell is growing, we need to increase the mass $m$.
-/// By interacting with the outside world, we can adapt $\lambda$ to external values although this is rarely desirable.
-/// Both operations need to be implemented by other concepts such as [Cycle](cellular_raza_concepts::cycle::Cycle).
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NewtonDamped<const D: usize> {
-    /// Current position $\vec{x}$ given by a vector of dimension `D`.
-    pub pos: SVector<f64, D>,
-    /// Current velocity $\dot{\vec{x}}$ given by a vector of dimension `D`.
-    pub vel: SVector<f64, D>,
-    /// Damping constant $\lambda$.
-    pub damping_constant: f64,
-    /// Mass $m$ of the object.
-    pub mass: f64,
-}
+macro_rules! implement_newton_damped_mechanics(
+    ($struct_name:ident, $d:literal) => {
+        /// Simple newtonian dynamics governed by mass and damping.
+        ///
+        /// The equation of motion is given by
+        /// \\begin{equation}
+        ///     m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
+        /// \\end{equation}
+        /// where $\vec{F}$ is calculated by the
+        /// [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
+        /// The parameter $m$ describes the mass of the object while $\lambda$ is
+        /// the damping constant.
+        /// If the cell is growing, we need to increase the mass $m$.
+        /// By interacting with the outside world, we can adapt $\lambda$ to external values
+        /// although this is rarely desirable.
+        /// Both operations need to be implemented by other concepts such as
+        /// [Cycle](cellular_raza_concepts::cycle::Cycle).
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        pub struct $struct_name {
+            /// Current position $\vec{x}$ given by a vector of dimension `D`.
+            pub pos: SVector<f64, $d>,
+            /// Current velocity $\dot{\vec{x}}$ given by a vector of dimension `D`.
+            pub vel: SVector<f64, $d>,
+            /// Damping constant $\lambda$.
+            pub damping_constant: f64,
+            /// Mass $m$ of the object.
+            pub mass: f64,
+        }
 
-impl<const D: usize> Mechanics<SVector<f64, D>, SVector<f64, D>, SVector<f64, D>>
-    for NewtonDamped<D>
-{
-    fn pos(&self) -> SVector<f64, D> {
-        self.pos
-    }
+        #[cfg(feature = "pyo3")]
+        #[pymethods]
+        impl $struct_name {
+            #[getter]
+            fn get_pos(&self) -> [f64; $d] {
+                self.pos.into()
+            }
 
-    fn velocity(&self) -> SVector<f64, D> {
-        self.vel
-    }
+            #[getter]
+            fn get_vel(&self) -> [f64; $d] {
+                self.vel.into()
+            }
 
-    fn set_pos(&mut self, p: &SVector<f64, D>) {
-        self.pos = *p;
-    }
+            #[getter]
+            fn get_damping_constant(&self) -> f64 {
+                self.damping_constant
+            }
 
-    fn set_velocity(&mut self, v: &SVector<f64, D>) {
-        self.vel = *v;
-    }
+            #[getter]
+            fn get_mass(&self) -> f64 {
+                self.mass
+            }
 
-    fn calculate_increment(
-        &self,
-        force: SVector<f64, D>,
-    ) -> Result<(SVector<f64, D>, SVector<f64, D>), CalcError> {
-        let dx = self.vel;
-        let dv = force / self.mass - self.damping_constant * self.vel;
-        Ok((dx, dv))
+            #[setter]
+            fn set_pos(&mut self, pos: [f64; $d]) {
+                self.pos = pos.into();
+            }
+
+            #[setter]
+            fn set_vel(&mut self, vel: [f64; $d]) {
+                self.vel = vel.into();
+            }
+
+            #[setter]
+            fn set_damping_constant(&mut self, damping_constant: f64) {
+                self.damping_constant = damping_constant;
+            }
+
+            #[setter]
+            fn set_mass(&mut self, mass: f64) {
+                self.mass = mass;
+            }
+        }
+
+        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name
+        {
+            fn pos(&self) -> SVector<f64, $d> {
+                self.pos
+            }
+
+            fn velocity(&self) -> SVector<f64, $d> {
+                self.vel
+            }
+
+            fn set_pos(&mut self, p: &SVector<f64, $d>) {
+                self.pos = *p;
+            }
+
+            fn set_velocity(&mut self, v: &SVector<f64, $d>) {
+                self.vel = *v;
+            }
+
+            fn calculate_increment(
+                &self,
+                force: SVector<f64, $d>,
+            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                let dx = self.vel;
+                let dv = force / self.mass - self.damping_constant * self.vel;
+                Ok((dx, dv))
+            }
+        }
     }
-}
+);
+
+implement_newton_damped_mechanics!(NewtonDamped1D, 1);
+implement_newton_damped_mechanics!(NewtonDamped2D, 2);
+implement_newton_damped_mechanics!(NewtonDamped3D, 3);
 
 /// An empty struct to signalize that no velocity needs to be updated.
 #[derive(Clone, Debug, Deserialize, Serialize)]

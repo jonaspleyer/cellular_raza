@@ -12,7 +12,7 @@
 //! ```rust
 //! # use cellular_raza_building_blocks::prelude::*;
 //! struct MyAgent {
-//!     mechanics: NewtonDamped<2>,
+//!     mechanics: NewtonDamped2D,
 //!     interaction: BoundLennardJones,
 //! }
 //! ```
@@ -26,12 +26,12 @@
 //! #[derive(CellAgent)]
 //! struct MyAgent {
 //!     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
-//!     mechanics: NewtonDamped<2>,
+//!     mechanics: NewtonDamped2D,
 //!     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
 //!     interaction: BoundLennardJones,
 //! }
 //! # let mut agent = MyAgent {
-//! #     mechanics: NewtonDamped {
+//! #     mechanics: NewtonDamped2D {
 //! #         pos: Vector2::<f64>::from([0.0; 2]),
 //! #         vel: Vector2::<f64>::from([0.0; 2]),
 //! #         damping_constant: 0.1,
