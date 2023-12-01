@@ -206,9 +206,12 @@ pub struct BacteriaReactions {
     #[pyo3(get, set)]
     pub species: Species,
     pub intracellular_concentrations: ReactionVector,
-    pub uptake_rates: ReactionVector,
-    pub production_rates: ReactionVector,
-    pub inhibitions: ReactionVector,
+    #[pyo3(get, set)]
+    pub uptake_rate: f64,
+    #[pyo3(get, set)]
+    pub inhibition_production_rate: f64,
+    #[pyo3(get, set)]
+    pub inhibition_coefficient: f64,
 }
 
 #[pymethods]
@@ -221,29 +224,9 @@ impl BacteriaReactions {
         self.intracellular_concentrations = intracellular_concentrations.into();
     }
 
-    #[setter]
-    pub fn set_uptake_rates(&mut self, uptake_rates: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.uptake_rates = uptake_rates.into();
-    }
-
-    #[setter]
-    pub fn set_inhibitions(&mut self, inhibitions: [f64; NUMBER_OF_REACTION_COMPONENTS]) {
-        self.inhibitions = inhibitions.into();
-    }
-
     #[getter]
     pub fn get_intracellular_concentrations(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
         self.intracellular_concentrations.into()
-    }
-
-    #[getter]
-    pub fn get_uptake_rates(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.uptake_rates.into()
-    }
-
-    #[getter]
-    pub fn get_inhibitions(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.inhibitions.into()
     }
 
     #[new]
@@ -251,17 +234,17 @@ impl BacteriaReactions {
         lag_phase_active: bool,
         species: Species,
         intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        uptake_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        production_rates: [f64; NUMBER_OF_REACTION_COMPONENTS],
-        inhibitions: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        uptake_rate: f64,
+        inhibition_production_rate: f64,
+        inhibition_coefficient: f64,
     ) -> Self {
         Self {
             lag_phase_active,
             species,
             intracellular_concentrations: intracellular_concentrations.into(),
-            uptake_rates: uptake_rates.into(),
-            production_rates: production_rates.into(),
-            inhibitions: inhibitions.into(),
+            uptake_rate,
+            inhibition_production_rate,
+            inhibition_coefficient,
         }
     }
 }
@@ -277,19 +260,19 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
             return Ok((ReactionVector::zero(), ReactionVector::zero()));
         }
 
-        let inhib = self
-            .inhibitions
-            .component_mul(&external_concentration_vector)
-            .add_scalar(1.0);
+        let inc_ext = match self.species {
+            // Species 1 does not feel the inhibition but produces it
+            Species::S1 => [-self.uptake_rate * external_concentration_vector[0], self.inhibition_production_rate],
+            // Species 2 feels the inhibition but does not produce it
+            Species::S2 => {
+                let inhib = 1.0 + self.inhibition_coefficient * external_concentration_vector[1];
+                [-self.uptake_rate * external_concentration_vector[0] / inhib, 0.0]
+            },
+        };
 
-        let inc_int = self
-            .uptake_rates
-            .component_mul(&external_concentration_vector)
-            .component_div(&inhib);
+        let inc_int = [-inc_ext[0], 0.0];
 
-        let inc_ext = self.production_rates - inc_int;
-
-        Ok((inc_int, inc_ext))
+        Ok((inc_int.into(), inc_ext.into()))
     }
 
     fn get_intracellular(&self) -> ReactionVector {
