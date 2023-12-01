@@ -88,10 +88,10 @@ impl SimulationSettings {
                     [0.0; 2], // pos
                     [0.0; 2], // vel
                     // For this field also see the dedicated [volume_to_mass] function!
-                    0.1 * bacteria_volume, // mass
-                    0.5,                   // damping
-                    0.1,                   // kb_temperature
-                    5,                     // update_interval
+                    1.09 * bacteria_volume, // mass
+                    0.5,                    // damping
+                    0.1,                    // kb_temperature
+                    5,                      // update_interval
                 ),
             )?,
 
