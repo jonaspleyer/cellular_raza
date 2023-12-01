@@ -51,6 +51,9 @@ pub struct SimulationSettings {
     pub t_start: f64,
     pub save_interval: usize,
     pub n_threads: usize,
+    pub show_progressbar: bool,
+    pub save_path: String,
+    pub save_add_date: bool,
 }
 
 #[pymethods]
@@ -126,6 +129,9 @@ impl SimulationSettings {
             t_start: 0.0,
             save_interval: 1_000,
             n_threads: 1,
+            show_progressbar: true,
+            save_path: "out/pool_model".into(),
+            save_add_date: true,
         })
     }
 
@@ -222,7 +228,8 @@ pub fn run_simulation(
         rng_seed: simulation_settings.random_seed,
     };
 
-    let storage = StorageConfig::from_path(std::path::Path::new("out/pool_model"));
+    let storage = StorageConfig::from_path(std::path::Path::new(&simulation_settings.save_path))
+        .add_date(simulation_settings.save_add_date);
     // storage.export_formats = vec![ExportOptions::Vtk];
 
     let simulation_setup = create_simulation_setup!(
@@ -249,6 +256,7 @@ pub fn run_simulation(
     // let simulation_result = run_full_simulation!(setup, settings, [Mechanics, Interaction, Cycle])?;
     let mut supervisor =
         SimulationSupervisor::initialize_with_strategies(simulation_setup, strategies);
+    supervisor.config.show_progressbar = simulation_settings.show_progressbar;
 
     save_simulation_settings(&supervisor.storage.get_location(), &simulation_settings)?;
 
