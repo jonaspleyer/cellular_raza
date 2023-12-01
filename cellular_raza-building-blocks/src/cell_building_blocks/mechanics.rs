@@ -42,6 +42,24 @@ macro_rules! implement_newton_damped_mechanics(
         #[cfg(feature = "pyo3")]
         #[pymethods]
         impl $struct_name {
+            #[doc = "Create a new "]
+            #[doc = stringify!($struct_name)]
+            /// from position, velocity, damping constant and mass
+            #[new]
+            pub fn new(
+                pos: [f64; $d],
+                vel: [f64; $d],
+                damping_constant: f64,
+                mass: f64,
+            ) -> Self {
+                Self {
+                    pos: pos.into(),
+                    vel: vel.into(),
+                    damping_constant,
+                    mass,
+                }
+            }
+
             #[getter]
             fn get_pos(&self) -> [f64; $d] {
                 self.pos.into()
