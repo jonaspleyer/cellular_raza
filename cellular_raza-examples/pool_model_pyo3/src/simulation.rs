@@ -59,19 +59,9 @@ impl Domain {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
-pub struct SimulationSettings {
+pub struct MetaParams {
+    // General Settings
     pub random_seed: u64,
-
-    // DOMAIN SETTINGS
-    pub domain: Py<Domain>,
-
-    // BACTERIA SETTINGS
-    pub n_bacteria_initial_1: usize,
-    pub n_bacteria_initial_2: usize,
-    pub bacteria_mechanics: Py<NewtonDamped2D>,
-    pub bacteria_interaction: Py<BacteriaInteraction>,
-    pub bacteria_cycle: Py<BacteriaCycle>,
-    pub bacteria_reactions: Py<BacteriaReactions>,
 
     // SIMULATION FLOW SETTINGS
     pub n_times: usize,
@@ -85,83 +75,40 @@ pub struct SimulationSettings {
 }
 
 #[pymethods]
-impl SimulationSettings {
+impl MetaParams {
     #[new]
-    fn new(py: Python) -> PyResult<Self> {
-        let domain_size = 250.0;
-        let bacteria_radius: f64 = 1.5;
-        let bacteria_volume = std::f64::consts::PI * bacteria_radius.powf(2.0);
-
+    #[pyo3(signature = (
+        random_seed=1,
+        n_times=50_001,
+        dt=0.5,
+        t_start=0.0,
+        save_interval=1_000,
+        n_threads=1,
+        show_progressbar=true,
+        save_path="out/pool_model".into(),
+        save_add_date=true,
+    ))]
+    fn new(
+        random_seed: u64,
+        n_times: usize,
+        dt: f64,
+        t_start: f64,
+        save_interval: usize,
+        n_threads: usize,
+        show_progressbar: bool,
+        save_path: String,
+        save_add_date: bool,
+    ) -> PyResult<Self> {
         Ok(Self {
-            random_seed: 1,
-
-            // DOMAIN SETTINGS
-            domain: Py::new(
-                py,
-                Domain {
-                    diffusion_constants: [2.0, 0.2],
-                    initial_concentrations: [1.0, 0.0],
-
-                    size: domain_size,
-                    n_voxels: None,
-                },
-            )?,
-
-            // BACTERIA SETTINGS
-            n_bacteria_initial_1: 5,
-            n_bacteria_initial_2: 5,
-
-            bacteria_mechanics: Py::new(
-                py,
-                // For the mass conversion also see the dedicated [volume_to_mass] function!
-                NewtonDamped2D::new(
-                    [0.0; 2],               // pos
-                    [0.0; 2],               // vel
-                    0.5,                    // damping
-                    1.09 * bacteria_volume, // mass
-                ),
-            )?,
-
-            bacteria_interaction: Py::new(
-                py,
-                BacteriaInteraction {
-                    potential_strength: 0.5,
-                    cell_radius: bacteria_radius,
-                },
-            )?,
-
-            bacteria_cycle: Py::new(
-                py,
-                BacteriaCycle {
-                    food_to_volume_conversion: 1e-5,
-                    volume_division_threshold: 2.0 * bacteria_volume,
-                    lag_phase_transition_rate_1: 0.005,
-                    lag_phase_transition_rate_2: 0.008,
-                },
-            )?,
-
-            bacteria_reactions: Py::new(
-                py,
-                BacteriaReactions {
-                    lag_phase_active: true,
-                    // By default we make the cells species 1
-                    species: Species::S1,
-                    intracellular_concentrations: [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
-                    uptake_rate: 0.01,
-                    inhibition_production_rate: 0.1,
-                    inhibition_coefficient: 0.1,
-                },
-            )?,
-
-            // SIMULATION FLOW SETTINGS
-            n_times: 50_001,
-            dt: 0.5,
-            t_start: 0.0,
-            save_interval: 1_000,
-            n_threads: 1,
-            show_progressbar: true,
-            save_path: "out/pool_model".into(),
-            save_add_date: true,
+            random_seed,
+            n_times,
+            dt,
+            t_start,
+            save_interval,
+            n_threads,
+            show_progressbar,
+            save_path,
+            save_add_date,
         })
     }
 
