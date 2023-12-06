@@ -283,13 +283,13 @@ fn create_particle_interaction(
         } else {
             simulation_settings.cell_radius_r11
         },
-        simulation_settings.potential_strength_cargo_cargo,
-        simulation_settings.potential_strength_r11_r11,
-        simulation_settings.potential_strength_cargo_r11,
-        simulation_settings.potential_strength_cargo_r11_avidity,
-        simulation_settings.interaction_range_cargo_cargo,
-        simulation_settings.interaction_range_r11_r11,
-        simulation_settings.interaction_range_r11_cargo,
+        simulation_settings.potential_strength_cargo_cargo, // potential_strength_cargo_cargo
+        simulation_settings.potential_strength_r11_r11,   // potential_strength_r11_r11
+        simulation_settings.potential_strength_cargo_r11, // potential_strength_cargo_r11
+        simulation_settings.potential_strength_cargo_r11_avidity, // potential_strength_cargo_r11_avidity
+        simulation_settings.interaction_range_cargo_cargo,        // interaction_range_cargo_cargo
+        simulation_settings.interaction_range_r11_r11,            // interaction_range_r11_r11
+        simulation_settings.interaction_range_r11_cargo,          // interaction_range_r11_cargo
     ))
 }
 
