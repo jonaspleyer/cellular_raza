@@ -63,6 +63,7 @@ def _convert_entries(df, element_path):
 
     return df
 
+
 def get_elements_at_iter(output_path: Path, iteration, element_path="cell_storage"):
     dir = Path(output_path) / element_path / "json"
     run_directory = None
@@ -121,7 +122,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
     positions = np.array([np.array(x) for x in df_cells["element.cell.mechanics.pos"]])
     s = np.array([x for x in df_cells["element.cell.interaction.cell_radius"]])
     # c = np.array([x for x in df_cells["element.cell.cellular_reactions.intracellular_concentrations"]])[:,1]
-    c = ["#252B33" if x else "#D14027" for x in df_cells["element.cell.cellular_reactions.species"]=="S1"]
+    c = ["#24398c" if x else "#8c2424" for x in df_cells["element.cell.cellular_reactions.species"]=="S1"]
 
     # Create a new norm for generating colors from matplotlib colorscales
     # norm = matplotlib.colors.Normalize(
@@ -172,7 +173,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
     # Plot circles for bacteria
     for pos, si, ci in zip(positions, s, c):
         if si!=None:
-            circle = plt.Circle(pos, radius=si, facecolor=ci, edgecolor='k')
+            circle = plt.Circle(pos, radius=si, facecolor=ci, edgecolor=ci)
             ax.add_patch(circle)
         else:
             print("Warning: Skip drawing bacteria with None radius!")
@@ -191,7 +192,7 @@ def save_snapshot(output_path, iteration, overwrite=False):
 
     x_low = np.min(x_locs[x_locs>0])/4
     y_low = np.min(y_locs[y_locs>0])/4
-    dy = (y_locs[1]-y_locs[0])/10
+    dy = (y_locs[1]-y_locs[0])/8
     dx = (x_locs[1] - x_locs[0])/2
 
     # Plot three rectangles as a length scale
@@ -211,8 +212,8 @@ def save_snapshot(output_path, iteration, overwrite=False):
     # Create rectangle to show number of agents
     n_bacteria_1 = np.sum(df_cells["element.cell.cellular_reactions.species"]=="S1")
     n_bacteria_2 = len(positions) - n_bacteria_1
-    ax.annotate(f"Agents: S1 {n_bacteria_1:6.0f}", (x_low+1.5*dx/2, y_low+3*dy/2), ha='center', va='center')
-    ax.annotate(f"Agents: S2 {n_bacteria_2:6.0f}", (x_low+4.5*dx/2, y_low+3*dy/2), ha='center', va='center')
+    ax.annotate(f"Species 1 {n_bacteria_1:5.0f}", (x_low+1.5*dx/2, y_low+3*dy/2), ha='center', va='center')
+    ax.annotate(f"Species 2 {n_bacteria_2:5.0f}", (x_low+4.5*dx/2, y_low+3*dy/2), ha='center', va='center')
 
     # Save figure and cut off excess white space
     fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
