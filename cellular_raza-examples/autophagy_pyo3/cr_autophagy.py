@@ -95,12 +95,12 @@ def generate_spheres(output_path: Path, iteration):
     return spheres_cargo, spheres_r11
 
 
-def save_snapshot(output_path: Path, iteration):
+def save_snapshot(output_path: Path, iteration, overwrite=False):
     simulation_settings = get_simulation_settings(output_path)
     ofolder = Path(output_path) / "snapshots"
     ofolder.mkdir(parents=True, exist_ok=True)
     opath = ofolder / "snapshot_{:08}.png".format(iteration)
-    if os.path.isfile(opath):
+    if os.path.isfile(opath) and not overwrite:
         return
     (cargo, r11) = generate_spheres(output_path, iteration)
 
