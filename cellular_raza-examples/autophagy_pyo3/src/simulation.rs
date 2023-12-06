@@ -7,6 +7,25 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
+/// One Dalton in SI units.
+///
+/// For a full description see [wikipedia](https://en.wikipedia.org/wiki/Dalton_(unit)).
+pub const DALTON: f64 = 1.66053906660e-27;
+
+/// One Angström in SI units.
+///
+/// For a description see [wikipedia](https://en.wikipedia.org/wiki/Angstrom).
+pub const ANGSTROM: f64 = 1e-10;
+
+/// One nanometre in SI units.
+pub const NANOMETRE: f64 = 1e-9;
+
+/// The Boltzmann-constant in SI units.
+pub const BOLTZMANN_CONSTANT: f64 = 1.380649e-23;
+
+/// One Kelvin in SI units
+pub const KELVIN: f64 = 1.0;
+
 /// All settings which can be configured by the Python interface.
 ///
 /// We aim to provide access to even the more lower-level settings
@@ -88,45 +107,58 @@ pub struct SimulationSettings {
 impl SimulationSettings {
     #[new]
     fn new() -> Self {
+        // TODO for the future
+        // let temperature = 300_f64 * KELVIN;
+        // let thermodynamic_energy = BOLTZMANN_CONSTANT * temperature;
+        // TODO for the future
+        // let cell_radius_r11: f64 = 0.5*(22.938 + 16.259) * NANOMETRE;
         let cell_radius_r11: f64 = 1.0;
-        let cell_radius_cargo: f64 = 1.5 * cell_radius_r11;
-        let dt = 0.25;
+        // TODO for the future
+        // let mass_r11 = 135002.0 * DALTON;
+        let mass_r11 = 4.0 / 3.0 * std::f64::consts::PI * cell_radius_r11.powf(3.0);
+        let mass_cargo = 3.0 * mass_r11;
+        let cell_radius_cargo: f64 = 1.0 * cell_radius_r11;
+        let dt = 1.0;
 
         SimulationSettings {
-            n_cells_cargo: 100,
-            n_cells_r11: 300,
+            n_cells_cargo: 200,
+            n_cells_r11: 200,
 
             cell_radius_cargo,
             cell_radius_r11,
 
-            mass_cargo: 4.0 / 3.0 * std::f64::consts::PI * cell_radius_cargo.powf(3.0),
-            mass_r11: 4.0 / 3.0 * std::f64::consts::PI * cell_radius_r11.powf(3.0),
+            mass_cargo,
+            mass_r11,
 
             damping_cargo: 1.5,
             damping_r11: 1.5,
 
             kb_temperature_cargo: 0.0,
-            kb_temperature_r11: 0.002,
+            kb_temperature_r11: 0.003,
 
             update_interval: 5,
 
             potential_strength_cargo_cargo: 0.03,
-            potential_strength_r11_r11: 0.002,
+            potential_strength_r11_r11: 0.001,
             potential_strength_cargo_r11: 0.0,
-            potential_strength_cargo_r11_avidity: 5.0 * 0.03,
+            potential_strength_cargo_r11_avidity: 0.01,
 
-            interaction_range_cargo_cargo: 0.8 * cell_radius_cargo,
-            interaction_range_r11_r11: 0.8 * cell_radius_r11,
-            interaction_range_r11_cargo: 2.0 * cell_radius_cargo,
+            interaction_range_cargo_cargo: 0.4 * (cell_radius_cargo + cell_radius_r11),
+            interaction_range_r11_r11: 0.4 * (cell_radius_cargo + cell_radius_r11),
+            interaction_range_r11_cargo: 0.4 * (cell_radius_cargo + cell_radius_r11),
             dt,
-            n_times: 20_001,
-            save_interval: 50,
+            n_times: 40_001,
+            save_interval: 100,
 
             n_threads: 1,
 
             domain_size: 20.0,
             domain_cargo_radius_max: 6.0,
             domain_r11_radius_min: 6.5,
+            // TODO For the future
+            // domain_size: 100_f64 * NANOMETRE,
+            // domain_cargo_radius_max: 20_f64 * NANOMETRE,
+            // domain_r11_radius_min: 40_f64 * NANOMETRE,
 
             domain_n_voxels: Some(4),
 
