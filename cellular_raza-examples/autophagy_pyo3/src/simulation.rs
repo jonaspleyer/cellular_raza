@@ -61,21 +61,12 @@ pub struct SimulationSettings {
     /// See [CartesianCuboid3]
     pub domain_size: f64,
 
-    /// Lower boundary of the cuboid in which the cargo cells will be placed initially
-    pub domain_cargo_low: [f64; 3],
+    /// Upper bound of the radius in which the cargo particles will be spawned
+    pub domain_cargo_radius_max: f64,
 
-    /// Upper boundary of the cuboid in which the cargo cells will be placed initially
-    pub domain_cargo_high: [f64; 3],
-
-    /// Lower boundary of the cuboid in which the cargo cells will be placed initially
-    pub domain_r11_low: [f64; 3],
-
-    /// Upper boundary of the cuboid in which the cargo cells will be placed initially
-    pub domain_r11_high: [f64; 3],
-
-    /// Determines if the r11 particles will be placed outside of the domain of the
-    /// cargo particles.
-    pub domain_r11_avoid_cargo: bool,
+    /// Minimal radius outside of which r11 particles will be spawned
+    /// Must be smaller than the domain_size
+    pub domain_r11_radius_min: f64,
 
     /// See [CartesianCuboid3]
     pub domain_n_voxels: Option<usize>,
@@ -130,12 +121,10 @@ impl SimulationSettings {
 
             n_threads: 1,
 
-            domain_size: 100.0,
-            domain_cargo_low: [40.0; 3],
-            domain_cargo_high: [60.0; 3],
-            domain_r11_low: [0.0; 3],
-            domain_r11_high: [100.0; 3],
-            domain_r11_avoid_cargo: true,
+            domain_size: 20.0,
+            domain_cargo_radius_max: 6.0,
+            domain_r11_radius_min: 6.5,
+
             domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
@@ -173,98 +162,59 @@ fn generate_particle_pos(
     rng: &mut ChaCha8Rng,
     n: usize,
 ) -> PyResult<[f64; 3]> {
-    let pos = if n < simulation_settings.n_cells_cargo {
-        [
-            rng.gen_range(
-                simulation_settings.domain_cargo_low[0].max(0.0)
-                    ..simulation_settings.domain_cargo_high[0].min(simulation_settings.domain_size),
-            ),
-            rng.gen_range(
-                simulation_settings.domain_cargo_low[1].max(0.0)
-                    ..simulation_settings.domain_cargo_high[1].min(simulation_settings.domain_size),
-            ),
-            rng.gen_range(
-                simulation_settings.domain_cargo_low[2].max(0.0)
-                    ..simulation_settings.domain_cargo_high[2].min(simulation_settings.domain_size),
-            ),
-        ]
-    } else {
-        // We do not want to spawn the R11 particles in the middle where the cargo
-        // will be placed. Thus we calculate where else we can spawn them.
-        let mut loc = [0.0; 3];
-        // Initially choose the location of the R11 particle
-        for i in 0..3 {
-            // Restrict it to at minimum 0.0 and at maximum the size of the domain
-            let low = simulation_settings.domain_r11_low[i].max(0.0);
-            let high = simulation_settings.domain_r11_high[i].min(simulation_settings.domain_size);
-            loc[i] = rng.gen_range(low..high);
-        }
-        if simulation_settings.domain_r11_avoid_cargo {
-            // Determine if the position chosen landed in the cargo region
-            if loc.iter().enumerate().all(|(i, x)| {
-                simulation_settings.domain_cargo_low[i] <= *x
-                    && *x <= simulation_settings.domain_cargo_high[i]
-            }) {
-                // Choose one direction at random
-                let j = rng.gen_range(0_usize..3_usize);
-                // The cargo and r11 intervals must be intercepting
-                // thus we divide the region into 2 subintervals both not containing the
-                // cargo region.
-                let r_low = simulation_settings.domain_r11_low[j].max(0.0);
-                let r_high =
-                    simulation_settings.domain_r11_high[j].min(simulation_settings.domain_size);
-                let c_low = simulation_settings.domain_cargo_low[j].max(0.0);
-                let c_high =
-                    simulation_settings.domain_cargo_high[j].min(simulation_settings.domain_size);
-                // First check that the r11 interval is not completely contained
-                // inside the cargo interval
-                if c_low <= r_low && r_high <= c_high {
-                    return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                        format!(
-                            "Error in definition of cargo and r11 domain while avoiding each other: Cargo_low: {:?} Cargo_high: {:?} R11_low: {:?} R11_high: {:?}",
-                            simulation_settings.domain_cargo_low,
-                            simulation_settings.domain_cargo_high,
-                            simulation_settings.domain_r11_low,
-                            simulation_settings.domain_r11_high,
-                        ),
-                    ));
-                }
-                // Check if the Cargo interval is fully contained in the R11 interval
-                if r_low < c_low && c_high < r_high {
-                    // We now know that we need to create 2 distinct intervals to sample
-                    // for the R11 particle
-                    let i1_low = r_low;
-                    let i1_high = c_low;
-                    let i1_dist = i1_high - i1_low;
-                    let i2_low = c_high;
-                    let i2_high = r_high;
-                    let i2_dist = i2_high - i2_low;
+    let mut generate_position = |lower_radius: f64, upper_radius: f64| -> [f64; 3] {
+        // Calculate middle of simulation domain
+        let domain_half = simulation_settings.domain_size / 2.0;
 
-                    // Calculate the probability to be in interval i1
-                    let p = i1_dist / (i1_dist + i2_dist);
-                    if rng.gen_bool(p) {
-                        // We are in interval i1
-                        loc[j] = rng.gen_range(i1_low..i1_high);
-                    } else {
-                        // We are in interval i2
-                        loc[j] = rng.gen_range(i2_low..i2_high);
-                    }
-                }
-                // Otherwise check if the cargo interval is lower than the R11 interval
-                else if c_low <= r_low {
-                    let i1_low = c_high;
-                    let i1_high = r_high;
-                    loc[j] = rng.gen_range(i1_low..i1_high);
-                }
-                // The only remaining option is r_high <= c_high
-                else {
-                    let i1_low = r_low;
-                    let i1_high = c_low;
-                    loc[j] = rng.gen_range(i1_low..i1_high);
-                }
-            }
-        }
-        loc
+        // Fix the first coordinate
+        let x0_lower = lower_radius.max(0.0);
+        let x0_upper = upper_radius.min(domain_half);
+        let x0_sign = if rng.gen_bool(0.5) { 1.0 } else { -1.0 };
+        let x0 = x0_sign * rng.gen_range(x0_lower..x0_upper);
+
+        // Determine upper and lower bounds for next coordinate
+        let x1_lower_squared = lower_radius.powi(2) - x0.powi(2);
+        let x1_lower = match x1_lower_squared > 0.0 {
+            true => x1_lower_squared.sqrt(),
+            false => 0.0,
+        };
+        let x1_upper_squared = upper_radius.powi(2) - x0.powi(2);
+        let x1_upper = match x1_upper_squared < domain_half.powi(2) {
+            true => x1_upper_squared.sqrt(),
+            false => domain_half,
+        };
+
+        // Fix second coordinate
+        let x1_sign = if rng.gen_bool(0.5) { 1.0 } else { -1.0 };
+        let x1 = x1_sign * rng.gen_range(x1_lower..x1_upper);
+
+        // Determine upper and lower bounds for next coordinate
+        let x2_lower_squared = x1_lower_squared - x1.powi(2);
+        let x2_lower = match x2_lower_squared > 0.0 {
+            true => x2_lower_squared.sqrt(),
+            false => 0.0,
+        };
+
+        let x2_upper_squared = x1_upper_squared - x1.powi(2);
+        let x2_upper = match x2_upper_squared < domain_half.powi(2) {
+            true => x2_upper_squared.sqrt(),
+            false => domain_half,
+        };
+
+        // Fix third coordinate
+        let x2_sign = if rng.gen_bool(0.5) { 1.0 } else { -1.0 };
+        let x2 = x2_sign * rng.gen_range(x2_lower..x2_upper);
+
+        [domain_half + x0, domain_half + x1, domain_half + x2]
+    };
+
+    let pos = if n < simulation_settings.n_cells_cargo {
+        generate_position(0.0, simulation_settings.domain_cargo_radius_max)
+    } else {
+        generate_position(
+            simulation_settings.domain_r11_radius_min,
+            simulation_settings.domain_size,
+        )
     };
     Ok(pos)
 }
