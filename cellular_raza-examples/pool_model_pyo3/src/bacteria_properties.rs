@@ -50,7 +50,7 @@ fn bacteria_default_newton_damped() -> NewtonDamped2D {
 #[pymethods]
 impl BacteriaTemplate {
     // TODO can we do this without using clone? Ie. without memory allocations?
-    fn __repr__ (&self, py: Python) -> PyResult<String> {
+    fn __repr__(&self, py: Python) -> PyResult<String> {
         let bacteria = Bacteria::from(py, self.clone())?;
         Ok(format!("{:#?}", bacteria))
     }
