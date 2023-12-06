@@ -28,6 +28,33 @@ impl Domain {
     fn __repr__(&self) -> String {
         format!("{self:#?}")
     }
+
+    #[new]
+    #[pyo3(signature = (diffusion_constants=[10.0,5.0], initial_concentrations=[2.0, 0.0], size=200.0, n_voxels=None))]
+    fn new(
+        diffusion_constants: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        initial_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        size: f64,
+        n_voxels: Option<usize>,
+    ) -> Self {
+        Self {
+            diffusion_constants,
+            initial_concentrations,
+            size,
+            n_voxels,
+        }
+    }
+
+    /* #[staticmethod]
+    fn default() -> Self {
+        Self {
+            diffusion_constants: [2.0, 0.2],
+            initial_concentrations: [1.0, 0.0],
+
+            size: 250.0,
+            n_voxels: None,
+        }
+    }*/
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

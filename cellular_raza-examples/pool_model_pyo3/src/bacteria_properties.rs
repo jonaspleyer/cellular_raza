@@ -189,6 +189,12 @@ pub struct BacteriaCycle {
 #[pymethods]
 impl BacteriaCycle {
     #[new]
+    #[pyo3(signature = (
+        food_to_volume_conversion=1e-5,
+        volume_division_threshold=2.0*bacteria_default_volume(),
+        lag_phase_transition_rate_1=0.005,
+        lag_phase_transition_rate_2=0.008,
+    ))]
     pub fn new(
         food_to_volume_conversion: f64,
         volume_division_threshold: f64,
@@ -202,19 +208,16 @@ impl BacteriaCycle {
             lag_phase_transition_rate_2,
         }
     }
-}
 
-#[pymethods]
-impl Bacteria {
-    /// We can have a look at this paper https://doi.org/10.1128/jb.148.1.58-63.1981
-    /// and see that the average density of E.Coli is between 1.080 and 1.100 g/ml
-    /// This means we can safely set the density to 1.09
-    pub fn volume_to_mass(&self, volume: f64) -> f64 {
-        1.09 * volume
-    }
-
-    pub fn mass_to_volume(&self, mass: f64) -> f64 {
-        mass / 1.09
+    #[staticmethod]
+    fn default() -> Self {
+        let bacteria_volume = bacteria_default_volume();
+        Self {
+            food_to_volume_conversion: 1e-5,
+            volume_division_threshold: 2.0 * bacteria_volume,
+            lag_phase_transition_rate_1: 0.005,
+            lag_phase_transition_rate_2: 0.008,
+        }
     }
 }
 
@@ -311,7 +314,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
 #[pyclass]
 pub enum Species {
     S1,
-    S2
+    S2,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -346,6 +349,14 @@ impl BacteriaReactions {
     }
 
     #[new]
+    #[pyo3(signature = (
+        lag_phase_active=true,
+        species=Species::S1,
+        intracellular_concentrations=[0.0; NUMBER_OF_REACTION_COMPONENTS],
+        uptake_rate=0.01,
+        inhibition_production_rate=0.1,
+        inhibition_coefficient=0.1,
+    ))]
     pub fn new(
         lag_phase_active: bool,
         species: Species,
@@ -363,6 +374,18 @@ impl BacteriaReactions {
             inhibition_coefficient,
         }
     }
+
+    #[staticmethod]
+    fn default() -> Self {
+        Self::new(
+            true,
+            Species::S1,
+            [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+            0.01,
+            0.1,
+            0.1,
+        )
+    }
 }
 
 impl CellularReactions<ReactionVector> for BacteriaReactions {
@@ -378,12 +401,18 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
 
         let inc_ext = match self.species {
             // Species 1 does not feel the inhibition but produces it
-            Species::S1 => [-self.uptake_rate * external_concentration_vector[0], self.inhibition_production_rate],
+            Species::S1 => [
+                -self.uptake_rate * external_concentration_vector[0],
+                self.inhibition_production_rate,
+            ],
             // Species 2 feels the inhibition but does not produce it
             Species::S2 => {
                 let inhib = 1.0 + self.inhibition_coefficient * external_concentration_vector[1];
-                [-self.uptake_rate * external_concentration_vector[0] / inhib, 0.0]
-            },
+                [
+                    -self.uptake_rate * external_concentration_vector[0] / inhib,
+                    0.0,
+                ]
+            }
         };
 
         let inc_int = [-inc_ext[0], 0.0];
@@ -402,7 +431,7 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
 
 impl Volume for Bacteria {
     fn get_volume(&self) -> f64 {
-        std::f64::consts::PI * self.interaction.cell_radius.powf(2.0)
+        std::f64::consts::PI * self.interaction.cell_radius.powi(2)
     }
 }
 
