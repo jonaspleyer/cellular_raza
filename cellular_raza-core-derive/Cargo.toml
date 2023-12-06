@@ -22,4 +22,4 @@ itertools = { workspace = true }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.0.3"
+version = "0.0.4"

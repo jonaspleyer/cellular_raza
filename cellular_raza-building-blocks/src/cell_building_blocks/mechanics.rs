@@ -204,6 +204,7 @@ macro_rules! implement_brownian_mechanis(
             random_vector: SVector<f64, $d>,
         }
 
+        #[cfg(feature = "pyo3")]
         #[cfg_attr(feature = "pyo3", pymethods)]
         impl $struct_name {
             /// Constructs a new [Brownian] mechanics model for the specified dimension.
