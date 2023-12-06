@@ -5,7 +5,7 @@
 #table(
     columns: (auto, auto, auto),
     inset: 10pt,
-[== ABM], [== Mathematical Model], [== ODE],
+[], [== ABM], [== ODE],
 [
     === Cell-Cycle
     1. Lag-phase
@@ -21,8 +21,7 @@
     - Production
     - Secretion
     - Transport in Microenvironment (Diffusion $D_R D_I$)
-],[
-],
+],[],
 [
     - Inhibition $mu_I, K$
     - Resource $N_t$
@@ -31,7 +30,7 @@
     === Physical Mechanics
     - Force Potential
     - Random motion?
-],[],[]
+],
 )
 
 == Cell-Cycle
