@@ -74,6 +74,9 @@ pub struct SimulationSettings {
     /// Name of the folder to store the results in.
     pub storage_name: String,
 
+    /// Determines if to add the current date at the end of the save path
+    pub storage_name_add_date: bool,
+
     /// Do we want to show a progress bar
     pub show_progressbar: bool,
 
@@ -128,6 +131,7 @@ impl SimulationSettings {
             domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
+            storage_name_add_date: true,
 
             show_progressbar: true,
 
@@ -344,7 +348,8 @@ pub fn run_simulation(
         ..Default::default()
     };
 
-    let storage = StorageConfig::from_path(std::path::Path::new(&simulation_settings.storage_name));
+    let storage = StorageConfig::from_path(std::path::Path::new(&simulation_settings.storage_name))
+        .add_date(simulation_settings.storage_name_add_date);
 
     let simulation_setup = create_simulation_setup!(
         Domain: domain,
