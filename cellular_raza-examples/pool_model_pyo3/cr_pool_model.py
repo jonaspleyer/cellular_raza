@@ -236,8 +236,7 @@ def save_all_snapshots(output_path: Path, threads=1, show_bar=True, **kwargs):
     if threads<=0:
         threads = os.cpu_count()
     all_args = [((output_path, iteration), kwargs) for iteration in get_all_iterations(output_path)]
-    chunksize = max(int(len(all_args)/threads), 5)
     if show_bar:
-        _ = list(tqdm.tqdm(mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize), total=np.ceil(len(all_args)/chunksize)))
+        _ = list(tqdm.tqdm(mp.Pool(threads).imap_unordered(__save_snapshot_helper, all_args), total=len(all_args)))
     else:
-        mp.Pool(threads).imap(__save_snapshot_helper, all_args, chunksize=chunksize)
+        mp.Pool(threads).imap_unordered(__save_snapshot_helper, all_args)
