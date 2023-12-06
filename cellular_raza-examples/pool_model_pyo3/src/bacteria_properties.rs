@@ -24,6 +24,102 @@ pub struct Bacteria {
     pub interactionextracellulargradient: GradientSensing,
 }
 
+#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
+#[pyclass(get_all, set_all)]
+pub struct BacteriaTemplate {
+    pub mechanics: Py<NewtonDamped2D>,
+    pub interaction: Py<BacteriaInteraction>,
+    pub cycle: Py<BacteriaCycle>,
+    pub cellular_reactions: Py<BacteriaReactions>,
+    pub interactionextracellulargradient: Py<GradientSensing>,
+}
+
+fn bacteria_default_volume() -> f64 {
+    std::f64::consts::PI * 1.5_f64.powi(2)
+}
+
+fn bacteria_default_newton_damped() -> NewtonDamped2D {
+    NewtonDamped2D::new(
+        [0.0; 2],                         // pos
+        [0.0; 2],                         // vel
+        0.5,                              // damping
+        1.09 * bacteria_default_volume(), // mass
+    )
+}
+
+#[pymethods]
+impl BacteriaTemplate {
+    // TODO can we do this without using clone? Ie. without memory allocations?
+    fn __repr__ (&self, py: Python) -> PyResult<String> {
+        let bacteria = Bacteria::from(py, self.clone())?;
+        Ok(format!("{:#?}", bacteria))
+    }
+
+    #[new]
+    #[pyo3(signature = (
+        mechanics=bacteria_default_newton_damped(),
+        interaction=BacteriaInteraction::default(),
+        cycle=BacteriaCycle::default(),
+        cellular_reactions=BacteriaReactions::default(),
+    ))]
+    fn new(
+        py: Python,
+        mechanics: NewtonDamped2D,
+        interaction: BacteriaInteraction,
+        cycle: BacteriaCycle,
+        cellular_reactions: BacteriaReactions,
+    ) -> PyResult<Self> {
+        Ok(BacteriaTemplate {
+            mechanics: Py::new(py, mechanics)?,
+            interaction: Py::new(py, interaction)?,
+            cycle: Py::new(py, cycle)?,
+            cellular_reactions: Py::new(py, cellular_reactions)?,
+            interactionextracellulargradient: Py::new(py, GradientSensing)?,
+        })
+    }
+
+    #[staticmethod]
+    pub fn default(py: Python) -> PyResult<Self> {
+        Ok(Self {
+            mechanics: Py::new(py, bacteria_default_newton_damped())?,
+            interaction: Py::new(py, BacteriaInteraction::default())?,
+            cycle: Py::new(py, BacteriaCycle::default())?,
+            cellular_reactions: Py::new(py, BacteriaReactions::default())?,
+            interactionextracellulargradient: Py::new(py, GradientSensing)?,
+        })
+    }
+}
+
+#[pymethods]
+impl Bacteria {
+    #[staticmethod]
+    pub fn from(py: Python, bacteria_template: BacteriaTemplate) -> PyResult<Self> {
+        Ok(Self {
+            mechanics: bacteria_template.mechanics.extract::<NewtonDamped2D>(py)?,
+            interaction: bacteria_template
+                .interaction
+                .extract::<BacteriaInteraction>(py)?,
+            cycle: bacteria_template.cycle.extract::<BacteriaCycle>(py)?,
+            cellular_reactions: bacteria_template
+                .cellular_reactions
+                .extract::<BacteriaReactions>(py)?,
+            interactionextracellulargradient: bacteria_template
+                .interactionextracellulargradient
+                .extract::<GradientSensing>(py)?,
+        })
+    }
+    /// We can have a look at this paper https://doi.org/10.1128/jb.148.1.58-63.1981
+    /// and see that the average density of E.Coli is between 1.080 and 1.100 g/ml
+    /// This means we can safely set the density to 1.09
+    pub fn volume_to_mass(&self, volume: f64) -> f64 {
+        1.09 * volume
+    }
+
+    pub fn mass_to_volume(&self, mass: f64) -> f64 {
+        mass / 1.09
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaInteraction {
@@ -35,6 +131,20 @@ pub struct BacteriaInteraction {
 impl BacteriaInteraction {
     fn __repr__(&self) -> String {
         format!("{self:#?}")
+    }
+
+    #[new]
+    #[pyo3(signature = (potential_strength=0.5, cell_radius=1.5))]
+    pub fn new(potential_strength: f64, cell_radius: f64) -> Self {
+        Self {
+            potential_strength,
+            cell_radius,
+        }
+    }
+
+    #[staticmethod]
+    pub fn default() -> Self {
+        Self::new(0.5, 1.5)
     }
 }
 
