@@ -18,8 +18,14 @@ def get_last_output_path(name = "pool_model"):
 
 
 def get_simulation_settings(output_path):
-    f = open(output_path / "simulation_settings.json")
-    return json.load(f, object_hook=lambda d: SimpleNamespace(**d))
+    f_domain = open(output_path / "domain.json")
+    f_initial_cells = open(output_path / "initial_cells.json")
+    f_meta_params = open(output_path / "meta_params.json")
+
+    domain = json.load(f_domain, object_hook=lambda d: SimpleNamespace(**d))
+    initial_cells = json.load(f_initial_cells, object_hook=lambda d: SimpleNamespace(**d))
+    meta_params = json.load(f_meta_params, object_hook=lambda d: SimpleNamespace(**d))
+    return domain, initial_cells, meta_params
 
 
 def _combine_batches(run_directory):
