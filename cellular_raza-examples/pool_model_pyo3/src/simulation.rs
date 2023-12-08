@@ -30,7 +30,12 @@ impl Domain {
     }
 
     #[new]
-    #[pyo3(signature = (diffusion_constants=[10.0,5.0], initial_concentrations=[2.0, 0.0], size=200.0, n_voxels=None))]
+    #[pyo3(signature = (
+        diffusion_constants=[10.0, 5.0],
+        initial_concentrations=[2.0, 0.0],
+        size=200.0,
+        n_voxels=None
+    ))]
     fn new(
         diffusion_constants: [f64; NUMBER_OF_REACTION_COMPONENTS],
         initial_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],

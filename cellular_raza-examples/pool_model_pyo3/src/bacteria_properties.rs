@@ -182,6 +182,7 @@ pub struct BacteriaCycle {
     pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
+    // TODO think about replacing two variables for one
     pub lag_phase_transition_rate_1: f64,
     pub lag_phase_transition_rate_2: f64,
 }
