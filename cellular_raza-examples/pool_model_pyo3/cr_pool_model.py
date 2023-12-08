@@ -108,14 +108,14 @@ def get_elements_at_all_iterations(output_path: Path, element_path="cell_storage
     return pd.concat(result)
 
 
-def _determine_image_save_path(output_path, iteration):
+def _determine_image_save_path(output_path, iteration, fmt="png"):
     # Save images in dedicated images folder
     save_folder = Path(output_path) / "images"
     # Create folder if it does not exist
     save_folder.mkdir(parents=True, exist_ok=True)
 
     # Create save path from new save folder
-    save_path = save_folder / "snapshot_{:08}.png".format(iteration)
+    save_path = save_folder / "snapshot_{:08}.{}".format(iteration, fmt)
 
     return save_path
 
@@ -225,11 +225,16 @@ def _plot_bacteria(df_cells, ax):
             print("Warning: Skip drawing bacteria with None radius!")
 
 
-def save_snapshot(output_path, iteration, overwrite=False):
-    save_path = _determine_image_save_path(output_path, iteration)
+def save_snapshot(output_path, iteration, overwrite=False, formats=["png"]):
+    quit = True
+    for format in formats:
+        save_path = _determine_image_save_path(output_path, iteration, fmt=format)
 
-    # If the image is present we do not proceed unless the overwrite flag is active
-    if overwrite==False and os.path.isfile(save_path):
+        # If the image is present we do not proceed unless the overwrite flag is active
+        if overwrite==True or not os.path.isfile(save_path):
+            quit = False
+
+    if quit:
         return None
 
     # Get simulation settings and particles at the specified iteration
@@ -251,7 +256,9 @@ def save_snapshot(output_path, iteration, overwrite=False):
     _plot_labels(fig, ax, n_bacteria_1, n_bacteria_2)
 
     # Save figure and cut off excess white space
-    fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
+    for format in formats:
+        save_path = _determine_image_save_path(output_path, iteration, fmt=format)
+        fig.savefig(save_path, bbox_inches='tight', pad_inches = 0)
 
     # Close the figure and free memory
     plt.close(fig)
