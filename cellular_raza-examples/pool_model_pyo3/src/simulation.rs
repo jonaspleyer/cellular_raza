@@ -84,10 +84,10 @@ impl MetaParams {
     #[new]
     #[pyo3(signature = (
         random_seed=1,
-        n_times=50_001,
+        n_times=20_001,
         dt=0.5,
         t_start=0.0,
-        save_interval=1_000,
+        save_interval=100,
         n_threads=1,
         show_progressbar=true,
         save_path="out/pool_model".into(),
