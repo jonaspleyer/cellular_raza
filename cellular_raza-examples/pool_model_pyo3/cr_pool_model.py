@@ -5,6 +5,7 @@ from pathlib import Path
 from cr_pool_model_pyo3 import *
 import multiprocessing as mp
 import numpy as np
+import scipy as sp
 from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import tqdm
@@ -273,3 +274,45 @@ def save_all_snapshots(output_path: Path, threads=1, show_bar=True, **kwargs):
         _ = list(tqdm.tqdm(mp.Pool(threads).imap_unordered(__save_snapshot_helper, all_args), total=len(all_args)))
     else:
         mp.Pool(threads).imap_unordered(__save_snapshot_helper, all_args)
+
+
+def calculate_spatial_density(data, domain, weights=None):
+    positions = np.array([x for x in data["element.cell.mechanics.pos"]])
+
+    if weights==True:
+        weights = np.array(data["element.cell.interaction.cell_radius"])
+
+    return _calculate_spatial_density_from_positions(positions, domain, weights)
+
+
+def _calculate_spatial_density_from_positions(positions, domain, weights=None):
+    x = positions[:,0]
+    y = positions[:,1]
+
+    xmin = 0.0
+    xmax = domain.size
+    h = BacteriaTemplate().interaction.cell_radius
+
+    X, Y = np.mgrid[xmin:xmax:h, xmin:xmax:h]
+    positions = np.vstack([X.ravel(), Y.ravel()])
+    values = np.vstack([x, y])
+    kernel = sp.stats.gaussian_kde(values, weights=weights)
+    Z = np.reshape(kernel(positions).T, X.shape)
+    return Z
+
+
+def calculate_entropy(output_path, iteration):
+    domain, _, _ = get_simulation_settings(output_path)
+    data = get_elements_at_iter(output_path, iteration)
+
+    data1 = data[data["element.cell.cellular_reactions.species"]=="S1"]
+    data2 = data[data["element.cell.cellular_reactions.species"]!="S1"]
+
+    Z1 = calculate_spatial_density(data1, domain, weights=True)
+    Z2 = calculate_spatial_density(data2, domain, weights=True)
+
+    z1 = sp.stats.entropy(np.rot90(Z1).reshape(-1))
+    z2 = sp.stats.entropy(np.rot90(Z2).reshape(-1))
+
+    # y = z1/(z1+z2)
+    return np.array([z1, z2])
