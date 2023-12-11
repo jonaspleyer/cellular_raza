@@ -201,7 +201,7 @@ pub struct BacteriaCycle {
 impl BacteriaCycle {
     #[new]
     #[pyo3(signature = (
-        food_to_volume_conversion=1e-5,
+        food_to_volume_conversion=1e-1,
         volume_division_threshold=2.0*bacteria_default_volume(),
         lag_phase_transition_rate_1=0.005,
         lag_phase_transition_rate_2=0.008,
@@ -224,7 +224,7 @@ impl BacteriaCycle {
     fn default() -> Self {
         let bacteria_volume = bacteria_default_volume();
         Self {
-            food_to_volume_conversion: 1e-5,
+            food_to_volume_conversion: 1e-1,
             volume_division_threshold: 2.0 * bacteria_volume,
             lag_phase_transition_rate_1: 0.005,
             lag_phase_transition_rate_2: 0.008,
