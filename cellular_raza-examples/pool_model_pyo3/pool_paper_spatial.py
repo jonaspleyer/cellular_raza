@@ -12,11 +12,11 @@ UNIT_DAY = 24 * UNIT_HOUR
 
 def observable_2pool_2species(out):
     output = out.y
-    return [
+    return np.array([
         output[0]+output[1], # NA
         output[2]+output[3], # NB
         output[0]+output[1]+output[2]+output[3] # NA + NB
-    ]
+    ])
 
 
 @dataclass
