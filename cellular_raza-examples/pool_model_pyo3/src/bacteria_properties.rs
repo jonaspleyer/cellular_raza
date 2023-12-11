@@ -118,6 +118,16 @@ impl Bacteria {
     pub fn mass_to_volume(&self, mass: f64) -> f64 {
         mass / 1.09
     }
+
+    pub fn increase_volume(&mut self, volume_increment: f64) {
+        let current_volume = self.get_volume();
+        let final_volume = current_volume + volume_increment;
+        let new_radius = (final_volume/std::f64::consts::PI).sqrt();
+        let ratio = self.interaction.cell_radius/new_radius;
+        self.cellular_reactions.intracellular_concentrations *= ratio;
+        self.interaction.cell_radius = new_radius;
+        self.mechanics.mass = self.volume_to_mass(final_volume);
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -242,31 +252,14 @@ impl Cycle<Bacteria> for BacteriaCycle {
         // Grow the cell if we are not in lag phase
         else {
             let cell_volume = cell.get_volume();
-            // Calculate available food
-            let food_available =
-                cell.cellular_reactions.intracellular_concentrations[0] * cell_volume;
 
-            // Calculate the total volume increment from the available food
-            let volume_increment_available = food_available * cell.cycle.food_to_volume_conversion;
+            // Consume all food
+            let conc_available = cell.cellular_reactions.intracellular_concentrations[0];
+            let food_available = conc_available * cell_volume;
+            let volume_increment = food_available * cell.cycle.food_to_volume_conversion;
 
-            // Calculate the actual increment we will do
-            // It is either the total increment or by the difference to volume_division_threshold.
-            // The last condition makes sure that we have not already exceeded the division threshold
-            let volume_increment = volume_increment_available
-                .min((cell.cycle.volume_division_threshold - cell_volume).max(0.0));
-
-            // Grow the cell
-            let radial_increment = (volume_increment / std::f64::consts::PI).sqrt();
-            cell.interaction.cell_radius += radial_increment;
-
-            // Reduce intracellular amount by the calculated consumed food.
-            // Notice that we still divide by the old cell volume and not
-            // the newer one which originates from the increased radius.
-            let food_consumed = volume_increment / cell.cycle.food_to_volume_conversion;
-            cell.cellular_reactions.intracellular_concentrations[0] -= food_consumed / cell_volume;
-
-            // Set the cells new mass. Now we use the new volume
-            cell.mechanics.mass = cell.volume_to_mass(cell.get_volume());
+            cell.cellular_reactions.intracellular_concentrations[0] = 0.0;
+            cell.increase_volume(volume_increment);
         }
 
         if cell.get_volume() >= cell.cycle.volume_division_threshold {
