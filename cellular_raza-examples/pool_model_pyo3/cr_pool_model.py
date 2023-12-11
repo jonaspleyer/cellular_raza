@@ -10,7 +10,6 @@ from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import tqdm
 import matplotlib
-from matplotlib import pyplot as plt
 import gc
 
 
