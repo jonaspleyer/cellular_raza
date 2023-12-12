@@ -16,23 +16,23 @@ autoexamples = false
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
-version = "0.0.4"
+version = "0.0.5"
 
 [dependencies.cellular_raza-core-derive]
 path = "../cellular_raza-core-derive"
-version = "0.0.4"
+version = "0.0.5"
 
 [dependencies.cellular_raza-building-blocks]
 path = "../cellular_raza-building-blocks"
-version = "0.0.4"
+version = "0.0.5"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.0.4"
+version = "0.0.5"
 
 [dependencies.cellular_raza-concepts-derive]
 path = "../cellular_raza-concepts-derive"
-version = "0.0.4"
+version = "0.0.5"
 
 [features]
 default = ["gradients"]
