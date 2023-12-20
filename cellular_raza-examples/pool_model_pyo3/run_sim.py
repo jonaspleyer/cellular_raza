@@ -60,11 +60,13 @@ def generate_cells(n_cells_1, n_cells_2, domain, randomness=0.0, pad=0.15, seed=
     # Get the domain size
     d_min =    pad *domain.size
     d_max = (1-pad)*domain.size
-    u = uniformity
-    r = randomness
+    r = np.clip(randomness, 0, 1)
 
-    positions = calculate_lattice_points(0.0, domain.size, n_cells_1 + n_cells_2)
-    ind1, ind2 = calculate_index_distributions(n_cells_1, n_cells_2, len(positions))
+    positions_random = d_min + rng.random((n_cells_1+n_cells_2, 2))*(d_max - d_min)
+
+    positions_lattice = calculate_lattice_points(0.0, domain.size, n_cells_1 + n_cells_2)
+    positions = positions_random*r + (1-r)*positions_lattice
+    ind1, ind2 = calculate_index_distributions(n_cells_1, n_cells_2, len(positions), homogenous=False)
 
     cells = []
     for i in range(n_cells_1 + n_cells_2):
