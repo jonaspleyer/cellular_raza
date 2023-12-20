@@ -14,13 +14,12 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub struct Bacteria {
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     pub mechanics: NewtonDamped2D,
-    #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
-    pub interaction: BacteriaInteraction,
     #[Cycle]
     pub cycle: BacteriaCycle,
-    #[CellularReactions(nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>,)]
+    #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
+    #[CellularReactions(f64, ReactionVector)]
     pub cellular_reactions: BacteriaReactions,
-    #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, NUMBER_OF_REACTION_COMPONENTS>,)]
+    #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>,)]
     pub interactionextracellulargradient: GradientSensing,
 }
 
@@ -28,7 +27,6 @@ pub struct Bacteria {
 #[pyclass(get_all, set_all)]
 pub struct BacteriaTemplate {
     pub mechanics: Py<NewtonDamped2D>,
-    pub interaction: Py<BacteriaInteraction>,
     pub cycle: Py<BacteriaCycle>,
     pub cellular_reactions: Py<BacteriaReactions>,
     pub interactionextracellulargradient: Py<GradientSensing>,
@@ -58,20 +56,17 @@ impl BacteriaTemplate {
     #[new]
     #[pyo3(signature = (
         mechanics=bacteria_default_newton_damped(),
-        interaction=BacteriaInteraction::default(),
         cycle=BacteriaCycle::default(),
         cellular_reactions=BacteriaReactions::default(),
     ))]
     fn new(
         py: Python,
         mechanics: NewtonDamped2D,
-        interaction: BacteriaInteraction,
         cycle: BacteriaCycle,
         cellular_reactions: BacteriaReactions,
     ) -> PyResult<Self> {
         Ok(BacteriaTemplate {
             mechanics: Py::new(py, mechanics)?,
-            interaction: Py::new(py, interaction)?,
             cycle: Py::new(py, cycle)?,
             cellular_reactions: Py::new(py, cellular_reactions)?,
             interactionextracellulargradient: Py::new(py, GradientSensing)?,
@@ -82,12 +77,15 @@ impl BacteriaTemplate {
     pub fn default(py: Python) -> PyResult<Self> {
         Ok(Self {
             mechanics: Py::new(py, bacteria_default_newton_damped())?,
-            interaction: Py::new(py, BacteriaInteraction::default())?,
             cycle: Py::new(py, BacteriaCycle::default())?,
             cellular_reactions: Py::new(py, BacteriaReactions::default())?,
             interactionextracellulargradient: Py::new(py, GradientSensing)?,
         })
     }
+}
+
+fn volume_to_radius(volume: f64) -> f64 {
+    (volume / std::f64::consts::PI).sqrt()
 }
 
 #[pymethods]
@@ -96,9 +94,6 @@ impl Bacteria {
     pub fn from(py: Python, bacteria_template: BacteriaTemplate) -> PyResult<Self> {
         Ok(Self {
             mechanics: bacteria_template.mechanics.extract::<NewtonDamped2D>(py)?,
-            interaction: bacteria_template
-                .interaction
-                .extract::<BacteriaInteraction>(py)?,
             cycle: bacteria_template.cycle.extract::<BacteriaCycle>(py)?,
             cellular_reactions: bacteria_template
                 .cellular_reactions
@@ -122,11 +117,12 @@ impl Bacteria {
     pub fn increase_volume(&mut self, volume_increment: f64) {
         let current_volume = self.get_volume();
         let final_volume = current_volume + volume_increment;
-        let new_radius = (final_volume/std::f64::consts::PI).sqrt();
-        let ratio = self.interaction.cell_radius/new_radius;
-        self.cellular_reactions.intracellular_concentrations *= ratio;
-        self.interaction.cell_radius = new_radius;
+        self.cellular_reactions.cell_volume = final_volume;
         self.mechanics.mass = self.volume_to_mass(final_volume);
+    }
+
+    pub fn cell_radius(&self) -> f64 {
+        volume_to_radius(self.cellular_reactions.cell_volume)
     }
 }
 
@@ -158,9 +154,9 @@ impl BacteriaInteraction {
     }
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInteraction {
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReactions {
     fn get_interaction_information(&self) -> f64 {
-        self.cell_radius
+        volume_to_radius(self.cell_volume)
     }
 
     fn calculate_force_between(
@@ -173,7 +169,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaInte
     ) -> Option<Result<Vector2<f64>, CalcError>> {
         let z = ext_pos - own_pos;
         let r = z.norm();
-        let sigma = r / (self.cell_radius + ext_radius);
+        let sigma = r / (self.cell_radius() + ext_radius);
         if sigma < 1.0 {
             let q = 0.2;
             let dir = z.normalize();
@@ -249,19 +245,6 @@ impl Cycle<Bacteria> for BacteriaCycle {
                 cell.cellular_reactions.lag_phase_active = false;
             }
         }
-        // Grow the cell if we are not in lag phase
-        else {
-            let cell_volume = cell.get_volume();
-
-            // Consume all food
-            let conc_available = cell.cellular_reactions.intracellular_concentrations[0];
-            let food_available = conc_available * cell_volume;
-            let volume_increment = food_available * cell.cycle.food_to_volume_conversion;
-
-            cell.cellular_reactions.intracellular_concentrations[0] = 0.0;
-            cell.increase_volume(volume_increment);
-        }
-
         if cell.get_volume() >= cell.cycle.volume_division_threshold {
             return Some(CycleEvent::Division);
         }
@@ -276,11 +259,11 @@ impl Cycle<Bacteria> for BacteriaCycle {
         // Clone existing cell
         let mut c2 = c1.clone();
 
-        let r = c1.interaction.cell_radius;
+        let r = c1.cell_radius();
 
         // Make both cells smaller
-        c1.interaction.cell_radius /= std::f64::consts::SQRT_2;
-        c2.interaction.cell_radius /= std::f64::consts::SQRT_2;
+        c1.cellular_reactions.cell_volume /= 2.0;
+        c2.cellular_reactions.cell_volume /= 2.0;
 
         // Generate cellular splitting direction randomly
         let angle_1 = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
@@ -290,12 +273,6 @@ impl Cycle<Bacteria> for BacteriaCycle {
         // It is randomly chosen if the old cell is left or right
         let offset = dir_vec * r / std::f64::consts::SQRT_2;
         let old_pos = c1.pos();
-
-        // Increase the remaining food in the bacteria by the fraction of volumes
-        // from before and after the division. This exactly coincides with factor 2
-        // since we half the volume of the cell
-        c1.cellular_reactions.intracellular_concentrations[0] *= 2.0;
-        c2.cellular_reactions.intracellular_concentrations[0] *= 2.0;
 
         c1.set_pos(&(old_pos + offset));
         c2.set_pos(&(old_pos - offset));
@@ -312,57 +289,43 @@ pub enum Species {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[pyclass]
+#[pyclass(get_all, set_all)]
 pub struct BacteriaReactions {
-    #[pyo3(get, set)]
+    pub potential_strength: f64,
     pub lag_phase_active: bool,
-    #[pyo3(get, set)]
     pub species: Species,
-    pub intracellular_concentrations: ReactionVector,
-    #[pyo3(get, set)]
+    pub cell_volume: f64,
     pub uptake_rate: f64,
-    #[pyo3(get, set)]
     pub inhibition_production_rate: f64,
-    #[pyo3(get, set)]
     pub inhibition_coefficient: f64,
 }
 
 #[pymethods]
 impl BacteriaReactions {
-    #[setter]
-    pub fn set_intracellular_concentrations(
-        &mut self,
-        intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
-    ) {
-        self.intracellular_concentrations = intracellular_concentrations.into();
-    }
-
-    #[getter]
-    pub fn get_intracellular_concentrations(&self) -> [f64; NUMBER_OF_REACTION_COMPONENTS] {
-        self.intracellular_concentrations.into()
-    }
-
     #[new]
     #[pyo3(signature = (
+        potential_strength=0.5,
         lag_phase_active=true,
         species=Species::S1,
-        intracellular_concentrations=[0.0; NUMBER_OF_REACTION_COMPONENTS],
+        cell_volume=bacteria_default_volume(),
         uptake_rate=0.01,
         inhibition_production_rate=0.1,
         inhibition_coefficient=0.1,
     ))]
     pub fn new(
+        potential_strength: f64,
         lag_phase_active: bool,
         species: Species,
-        intracellular_concentrations: [f64; NUMBER_OF_REACTION_COMPONENTS],
+        cell_volume: f64,
         uptake_rate: f64,
         inhibition_production_rate: f64,
         inhibition_coefficient: f64,
     ) -> Self {
         Self {
+            potential_strength,
             lag_phase_active,
             species,
-            intracellular_concentrations: intracellular_concentrations.into(),
+            cell_volume: cell_volume,
             uptake_rate,
             inhibition_production_rate,
             inhibition_coefficient,
@@ -372,25 +335,30 @@ impl BacteriaReactions {
     #[staticmethod]
     fn default() -> Self {
         Self::new(
+            0.5,
             true,
             Species::S1,
-            [0.0; NUMBER_OF_REACTION_COMPONENTS].into(),
+            bacteria_default_volume(),
             0.01,
             0.1,
             0.1,
         )
     }
+
+    pub fn cell_radius(&self) -> f64 {
+        volume_to_radius(self.cell_volume)
+    }
 }
 
-impl CellularReactions<ReactionVector> for BacteriaReactions {
+impl CellularReactions<f64, ReactionVector> for BacteriaReactions {
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
-        _internal_concentration_vector: &ReactionVector,
+        _internal_concentration_vector: &f64,
         external_concentration_vector: &ReactionVector,
-    ) -> Result<(ReactionVector, ReactionVector), CalcError> {
+    ) -> Result<(f64, ReactionVector), CalcError> {
         // If we are in lag phase, we simply return a zero-vector
         if self.lag_phase_active {
-            return Ok((ReactionVector::zero(), ReactionVector::zero()));
+            return Ok((f64::zero(), ReactionVector::zero()));
         }
 
         let inc_ext = match self.species {
@@ -409,23 +377,25 @@ impl CellularReactions<ReactionVector> for BacteriaReactions {
             }
         };
 
-        let inc_int = [-inc_ext[0], 0.0];
+        // TODO
+        let inc_int = -inc_ext[0];
 
-        Ok((inc_int.into(), inc_ext.into()))
+        Ok((inc_int, inc_ext.into()))
     }
 
-    fn get_intracellular(&self) -> ReactionVector {
-        self.intracellular_concentrations
+    fn get_intracellular(&self) -> f64 {
+        self.cell_volume
     }
 
-    fn set_intracellular(&mut self, concentration_vector: ReactionVector) {
-        self.intracellular_concentrations = concentration_vector;
+    fn set_intracellular(&mut self, new_volume: f64) {
+        self.cell_volume = new_volume;
     }
 }
 
 impl Volume for Bacteria {
     fn get_volume(&self) -> f64 {
-        std::f64::consts::PI * self.interaction.cell_radius.powi(2)
+        // std::f64::consts::PI * self.interaction.cell_radius.powi(2)
+        self.cellular_reactions.cell_volume
     }
 }
 

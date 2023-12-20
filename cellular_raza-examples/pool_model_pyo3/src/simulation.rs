@@ -223,10 +223,10 @@ pub fn run_simulation(
             let mut max_cell_radius = cells
                 .iter()
                 .map(|cell| {
-                    cell.interaction
-                        .extract::<BacteriaInteraction>(py)
+                    cell.cellular_reactions
+                        .extract::<BacteriaReactions>(py)
                         .unwrap()
-                        .cell_radius
+                        .cell_radius()
                 })
                 .fold(f64::MIN, f64::max);
             if max_cell_radius <= 0.0 {
@@ -281,9 +281,7 @@ pub fn run_simulation(
         Storage: storage
     );
 
-    let voxel_definition_strategy = |voxel: &mut CartesianCuboidVoxel2<
-        NUMBER_OF_REACTION_COMPONENTS,
-    >| {
+    let voxel_definition_strategy = |voxel: &mut CartesianCuboidVoxel2<2>| {
         voxel.diffusion_constant = ReactionVector::from([domain.diffusion_constants]);
         voxel.extracellular_concentrations = ReactionVector::from([domain.initial_concentrations]);
         voxel.degradation_rate = ReactionVector::zero();
