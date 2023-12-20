@@ -238,6 +238,9 @@ impl Cycle<Bacteria> for BacteriaCycle {
         // Check if we are in lag phase and if so check if we want to convert to active state
         if cell.cellular_reactions.lag_phase_active {
             let p = match cell.cellular_reactions.species {
+                // TODO read out extracellular concentrations of nutrients here
+                // change the probability to be
+                // P = dt * lambda * N_external / N_external_initial
                 Species::S1 => rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate_1),
                 Species::S2 => rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate_2),
             };
