@@ -64,8 +64,8 @@ def generate_cells(n_cells_1, n_cells_2, domain, uniformity=1.0, randomness=1.0,
     for i in range(n_cells_1 + n_cells_2):
         # Cell Settings
         cell = crp_py.BacteriaTemplate()
-        cell.cycle.lag_phase_transition_rate_1 = 0.001
-        cell.cycle.lag_phase_transition_rate_1 = 0.0005
+        cell.cycle.lag_phase_transition_rate_1 = 0.005
+        cell.cycle.lag_phase_transition_rate_2 = 0.0025
 
         if i < n_cells_1:
             # x = rng.uniform(d_min, (1-u)*d_min + u*d_max)
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     # Domain Settings
     domain = crp_py.Domain()
     domain.size = 1_000
-    domain.diffusion_constants = [15.0, 5.0]
+    domain.diffusion_constants = [15.0, 15.0]
 
     # Meta Parameters
     meta_params = crp_py.MetaParams()
