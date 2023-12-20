@@ -47,7 +47,7 @@ def calculate_index_distributions(n_cells_1, n_cells_2, n_positions, homogenous=
         return ind1, ind2
 
 
-def generate_cells(n_cells_1, n_cells_2, domain, uniformity=1.0, randomness=1.0, pad=0.15, seed=0):
+def generate_cells(n_cells_1, n_cells_2, domain, randomness=0.0, pad=0.15, seed=0):
     """
     n_cells_1: int
     n_cells_2: int
