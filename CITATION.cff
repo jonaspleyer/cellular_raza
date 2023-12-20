@@ -1,0 +1,22 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: cellular_raza
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jonas
+    family-names: Pleyer
+    email: jonas.pleyer@fdm.uni-freiburg.de
+identifiers:
+  - type: url
+    value: 'https://cellular_raza.com'
+repository-code: 'https://github.com/jonaspleyer/cellular_raza'
+url: 'https://cellular_raza.com'
+license: GPL-2.0
+commit: 0.0.5
+version: 0.0.5
+date-released: '2023-12-12'
