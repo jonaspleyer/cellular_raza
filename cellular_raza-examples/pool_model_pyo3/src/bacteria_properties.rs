@@ -184,8 +184,6 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaCycle {
-    /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
-    pub food_to_volume_conversion: f64,
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
     // TODO think about replacing two variables for one
@@ -197,19 +195,16 @@ pub struct BacteriaCycle {
 impl BacteriaCycle {
     #[new]
     #[pyo3(signature = (
-        food_to_volume_conversion=1e-1,
         volume_division_threshold=2.0*bacteria_default_volume(),
         lag_phase_transition_rate_1=0.005,
         lag_phase_transition_rate_2=0.008,
     ))]
     pub fn new(
-        food_to_volume_conversion: f64,
         volume_division_threshold: f64,
         lag_phase_transition_rate_1: f64,
         lag_phase_transition_rate_2: f64,
     ) -> Self {
         BacteriaCycle {
-            food_to_volume_conversion,
             volume_division_threshold,
             lag_phase_transition_rate_1,
             lag_phase_transition_rate_2,
@@ -220,7 +215,6 @@ impl BacteriaCycle {
     fn default() -> Self {
         let bacteria_volume = bacteria_default_volume();
         Self {
-            food_to_volume_conversion: 1e-1,
             volume_division_threshold: 2.0 * bacteria_volume,
             lag_phase_transition_rate_1: 0.005,
             lag_phase_transition_rate_2: 0.008,
@@ -295,6 +289,8 @@ pub enum Species {
 #[pyclass(get_all, set_all)]
 pub struct BacteriaReactions {
     pub potential_strength: f64,
+    /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
+    pub food_to_volume_conversion: f64,
     pub lag_phase_active: bool,
     pub species: Species,
     pub cell_volume: f64,
@@ -308,6 +304,7 @@ impl BacteriaReactions {
     #[new]
     #[pyo3(signature = (
         potential_strength=0.5,
+        food_to_volume_conversion=1e-1,
         lag_phase_active=true,
         species=Species::S1,
         cell_volume=bacteria_default_volume(),
@@ -317,6 +314,7 @@ impl BacteriaReactions {
     ))]
     pub fn new(
         potential_strength: f64,
+        food_to_volume_conversion: f64,
         lag_phase_active: bool,
         species: Species,
         cell_volume: f64,
@@ -326,6 +324,7 @@ impl BacteriaReactions {
     ) -> Self {
         Self {
             potential_strength,
+            food_to_volume_conversion,
             lag_phase_active,
             species,
             cell_volume: cell_volume,
@@ -339,6 +338,7 @@ impl BacteriaReactions {
     fn default() -> Self {
         Self::new(
             0.5,
+            1e-1,
             true,
             Species::S1,
             bacteria_default_volume(),
@@ -381,7 +381,7 @@ impl CellularReactions<f64, ReactionVector> for BacteriaReactions {
         };
 
         // TODO
-        let inc_int = -inc_ext[0];
+        let inc_int = -inc_ext[0]*self.food_to_volume_conversion*self.cell_volume;
 
         Ok((inc_int, inc_ext.into()))
     }
