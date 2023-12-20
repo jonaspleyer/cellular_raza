@@ -26,19 +26,25 @@ def calculate_lattice_points(x_min, x_max, n_agents):
     return z
 
 
-def calculate_index_distributions(n_cells_1, n_cells_2, n_positions):
-    indices = np.arange(n_positions)
+def calculate_index_distributions(n_cells_1, n_cells_2, n_positions, homogenous=True):
+    if homogenous:
+        indices = np.arange(n_positions)
 
-    ind_even = indices[::2]
-    ind_uneven = indices[1::2]
+        ind_even = indices[::2]
+        ind_uneven = indices[1::2]
 
-    ind1_even = ind_even[:n_cells_1]
-    ind1_uneven = ind_uneven[:n_cells_1-len(ind1_even)]
+        ind1_even = ind_even[:n_cells_1]
+        ind1_uneven = ind_uneven[:n_cells_1-len(ind1_even)]
 
-    ind1 = np.sort(np.hstack([ind1_even, ind1_uneven]))
-    ind2 = np.sort(np.setdiff1d(indices, ind1))[:n_cells_2]
+        ind1 = np.sort(np.hstack([ind1_even, ind1_uneven]))
+        ind2 = np.sort(np.setdiff1d(indices, ind1))[:n_cells_2]
 
-    return ind1, ind2
+        return ind1, ind2
+    else:
+        indices = np.arange(n_positions)
+        ind1 = indices[:n_cells_1]
+        ind2 = indices[n_cells_1:]
+        return ind1, ind2
 
 
 def generate_cells(n_cells_1, n_cells_2, domain, uniformity=1.0, randomness=1.0, pad=0.15, seed=0):
