@@ -104,7 +104,7 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
             result.extend(TokenStream::from(res2));
         }
         // Update Mechanics
-        else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
             syn::Meta::List(list) => {
                 if list.path.is_ident("Mechanics") {
                     Some(list)
@@ -152,7 +152,8 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                 }
             };
             result.extend(TokenStream::from(res2));
-        } else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+        }
+        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
             syn::Meta::List(list) => {
                 if list.path.is_ident("Interaction") {
                     Some(list)
@@ -202,7 +203,9 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                 }
             };
             result.extend(TokenStream::from(res));
-        } else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+        }
+
+        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
             syn::Meta::List(list) => {
                 if list.path.is_ident("CellularReactions") {
                     Some(list)
@@ -247,7 +250,8 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
                 }
             };
             result.extend(TokenStream::from(res));
-        } else if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
+        }
+        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
             syn::Meta::List(list) => {
                 if list.path.is_ident("InteractionExtracellularGradient") {
                     Some(list)
