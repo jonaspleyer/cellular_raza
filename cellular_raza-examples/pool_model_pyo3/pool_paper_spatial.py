@@ -22,13 +22,13 @@ def observable_2pool_2species(out):
 @dataclass
 class ODEParameters:
     # TODO adjust these parameters
-    lag_phase_transition_rate_1: float = 0.0005
-    lag_phase_transition_rate_2: float = 0.008
-    production_rate_1: float = 0.01*(np.pi*1.5**2)/14.13
-    production_rate_2: float = 0.01*(np.pi*1.5**2)/14.13
-    inhibitor_production: float = 0.1*(np.pi*1.5**2)/(1_000**2)
-    inhibition_constant: float = 0.1/(1_000**2)
-    number_of_cells: int = 30_000
+    lag_phase_transition_rate_1: float = 0.0025
+    lag_phase_transition_rate_2: float = 0.005
+    production_rate_1: float = 0.002
+    production_rate_2: float = 0.002
+    inhibitor_production: float = 0.1
+    inhibition_constant: float = 1e-7
+    total_cell_volume: int = 2e5
 
     @property
     def parameters(self):
@@ -39,28 +39,29 @@ class ODEParameters:
             self.production_rate_2,           # alph2,
             self.inhibitor_production,        # kappa,
             self.inhibition_constant,         # muI,
-            self.number_of_cells,             # N_t
+            self.total_cell_volume,           # N_t
         )
 
 
 @dataclass
 class ODEInitialValues:
-    cells_lag_phase_1: int    = 18
-    cells_growth_phase_1: int = 0
-    cells_lag_phase_2: int    = 18
-    cells_growth_phase_2: int = 0
-    nutrients_initial: float  = 0.2
-    inhibitor: float          = 0
+    initial_total_volume_lag_phase_1: int    = 127.2
+    initial_total_volume_growth_phase_1: int = 0
+    initial_total_volume_lag_phase_2: int    = 127.2
+    initial_total_volume_growth_phase_2: int = 0
+    # NEVER TOUCH THIS VALUE (IF YOU WANT TO GET TOTAL_CELL_VOLUME)!
+    initial_nutrients: float  = 1.0
+    initial_inhibitor: float  = 0
 
     @property
     def initial_values(self):
         return np.array([
-            self.cells_lag_phase_1,
-            self.cells_growth_phase_1,
-            self.cells_lag_phase_2,
-            self.cells_growth_phase_2,
-            self.nutrients_initial,
-            self.inhibitor,
+            self.initial_total_volume_lag_phase_1,
+            self.initial_total_volume_growth_phase_1,
+            self.initial_total_volume_lag_phase_2,
+            self.initial_total_volume_growth_phase_2,
+            self.initial_nutrients,
+            self.initial_inhibitor,
         ])
 
 
@@ -126,15 +127,15 @@ class ODEModel(ODEInitialValues, ODEParameters, ODEMetaParameters):
 
 
 if __name__ == "__main__":
-    
     ode_model = ODEModel()
 
-    observable = ode_model.solve_ode_observable(observable_2pool_2species)
+    res = ode_model.solve_ode_raw()
+    observable = observable_2pool_2species(res)
     
     fig, ax = plt.subplots()
-    labels = ['Species 1', 'Species 2', 'Sp 1 + Sp 2']
+    labels = ['Species A', 'Species B', 'Sp A + Sp B']
     for j, obs in enumerate(observable):
-        ax.plot(ode_model.time_eval/UNIT_DAY, obs, label=labels[j])#, color=colorsp[i+2])
+        ax.plot(ode_model.time_eval/UNIT_DAY, obs, label=labels[j], color=[][j])
     
     ax.set_xlabel('Time, [days]', fontsize=15)
     ax.tick_params(labelsize=13)
@@ -142,6 +143,4 @@ if __name__ == "__main__":
 
     ax.legend(fontsize=15)
 
-    # plt.savefig(f'pool_model_spatial.pdf', bbox_inches='tight')
-    plt.show()
-    plt.close(fig)
+    plt.savefig(f'pool_model_spatial.pdf', bbox_inches='tight')
