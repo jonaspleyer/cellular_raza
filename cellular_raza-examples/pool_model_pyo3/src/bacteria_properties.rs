@@ -126,34 +126,6 @@ impl Bacteria {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass(get_all, set_all)]
-pub struct BacteriaInteraction {
-    pub potential_strength: f64,
-    pub cell_radius: f64,
-}
-
-#[pymethods]
-impl BacteriaInteraction {
-    fn __repr__(&self) -> String {
-        format!("{self:#?}")
-    }
-
-    #[new]
-    #[pyo3(signature = (potential_strength=0.5, cell_radius=1.5))]
-    pub fn new(potential_strength: f64, cell_radius: f64) -> Self {
-        Self {
-            potential_strength,
-            cell_radius,
-        }
-    }
-
-    #[staticmethod]
-    pub fn default() -> Self {
-        Self::new(0.5, 1.5)
-    }
-}
-
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReactions {
     fn get_interaction_information(&self) -> f64 {
         volume_to_radius(self.cell_volume)
