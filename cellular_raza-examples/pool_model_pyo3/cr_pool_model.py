@@ -45,7 +45,6 @@ def _convert_entries(df, element_path):
         df["element.id"] = df["element.id"].apply(lambda x: np.array(x))
         df["element.cell.mechanics.pos"] = df["element.cell.mechanics.pos"].apply(lambda x: np.array(x))
         df["element.cell.mechanics.vel"] = df["element.cell.mechanics.vel"].apply(lambda x: np.array(x))
-        df["element.cell.cellular_reactions.intracellular_concentrations"] = df["element.cell.cellular_reactions.intracellular_concentrations"].apply(lambda x: np.array(x))
         df["element.cell.interactionextracellulargradient"] = df["element.cell.interactionextracellulargradient"].apply(lambda x: np.array(x))
 
     if element_path == "voxel_storage":
@@ -212,7 +211,7 @@ def _plot_voxels(df_voxels, ax, mapper):
 def _plot_bacteria(df_cells, ax):
     # Get positions as large numpy array
     positions = np.array([np.array(x) for x in df_cells["element.cell.mechanics.pos"]])
-    s = np.array([x for x in df_cells["element.cell.interaction.cell_radius"]])
+    s = (np.array([x for x in df_cells["element.cell.cellular_reactions.cell_volume"]])/np.pi)**0.5
     c = ["#24398c" if x else "#8c2424" for x in df_cells["element.cell.cellular_reactions.species"]=="S1"]
 
     # Plot circles for bacteria
@@ -286,7 +285,7 @@ def calculate_spatial_density(data, domain, weights=None):
     positions = np.array([x for x in data["element.cell.mechanics.pos"]])
 
     if weights==True:
-        weights = np.array(data["element.cell.interaction.cell_radius"])
+        weights = (np.array(data["element.cell.cellular_reactions.cell_volume"])/np.pi)**0.5
 
     return _calculate_spatial_density_from_positions(positions, domain, weights)
 
@@ -297,7 +296,7 @@ def _calculate_spatial_density_from_positions(positions, domain, weights=None):
 
     xmin = 0.0
     xmax = domain.size
-    h = BacteriaTemplate().interaction.cell_radius
+    h = (BacteriaTemplate().cellular_reactions.cell_volume/np.pi)**0.5
 
     X, Y = np.mgrid[xmin:xmax:h, xmin:xmax:h]
     positions = np.vstack([X.ravel(), Y.ravel()])
