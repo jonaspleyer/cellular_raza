@@ -95,15 +95,16 @@ if __name__ == "__main__":
     # Domain Settings
     domain = crp_py.Domain()
     domain.size = 1_000
-    domain.diffusion_constants = [15.0, 15.0]
+    domain.diffusion_constants = [5.0, 5.0]
 
     # Meta Parameters
     meta_params = crp_py.MetaParams()
-    meta_params.save_interval = 500
-    meta_params.n_times = 20_001
+    meta_params.save_interval = 1_000
+    meta_params.n_times = 40_001
+    meta_params.dt = 0.25
     meta_params.n_threads = 8
 
-    cells = generate_cells(18, 18, domain)
+    cells = generate_cells(18, 18, domain, randomness=0.0)
 
     output_path = crp_py.run_simulation(
         cells,
