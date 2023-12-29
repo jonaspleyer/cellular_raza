@@ -34,8 +34,6 @@ struct MechanicsParser {
     velocity: syn::Type,
     _comma_2: syn::Token![,],
     force: syn::Type,
-    // _comma_3: Option<syn::Token![,]>,
-    // information: Option<syn::Type>,
 }
 
 impl syn::parse::Parse for MechanicsParser {
@@ -49,8 +47,6 @@ impl syn::parse::Parse for MechanicsParser {
             velocity: content.parse()?,
             _comma_2: content.parse()?,
             force: content.parse()?,
-            // _comma_3: content.parse().ok(),
-            // information: content.parse().ok(),
         })
     }
 }
@@ -59,6 +55,118 @@ struct MechanicsImplementer {
     position: syn::Type,
     velocity: syn::Type,
     force: syn::Type,
+    field_type: syn::Type,
+    field_name: Option<syn::Ident>,
+}
+
+#[derive(Clone)]
+struct InteractionParser {
+    position: syn::Type,
+    _comma_1: syn::Token![,],
+    velocity: syn::Type,
+    _comma_2: syn::Token![,],
+    force: syn::Type,
+    _comma_3: Option<syn::Token![,]>,
+    information: syn::Type,
+}
+
+impl syn::parse::Parse for InteractionParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _interaction: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            position: content.parse()?,
+            _comma_1: content.parse()?,
+            velocity: content.parse()?,
+            _comma_2: content.parse()?,
+            force: content.parse()?,
+            _comma_3: content.parse().ok(),
+            information: if content.is_empty() {
+                syn::parse_quote!(())
+            } else {
+                content.parse()?
+            }
+        })
+    }
+}
+
+struct InteractionImplementer {
+    position: syn::Type,
+    velocity: syn::Type,
+    force: syn::Type,
+    information: syn::Type,
+    field_type: syn::Type,
+    field_name: Option<syn::Ident>,
+}
+
+#[derive(Clone)]
+struct CellularReactionsParser {
+    concvecintracellular: syn::Type,
+    _comma: Option<syn::Token![,]>,
+    concvecextracellular: syn::Type,
+}
+
+impl syn::parse::Parse for CellularReactionsParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _cellular_reactions: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        let concvecintracellular: syn::Type = content.parse()?;
+        let _comma = content.parse()?;
+        let concvecextracellular = if content.is_empty() {
+            concvecintracellular.clone()
+        } else {
+            content.parse()?
+        };
+        Ok(Self {
+            concvecintracellular,
+            _comma,
+            concvecextracellular,
+        })
+    }
+}
+
+struct CellularReactionsImplementer {
+    concvecintracellular: syn::Type,
+    concvecextracellular: syn::Type,
+    field_type: syn::Type,
+    field_name: Option<syn::Ident>,
+}
+
+#[derive(Clone)]
+struct ExtracellularGradientParser {
+    extracellular_gradient: syn::Type,
+}
+
+impl syn::parse::Parse for ExtracellularGradientParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _extracellular_gradients: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            extracellular_gradient: content.parse()?,
+        })
+    }
+}
+
+struct ExtracellularGradientImplementer {
+    extracellular_gradient: syn::Type,
+    field_type: syn::Type,
+}
+
+#[derive(Clone)]
+struct VolumeParser;
+
+impl syn::parse::Parse for VolumeParser {
+    #[allow(unused)]
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _volume: syn::Ident = input.parse()?;
+        Ok(Self)
+    }
+}
+
+struct VolumeImplementer {
     field_type: syn::Type,
     field_name: Option<syn::Ident>,
 }
@@ -81,14 +189,16 @@ impl syn::parse::Parse for CycleParser {
 enum Aspect {
     Mechanics(MechanicsParser),
     Cycle(CycleParser),
+    Interaction(InteractionParser),
+    CellularReactions(CellularReactionsParser),
+    ExtracellularGradient(ExtracellularGradientParser),
+    Volume(VolumeParser),
 }
 
 impl Aspect {
     fn from_attribute(attr: &syn::Attribute) -> syn::Result<Option<Self>> {
         let path = attr.meta.path().get_ident();
-        let cmp = |c: &str| {
-            path.is_some_and(|p| p.to_string()==c)
-        };
+        let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
 
         let s = &attr.meta;
         let stream: TokenStream = quote!(#s).into();
@@ -102,6 +212,27 @@ impl Aspect {
             let parsed: CycleParser = syn::parse(stream)?;
             return Ok(Some(Aspect::Cycle(parsed)));
         }
+
+        if cmp("Interaction") {
+            let parsed: InteractionParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::Interaction(parsed)));
+        }
+
+        if cmp("CellularReactions") {
+            let parsed: CellularReactionsParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::CellularReactions(parsed)));
+        }
+
+        if cmp("ExtracellularGradient") {
+            let parsed: ExtracellularGradientParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::ExtracellularGradient(parsed)));
+        }
+
+        if cmp("Volume") {
+            let parsed: VolumeParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::Volume(parsed)));
+        }
+
         Ok(None)
     }
 }
@@ -109,7 +240,7 @@ impl Aspect {
 #[derive(Clone)]
 struct AspectField {
     aspects: Vec<Aspect>,
-    field: syn::Field
+    field: syn::Field,
 }
 
 impl syn::parse::Parse for AspectField {
@@ -117,7 +248,8 @@ impl syn::parse::Parse for AspectField {
         let field: syn::Field = input.call(syn::Field::parse_named)?;
 
         let mut errors = vec![];
-        let aspects = field.attrs
+        let aspects = field
+            .attrs
             .iter()
             .map(Aspect::from_attribute)
             .filter_map(|r| r.map_err(|e| errors.push(e)).ok())
@@ -126,10 +258,7 @@ impl syn::parse::Parse for AspectField {
         for e in errors.into_iter() {
             return Err(e);
         }
-        Ok(Self {
-            aspects,
-            field,
-        })
+        Ok(Self { aspects, field })
     }
 }
 
@@ -144,7 +273,9 @@ impl syn::parse::Parse for AspectFields {
         let content;
         Ok(Self {
             brace_token: syn::braced!(content in input),
-            aspect_fields: content.call(syn::punctuated::Punctuated::<AspectField, syn::token::Comma>::parse_terminated)?,
+            aspect_fields: content.call(
+                syn::punctuated::Punctuated::<AspectField, syn::token::Comma>::parse_terminated,
+            )?,
         })
     }
 }
@@ -154,45 +285,86 @@ struct AgentImplementer {
     generics: syn::Generics,
     cycle: Option<CycleImplementer>,
     mechanics: Option<MechanicsImplementer>,
-    // interaction: Option<AspectField>,
-    // cellular_reacitons: Option<AspectField>,
-    // interaction_extracellular_gradient: Option<AspectField>,
+    interaction: Option<InteractionImplementer>,
+    cellular_reactions: Option<CellularReactionsImplementer>,
+    extracellular_gradient: Option<ExtracellularGradientImplementer>,
+    volume: Option<VolumeImplementer>,
 }
 
 impl From<AgentParser> for AgentImplementer {
     fn from(value: AgentParser) -> Self {
-        let mut cycle: Option<CycleImplementer> = None;
-        let mut mechanics: Option<MechanicsImplementer> = None;
-        // let mut interaction: Option<AspectField> = None;
-        // let mut cellular_reacitons: Option<AspectField> = None;
-        // let mut interaction_extracellular_gradient: Option<AspectField> = None;
+        let mut cycle = None;
+        let mut mechanics = None;
+        let mut interaction = None;
+        let mut cellular_reactions = None;
+        let mut extracellular_gradient = None;
+        let mut volume = None;
 
-        value.aspects.aspect_fields.into_iter().for_each(|aspect_field| {
-            aspect_field.aspects.into_iter().for_each(|aspect| match aspect {
-                Aspect::Cycle(_) => cycle = Some(CycleImplementer {
-                    field_type: aspect_field.field.ty.clone(),
-                }),
-                Aspect::Mechanics(p) => mechanics = Some(MechanicsImplementer {
-                    position: p.position,
-                    velocity: p.velocity,
-                    force: p.force,
-                    field_type: aspect_field.field.ty.clone(),
-                    field_name: aspect_field.field.ident.clone(),
-                }),
-                // Aspect::Interaction(p) => interaction = Some(aspect_field.clone()),
-                // Aspect::CellularReactions(p) => cellular_reacitons = Some(aspect_field.clone()),
-                // Aspect::InteractionExtracellularGradient(p) => interaction_extracellular_gradient = Some(aspect_field.clone()),
-            })
-        });
+        value
+            .aspects
+            .aspect_fields
+            .into_iter()
+            .for_each(|aspect_field| {
+                aspect_field
+                    .aspects
+                    .into_iter()
+                    .for_each(|aspect| match aspect {
+                        Aspect::Cycle(_) => {
+                            cycle = Some(CycleImplementer {
+                                field_type: aspect_field.field.ty.clone(),
+                            })
+                        }
+                        Aspect::Mechanics(p) => {
+                            mechanics = Some(MechanicsImplementer {
+                                position: p.position,
+                                velocity: p.velocity,
+                                force: p.force,
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                        Aspect::Interaction(p) => {
+                            interaction = Some(InteractionImplementer {
+                                position: p.position,
+                                velocity: p.velocity,
+                                force: p.force,
+                                information: p.information,
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                        Aspect::CellularReactions(p) => {
+                            cellular_reactions = Some(CellularReactionsImplementer {
+                                concvecintracellular: p.concvecintracellular,
+                                concvecextracellular: p.concvecextracellular,
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                        Aspect::ExtracellularGradient(p) => {
+                            extracellular_gradient = Some(ExtracellularGradientImplementer {
+                                extracellular_gradient: p.extracellular_gradient,
+                                field_type: aspect_field.field.ty.clone(),
+                            })
+                        }
+                        Aspect::Volume(p) => {
+                            volume = Some(VolumeImplementer {
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                    })
+            });
 
         Self {
             name: value.name,
             generics: value.generics,
             cycle,
             mechanics,
-            // interaction,
-            // cellular_reacitons,
-            // interaction_extracellular_gradient,
+            interaction,
+            cellular_reactions,
+            extracellular_gradient,
+            volume,
         }
     }
 }
@@ -277,7 +449,203 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
+    fn implement_interaction(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let struct_generics = &self.generics;
+
+        if let Some(interaction_implementer) = &self.interaction {
+            let field_name = &interaction_implementer.field_name;
+            let field_type = &interaction_implementer.field_type;
+            let position = &interaction_implementer.position;
+            let velocity = &interaction_implementer.velocity;
+            let force = &interaction_implementer.force;
+            let information = &interaction_implementer.information;
+
+            let res = quote! {
+                impl #struct_generics Interaction<
+                    #position,
+                    #velocity,
+                    #force,
+                    #information
+                > for #struct_name #struct_generics {
+                    fn get_interaction_information(&self) -> #information {
+                        <#field_type as Interaction<
+                            #position,
+                            #velocity,
+                            #force,
+                            #information
+                        >>::get_interaction_information(
+                            &self.#field_name
+                        )
+                    }
+
+                    fn calculate_force_between(
+                        &self,
+                        own_pos: &#position,
+                        own_vel: &#velocity,
+                        ext_pos: &#position,
+                        ext_vel: &#velocity,
+                        ext_info: &#information,
+                    ) -> Option<Result<#force, CalcError>> {
+                        <#field_type as Interaction<
+                            #position,
+                            #velocity,
+                            #force,
+                            #information
+                        >>::calculate_force_between(
+                            &self.#field_name,
+                            own_pos,
+                            own_vel,
+                            ext_pos,
+                            ext_vel,
+                            ext_info
+                        )
+                    }
+
+                    fn is_neighbour(
+                        &self,
+                        own_pos: &#position,
+                        ext_pos: &#position,
+                        ext_inf: &#information
+                    ) -> Result<bool, CalcError> {
+                        <#field_type as Interaction<
+                            #position,
+                            #velocity,
+                            #force,
+                            #information
+                        >>::is_neighbour(
+                            &self.#field_name,
+                            own_pos,
+                            ext_pos,
+                            ext_inf
+                        )
+                    }
+
+                    fn react_to_neighbours(
+                        &mut self,
+                        neighbours: usize
+                    ) -> Result<(), CalcError> {
+                        <#field_type as Interaction<
+                            #position,
+                            #velocity,
+                            #force,
+                            #information
+                        >>::react_to_neighbours(
+                            &mut self.#field_name,
+                            neighbours
+                        )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
     fn implement_reactions(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let struct_generics = &self.generics;
+
+        if let Some(cellular_reactions_implemeneter) = &self.cellular_reactions {
+            let field_name = &cellular_reactions_implemeneter.field_name;
+            let field_type = &cellular_reactions_implemeneter.field_type;
+            let concvecintracellular = &cellular_reactions_implemeneter.concvecintracellular;
+            let concvecextracellular = &cellular_reactions_implemeneter.concvecextracellular;
+
+            let res = quote! {
+                impl #struct_generics CellularReactions<
+                    #concvecintracellular,
+                    #concvecextracellular
+                > for #struct_name #struct_generics {
+                    fn get_intracellular(&self) -> #concvecintracellular {
+                        <#field_type as CellularReactions<
+                            #concvecintracellular,
+                            #concvecextracellular
+                        >>::get_intracellular(&self.#field_name)
+                    }
+
+                    fn set_intracellular(
+                        &mut self,
+                        concentration_vector: #concvecintracellular
+                    ) {
+                        <#field_type as CellularReactions<
+                            #concvecintracellular,
+                            #concvecextracellular
+                        >>::set_intracellular(
+                            &mut self.#field_name,
+                            concentration_vector
+                        );
+                    }
+
+                    fn calculate_intra_and_extracellular_reaction_increment(
+                        &self,
+                        internal_concentration_vector: &#concvecintracellular,
+                        external_concentration_vector: &#concvecextracellular,
+                    ) -> Result<(#concvecintracellular, #concvecextracellular), CalcError> {
+                        <#field_type as CellularReactions<
+                            #concvecintracellular,
+                            #concvecextracellular
+                        >>::calculate_intra_and_extracellular_reaction_increment(
+                            &self.#field_name,
+                            internal_concentration_vector,
+                            external_concentration_vector
+                        )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
+    fn implement_extracellular_gradient(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let struct_generics = &self.generics;
+
+        if let Some(extracellular_gradient_implementer) = &self.extracellular_gradient {
+            let field_type = &extracellular_gradient_implementer.field_type;
+
+            let extracellular_gradient = &extracellular_gradient_implementer.extracellular_gradient;
+            let res = quote! {
+                impl InteractionExtracellularGradient<
+                    #struct_name #struct_generics,
+                    #extracellular_gradient
+                > for #struct_name #struct_generics {
+                    fn sense_gradient(
+                        cell: &mut #struct_name #struct_generics,
+                        gradient: &#extracellular_gradient,
+                    ) -> Result<(), CalcError> {
+                        <#field_type as InteractionExtracellularGradient<
+                            #struct_name #struct_generics,
+                            #extracellular_gradient
+                        >>::sense_gradient(cell, gradient)
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
+    fn implement_volume(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let struct_generics = &self.generics;
+
+        if let Some(volume_implementer) = &self.volume {
+            let field_type = &volume_implementer.field_type;
+            let field_name = &volume_implementer.field_name;
+
+            let res = quote! {
+                impl Volume for #struct_name #struct_generics {
+                    fn get_volume(&self) -> f64 {
+                        <#field_type as Volume>::get_volume(
+                            &self.#field_name
+                        )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
         TokenStream::new()
     }
 }
@@ -307,15 +675,14 @@ impl AgentImplementer {
 ///
 /// | Attribute | Type Arguments |
 /// | --- | --- |
-/// | `Cycle` | - |
-/// | Mechanics | `(Pos, Vel, For)` The position, velocity and force types. |
-/// | Interaction | `(Pos, Vel, For, Inf=())` The position, velocity, force and information types. The last one is optional. |
-/// | CellularReactions | `(ConcVecIntracellular, ConcVecExtracellular)` The  types for intra- and extracellular concentraitons. |
-/// | InteractionExtracellularGradient | `(ConcGradientExtracellular,)` The type of extracellular gradient. |
+/// | `Cycle`                   | -                                                                     |
+/// | `Mechanics`               | `(Pos, Vel, For)`                                                     |
+/// | `Interaction`             | `(Pos, Vel, For, Inf=())`                                             |
+/// | `CellularReactions`       | `(ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular)`   |
+/// | `ExtracellularGradient`   | `(ConcGradientExtracellular)`                                         |
+/// | 'Volume'                  | `(F=f64)`                                                         |
 ///
-/// Notice that all type arguments need to be a list.
-/// Thus we need to insert a comma at the end if we only have one entry.
-/// See the `InteractionExtracellularGradient` attribute.
+/// For a description of these type arguments see [cellular_raza_concepts].
 #[proc_macro_derive(
     CellAgent,
     attributes(
@@ -323,15 +690,12 @@ impl AgentImplementer {
         Mechanics,
         Interaction,
         CellularReactions,
-        InteractionExtracellularGradient
+        ExtracellularGradient,
+        Volume,
     )
 )]
 pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
-    // TODO modularize this into multiple functions responsible for implementing the individual
-    // aspects and document/comment them accordingly
-
     // Parse the input tokens into a syntax tree
-    println!("\n\n");
     let agent_parsed = syn::parse_macro_input!(input as AgentParser);
     let agent = AgentImplementer::from(agent_parsed);
 
@@ -339,258 +703,9 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
     res.extend(agent.implement_cycle());
     res.extend(agent.implement_mechanics());
     res.extend(agent.implement_reactions());
-
-    println!("\n\n");
+    res.extend(agent.implement_interaction());
+    res.extend(agent.implement_extracellular_gradient());
+    res.extend(agent.implement_volume());
 
     res
-
-    // Build the output, possibly using quasi-quotation
-    /*
-    let struct_name = ast.ident;
-    let struct_generics = ast.generics;
-    let mut result = TokenStream::new();
-
-    let data: syn::DataStruct = match ast.data {
-        syn::Data::Struct(data) => data,
-        _ => panic!("Usage of #[Cycle] on a non-struct type"),
-    };
-    for field in data.fields.iter() {
-        // Update Cycle
-        if let Some(_) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::Path(path) => {
-                if path.is_ident("Cycle") {
-                    Some(path)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let field_type = &field.ty;
-            let res2 = quote! {
-                impl #struct_generics Cycle<#struct_name> for #struct_name #struct_generics {
-                    fn update_cycle(
-                        rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: &f64,
-                        cell: &mut Self,
-                    ) -> Option<CycleEvent> {
-                        <#field_type as Cycle<#struct_name>>::update_cycle(rng, dt, cell)
-                    }
-
-                    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Self) -> Result<Self, DivisionError> {
-                        <#field_type as Cycle<#struct_name>>::divide(rng, cell)
-                    }
-
-                    fn update_conditional_phased_death(
-                        rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: &f64,
-                        cell: &mut Self,
-                    ) -> Result<bool, DeathError> {
-                        <#field_type as Cycle<#struct_name>>::update_conditional_phased_death(rng, dt, cell)
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res2));
-        }
-        // Update Mechanics
-        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::List(list) => {
-                if list.path.is_ident("Mechanics") {
-                    Some(list)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let tokens = list.tokens.clone();
-            let stream = quote!((#tokens));
-            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
-            let mut elems = attr.elems.into_iter();
-            let position = elems.next().unwrap();
-            let velocity = elems.next().unwrap();
-            let force = elems.next().unwrap();
-
-            let tokens = list.tokens.clone();
-            let name = &field.ident;
-            let field_type = &field.ty.clone();
-            let res2 = quote! {
-                impl #struct_generics Mechanics<#tokens> for #struct_name #struct_generics
-                {
-                    fn pos(&self) -> #position {
-                        <#field_type as Mechanics<#tokens>>::pos(&self.#name)
-                    }
-                    fn velocity(&self) -> #velocity {
-                        <#field_type as Mechanics<#tokens>>::velocity(&self.#name)
-                    }
-                    fn set_pos(&mut self, pos: &#position) {
-                        <#field_type as Mechanics<#tokens>>::set_pos(&mut self.#name, pos)
-                    }
-                    fn set_velocity(&mut self, velocity: &#velocity) {
-                        <#field_type as Mechanics<#tokens>>::set_velocity(&mut self.#name, velocity)
-                    }
-                    fn calculate_increment(&self, force: #force) -> Result<(#position, #velocity), CalcError> {
-                        <#field_type as Mechanics<#tokens>>::calculate_increment(&self.#name, force)
-                    }
-                    fn set_random_variable(&mut self,
-                        rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: f64,
-                    ) -> Result<Option<f64>, RngError> {
-                        <#field_type as Mechanics<#tokens>>::set_random_variable(&mut self.#name, rng, dt)
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res2));
-        }
-        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::List(list) => {
-                if list.path.is_ident("Interaction") {
-                    Some(list)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let name = field.ident.clone();
-            let field_type = field.ty.clone();
-            let tokens = list.tokens.clone();
-            let stream = quote!((#tokens));
-            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
-            let mut elems = attr.elems.into_iter();
-            let position = elems.next().unwrap();
-            let velocity = elems.next().unwrap();
-            let force = elems.next().unwrap();
-            let inf = match elems.next() {
-                Some(t) => t,
-                None => syn::parse2(quote!(())).unwrap(),
-            };
-            let res = quote! {
-                impl #struct_generics Interaction<#position, #velocity, #force, #inf> for #struct_name #struct_generics {
-                    fn get_interaction_information(&self) -> #inf {
-                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::get_interaction_information(&self.#name)
-                    }
-
-                    fn calculate_force_between(
-                        &self,
-                        own_pos: &#position,
-                        own_vel: &#velocity,
-                        ext_pos: &#position,
-                        ext_vel: &#velocity,
-                        ext_info: &#inf,
-                    ) -> Option<Result<#force, CalcError>> {
-                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::calculate_force_between(&self.#name, own_pos, own_vel, ext_pos, ext_vel, ext_info)
-                    }
-
-                    fn is_neighbour(&self, own_pos: &#position, ext_pos: &#position, ext_inf: &#inf) -> Result<bool, CalcError> {
-                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::is_neighbour(&self.#name, own_pos, ext_pos, ext_inf)
-                    }
-
-                    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
-                        <#field_type as Interaction<#position, #velocity, #force, #inf>>::react_to_neighbours(&mut self.#name, neighbours)
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res));
-        }
-
-        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::List(list) => {
-                if list.path.is_ident("CellularReactions") {
-                    Some(list)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let name = field.ident.clone();
-            let field_type = field.ty.clone();
-            let tokens = list.tokens.clone();
-            let stream = quote!((#tokens));
-            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
-            let mut elems = attr.elems.into_iter();
-            let concvecintracellular = elems.next().unwrap();
-            let concvecextracellular = elems
-                .next()
-                .or_else(|| Some(concvecintracellular.clone()))
-                .unwrap();
-            let res = quote! {
-                impl #struct_generics CellularReactions<#concvecintracellular, #concvecextracellular> for #struct_name #struct_generics {
-                    fn get_intracellular(&self) -> #concvecintracellular {
-                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::get_intracellular(&self.#name)
-                    }
-
-                    fn set_intracellular(&mut self, concentration_vector: #concvecintracellular) {
-                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::set_intracellular(&mut self.#name, concentration_vector);
-                    }
-
-                    fn calculate_intra_and_extracellular_reaction_increment(
-                        &self,
-                        internal_concentration_vector: &#concvecintracellular,
-                        external_concentration_vector: &#concvecextracellular,
-                    ) -> Result<(#concvecintracellular, #concvecextracellular), CalcError> {
-                        <#field_type as CellularReactions<#concvecintracellular, #concvecextracellular>>::calculate_intra_and_extracellular_reaction_increment(
-                            &self.#name,
-                            internal_concentration_vector,
-                            external_concentration_vector
-                        )
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res));
-        }
-        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::List(list) => {
-                if list.path.is_ident("InteractionExtracellularGradient") {
-                    Some(list)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let field_type = &field.ty;
-            let tokens = list.tokens.clone();
-            let stream = quote!((#tokens));
-            let attr: syn::TypeTuple = syn::parse2(stream).unwrap();
-            let mut elems = attr.elems.into_iter();
-            let concgradientextracellular = elems.next().unwrap();
-            let res = quote! {
-                impl InteractionExtracellularGradient<#struct_name #struct_generics, #concgradientextracellular> for #struct_name #struct_generics {
-                    fn sense_gradient(
-                        cell: &mut #struct_name #struct_generics,
-                        gradient: &#concgradientextracellular,
-                    ) -> Result<(), CalcError> {
-                        <#field_type as InteractionExtracellularGradient<#struct_name #struct_generics, #concgradientextracellular>>::sense_gradient(cell, gradient)
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res));
-        }
-        if let Some(list) = field.attrs.iter().find_map(|x| match &x.meta {
-            syn::Meta::List(list) => {
-                if list.path.is_ident("CellVolume") {
-                    Some(list)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }) {
-            let field_type = &field.ty;
-            let res = quote! {
-                impl Volume<#struct_name #struct_generics> for #struct_name #struct_generics {
-                    fn get_volume(&self) -> f64 {
-                        <#field_type as CellVolume<#struct_name #struct_generics>>::get_volume(&self)
-                    }
-                }
-            };
-            result.extend(TokenStream::from(res));
-        }
-    }
-
-    // Hand the output tokens back to the compiler
-    TokenStream::from(result)
-    */
 }
