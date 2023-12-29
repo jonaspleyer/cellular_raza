@@ -19,7 +19,7 @@ pub struct Bacteria {
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
     #[CellularReactions(f64, ReactionVector)]
     pub cellular_reactions: BacteriaReactions,
-    #[InteractionExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>,)]
+    #[ExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>)]
     pub interactionextracellulargradient: GradientSensing,
 }
 
