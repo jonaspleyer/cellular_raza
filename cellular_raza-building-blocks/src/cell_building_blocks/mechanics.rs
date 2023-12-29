@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use pyo3::prelude::*;
 
 macro_rules! implement_newton_damped_mechanics(
-    ($struct_name:ident, $d:literal) => {
+    ($struct_name:ident, $d:literal) => {implement_newton_damped_mechanics!($struct_name, $d, f64);};
+    ($struct_name:ident, $d:literal, $float_type:ty) => {
         /// Simple newtonian dynamics governed by mass and damping.
         ///
         /// The equation of motion is given by
@@ -30,13 +31,13 @@ macro_rules! implement_newton_damped_mechanics(
         #[cfg_attr(feature = "pyo3", pyclass)]
         pub struct $struct_name {
             /// Current position $\vec{x}$ given by a vector of dimension `D`.
-            pub pos: SVector<f64, $d>,
+            pub pos: SVector<$float_type, $d>,
             /// Current velocity $\dot{\vec{x}}$ given by a vector of dimension `D`.
-            pub vel: SVector<f64, $d>,
+            pub vel: SVector<$float_type, $d>,
             /// Damping constant $\lambda$.
-            pub damping_constant: f64,
+            pub damping_constant: $float_type,
             /// Mass $m$ of the object.
-            pub mass: f64,
+            pub mass: $float_type,
         }
 
         #[cfg(feature = "pyo3")]
@@ -47,10 +48,10 @@ macro_rules! implement_newton_damped_mechanics(
             /// from position, velocity, damping constant and mass
             #[new]
             pub fn new(
-                pos: [f64; $d],
-                vel: [f64; $d],
-                damping_constant: f64,
-                mass: f64,
+                pos: [$float_type; $d],
+                vel: [$float_type; $d],
+                damping_constant: $float_type,
+                mass: $float_type,
             ) -> Self {
                 Self {
                     pos: pos.into(),
@@ -61,68 +62,68 @@ macro_rules! implement_newton_damped_mechanics(
             }
 
             #[getter]
-            fn get_pos(&self) -> [f64; $d] {
+            fn get_pos(&self) -> [$float_type; $d] {
                 self.pos.into()
             }
 
             #[getter]
-            fn get_vel(&self) -> [f64; $d] {
+            fn get_vel(&self) -> [$float_type; $d] {
                 self.vel.into()
             }
 
             #[getter]
-            fn get_damping_constant(&self) -> f64 {
+            fn get_damping_constant(&self) -> $float_type {
                 self.damping_constant
             }
 
             #[getter]
-            fn get_mass(&self) -> f64 {
+            fn get_mass(&self) -> $float_type {
                 self.mass
             }
 
             #[setter]
-            fn set_pos(&mut self, pos: [f64; $d]) {
+            fn set_pos(&mut self, pos: [$float_type; $d]) {
                 self.pos = pos.into();
             }
 
             #[setter]
-            fn set_vel(&mut self, vel: [f64; $d]) {
+            fn set_vel(&mut self, vel: [$float_type; $d]) {
                 self.vel = vel.into();
             }
 
             #[setter]
-            fn set_damping_constant(&mut self, damping_constant: f64) {
+            fn set_damping_constant(&mut self, damping_constant: $float_type) {
                 self.damping_constant = damping_constant;
             }
 
             #[setter]
-            fn set_mass(&mut self, mass: f64) {
+            fn set_mass(&mut self, mass: $float_type) {
                 self.mass = mass;
             }
         }
 
-        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name
+        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>> for $struct_name
         {
-            fn pos(&self) -> SVector<f64, $d> {
+            fn pos(&self) -> SVector<$float_type, $d> {
                 self.pos
             }
 
-            fn velocity(&self) -> SVector<f64, $d> {
+            fn velocity(&self) -> SVector<$float_type, $d> {
                 self.vel
             }
 
-            fn set_pos(&mut self, p: &SVector<f64, $d>) {
+            fn set_pos(&mut self, p: &SVector<$float_type, $d>) {
                 self.pos = *p;
             }
 
-            fn set_velocity(&mut self, v: &SVector<f64, $d>) {
+            fn set_velocity(&mut self, v: &SVector<$float_type, $d>) {
                 self.vel = *v;
             }
 
             fn calculate_increment(
                 &self,
-                force: SVector<f64, $d>,
-            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                force: SVector<$float_type, $d>,
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 let dx = self.vel;
                 let dv = force / self.mass - self.damping_constant * self.vel;
                 Ok((dx, dv))
@@ -134,6 +135,10 @@ macro_rules! implement_newton_damped_mechanics(
 implement_newton_damped_mechanics!(NewtonDamped1D, 1);
 implement_newton_damped_mechanics!(NewtonDamped2D, 2);
 implement_newton_damped_mechanics!(NewtonDamped3D, 3);
+
+implement_newton_damped_mechanics!(NewtonDamped1DF32, 1, f32);
+implement_newton_damped_mechanics!(NewtonDamped2DF32, 2, f32);
+implement_newton_damped_mechanics!(NewtonDamped3DF32, 3, f32);
 
 /// An empty struct to signalize that no velocity needs to be updated.
 #[derive(Clone, Debug, Deserialize, Serialize)]
