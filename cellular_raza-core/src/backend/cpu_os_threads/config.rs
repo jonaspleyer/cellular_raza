@@ -557,7 +557,7 @@ where
             .unwrap();
 
         // Create all multivoxelcontainers
-        use rand::{SeedableRng, RngCore};
+        use rand::{RngCore, SeedableRng};
         use rand_chacha::ChaCha8Rng;
         let mut rng_generator = ChaCha8Rng::seed_from_u64(setup.meta_params.rng_seed);
         multivoxelcontainers = voxel_and_cell_boxes

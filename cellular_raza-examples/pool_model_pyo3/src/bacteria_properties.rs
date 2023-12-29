@@ -353,7 +353,7 @@ impl CellularReactions<f64, ReactionVector> for BacteriaReactions {
         };
 
         // TODO
-        let inc_int = -inc_ext[0]*self.food_to_volume_conversion*self.cell_volume;
+        let inc_int = -inc_ext[0] * self.food_to_volume_conversion * self.cell_volume;
 
         Ok((inc_int, inc_ext.into()))
     }

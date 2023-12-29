@@ -86,7 +86,7 @@ impl syn::parse::Parse for InteractionParser {
                 syn::parse_quote!(())
             } else {
                 content.parse()?
-            }
+            },
         })
     }
 }

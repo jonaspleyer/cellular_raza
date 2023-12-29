@@ -1,0 +1,13 @@
+[package]
+name = "cr_template"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+
+[dependencies]
+serde = { workspace = true }
+rand = { workspace = true, features=["small_rng"] }
+rand_chacha = { workspace = true }
+nalgebra = { version="0.32" }
+cellular_raza = { path="../../cellular_raza", features=["default"] }
+num = { workspace = true }

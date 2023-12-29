@@ -159,7 +159,6 @@ impl SimulationSettings {
             // domain_size: 100_f64 * NANOMETRE,
             // domain_cargo_radius_max: 20_f64 * NANOMETRE,
             // domain_r11_radius_min: 40_f64 * NANOMETRE,
-
             domain_n_voxels: Some(4),
 
             storage_name: "out/autophagy".into(),
@@ -316,8 +315,8 @@ fn create_particle_interaction(
             simulation_settings.cell_radius_r11
         },
         simulation_settings.potential_strength_cargo_cargo, // potential_strength_cargo_cargo
-        simulation_settings.potential_strength_r11_r11,   // potential_strength_r11_r11
-        simulation_settings.potential_strength_cargo_r11, // potential_strength_cargo_r11
+        simulation_settings.potential_strength_r11_r11,     // potential_strength_r11_r11
+        simulation_settings.potential_strength_cargo_r11,   // potential_strength_cargo_r11
         simulation_settings.potential_strength_cargo_r11_avidity, // potential_strength_cargo_r11_avidity
         simulation_settings.interaction_range_cargo_cargo,        // interaction_range_cargo_cargo
         simulation_settings.interaction_range_r11_r11,            // interaction_range_r11_r11
