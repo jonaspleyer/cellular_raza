@@ -86,7 +86,7 @@ impl syn::parse::Parse for InteractionParser {
                 syn::parse_quote!(())
             } else {
                 content.parse()?
-            },
+            }
         })
     }
 }
@@ -369,6 +369,27 @@ impl From<AgentParser> for AgentImplementer {
     }
 }
 
+fn wrap(input: TokenStream) -> TokenStream {
+    // Get the proc_macro2::TokenStream type right here
+    #[allow(unused)]
+    let mut input_new = quote!();
+    input_new = input.into();
+
+    TokenStream::from(quote! {
+        #[allow(non_upper_case_globals)]
+        const _: () = {
+            // TODO consider adding specific import of cellular_raza or cellular_raza_concepts crate
+            // extern crate cellular_raza as _cr;
+            // or
+            // extern crate cellular_raza_concepts as _cr;
+            //
+            // Also put a _cr::prelude::TRAIT in front of every implemented trait
+            // This is currently not possible to do at compile time without any hacks (to my knowledge)
+            #input_new
+        };
+    })
+}
+
 impl AgentImplementer {
     fn implement_cycle(&self) -> TokenStream {
         let struct_name = &self.name;
@@ -378,6 +399,7 @@ impl AgentImplementer {
             let field_type = &cycle_implementer.field_type;
 
             let new_stream = quote!(
+                #[automatically_derived]
                 impl #struct_generics Cycle<#struct_name> for #struct_name #struct_generics {
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
@@ -419,6 +441,7 @@ impl AgentImplementer {
             let field_name = &mechanics_implementer.field_name;
 
             let res = quote! {
+                #[automatically_derived]
                 impl #struct_generics Mechanics<#tokens> for #struct_name #struct_generics
                 {
                     fn pos(&self) -> #position {
@@ -462,6 +485,7 @@ impl AgentImplementer {
             let information = &interaction_implementer.information;
 
             let res = quote! {
+                #[automatically_derived]
                 impl #struct_generics Interaction<
                     #position,
                     #velocity,
@@ -553,6 +577,7 @@ impl AgentImplementer {
             let concvecextracellular = &cellular_reactions_implemeneter.concvecextracellular;
 
             let res = quote! {
+                #[automatically_derived]
                 impl #struct_generics CellularReactions<
                     #concvecintracellular,
                     #concvecextracellular
@@ -607,6 +632,7 @@ impl AgentImplementer {
 
             let extracellular_gradient = &extracellular_gradient_implementer.extracellular_gradient;
             let res = quote! {
+                #[automatically_derived]
                 impl InteractionExtracellularGradient<
                     #struct_name #struct_generics,
                     #extracellular_gradient
@@ -636,6 +662,7 @@ impl AgentImplementer {
             let field_name = &volume_implementer.field_name;
 
             let res = quote! {
+                #[automatically_derived]
                 impl Volume for #struct_name #struct_generics {
                     fn get_volume(&self) -> f64 {
                         <#field_type as Volume>::get_volume(
@@ -707,5 +734,5 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());
 
-    res
+    wrap(res)
 }
