@@ -22,11 +22,10 @@ pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
 macro_rules! define_no_cellular_reactions {
     ($conc_vec_intracellular:ty, $conc_vec_extracellular:ty) => {
         #[derive(Clone, Debug, Serialize, Deserialize)]
-        pub struct NoCellularreactions;
+        pub struct NoCellularReactions;
 
-        impl<Mec, Int, Cyc, IntExtracellular>
-            CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular>
-            for ModularCell<Mec, Int, Cyc, NoCellularreactions, IntExtracellular>
+        impl CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular>
+            for NoCellularReactions
         where
             $conc_vec_intracellular: num::Zero,
             $conc_vec_extracellular: num::Zero,
