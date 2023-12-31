@@ -1,0 +1,5 @@
+[build]
+rustdocflags = ["--document-private-items"]
+
+[alias]
+cr_doc = "doc --no-deps"

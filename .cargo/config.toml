@@ -9,6 +9,5 @@ rustflags = [
   "-C", "link-arg=dynamic_lookup",
 ]
 
-[doc]
-# This is currently not working
-# no-deps = true
+[alias]
+cr_doc = "doc --no-deps"
