@@ -23,7 +23,7 @@ pub struct Bacteria {
     pub interactionextracellulargradient: GradientSensing,
 }
 
-#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaTemplate {
     pub mechanics: Py<NewtonDamped2D>,
