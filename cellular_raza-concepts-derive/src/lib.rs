@@ -4,6 +4,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
+// ##################################### PARSING #####################################
 #[allow(unused)]
 struct AgentParser {
     attrs: Vec<syn::Attribute>,
@@ -27,6 +28,7 @@ impl syn::parse::Parse for AgentParser {
     }
 }
 
+// ------------------------------------ MECHANICS ------------------------------------
 #[derive(Clone)]
 struct MechanicsParser {
     position: syn::Type,
@@ -59,6 +61,7 @@ struct MechanicsImplementer {
     field_name: Option<syn::Ident>,
 }
 
+// ----------------------------------- INTERACTION -----------------------------------
 #[derive(Clone)]
 struct InteractionParser {
     position: syn::Type,
@@ -86,7 +89,7 @@ impl syn::parse::Parse for InteractionParser {
                 syn::parse_quote!(())
             } else {
                 content.parse()?
-            }
+            },
         })
     }
 }
@@ -100,6 +103,7 @@ struct InteractionImplementer {
     field_name: Option<syn::Ident>,
 }
 
+// ------------------------------- CELLULAR-REACTIONS --------------------------------
 #[derive(Clone)]
 struct CellularReactionsParser {
     concvecintracellular: syn::Type,
@@ -134,6 +138,7 @@ struct CellularReactionsImplementer {
     field_name: Option<syn::Ident>,
 }
 
+// ------------------------------ EXTRACELLULAR-GRADIENT -----------------------------
 #[derive(Clone)]
 struct ExtracellularGradientParser {
     extracellular_gradient: syn::Type,
@@ -155,6 +160,7 @@ struct ExtracellularGradientImplementer {
     field_type: syn::Type,
 }
 
+// ------------------------------------- VOLUME --------------------------------------
 #[derive(Clone)]
 struct VolumeParser;
 
@@ -171,6 +177,7 @@ struct VolumeImplementer {
     field_name: Option<syn::Ident>,
 }
 
+// -------------------------------------- CYCLE --------------------------------------
 #[derive(Clone)]
 struct CycleParser;
 
@@ -237,6 +244,7 @@ impl Aspect {
     }
 }
 
+// ------------------------------------- ASPECTS -------------------------------------
 #[derive(Clone)]
 struct AspectField {
     aspects: Vec<Aspect>,
@@ -280,6 +288,7 @@ impl syn::parse::Parse for AspectFields {
     }
 }
 
+// ################################### IMPLEMENTING ##################################
 struct AgentImplementer {
     name: syn::Ident,
     generics: syn::Generics,
