@@ -162,17 +162,27 @@ struct ExtracellularGradientImplementer {
 
 // ------------------------------------- VOLUME --------------------------------------
 #[derive(Clone)]
-struct VolumeParser;
+struct VolumeParser {
+    float_type: syn::Type,
+}
 
 impl syn::parse::Parse for VolumeParser {
     #[allow(unused)]
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _volume: syn::Ident = input.parse()?;
-        Ok(Self)
+        let float_type = if input.is_empty() {
+            syn::parse_quote!(f64)
+        } else {
+            let content;
+            syn::parenthesized!(content in input);
+            content.parse()?
+        };
+        Ok(Self { float_type })
     }
 }
 
 struct VolumeImplementer {
+    float_type: syn::Type,
     field_type: syn::Type,
     field_name: Option<syn::Ident>,
 }
@@ -358,6 +368,7 @@ impl From<AgentParser> for AgentImplementer {
                         }
                         Aspect::Volume(p) => {
                             volume = Some(VolumeImplementer {
+                                float_type: p.float_type,
                                 field_type: aspect_field.field.ty.clone(),
                                 field_name: aspect_field.field.ident.clone(),
                             })
@@ -664,12 +675,13 @@ impl AgentImplementer {
         if let Some(volume_implementer) = &self.volume {
             let field_type = &volume_implementer.field_type;
             let field_name = &volume_implementer.field_name;
+            let float_type = &volume_implementer.float_type;
 
             let res = quote! {
                 #[automatically_derived]
-                impl Volume for #struct_name #struct_generics {
-                    fn get_volume(&self) -> f64 {
-                        <#field_type as Volume>::get_volume(
+                impl Volume<#float_type> for #struct_name #struct_generics {
+                    fn get_volume(&self) -> #float_type {
+                        <#field_type as Volume<#float_type>>::get_volume(
                             &self.#field_name
                         )
                     }
