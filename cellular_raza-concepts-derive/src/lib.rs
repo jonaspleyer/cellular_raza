@@ -1,7 +1,7 @@
 // #![warn(missing_docs)]
 // #![warn(clippy::missing_docs_in_private_items)]
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
 
 #[allow(unused)]
@@ -201,7 +201,7 @@ impl Aspect {
         let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
 
         let s = &attr.meta;
-        let stream: TokenStream = quote!(#s).into();
+        let stream: proc_macro::TokenStream = quote!(#s).into();
 
         if cmp("Mechanics") {
             let parsed: MechanicsParser = syn::parse(stream)?;
@@ -370,12 +370,7 @@ impl From<AgentParser> for AgentImplementer {
 }
 
 fn wrap(input: TokenStream) -> TokenStream {
-    // Get the proc_macro2::TokenStream type right here
-    #[allow(unused)]
-    let mut input_new = quote!();
-    input_new = input.into();
-
-    TokenStream::from(quote! {
+    quote! {
         #[allow(non_upper_case_globals)]
         const _: () = {
             // TODO consider adding specific import of cellular_raza or cellular_raza_concepts crate
@@ -385,9 +380,9 @@ fn wrap(input: TokenStream) -> TokenStream {
             //
             // Also put a _cr::prelude::TRAIT in front of every implemented trait
             // This is currently not possible to do at compile time without any hacks (to my knowledge)
-            #input_new
+            #input
         };
-    })
+    }
 }
 
 impl AgentImplementer {
@@ -721,7 +716,7 @@ impl AgentImplementer {
         Volume,
     )
 )]
-pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
+pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let agent_parsed = syn::parse_macro_input!(input as AgentParser);
     let agent = AgentImplementer::from(agent_parsed);
@@ -734,5 +729,5 @@ pub fn derive_cell_agent(input: TokenStream) -> TokenStream {
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());
 
-    wrap(res)
+    wrap(res).into()
 }
