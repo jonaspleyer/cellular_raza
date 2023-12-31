@@ -18,9 +18,4 @@ proc-macro = true
 [dependencies]
 syn = "2.0"
 quote = "1.0"
-itertools = { workspace = true }
-
-[dependencies.cellular_raza-concepts]
-path = "../cellular_raza-concepts"
-version = "0.0.5"
 proc-macro2 = "1.0"
