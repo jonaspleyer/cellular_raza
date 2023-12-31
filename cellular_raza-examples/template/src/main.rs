@@ -7,24 +7,7 @@ use cellular_raza::core_derive::*;
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-struct MyCycle;
-
-impl Cycle<Agent> for MyCycle {
-    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Agent) -> Result<Agent, DivisionError> {
-        todo!()
-    }
-
-    fn update_cycle(
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: &f64,
-        cell: &mut Agent,
-    ) -> Option<CycleEvent> {
-        None
-    }
-}
-
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 struct Vol(f64);
 
 impl Volume for Vol {
@@ -39,8 +22,8 @@ struct Agent {
     pub mechanics: NewtonDamped2DF32,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     pub interaction: BoundLennardJones,
-    #[Cycle]
-    pub cycle: MyCycle,
+    // #[Cycle]
+    // pub cycle: NoCycle,
     #[CellularReactions(Nothing, Nothing)]
     pub reactions: NoCellularReactions,
     #[ExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>)]
