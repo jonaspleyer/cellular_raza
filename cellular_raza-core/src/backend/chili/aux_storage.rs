@@ -121,17 +121,118 @@ impl UpdateCycle for AuxStorageCycle {
     }
 }
 
+#[allow(unused)]
+#[doc(hidden)]
+mod test_derive_compile {
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructMechanics<P, V, F, const N: usize> {
+    ///     #[UpdateMechanics(P, V, F, N)]
+    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// }
+    /// ```
+    fn mechanics_default() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructMechanics<P, V, F, const N: usize> {
+    ///     #[UpdateMechanics(P, V, F, N)]
+    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// }
+    /// ```
+    fn mechanics_vis_1() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub(crate) struct TestStructMechanics<P, V, F, const N: usize> {
+    ///     #[UpdateMechanics(P, V, F, N)]
+    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// }
+    /// ```
+    fn mechanics_vis_2() {}
+
+    /// ```
+    /// mod some_module {
+    ///     use cellular_raza_core_derive::*;
+    ///     use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    ///     #[derive(AuxStorage)]
+    ///     pub(super) struct TestStructMechanics<P, V, F, const N: usize> {
+    ///         #[UpdateMechanics(P, V, F, N)]
+    ///         aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    ///     }
+    /// }
+    /// fn use_impl<T, P, V, F, const N: usize>(
+    ///     aux_storage: T
+    /// ) -> F
+    /// where
+    ///     T: cellular_raza_core::backend::chili::aux_storage::UpdateMechanics<P, V, F, N>,
+    /// {
+    ///     aux_storage.get_current_force()
+    /// }
+    /// ```
+    fn mechanics_vis_3() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructMechanics<P, V, F, T, const N: usize> {
+    ///     #[UpdateMechanics(P, V, F, N)]
+    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    ///     other: T,
+    /// }
+    /// ```
+    fn mechanics_more_struct_generics() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructMechanics<P, V, F, const N: usize, const M: usize> {
+    ///     #[UpdateMechanics(P, V, F, N)]
+    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    ///     count: [i64; M],
+    /// }
+    /// ```
+    fn mechanics_more_struct_const_generics() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructCycle {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    /// }
+    /// ```
+    fn cycle_default() {}
+}
+
 #[cfg(test)]
 pub mod test_derive_aux_storage {
     use super::*;
     use cellular_raza_core_derive::AuxStorage;
 
     #[derive(AuxStorage)]
-    struct TestStructDouble<P, V, F> {
+    struct TestStructDouble<P, V, F, const N: usize> {
         #[UpdateCycle]
         aux_cycle: AuxStorageCycle,
-        #[UpdateMechanics]
-        aux_mechanics: AuxStorageMechanics<P, V, F, 4>,
+        #[UpdateMechanics(P, V, F, N)]
+        aux_mechanics: AuxStorageMechanics<P, V, F, N>,
     }
 
     #[derive(AuxStorage)]
@@ -141,9 +242,9 @@ pub mod test_derive_aux_storage {
     }
 
     #[derive(AuxStorage)]
-    struct TestStructMechanics<P, V, F> {
-        #[UpdateMechanics]
-        aux_mechanis: AuxStorageMechanics<P, V, F, 4>,
+    struct TestStructMechanics<P, V, F, const N: usize> {
+        #[UpdateMechanics(P, V, F, N)]
+        aux_mechanis: AuxStorageMechanics<P, V, F, N>,
     }
 
     fn add_get_events<A>(aux_storage: &mut A)
@@ -188,7 +289,7 @@ pub mod test_derive_aux_storage {
 
     #[test]
     fn mechanics() {
-        let mut aux_storage = TestStructMechanics {
+        let mut aux_storage = TestStructMechanics::<_, _, _, 4> {
             aux_mechanis: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
@@ -198,7 +299,7 @@ pub mod test_derive_aux_storage {
 
     #[test]
     fn cycle_mechanics_add_get_events() {
-        let mut aux_storage = TestStructDouble {
+        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
@@ -210,7 +311,7 @@ pub mod test_derive_aux_storage {
 
     #[test]
     fn cycle_mechanics_set_get_events() {
-        let mut aux_storage = TestStructDouble {
+        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
