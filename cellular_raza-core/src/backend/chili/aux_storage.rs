@@ -209,6 +209,39 @@ impl UpdateCycle for AuxStorageCycle {
     }
 }
 
+// --------------------------------- UPDATE-REACTIONS --------------------------------
+/// Define interface for Auxiliary storage to interface with simulation
+pub trait UpdateReactions<R>
+{
+    fn set_conc(& mut self, conc : R);
+    fn get_conc(& self) -> R;
+    fn incr_conc(&mut self, incr: R);
+}
+
+pub struct AuxStorageReactions<R> {
+    concentration: R
+}
+
+impl<R> UpdateReactions<R> for AuxStorageReactions<R>
+where
+    R: Clone + core::ops::Add<R, Output=R>,
+{
+    #[inline]
+    fn get_conc(& self) -> R {
+        self.concentration.clone()
+    }
+
+    #[inline]
+    fn incr_conc(&mut self, incr: R) {
+        self.concentration = self.concentration.clone() + incr;
+    }
+
+    #[inline]
+    fn set_conc(& mut self, conc : R) {
+        self.concentration = conc;
+    }
+}
+
 #[allow(unused)]
 #[doc(hidden)]
 mod test_derive_compile {
