@@ -193,14 +193,17 @@ impl Default for AuxStorageCycle {
 }
 
 impl UpdateCycle for AuxStorageCycle {
+    #[inline]
     fn set_cycle_events(&mut self, events: Vec<CycleEvent>) {
         self.cycle_events = events;
     }
 
+    #[inline]
     fn get_cycle_events(&self) -> Vec<CycleEvent> {
         self.cycle_events.clone()
     }
 
+    #[inline]
     fn add_cycle_event(&mut self, event: CycleEvent) {
         self.cycle_events.push(event);
     }
