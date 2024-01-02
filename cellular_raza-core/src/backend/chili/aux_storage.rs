@@ -166,7 +166,8 @@ where
 /// Trait which describes how to store intermediate
 /// information on the cell cycle.
 pub trait UpdateCycle {
-    /// Set all cycle events. This function is currently the only way to change the contents of the stored events.
+    /// Set all cycle events. This function is currently the
+    /// only way to change the contents of the stored events.
     fn set_cycle_events(&mut self, events: Vec<CycleEvent>);
 
     /// Get all cycle events currently stored.
@@ -175,6 +176,7 @@ pub trait UpdateCycle {
     /// Add another cycle event to the storage.
     fn add_cycle_event(&mut self, event: CycleEvent);
 }
+
 
 /// Stores intermediate information about the cell cycle.
 #[derive(Clone, Debug, Deserialize, Serialize)]
