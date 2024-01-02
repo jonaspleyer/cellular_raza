@@ -445,21 +445,28 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
 }
 
 macro_rules! implement_cartesian_cuboid_domain_new {
-    ($d: literal, $domain_name: ident, $subdomain_name: ident, $voxel_name: ident, $($k: expr),+) => {
+    (
+        $d: literal,
+        $domain_name: ident,
+        $subdomain_name: ident,
+        $voxel_name: ident,
+        $float_type: ty,
+        $($k: expr),+
+    ) => {
         // TODO
         #[derive(Clone, Debug, Deserialize, Serialize)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $domain_name {
-            pub min: [f64; $d],
-            pub max: [f64; $d],
+            pub min: [$float_type; $d],
+            pub max: [$float_type; $d],
             pub n_voxels: [i64; $d],
-            pub dx_voxels: [f64; $d],
+            pub dx_voxels: [$float_type; $d],
             pub rng_seed: u64,
         }
 
         impl $domain_name {
-            fn check_min_max(min: [f64; $d], max: [f64; $d]) -> Result<(), CalcError> {
+            fn check_min_max(min: [$float_type; $d], max: [$float_type; $d]) -> Result<(), CalcError> {
                 for i in 0..$d {
                     match max[i] > min[i] {
                         false => Err(CalcError(format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max))),
@@ -483,9 +490,9 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
 
             pub fn from_boundaries_and_interaction_ranges(
-                min: [f64; $d],
-                max: [f64; $d],
-                interaction_ranges: [f64; $d]
+                min: [$float_type; $d],
+                max: [$float_type; $d],
+                interaction_ranges: [$float_type; $d]
             ) -> Result<$domain_name, CalcError>
             {
                 Self::check_min_max(min, max)?;
@@ -494,7 +501,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 let mut dx_voxels = [0.0; $d];
                 for i in 0..$d {
                     n_voxels[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as i64;
-                    dx_voxels[i] = (max[i]-min[i])/n_voxels[i] as f64;
+                    dx_voxels[i] = (max[i]-min[i])/n_voxels[i] as $float_type;
                 }
                 Ok(Self {
                     min,
@@ -506,8 +513,8 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
 
             pub fn from_boundaries_and_n_voxels(
-                min: [f64; $d],
-                max: [f64; $d],
+                min: [$float_type; $d],
+                max: [$float_type; $d],
                 n_vox: [usize; $d]
             ) -> Result<$domain_name, CalcError>
             {
@@ -515,7 +522,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 Self::check_positive(n_vox)?;
                 let mut dx_voxels = [0.0; $d];
                 for i in 0..$d {
-                    dx_voxels[i] = (max[i] - min[i]) / n_vox[i] as f64;
+                    dx_voxels[i] = (max[i] - min[i]) / n_vox[i] as $float_type;
                 }
                 Ok(Self {
                     min,
@@ -533,13 +540,13 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
             fn get_voxel_index(
                 &self,
-                position: &nalgebra::SVector<f64, $d>,
+                position: &nalgebra::SVector<$float_type, $d>,
             ) -> Result<[i64; $d], BoundaryError> {
-                let mut percent: nalgebra::SVector<f64, $d> = self.max.into();
-                percent -= nalgebra::SVector::<f64, $d>::from(self.min);
+                let mut percent: nalgebra::SVector<$float_type, $d> = self.max.into();
+                percent -= nalgebra::SVector::<$float_type, $d>::from(self.min);
                 percent = position.component_div(&percent);
                 let vox = [$(
-                    (percent[$k] * self.n_voxels[$k] as f64).floor() as i64,
+                    (percent[$k] * self.n_voxels[$k] as $float_type).floor() as i64,
                 )+];
 
                 // If the returned voxel is not positive and smaller than the maximum
@@ -593,14 +600,14 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $voxel_name {
-            pub min: [f64; $d],
-            pub max: [f64; $d],
+            pub min: [$float_type; $d],
+            pub max: [$float_type; $d],
             pub ind: [i64; $d],
         }
 
         impl<C> cellular_raza_concepts::domain_new::Domain<C, $subdomain_name> for $domain_name
         where
-            C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<f64, $d>, nalgebra::SVector<f64, $d>, nalgebra::SVector<f64, $d>>,
+            C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>>,
         {
             // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
             type SubDomainIndex = i64;
@@ -676,8 +683,8 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                         let voxels = indices
                             .into_iter()
                             .map(|ind| {
-                                let min = [$(self.min[$k] +    ind[$k]  as f64*self.dx_voxels[$k]),+];
-                                let max = [$(self.min[$k] + (1+ind[$k]) as f64*self.dx_voxels[$k]),+];
+                                let min = [$(self.min[$k] +    ind[$k]  as $float_type*self.dx_voxels[$k]),+];
+                                let max = [$(self.min[$k] + (1+ind[$k]) as $float_type*self.dx_voxels[$k]),+];
 
                                 $voxel_name {
                                     min,
@@ -803,9 +810,20 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
 implement_cartesian_cuboid_domain_new!(
     2,
-    CartesianCuboid2_New,
+    CartesianCuboid2New,
     CartesianSubDomain2,
     CartesianVoxel2,
+    f64,
+    0,
+    1
+);
+
+implement_cartesian_cuboid_domain_new!(
+    2,
+    CartesianCuboid2NewF32,
+    CartesianSubDomain2F32,
+    CartesianVoxel2F32,
+    f32,
     0,
     1
 );
