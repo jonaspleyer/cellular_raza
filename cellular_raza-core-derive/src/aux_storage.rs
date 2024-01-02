@@ -115,8 +115,10 @@ struct UpdateMechanicsParser {
     _comma_2: syn::token::Comma,
     force: syn::GenericParam,
     _comma_3: syn::token::Comma,
+    float_type: syn::GenericParam,
+    _comma_5: Option<syn::token::Comma>,
     n_saves: syn::GenericParam,
-    _comma_4: Option<syn::token::Comma>,
+    _comma_4: syn::token::Comma,
 }
 
 impl syn::parse::Parse for UpdateMechanicsParser {
@@ -131,8 +133,10 @@ impl syn::parse::Parse for UpdateMechanicsParser {
             _comma_2: content.parse()?,
             force: content.parse()?,
             _comma_3: content.parse()?,
-            n_saves: content.parse()?,
+            float_type: content.parse()?,
             _comma_4: content.parse()?,
+            n_saves: content.parse()?,
+            _comma_5: content.parse()?,
         })
     }
 }
@@ -255,6 +259,7 @@ struct UpdateMechanicsImplementer {
     velocity: syn::GenericParam,
     force: syn::GenericParam,
     n_saves: syn::GenericParam,
+    float_type: syn::GenericParam,
     field_name: Option<syn::Ident>,
     field_type: syn::Type,
 }
@@ -266,8 +271,9 @@ impl AuxStorageImplementer {
             let velocity = &update_mechanics.velocity;
             let force = &update_mechanics.force;
             let n_saves = &update_mechanics.n_saves;
+            let float_type = &update_mechanics.float_type;
 
-            let field_generics = quote!(#position, #velocity, #force, #n_saves);
+            let field_generics = quote!(#position, #velocity, #force, #float_type, #n_saves);
 
             let struct_name = &self.name;
             let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
@@ -279,7 +285,8 @@ impl AuxStorageImplementer {
             let new_stream = wrap_pre_flags(quote!(
                 impl #struct_impl_generics UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #struct_where_clause
                 where
-                    F: Clone + core::ops::AddAssign<F> + num::Zero,
+                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                    #float_type: Clone,
                 {
                     fn set_last_position(&mut self, pos: #position) {
                         <#field_type as UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
@@ -301,6 +308,14 @@ impl AuxStorageImplementer {
                     }
                     fn clear_forces(&mut self) {
                         <#field_type as UpdateMechanics<#field_generics>>::clear_forces(&mut self.#field_name)
+                    }
+
+                    fn get_next_random_update(&self) -> Option<#float_type> {
+                        <#field_type as UpdateMechanics<#field_generics>>::get_next_random_update(&self.#field_name)
+                    }
+
+                    fn set_next_random_update(&mut self, next: Option<#float_type>) {
+                        <#field_type as UpdateMechanics<#field_generics>>::set_next_random_update(&mut self.#field_name, next)
                     }
                 }
             ));

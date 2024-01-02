@@ -52,36 +52,119 @@ impl<C> CellBox<C> {
     }
 }
 
+// --------------------------------- UPDATE-MECHANICS --------------------------------
 /// Used to store intermediate information about last positions and velocities.
 /// Can store up to `N` values.
-pub trait UpdateMechanics<P, V, F, const N: usize> {
+pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
     /// Stores the last position of the cell. May overwrite old results depending on
     /// how many old results are being stored.
-    fn set_last_position(&mut self, pos: P);
+    fn set_last_position(&mut self, pos: Pos);
 
-    /// Get all previous positions. This number may be smaller than the maximum number of stored
+    /// Get all previous positions. This number maybe smaller than the maximum number of stored
     /// positions but never exceeds it.
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<P>;
+    fn previous_positions(&self) -> std::collections::vec_deque::Iter<Pos>;
 
     /// Stores the last velocity of the cell. Overwrites old results when stored amount
     /// exceeds number of maximum stored values.
-    fn set_last_velocity(&mut self, vel: V);
+    fn set_last_velocity(&mut self, vel: Vel);
 
     /// Get all previous velocities. This number may be smaller than the maximum number of stored
     /// velocities but never exceeds it.
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V>;
+    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<Vel>;
 
     /// Add force to currently stored forces
-    fn add_force(&mut self, force: F);
+    fn add_force(&mut self, force: For);
 
     /// Obtain current force on cell
-    fn get_current_force(&self) -> F;
+    fn get_current_force(&self) -> For;
 
     /// Removes all stored forces
     fn clear_forces(&mut self);
+
+    /// Next time point at which the internal state is updated randomly
+    fn get_next_random_update(&self) -> Option<Float>;
+
+    /// Set the time point for the next random update
+    fn set_next_random_update(&mut self, next: Option<Float>);
 }
 
-/// Trait which describes how to store intermediate information on the cell cycle.
+/// Stores intermediate information about the mechanics of a cell.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AuxStorageMechanics<Pos, Vel, For, Float, const N: usize> {
+    positions: FixedSizeRingBuffer<Pos, N>,
+    velocities: FixedSizeRingBuffer<Vel, N>,
+    current_force: For,
+    next_random_mechanics_update: Option<Float>,
+}
+
+impl<Pos, Vel, For, Float, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, Float, N>
+where
+    For: num::Zero,
+{
+    fn default() -> Self {
+        AuxStorageMechanics {
+            positions: FixedSizeRingBuffer::new(),
+            velocities: FixedSizeRingBuffer::new(),
+            current_force: For::zero(),
+            next_random_mechanics_update: None
+        }
+    }
+}
+
+impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N> for AuxStorageMechanics<Pos, Vel, For, Float, N>
+where
+    For: Clone + core::ops::AddAssign<For> + num::Zero,
+    Float: Clone,
+{
+    #[inline]
+    fn previous_positions(&self) -> std::collections::vec_deque::Iter<Pos> {
+        self.positions.iter()
+    }
+
+    #[inline]
+    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<Vel> {
+        self.velocities.iter()
+    }
+
+    #[inline]
+    fn set_last_position(&mut self, pos: Pos) {
+        self.positions.push(pos);
+    }
+
+    #[inline]
+    fn set_last_velocity(&mut self, vel: Vel) {
+        self.velocities.push(vel);
+    }
+
+    #[inline]
+    fn add_force(&mut self, force: For) {
+        self.current_force += force;
+    }
+
+    #[inline]
+    fn get_current_force(&self) -> For {
+        self.current_force.clone()
+    }
+
+    #[inline]
+    fn clear_forces(&mut self) {
+        self.current_force = For::zero();
+    }
+
+    #[inline]
+    fn get_next_random_update(&self) -> Option<Float> {
+        self.next_random_mechanics_update.clone()
+    }
+
+    #[inline]
+    fn set_next_random_update(&mut self, next: Option<Float>) {
+        self.next_random_mechanics_update = next;
+    }
+}
+
+// ----------------------------------- UPDATE-CYCLE ----------------------------------
+/// Trait which describes how to store intermediate
+/// information on the cell cycle.
 pub trait UpdateCycle {
     /// Set all cycle events. This function is currently the only way to change the contents of the stored events.
     fn set_cycle_events(&mut self, events: Vec<CycleEvent>);
@@ -129,9 +212,9 @@ mod test_derive_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<P, V, F, const N: usize> {
-    ///     #[UpdateMechanics(P, V, F, N)]
-    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     /// }
     /// ```
     fn mechanics_default() {}
@@ -141,9 +224,9 @@ mod test_derive_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub struct TestStructMechanics<P, V, F, const N: usize> {
-    ///     #[UpdateMechanics(P, V, F, N)]
-    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// pub struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     /// }
     /// ```
     fn mechanics_vis_1() {}
@@ -153,9 +236,9 @@ mod test_derive_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub(crate) struct TestStructMechanics<P, V, F, const N: usize> {
-    ///     #[UpdateMechanics(P, V, F, N)]
-    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// pub(crate) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     /// }
     /// ```
     fn mechanics_vis_2() {}
@@ -166,16 +249,16 @@ mod test_derive_compile {
     ///     use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     ///     #[derive(AuxStorage)]
-    ///     pub(super) struct TestStructMechanics<P, V, F, const N: usize> {
-    ///         #[UpdateMechanics(P, V, F, N)]
-    ///         aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    ///     pub(super) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+    ///         #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///         aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     ///     }
     /// }
-    /// fn use_impl<T, P, V, F, const N: usize>(
+    /// fn use_impl<T, Pos, Vel, For, Float, const N: usize>(
     ///     aux_storage: T
-    /// ) -> F
+    /// ) -> For
     /// where
-    ///     T: cellular_raza_core::backend::chili::aux_storage::UpdateMechanics<P, V, F, N>,
+    ///     T: cellular_raza_core::backend::chili::aux_storage::UpdateMechanics<Pos, Vel, For, Float, N>,
     /// {
     ///     aux_storage.get_current_force()
     /// }
@@ -187,9 +270,9 @@ mod test_derive_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<P, V, F, T, const N: usize> {
-    ///     #[UpdateMechanics(P, V, F, N)]
-    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, Float, T, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     ///     other: T,
     /// }
     /// ```
@@ -200,9 +283,9 @@ mod test_derive_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<P, V, F, const N: usize, const M: usize> {
-    ///     #[UpdateMechanics(P, V, F, N)]
-    ///     aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize, const M: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     ///     count: [i64; M],
     /// }
     /// ```
@@ -228,11 +311,11 @@ pub mod test_derive_aux_storage {
     use cellular_raza_core_derive::AuxStorage;
 
     #[derive(AuxStorage)]
-    struct TestStructDouble<P, V, F, const N: usize> {
+    struct TestStructDouble<Pos, Vel, For, Float, const N: usize> {
         #[UpdateCycle]
         aux_cycle: AuxStorageCycle,
-        #[UpdateMechanics(P, V, F, N)]
-        aux_mechanics: AuxStorageMechanics<P, V, F, N>,
+        #[UpdateMechanics(Pos, Vel, For, Float, N)]
+        aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     }
 
     #[derive(AuxStorage)]
@@ -242,9 +325,9 @@ pub mod test_derive_aux_storage {
     }
 
     #[derive(AuxStorage)]
-    struct TestStructMechanics<P, V, F, const N: usize> {
-        #[UpdateMechanics(P, V, F, N)]
-        aux_mechanis: AuxStorageMechanics<P, V, F, N>,
+    struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+        #[UpdateMechanics(Pos, Vel, For, Float, N)]
+        aux_mechanis: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     }
 
     fn add_get_events<A>(aux_storage: &mut A)
@@ -289,35 +372,38 @@ pub mod test_derive_aux_storage {
 
     #[test]
     fn mechanics() {
-        let mut aux_storage = TestStructMechanics::<_, _, _, 4> {
+        let mut aux_storage = TestStructMechanics::<_, _, _, _, 4> {
             aux_mechanis: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(1_f32);
+        aux_storage.set_next_random_update(Some(120.034958_f32));
     }
 
     #[test]
     fn cycle_mechanics_add_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
+        let mut aux_storage = TestStructDouble::<_, _, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(-5_f32);
+        aux_storage.set_next_random_update(Some(33_f32));
         add_get_events(&mut aux_storage);
     }
 
     #[test]
     fn cycle_mechanics_set_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
+        let mut aux_storage = TestStructDouble::<_, _, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(111_i64);
+        aux_storage.set_next_random_update(Some(0_f32));
         set_get_events(&mut aux_storage);
     }
 }
@@ -392,59 +478,5 @@ impl<T, const N: usize> IntoIterator for FixedSizeRingBuffer<T, N> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.values.into_iter()
-    }
-}
-
-/// Stores intermediate information about the mechanics of a cell.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AuxStorageMechanics<P, V, F, const N: usize> {
-    positions: FixedSizeRingBuffer<P, N>,
-    velocities: FixedSizeRingBuffer<V, N>,
-    current_force: F,
-}
-
-impl<P, V, F, const N: usize> Default for AuxStorageMechanics<P, V, F, N>
-where
-    F: num::Zero,
-{
-    fn default() -> Self {
-        AuxStorageMechanics {
-            positions: FixedSizeRingBuffer::new(),
-            velocities: FixedSizeRingBuffer::new(),
-            current_force: F::zero(),
-        }
-    }
-}
-
-impl<P, V, F, const N: usize> UpdateMechanics<P, V, F, N> for AuxStorageMechanics<P, V, F, N>
-where
-    F: Clone + core::ops::AddAssign<F> + num::Zero,
-{
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<P> {
-        self.positions.iter()
-    }
-
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<V> {
-        self.velocities.iter()
-    }
-
-    fn set_last_position(&mut self, pos: P) {
-        self.positions.push(pos);
-    }
-
-    fn set_last_velocity(&mut self, vel: V) {
-        self.velocities.push(vel);
-    }
-
-    fn add_force(&mut self, force: F) {
-        self.current_force += force;
-    }
-
-    fn get_current_force(&self) -> F {
-        self.current_force.clone()
-    }
-
-    fn clear_forces(&mut self) {
-        self.current_force = F::zero();
     }
 }
