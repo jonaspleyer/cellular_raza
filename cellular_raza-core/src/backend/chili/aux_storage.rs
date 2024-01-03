@@ -332,6 +332,21 @@ mod test_derive_compile {
     /// ```
     /// use cellular_raza_core_derive::*;
     /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize>
+    /// where
+    ///     Pos: Clone,
+    /// {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// }
+    /// ```
+    fn mechanics_where_clause() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]

@@ -15,32 +15,39 @@ pub struct AuxStorageParser {
 
 impl syn::parse::Parse for AuxStorageParser {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let item_struct: syn::ItemStruct = input.parse()?;
+
         Ok(Self {
-            attrs: input.call(syn::Attribute::parse_outer)?,
-            vis: input.parse()?,
-            struct_token: input.parse()?,
-            name: input.parse()?,
-            generics: input.parse()?,
-            aspects: input.parse()?,
+            attrs: item_struct.attrs,
+            vis: item_struct.vis,
+            struct_token: item_struct.struct_token,
+            name: item_struct.ident,
+            generics: item_struct.generics,
+            aspects: AspectFields::from_fields(item_struct.fields)?,
         })
     }
 }
 
 struct AspectFields {
-    #[allow(unused)]
-    brace_token: syn::token::Brace,
-    aspect_fields: syn::punctuated::Punctuated<AspectField, syn::token::Comma>,
+    aspect_fields: Vec<AspectField>,
 }
 
-impl syn::parse::Parse for AspectFields {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let content;
-        Ok(Self {
-            brace_token: syn::braced!(content in input),
-            aspect_fields: content.call(
-                syn::punctuated::Punctuated::<AspectField, syn::token::Comma>::parse_terminated,
-            )?,
-        })
+impl AspectFields {
+    fn from_fields(fields: syn::Fields) -> syn::Result<Self> {
+        if let syn::Fields::Named(named_fields) = fields {
+            Ok(Self {
+                aspect_fields: named_fields
+                    .named
+                    .into_iter()
+                    .map(|field| AspectField::from_field(field))
+                    .collect::<Result<Vec<_>, syn::Error>>()?,
+            })
+        } else {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Could not parse struct. Use named fields for struct definition syntax!",
+            ));
+        }
     }
 }
 
@@ -49,10 +56,8 @@ struct AspectField {
     field: syn::Field,
 }
 
-impl syn::parse::Parse for AspectField {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let field: syn::Field = input.call(syn::Field::parse_named)?;
-
+impl AspectField {
+    fn from_field(field: syn::Field) -> syn::Result<Self> {
         let mut errors = vec![];
         let aspects = field
             .attrs
@@ -74,7 +79,7 @@ impl Aspect {
         let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
 
         let s = &attr.meta;
-        let stream: TokenStream = quote!(#s).into();
+        let stream: proc_macro::TokenStream = quote!(#s).into();
 
         if cmp("UpdateMechanics") {
             let parsed: UpdateMechanicsParser = syn::parse(stream)?;
@@ -278,15 +283,27 @@ impl AuxStorageImplementer {
             let struct_name = &self.name;
             let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
                 &self.generics.split_for_impl();
+            let where_clause = match struct_where_clause {
+                Some(s_where) => {
+                let pred = s_where.predicates.iter();
+                quote!(
+                    where
+                    #(#pred,)*
+                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                    #float_type: Clone,
+                )},
+                None => quote!(
+                    where
+                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                    #float_type: Clone,
+                )
+            };
 
             let field_name = &update_mechanics.field_name;
             let field_type = &update_mechanics.field_type;
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #struct_impl_generics UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #struct_where_clause
-                where
-                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
-                    #float_type: Clone,
+                impl #struct_impl_generics UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #where_clause
                 {
                     fn set_last_position(&mut self, pos: #position) {
                         <#field_type as UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
