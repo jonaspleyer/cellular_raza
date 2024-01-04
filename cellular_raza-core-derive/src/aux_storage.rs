@@ -1,20 +1,19 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::parse::ParseStream;
 
 // ##################################### PARSING #####################################
 #[allow(unused)]
 pub struct AuxStorageParser {
     attrs: Vec<syn::Attribute>,
     vis: syn::Visibility,
-    struct_token: syn::Token![struct],
+    struct_token: syn::token::Struct,
     name: syn::Ident,
     generics: syn::Generics,
     aspects: AspectFields,
 }
 
 impl syn::parse::Parse for AuxStorageParser {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let item_struct: syn::ItemStruct = input.parse()?;
 
         Ok(Self {
@@ -127,7 +126,7 @@ struct UpdateMechanicsParser {
 }
 
 impl syn::parse::Parse for UpdateMechanicsParser {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _update_mechanics: syn::Ident = input.parse()?;
         let content;
         syn::parenthesized!(content in input);
@@ -151,7 +150,7 @@ struct UpdateCycleParser;
 
 impl syn::parse::Parse for UpdateCycleParser {
     #[allow(unused)]
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _update_cycle: syn::Ident = input.parse()?;
         Ok(Self)
     }
@@ -161,8 +160,9 @@ impl syn::parse::Parse for UpdateCycleParser {
 struct UpdateInteractionParser {}
 
 impl syn::parse::Parse for UpdateInteractionParser {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(Self {})
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _update_interaction: syn::Ident = input.parse()?;
+        Ok(Self)
     }
 }
 
@@ -170,7 +170,7 @@ impl syn::parse::Parse for UpdateInteractionParser {
 struct UpdateReactionsParser {}
 
 impl syn::parse::Parse for UpdateReactionsParser {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {})
     }
 }
