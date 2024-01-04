@@ -8,7 +8,7 @@ use std::{
 
 use super::CellIdentifier;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct CellBox<C> {
     /// The identifier is composed of two values, one for the voxel index in which the
     /// object was created and another one which counts how many elements have already
@@ -89,7 +89,7 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 }
 
 /// Stores intermediate information about the mechanics of a cell.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AuxStorageMechanics<Pos, Vel, For, Float, const N: usize> {
     positions: FixedSizeRingBuffer<Pos, N>,
     velocities: FixedSizeRingBuffer<Vel, N>,
@@ -177,9 +177,8 @@ pub trait UpdateCycle {
     fn add_cycle_event(&mut self, event: CycleEvent);
 }
 
-
 /// Stores intermediate information about the cell cycle.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
     cycle_events: Vec<CycleEvent>,
 }
@@ -741,7 +740,7 @@ pub mod test_derive_aux_storage {
 /// ring_buffer.push(8);
 /// let _ = ring_buffer.into_iter();
 /// ```
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct FixedSizeRingBuffer<T, const N: usize> {
     /// contains the elements in the buffer
     // TODO can we do this without heap allocations?

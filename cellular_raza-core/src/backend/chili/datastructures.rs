@@ -25,7 +25,7 @@ pub trait Supervisor {
 }
 
 /// Stores information related to a voxel of the physical simulation domain.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Voxel<C, A> {
     /// The index which is given when decomposing the domain and all indices are counted.
     pub plain_index: VoxelPlainIndex,
