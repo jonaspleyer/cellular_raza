@@ -291,18 +291,19 @@ impl AuxStorageImplementer {
                 &self.generics.split_for_impl();
             let where_clause = match struct_where_clause {
                 Some(s_where) => {
-                let pred = s_where.predicates.iter();
-                quote!(
-                    where
-                    #(#pred,)*
-                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
-                    #float_type: Clone,
-                )},
+                    let pred = s_where.predicates.iter();
+                    quote!(
+                        where
+                        #(#pred,)*
+                        #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                        #float_type: Clone,
+                    )
+                }
                 None => quote!(
                     where
                     #force: Clone + core::ops::AddAssign<#force> + num::Zero,
                     #float_type: Clone,
-                )
+                ),
             };
 
             let field_name = &update_mechanics.field_name;

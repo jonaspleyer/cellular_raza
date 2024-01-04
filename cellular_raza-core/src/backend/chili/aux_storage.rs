@@ -106,12 +106,13 @@ where
             positions: FixedSizeRingBuffer::new(),
             velocities: FixedSizeRingBuffer::new(),
             current_force: For::zero(),
-            next_random_mechanics_update: None
+            next_random_mechanics_update: None,
         }
     }
 }
 
-impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N> for AuxStorageMechanics<Pos, Vel, For, Float, N>
+impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N>
+    for AuxStorageMechanics<Pos, Vel, For, Float, N>
 where
     For: Clone + core::ops::AddAssign<For> + num::Zero,
     Float: Clone,
@@ -209,24 +210,24 @@ impl UpdateCycle for AuxStorageCycle {
 }
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
-/// Define interface for Auxiliary storage to interface with simulation
-pub trait UpdateReactions<R>
-{
-    fn set_conc(& mut self, conc : R);
-    fn get_conc(& self) -> R;
+/// Interface to store intermediate information about cellular reactions.
+pub trait UpdateReactions<R> {
+    fn set_conc(&mut self, conc: R);
+    fn get_conc(&self) -> R;
     fn incr_conc(&mut self, incr: R);
 }
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AuxStorageReactions<R> {
-    concentration: R
+    concentration: R,
 }
 
 impl<R> UpdateReactions<R> for AuxStorageReactions<R>
 where
-    R: Clone + core::ops::Add<R, Output=R>,
+    R: Clone + core::ops::Add<R, Output = R>,
 {
     #[inline]
-    fn get_conc(& self) -> R {
+    fn get_conc(&self) -> R {
         self.concentration.clone()
     }
 
@@ -236,7 +237,7 @@ where
     }
 
     #[inline]
-    fn set_conc(& mut self, conc : R) {
+    fn set_conc(&mut self, conc: R) {
         self.concentration = conc;
     }
 }
