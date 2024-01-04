@@ -787,3 +787,101 @@ impl<T, const N: usize> IntoIterator for FixedSizeRingBuffer<T, N> {
         self.values.into_iter()
     }
 }
+
+#[cfg(feature = "never")]
+mod future_ring_buffer {
+    // Continue working in this playground:
+    // https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e4f1b291da1fb3f6a303ec5c55930319
+
+    #[derive(Debug)]
+    struct FixedSizeRingBuffer<T, const N: usize> {
+        items: [std::mem::MaybeUninit<T>; N],
+        first: usize,
+        size: usize,
+    }
+
+    impl<T, const N: usize> Clone for FixedSizeRingBuffer<T, N> {
+        fn clone(&self) -> Self {
+            Self {
+                items: self.items.clone(),
+                first: self.first,
+                size: self.size,
+            }
+        }
+    }
+
+    impl<T, const N: usize> Serialize for FixedSizeRingBuffer<T, N>
+    where
+        T: Serialize,
+    {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            use serde::ser::SerializeSeq;
+            let mut s = serializer.serialize_seq(Some(self.size))?;
+            for element in self.iter() {
+                s.serialize_element(element)?;
+            }
+            s.end()
+        }
+    }
+
+    impl<'de, T, const N: usize> Deserialize<'de> for FixedSizeRingBuffer<T, N>
+    where
+        T: for<'a> Deserialize<'de>,
+    {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            todo!()
+        }
+    }
+
+    struct FixedSizeRingBufferIter<'a, T, const N: usize> {
+        items: &'a [std::mem::MaybeUninit<T>; N],
+        current: usize,
+        left_size: usize,
+    }
+
+    impl<'a, T, const N: usize> Iterator for FixedSizeRingBufferIter<'a, T, N> {
+        type Item = &'a T;
+
+        fn next(&mut self) -> Option<&'a T> {
+            if self.left_size == 0 {
+                return None;
+            }
+            let index = self.current;
+            self.current = (self.current + 1) % N;
+            self.left_size -= 1;
+            Some(unsafe { self.items[index].assume_init_ref() })
+        }
+    }
+
+    impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
+        fn push(&mut self, new_item: T) {
+            self.items[self.first].write(new_item);
+            self.first = (self.first + 1) % N;
+            self.size = N.min(self.size + 1);
+        }
+
+        fn iter<'a>(&'a self) -> FixedSizeRingBufferIter<'a, T, N> {
+            FixedSizeRingBufferIter {
+                items: &self.items,
+                current: self.first,
+                left_size: self.size,
+            }
+        }
+    }
+
+    impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
+        fn new() -> Self {
+            Self {
+                items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
+                first: 0,
+                size: 0,
+            }
+        }
+    }
+}
