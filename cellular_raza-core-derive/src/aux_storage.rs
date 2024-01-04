@@ -90,15 +90,15 @@ impl Aspect {
             return Ok(Some(Aspect::UpdateCycle(parsed)));
         }
 
-        /* if cmp("UpdateInteraction") {
-            let parsed: InteractionParser = syn::parse(stream)?;
+        if cmp("UpdateInteraction") {
+            let parsed: UpdateInteractionParser = syn::parse(stream)?;
             return Ok(Some(Aspect::UpdateInteraction(parsed)));
         }
 
         if cmp("UpdateReactions") {
-            let parsed: ReactionsParser = syn::parse(stream)?;
+            let parsed: UpdateReactionsParser = syn::parse(stream)?;
             return Ok(Some(Aspect::UpdateReactions(parsed)));
-        }*/
+        }
 
         Ok(None)
     }
@@ -107,8 +107,8 @@ impl Aspect {
 enum Aspect {
     UpdateMechanics(UpdateMechanicsParser),
     UpdateCycle(UpdateCycleParser),
-    // UpdateInteraction(InteractionParser),
-    // UpdateReactions(ReactionsParser),
+    UpdateInteraction(UpdateInteractionParser),
+    UpdateReactions(UpdateReactionsParser),
 }
 
 // --------------------------------- UPDATE-MECHANICS --------------------------------
@@ -157,7 +157,7 @@ impl syn::parse::Parse for UpdateCycleParser {
 }
 
 // -------------------------------- UPDATE-INTERACTION -------------------------------
-struct UpdateInteractionParser {}
+struct UpdateInteractionParser;
 
 impl syn::parse::Parse for UpdateInteractionParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
@@ -167,11 +167,18 @@ impl syn::parse::Parse for UpdateInteractionParser {
 }
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
-struct UpdateReactionsParser {}
+struct UpdateReactionsParser {
+    concentration: syn::GenericParam,
+}
 
 impl syn::parse::Parse for UpdateReactionsParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {})
+        let _update_reactions: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            concentration: content.parse()?,
+        })
     }
 }
 
@@ -180,8 +187,8 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
     fn from(value: AuxStorageParser) -> Self {
         let mut update_cycle = None;
         let mut update_mechanics = None;
-        // let mut update_interaction = None;
-        // let mut update_reactions = None;
+        let mut update_interaction = None;
+        let mut update_reactions = None;
 
         value
             .aspects
@@ -205,27 +212,24 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
                                 velocity: p.velocity,
                                 force: p.force,
                                 n_saves: p.n_saves,
+                                float_type: p.float_type,
                                 field_name: aspect_field.field.ident.clone(),
                                 field_type: aspect_field.field.ty.clone(),
                             })
-                        } /* Aspect::UpdateInteraction(p) => {
-                              update_interaction = Some(InteractionImplementer {
-                                  position: p.position,
-                                  velocity: p.velocity,
-                                  force: p.force,
-                                  information: p.information,
-                                  field_type: aspect_field.field.ty.clone(),
-                                  field_name: aspect_field.field.ident.clone(),
-                              })
-                          }
-                          Aspect::UpdateReactions(p) => {
-                              update_reactions = Some(ReactionsImplementer {
-                                  concvecintracellular: p.concvecintracellular,
-                                  concvecextracellular: p.concvecextracellular,
-                                  field_type: aspect_field.field.ty.clone(),
-                                  field_name: aspect_field.field.ident.clone(),
-                              })
-                          }*/
+                        }
+                        Aspect::UpdateInteraction(_) => {
+                            update_interaction = Some(UpdateInteractionImplementer {
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                        Aspect::UpdateReactions(p) => {
+                            update_reactions = Some(UpdateReactionsImplementer {
+                                concentration: p.concentration,
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
                     })
             });
 
@@ -234,8 +238,8 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
             generics: value.generics,
             update_cycle: update_cycle,
             update_mechanics: update_mechanics,
-            /*update_interaction: update_interaction,
-            update_reactions: update_reactions,*/
+            update_interaction: update_interaction,
+            update_reactions: update_reactions,
         }
     }
 }
@@ -247,6 +251,8 @@ pub struct AuxStorageImplementer {
     generics: syn::Generics,
     update_mechanics: Option<UpdateMechanicsImplementer>,
     update_cycle: Option<UpdateCycleImplementer>,
+    update_interaction: Option<UpdateInteractionImplementer>,
+    update_reactions: Option<UpdateReactionsImplementer>,
 }
 
 fn wrap_pre_flags(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
@@ -380,23 +386,114 @@ impl AuxStorageImplementer {
 }
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
-struct ReactionsImplementer {}
+struct UpdateReactionsImplementer {
+    concentration: syn::GenericParam,
+    field_name: Option<syn::Ident>,
+    field_type: syn::Type,
+}
 
 impl AuxStorageImplementer {
     fn implement_update_reactions(&self) -> TokenStream {
+        if let Some(update_reactions) = &self.update_reactions {
+            let concentration = &update_reactions.concentration;
+
+            let struct_name = &self.name;
+            let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
+
+            let field_name = &update_reactions.field_name;
+            let field_type = &update_reactions.field_type;
+
+            let where_clause = match where_clause {
+                Some(s_where) => {
+                    let pred = s_where.predicates.iter();
+                    quote!(
+                        where
+                        #(#pred,)*
+                        #concentration: Clone,
+                        #concentration: core::ops::Add<#concentration, Output=#concentration>,
+                    )
+                }
+                None => quote!(
+                    where
+                    #concentration: Clone,
+                    #concentration: core::ops::Add<#concentration, Output=#concentration>,
+                ),
+            };
+
+            let new_stream = wrap_pre_flags(quote!(
+                impl #impl_generics UpdateReactions<#concentration> for #struct_name #ty_generics #where_clause {
+                    fn set_conc(&mut self, conc: #concentration) {
+                        <#field_type as UpdateReactions<#concentration>>::set_conc(
+                            &mut self.#field_name,
+                            conc
+                        )
+                    }
+
+                    fn get_conc(&self) -> #concentration {
+                        <#field_type as UpdateReactions<#concentration>>::get_conc(
+                            &self.#field_name
+                        )
+                    }
+
+                    fn incr_conc(&mut self, incr: #concentration) {
+                        <#field_type as UpdateReactions<#concentration>>::incr_conc(
+                            &mut self.#field_name,
+                            incr
+                        )
+                    }
+                }
+            ));
+            return TokenStream::from(new_stream);
+        }
         TokenStream::new()
     }
 }
 
 // -------------------------------- UPDATE-INTERACTION -------------------------------
-struct InteractionImplementer {}
+struct UpdateInteractionImplementer {
+    field_name: Option<syn::Ident>,
+    field_type: syn::Type,
+}
 
 impl AuxStorageImplementer {
     fn implement_update_interaction(&self) -> TokenStream {
+        if let Some(update_interaction) = &self.update_interaction {
+            let field_name = &update_interaction.field_name;
+            let field_type = &update_interaction.field_type;
+
+            let struct_name = &self.name;
+            let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
+
+            let new_stream = wrap_pre_flags(quote!(
+                impl #impl_generics UpdateInteraction for #struct_name #ty_generics #where_clause {
+                    fn get_current_neighbours(&self) -> usize {
+                        <#field_type as UpdateInteraction>::get_current_neighbours(
+                            &self.#field_name
+                        )
+                    }
+
+                    fn incr_current_neighbours(&mut self, neighbours: usize) {
+                        <#field_type as UpdateInteraction>::incr_current_neighbours(
+                            &mut self.#field_name,
+                            neighbours
+                        )
+                    }
+
+                    fn set_current_neighbours(&mut self, neighbours: usize) {
+                        <#field_type as UpdateInteraction>::set_current_neighbours(
+                            &mut self.#field_name,
+                            neighbours
+                        )
+                    }
+                }
+            ));
+            return TokenStream::from(new_stream);
+        }
         TokenStream::new()
     }
 }
 
+// ##################################### DERIVE ######################################
 pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let aux_storage_parsed = syn::parse_macro_input!(input as AuxStorageParser);
