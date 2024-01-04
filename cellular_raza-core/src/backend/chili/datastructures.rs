@@ -43,15 +43,18 @@ pub struct Voxel<C, A> {
 }
 
 impl<C, A> Voxel<C, A> {
-    pub fn calculate_force_between_cells_internally<Pos, Vel, For, Inf, const N: usize>(
+    pub fn calculate_force_between_cells_internally<Pos, Vel, For, F, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-        A: UpdateMechanics<Pos, Vel, For, N>,
-        For: Clone + core::ops::Mul<f64, Output = For> + core::ops::Neg<Output = For>,
+        A: UpdateMechanics<Pos, Vel, For, F, N>,
+        For: Clone + core::ops::Mul<F, Output = For> + core::ops::Neg<Output = For>,
+        F: num::Float,
     {
+        let one_half: F = F::one() / (F::one() + F::one());
+
         for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
                 let mut cells_mut = self.cells.iter_mut();
@@ -68,21 +71,21 @@ impl<C, A> Voxel<C, A> {
 
                 if let Some(force_result) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2) {
                     let force = force_result?;
-                    aux1.add_force(-force.clone() * 0.5);
-                    aux2.add_force(force * 0.5);
+                    aux1.add_force(-force.clone() * one_half);
+                    aux2.add_force(force * one_half);
                 }
 
                 if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
                     let force = force_result?;
-                    aux1.add_force(force.clone() * 0.5);
-                    aux2.add_force(-force * 0.5);
+                    aux1.add_force(force.clone() * one_half);
+                    aux2.add_force(-force * one_half);
                 }
             }
         }
         Ok(())
     }
 
-    pub fn calculate_force_between_cells_external<Pos, Vel, For, Inf, const N: usize>(
+    pub fn calculate_force_between_cells_external<Pos, Vel, For, Inf, F, const N: usize>(
         &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
@@ -92,12 +95,14 @@ impl<C, A> Voxel<C, A> {
         For: Clone
             + core::ops::AddAssign
             + num::Zero
-            + core::ops::Mul<f64, Output = For>
+            + core::ops::Mul<F, Output = For>
             + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
-        A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateMechanics<Pos, Vel, For, F, N>,
+        F: num::Float,
     {
+        let one_half = F::one() / (F::one() + F::one());
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
             match cell.calculate_force_between(
@@ -108,8 +113,8 @@ impl<C, A> Voxel<C, A> {
                 &ext_inf,
             ) {
                 Some(Ok(f)) => {
-                    aux_storage.add_force(-f.clone() * 0.5);
-                    force += f * 0.5;
+                    aux_storage.add_force(-f.clone() * one_half);
+                    force += f * one_half;
                 }
                 Some(Err(e)) => return Err(e),
                 None => (),
@@ -369,20 +374,20 @@ where
     }
 }
 
-pub trait SubdomainUpdateMechanics<Pos, Vel, For, Inf, const N: usize, const ON: bool> {
+pub trait SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, const N: usize, const ON: bool> {
     fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError>;
 }
 
-impl<T, Pos, Vel, For, Inf, const N: usize> SubdomainUpdateMechanics<Pos, Vel, For, Inf, N, false>
-    for T
+impl<T, Pos, Vel, For, Inf, F, const N: usize>
+    SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, N, false> for T
 {
     fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError> {
         Ok(())
     }
 }
 
-impl<S, C, A, Com, Sy, Pos, Vel, For, Inf, const N: usize>
-    SubdomainUpdateMechanics<Pos, Vel, For, Inf, N, true> for SubDomainBox<S, C, A, Com, Sy>
+impl<S, C, A, Com, Sy, Pos, Vel, For, Inf, F, const N: usize>
+    SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, N, true> for SubDomainBox<S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
     Pos: Clone,
@@ -390,12 +395,13 @@ where
     Inf: Clone,
     C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
     C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-    A: UpdateMechanics<Pos, Vel, For, N>,
+    A: UpdateMechanics<Pos, Vel, For, F, N>,
     For: Clone
         + core::ops::AddAssign
-        + core::ops::Mul<f64, Output = For>
+        + core::ops::Mul<F, Output = For>
         + core::ops::Neg<Output = For>
         + num::Zero,
+    F: num::Float,
     <S as SubDomain<C>>::VoxelIndex: Ord,
     Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
 {
