@@ -315,13 +315,13 @@ impl AuxStorageImplementer {
                     fn set_last_position(&mut self, pos: #position) {
                         <#field_type as UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
                     }
-                    fn previous_positions(&self) -> std::collections::vec_deque::Iter<#position> {
+                    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, #position, #n_saves> {
                         <#field_type as UpdateMechanics<#field_generics>>::previous_positions(&self.#field_name)
                     }
                     fn set_last_velocity(&mut self, vel: #velocity) {
                         <#field_type as UpdateMechanics<#field_generics>>::set_last_velocity(&mut self.#field_name, vel)
                     }
-                    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<#velocity> {
+                    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
                         <#field_type as UpdateMechanics<#field_generics>>::previous_velocities(&self.#field_name)
                     }
                     fn add_force(&mut self, force: #force) {

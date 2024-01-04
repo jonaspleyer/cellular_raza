@@ -62,7 +62,7 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 
     /// Get all previous positions. This number maybe smaller than the maximum number of stored
     /// positions but never exceeds it.
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<Pos>;
+    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Pos, N>;
 
     /// Stores the last velocity of the cell. Overwrites old results when stored amount
     /// exceeds number of maximum stored values.
@@ -70,7 +70,7 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 
     /// Get all previous velocities. This number may be smaller than the maximum number of stored
     /// velocities but never exceeds it.
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<Vel>;
+    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N>;
 
     /// Add force to currently stored forces
     fn add_force(&mut self, force: For);
@@ -118,12 +118,12 @@ where
     Float: Clone,
 {
     #[inline]
-    fn previous_positions(&self) -> std::collections::vec_deque::Iter<Pos> {
+    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Pos, N> {
         self.positions.iter()
     }
 
     #[inline]
-    fn previous_velocities(&self) -> std::collections::vec_deque::Iter<Vel> {
+    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N> {
         self.velocities.iter()
     }
 
@@ -715,6 +715,7 @@ pub mod test_derive_aux_storage {
     }
 }
 
+/*
 /// Small implementation of a ring Buffer with constant size.
 /// Makes use of a fixed-size array internally.
 /// ```
@@ -786,102 +787,313 @@ impl<T, const N: usize> IntoIterator for FixedSizeRingBuffer<T, N> {
     fn into_iter(self) -> Self::IntoIter {
         self.values.into_iter()
     }
+}*/
+
+
+/// Small implementation of a ring Buffer with constant size.
+/// Makes use of a fixed-size array internally.
+/// ```
+/// # use cellular_raza_core::backend::chili::aux_storage::FixedSizeRingBuffer;
+/// let mut ring_buffer = FixedSizeRingBuffer::<i64, 4>::new();
+///
+/// // These entries will be made into free space in the buffer.
+/// ring_buffer.push(1_i64);
+/// ring_buffer.push(2_i64);
+/// ring_buffer.push(3_i64);
+/// ring_buffer.push(4_i64);
+///
+/// // Now it will start truncating initial entries.
+/// ring_buffer.push(5_i64);
+/// ring_buffer.push(6_i64);
+/// ring_buffer.push(7_i64);
+///
+/// let mut elements = ring_buffer.iter();
+/// assert_eq!(elements.next(), Some(&4));
+/// assert_eq!(elements.next(), Some(&5));
+/// assert_eq!(elements.next(), Some(&6));
+/// assert_eq!(elements.next(), Some(&7));
+/// ```
+#[derive(Debug)]
+pub struct FixedSizeRingBuffer<T, const N: usize> {
+    items: [std::mem::MaybeUninit<T>; N],
+    first: usize,
+    size: usize,
 }
 
-#[cfg(feature = "never")]
-mod future_ring_buffer {
-    // Continue working in this playground:
-    // https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e4f1b291da1fb3f6a303ec5c55930319
+impl<T, const N: usize> Clone for FixedSizeRingBuffer<T, N>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        let mut new_items: [std::mem::MaybeUninit<T>; N] =
+            unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        for i in 0..self.size {
+            let i = (self.first + i) % N;
+            new_items[i].write(unsafe { self.items[i].assume_init_ref().clone() });
+        }
 
-    #[derive(Debug)]
-    struct FixedSizeRingBuffer<T, const N: usize> {
-        items: [std::mem::MaybeUninit<T>; N],
-        first: usize,
-        size: usize,
-    }
-
-    impl<T, const N: usize> Clone for FixedSizeRingBuffer<T, N> {
-        fn clone(&self) -> Self {
-            Self {
-                items: self.items.clone(),
-                first: self.first,
-                size: self.size,
-            }
+        Self {
+            items: new_items,
+            first: self.first,
+            size: self.size,
         }
     }
+}
 
-    impl<T, const N: usize> Serialize for FixedSizeRingBuffer<T, N>
+impl<T, const N: usize> Serialize for FixedSizeRingBuffer<T, N>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        T: Serialize,
+        S: serde::Serializer,
     {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            use serde::ser::SerializeSeq;
-            let mut s = serializer.serialize_seq(Some(self.size))?;
-            for element in self.iter() {
-                s.serialize_element(element)?;
-            }
-            s.end()
+        use serde::ser::SerializeSeq;
+        let mut s = serializer.serialize_seq(Some(self.size))?;
+        for element in self.iter() {
+            s.serialize_element(element)?;
         }
+        s.end()
+    }
+}
+
+struct FixedSizedRingBufferVisitor<T, const N: usize> {
+    phantom: core::marker::PhantomData<T>,
+}
+
+impl<'de, T, const N: usize> serde::de::Visitor<'de> for FixedSizedRingBufferVisitor<T, N>
+where
+    T: Deserialize<'de>,
+{
+    type Value = Vec<T>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str(&format!(
+            "{} or less values of the type {}",
+            N,
+            std::any::type_name::<T>()
+        ))
     }
 
-    impl<'de, T, const N: usize> Deserialize<'de> for FixedSizeRingBuffer<T, N>
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-        T: for<'a> Deserialize<'de>,
+        A: serde::de::SeqAccess<'de>,
     {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
-        {
+        let mut elements = Vec::new();
+        while let Some(element) = seq.next_element()? {
+            elements.push(element);
+        }
+        Ok(elements)
+    }
+}
+
+impl<'de, T, const N: usize> Deserialize<'de> for FixedSizeRingBuffer<T, N>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let elements = deserializer.deserialize_seq(FixedSizedRingBufferVisitor::<T, N> {
+            phantom: core::marker::PhantomData,
+        })?;
+        let mut ring_buffer = FixedSizeRingBuffer::new();
+        if elements.len() > N {
             todo!()
         }
+        for element in elements.into_iter() {
+            ring_buffer.push(element);
+        }
+        Ok(ring_buffer)
+    }
+}
+
+pub struct FixedSizeRingBufferIter<'a, T, const N: usize> {
+    items: &'a [std::mem::MaybeUninit<T>; N],
+    current: usize,
+    left_size: usize,
+}
+
+impl<'a, T, const N: usize> Iterator for FixedSizeRingBufferIter<'a, T, N> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        if self.left_size == 0 {
+            return None;
+        }
+        let index = self.current;
+        self.current = (self.current + 1) % N;
+        self.left_size -= 1;
+        Some(unsafe { self.items[index].assume_init_ref() })
+    }
+}
+
+impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
+    pub fn push(&mut self, new_item: T) {
+        let last = (self.first + self.size) % N;
+        self.items[last].write(new_item);
+        self.first = (self.first + self.size.div_euclid(N)) % N;
+        self.size = N.min(self.size + 1);
     }
 
-    struct FixedSizeRingBufferIter<'a, T, const N: usize> {
-        items: &'a [std::mem::MaybeUninit<T>; N],
-        current: usize,
-        left_size: usize,
-    }
-
-    impl<'a, T, const N: usize> Iterator for FixedSizeRingBufferIter<'a, T, N> {
-        type Item = &'a T;
-
-        fn next(&mut self) -> Option<&'a T> {
-            if self.left_size == 0 {
-                return None;
-            }
-            let index = self.current;
-            self.current = (self.current + 1) % N;
-            self.left_size -= 1;
-            Some(unsafe { self.items[index].assume_init_ref() })
+    pub fn iter<'a>(&'a self) -> FixedSizeRingBufferIter<'a, T, N> {
+        FixedSizeRingBufferIter {
+            items: &self.items,
+            current: self.first,
+            left_size: self.size,
         }
     }
 
-    impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
-        fn push(&mut self, new_item: T) {
-            self.items[self.first].write(new_item);
-            self.first = (self.first + 1) % N;
-            self.size = N.min(self.size + 1);
+    pub fn new() -> Self {
+        Self {
+            items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
+            first: 0,
+            size: 0,
         }
+    }
+}
 
-        fn iter<'a>(&'a self) -> FixedSizeRingBufferIter<'a, T, N> {
-            FixedSizeRingBufferIter {
-                items: &self.items,
-                current: self.first,
-                left_size: self.size,
-            }
+#[cfg(test)]
+mod test_ring_buffer {
+    use super::*;
+
+    #[test]
+    fn test_pushing_full() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 12>::new();
+        for i in 0..100 {
+            ring_buffer.push(i);
+            assert_eq!(ring_buffer.iter().last(), Some(&i));
+            println!("{i}");
         }
     }
 
-    impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
-        fn new() -> Self {
-            Self {
-                items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
-                first: 0,
-                size: 0,
-            }
+    #[test]
+    fn test_pushing_overflow() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        ring_buffer.push("ce");
+        assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), vec![&"ce"]);
+        ring_buffer.push("ll");
+        assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), vec![&"ce", &"ll"]);
+        ring_buffer.push("ular");
+        assert_eq!(
+            ring_buffer.iter().collect::<Vec<_>>(),
+            vec![&"ce", &"ll", &"ular"]
+        );
+        ring_buffer.push(" ");
+        assert_eq!(
+            ring_buffer.iter().collect::<Vec<_>>(),
+            vec![&"ce", &"ll", &"ular", &" "]
+        );
+        ring_buffer.push("raza");
+        assert_eq!(
+            ring_buffer.iter().collect::<Vec<_>>(),
+            vec![&"ll", &"ular", &" ", &"raza"]
+        );
+    }
+
+    #[test]
+    fn test_clone_full() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        ring_buffer.push(1_usize);
+        ring_buffer.push(2);
+        ring_buffer.push(3);
+        ring_buffer.push(4);
+        let new_ring_buffer = ring_buffer.clone();
+        assert_eq!(
+            ring_buffer.iter().collect::<Vec<_>>(),
+            new_ring_buffer.iter().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_clone_partial() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 87>::new();
+        for i in 0..100 {
+            ring_buffer.push(i);
+            let new_ring_buffer = ring_buffer.clone();
+            assert_eq!(
+                ring_buffer.iter().collect::<Vec<_>>(),
+                new_ring_buffer.iter().collect::<Vec<_>>()
+            );
         }
     }
+
+    #[test]
+    fn test_serialize_full() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        ring_buffer.push(1_u128);
+        ring_buffer.push(2);
+        ring_buffer.push(55);
+        ring_buffer.push(12999);
+
+        let serialized = serde_json::to_string(&ring_buffer).unwrap();
+        assert_eq!(serialized, "[1,2,55,12999]");
+    }
+
+    #[test]
+    fn test_serialize_partially_filled() {
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        ring_buffer.push(1_u128);
+        ring_buffer.push(2);
+
+        let serialized = serde_json::to_string(&ring_buffer).unwrap();
+        assert_eq!(serialized, "[1,2]");
+    }
+
+    #[test]
+    fn test_deserialize_full() {
+        let ring_buffer_string = "[-3,2,1023,-112]";
+        let ring_buffer: FixedSizeRingBuffer<i16, 4> =
+            serde_json::de::from_str(ring_buffer_string).unwrap();
+        assert_eq!(
+            ring_buffer.iter().collect::<Vec<_>>(),
+            vec![&-3, &2, &1023, &-112]
+        );
+    }
+
+    #[test]
+    fn test_deserialize_partially_filled() {
+        for i in 0..50 {
+            let ring_buffer_values: Vec<_> = (0..i).collect();
+            let string = format!("{:?}", ring_buffer_values);
+            let ring_buffer: FixedSizeRingBuffer<_, 100> =
+                serde_json::de::from_str(&string).unwrap();
+            assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), ring_buffer_values);
+        }
+    }
+}
+
+#[allow(unused)]
+#[doc(hidden)]
+mod test_derive_serde_ring_buffer {
+    /// ```
+    /// use serde::Serialize;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// #[derive(Serialize)]
+    /// struct Something<T, const N: usize> {
+    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
+    /// }
+    /// ```
+    fn derive_serialize() {}
+
+    /// ```
+    /// use serde::Deserialize;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// #[derive(Deserialize)]
+    /// struct Something<T, const N: usize> {
+    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
+    /// }
+    /// ```
+    fn derive_deserialize() {}
+
+    /// ```
+    /// use serde::{Deserialize, Serialize};
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// #[derive(Deserialize, Serialize)]
+    /// struct Something<T, const N: usize> {
+    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
+    /// }
+    /// ```
+    fn derive_serialize_deserialize() {}
 }
