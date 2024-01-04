@@ -271,7 +271,7 @@ impl UpdateInteraction for AuxStorageInteraction {
 
 #[allow(unused)]
 #[doc(hidden)]
-mod test_derive_compile {
+mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core_derive::*;
     /// use cellular_raza_core::backend::chili::aux_storage::*;
