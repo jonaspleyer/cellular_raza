@@ -242,6 +242,33 @@ where
     }
 }
 
+// -------------------------------- UPDATE-Interaction -------------------------------
+/// Interface to store intermediate information about interactions.
+pub trait UpdateInteraction {
+    fn get_current_neighbours(&self) -> usize;
+    fn set_current_neighbours(&mut self, neighbours: usize);
+    fn incr_current_neighbours(&mut self, neighbours: usize);
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct AuxStorageInteraction {
+    neighbour_count: usize,
+}
+
+impl UpdateInteraction for AuxStorageInteraction {
+    fn get_current_neighbours(&self) -> usize {
+        self.neighbour_count
+    }
+
+    fn incr_current_neighbours(&mut self, neighbours: usize) {
+        self.neighbour_count += neighbours;
+    }
+
+    fn set_current_neighbours(&mut self, neighbours: usize) {
+        self.neighbour_count = neighbours;
+    }
+}
+
 #[allow(unused)]
 #[doc(hidden)]
 mod test_derive_compile {
@@ -267,7 +294,7 @@ mod test_derive_compile {
     ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     /// }
     /// ```
-    fn mechanics_vis_1() {}
+    fn mechanics_visibility_1() {}
 
     /// ```
     /// use cellular_raza_core_derive::*;
@@ -279,7 +306,7 @@ mod test_derive_compile {
     ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
     /// }
     /// ```
-    fn mechanics_vis_2() {}
+    fn mechanics_visibility_2() {}
 
     /// ```
     /// mod some_module {
@@ -301,7 +328,7 @@ mod test_derive_compile {
     ///     aux_storage.get_current_force()
     /// }
     /// ```
-    fn mechanics_vis_3() {}
+    fn mechanics_visibility_3() {}
 
     /// ```
     /// use cellular_raza_core_derive::*;
@@ -356,6 +383,233 @@ mod test_derive_compile {
     /// }
     /// ```
     fn cycle_default() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructCycle {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    /// }
+    /// ```
+    fn cycle_visibility_1() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub(crate) struct TestStructCycle {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    /// }
+    /// ```
+    fn cycle_visibility_2() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructCycle<T> {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    ///     _generic: T,
+    /// }
+    /// ```
+    fn cycle_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructCycle<const N: usize> {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    ///     _generic: [f64; N],
+    /// }
+    /// ```
+    fn cycle_const_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructCycle<T>
+    /// where
+    ///     T: Clone,
+    /// {
+    ///     #[UpdateCycle]
+    ///     aux_cycle: AuxStorageCycle,
+    ///     _generic: T,
+    /// }
+    /// ```
+    fn cycle_where_clause() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructReactions<R> {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    /// }
+    /// ```
+    fn reactions_default() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructReactions<R> {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    /// }
+    /// ```
+    fn reactions_visibility_1() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub(crate) struct TestStructReactions<R> {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    /// }
+    /// ```
+    fn reactions_visibility_2() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructReactions<T, R> {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    ///     generic: T,
+    /// }
+    /// ```
+    fn reactions_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructReactions<R, const N: usize> {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    ///     generic_array: [usize; N],
+    /// }
+    /// ```
+    fn reactions_const_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructReactions<T, R>
+    /// where
+    ///     T: Clone,
+    /// {
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    ///     generic: T,
+    /// }
+    /// ```
+    fn reactions_where_clause() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructInteraction {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    /// }
+    /// ```
+    fn interactions_default() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub struct TestStructInteraction {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    /// }
+    /// ```
+    fn interactions_visibility_1() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// pub(crate) struct TestStructInteraction {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    /// }
+    /// ```
+    fn interactions_visibility_2() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructInteraction<T> {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    ///     generic: T,
+    /// }
+    /// ```
+    fn interactions_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructInteraction<const N: usize> {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    ///     generic: [f64; N],
+    /// }
+    /// ```
+    fn interactions_const_generic_param() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructInteraction<T>
+    /// where
+    ///     T: Clone,
+    /// {
+    ///     #[UpdateInteraction]
+    ///     aux_interaction: AuxStorageInteraction,
+    ///     generic: T,
+    /// }
+    /// ```
+    fn interactions_where_clause() {}
 }
 
 #[cfg(test)]
