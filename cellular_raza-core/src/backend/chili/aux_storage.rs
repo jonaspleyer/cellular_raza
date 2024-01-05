@@ -1044,10 +1044,10 @@ mod test_build_aux_storage {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     /// build_aux_storage!(
-    ///     name: __cr_AuxStorage,
+    ///     name: _AuxCycle,
     ///     aspects: [Cycle]
     /// );
-    /// let mut aux_storage = __cr_AuxStorage::default();
+    /// let mut aux_storage = _AuxCycle::default();
     /// aux_storage.add_cycle_event(CycleEvent::Division);
     /// assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
     /// ```
@@ -1058,10 +1058,10 @@ mod test_build_aux_storage {
     /// use cellular_raza_core_derive::*;
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     /// build_aux_storage!(
-    ///     name: __cr_AuxStorage,
+    ///     name: _cr_Aux,
     ///     aspects: [Reactions]
     /// );
-    /// let mut aux_storage = __cr_AuxStorage::default();
+    /// let mut aux_storage = _cr_Aux::default();
     /// aux_storage.set_conc(0_f32);
     /// aux_storage.incr_conc(1.44_f32);
     /// assert_eq!(aux_storage.get_conc(), 0_f32 + 1.44_f32);
