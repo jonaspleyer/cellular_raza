@@ -1002,3 +1002,69 @@ mod test_derive_serde_ring_buffer {
     /// ```
     fn derive_serialize_deserialize() {}
 }
+
+#[allow(unused)]
+#[doc(hidden)]
+mod test_build_aux_storage {
+    /// ```
+    /// use serde::{Deserialize, Serialize};
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// build_aux_storage!(
+    ///     name: __cr_AuxStorage,
+    ///     aspects: [Mechanics]
+    /// );
+    /// let mut aux_storage = __cr_AuxStorage::<f32, f32, f32, f32, 4>::default();
+    /// aux_storage.set_last_position(1_f32);
+    /// aux_storage.set_last_position(3_f32);
+    /// let last_positions = aux_storage.previous_positions().map(|f| *f).collect::<Vec<f32>>();
+    /// assert_eq!(last_positions, vec![1_f32, 3_f32]);
+    /// ```
+    fn mechanics() {}
+
+    /// ```
+    /// use serde::{Deserialize, Serialize};
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// build_aux_storage!(
+    ///     name: __cr_AuxStorage,
+    ///     aspects: [Interaction]
+    /// );
+    /// let mut aux_storage = __cr_AuxStorage::default();
+    /// aux_storage.incr_current_neighbours(1);
+    /// aux_storage.incr_current_neighbours(2);
+    /// aux_storage.incr_current_neighbours(1);
+    /// assert_eq!(aux_storage.get_current_neighbours(), 4);
+    /// ```
+    fn interaction() {}
+
+    /// ```
+    /// use serde::{Deserialize, Serialize};
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// build_aux_storage!(
+    ///     name: __cr_AuxStorage,
+    ///     aspects: [Cycle]
+    /// );
+    /// let mut aux_storage = __cr_AuxStorage::default();
+    /// aux_storage.add_cycle_event(CycleEvent::Division);
+    /// assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
+    /// ```
+    fn cycle() {}
+
+    /// ```
+    /// use serde::{Deserialize, Serialize};
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// build_aux_storage!(
+    ///     name: __cr_AuxStorage,
+    ///     aspects: [Reactions]
+    /// );
+    /// let mut aux_storage = __cr_AuxStorage::default();
+    /// aux_storage.set_conc(0_f32);
+    /// aux_storage.incr_conc(1.44_f32);
+    /// assert_eq!(aux_storage.get_conc(), 0_f32 + 1.44_f32);
+    /// ```
+    fn reactions() {}
+}
