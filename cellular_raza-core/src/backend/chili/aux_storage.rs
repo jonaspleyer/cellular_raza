@@ -1,10 +1,7 @@
 use cellular_raza_concepts::cycle::CycleEvent;
 use serde::{Deserialize, Serialize};
 
-use std::{
-    collections::VecDeque,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use super::CellIdentifier;
 
@@ -234,14 +231,17 @@ pub struct AuxStorageInteraction {
 }
 
 impl UpdateInteraction for AuxStorageInteraction {
+    #[inline]
     fn get_current_neighbours(&self) -> usize {
         self.neighbour_count
     }
 
+    #[inline]
     fn incr_current_neighbours(&mut self, neighbours: usize) {
         self.neighbour_count += neighbours;
     }
 
+    #[inline]
     fn set_current_neighbours(&mut self, neighbours: usize) {
         self.neighbour_count = neighbours;
     }
