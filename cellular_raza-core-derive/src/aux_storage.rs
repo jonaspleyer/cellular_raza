@@ -508,3 +508,178 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
 
     res
 }
+
+// #################################### CONSTRUCT ####################################
+struct NameToken;
+
+impl syn::parse::Parse for NameToken {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        match ident=="name" {
+            true => return Ok(Self),
+            _ => return Err(syn::Error::new(ident.span(), "Expected \"name\" token"))
+        }
+    }
+}
+
+struct AspectsToken;
+
+impl syn::parse::Parse for AspectsToken {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        match ident=="aspects" {
+            true => return Ok(Self),
+            _ => return Err(syn::Error::new(ident.span(), "Expected \"aspects\" token"))
+        }
+    }
+}
+
+struct AuxStorageBuilder {
+    #[allow(unused)]
+    name_token: NameToken,
+    #[allow(unused)]
+    double_colon_1: syn::Token![:],
+    struct_name: syn::Ident,
+    #[allow(unused)]
+    comma: syn::Token![,],
+    #[allow(unused)]
+    aspects_token: AspectsToken,
+    #[allow(unused)]
+    double_colon_2: syn::Token![:],
+    items: syn::punctuated::Punctuated<AuxStorageAspect, syn::token::Comma>,
+}
+
+impl syn::parse::Parse for AuxStorageBuilder {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let name_token = input.parse()?;
+        let double_colon_1 = input.parse()?;
+        let struct_name = input.parse()?;
+        let comma = input.parse()?;
+        let aspects_token = input.parse()?;
+        let double_colon_2 = input.parse()?;
+        let content;
+        syn::bracketed!(content in input);
+        Ok(Self {
+            name_token,
+            double_colon_1,
+            struct_name,
+            comma,
+            aspects_token,
+            double_colon_2,
+            items: syn::punctuated::Punctuated::<AuxStorageAspect, syn::token::Comma>::parse_terminated(
+                &content,
+            )?,
+        })
+    }
+}
+
+#[derive(Debug)]
+enum AuxStorageAspect {
+    Mechanics,
+    Interaction,
+    Cycle,
+    Reactions,
+}
+
+impl AuxStorageAspect {
+    fn get_aspects() -> Vec<AuxStorageAspect> {
+        vec![
+            AuxStorageAspect::Mechanics,
+            AuxStorageAspect::Interaction,
+            AuxStorageAspect::Cycle,
+            AuxStorageAspect::Reactions,
+        ]
+    }
+
+    fn build_aux(
+        &self,
+    ) -> (
+        Vec<proc_macro2::TokenStream>,
+        proc_macro2::TokenStream,
+    ) {
+        match &self {
+            AuxStorageAspect::Cycle => {
+                let generics = vec![];
+                let field = quote!(
+                    #[UpdateCycle]
+                    cycle: AuxStorageCycle,
+                );
+                (generics, field)
+            }
+            AuxStorageAspect::Mechanics => {
+                let generics = vec![
+                    quote!(Pos),
+                    quote!(Vel),
+                    quote!(For),
+                    quote!(Float),
+                    quote!(const N: usize),
+                ];
+                let field = quote!(
+                    #[UpdateMechanics(Pos, Vel, For, Float, N)]
+                    mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+                );
+                (generics, field)
+            }
+            AuxStorageAspect::Reactions => {
+                let generics = vec![quote!(R)];
+                let field = quote!(
+                    #[UpdateReactions(R)]
+                    reactions: AuxStorageReactions<R>,
+                );
+                (generics, field)
+            }
+            AuxStorageAspect::Interaction => {
+                let generics = vec![];
+                let field = quote!(
+                    #[UpdateInteraction]
+                    interaction: AuxStorageInteraction,
+                );
+                (generics, field)
+            }
+        }
+    }
+}
+
+impl syn::parse::Parse for AuxStorageAspect {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        for aspect in AuxStorageAspect::get_aspects() {
+            if ident == format!("{:?}", aspect) {
+                return Ok(aspect);
+            }
+        }
+        Err(syn::Error::new(
+            ident.span(),
+            "Could not find simulation aspect to construct AuxStorage",
+        ))
+    }
+}
+
+impl AuxStorageBuilder {
+    fn build_aux_storage(self) -> proc_macro2::TokenStream {
+        let struct_name = self.struct_name;
+        let mut generics = vec![];
+        let mut fields = vec![];
+        for item in self.items.into_iter() {
+            let (item_generics, item_field) = item.build_aux();
+            generics.extend(item_generics);
+            fields.extend(item_field);
+        }
+        let stream = quote!(
+            #[allow(non_camel_case_types)]
+            #[doc(hidden)]
+            #[derive(Clone, Default, Deserialize, Serialize)]
+            #[derive(AuxStorage)]
+            pub struct #struct_name<#(#generics),*> {
+                #(#fields)*
+            }
+        );
+        stream
+    }
+}
+
+/// Define a AuxStorage struct that
+pub fn construct_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let builder = syn::parse_macro_input!(input as AuxStorageBuilder);
+    proc_macro::TokenStream::from(builder.build_aux_storage())
+}

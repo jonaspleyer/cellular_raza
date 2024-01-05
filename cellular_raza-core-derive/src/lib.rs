@@ -14,6 +14,11 @@ pub fn aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::derive_aux_storage(input)
 }
 
+#[proc_macro]
+pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    aux_storage::construct_aux_storage(input)
+}
+
 /* #[derive(Clone, Debug)]
 enum Aspect {
     Mechanics,
