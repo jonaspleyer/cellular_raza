@@ -89,26 +89,12 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 }
 
 /// Stores intermediate information about the mechanics of a cell.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageMechanics<Pos, Vel, For, Float, const N: usize> {
     positions: FixedSizeRingBuffer<Pos, N>,
     velocities: FixedSizeRingBuffer<Vel, N>,
     current_force: For,
     next_random_mechanics_update: Option<Float>,
-}
-
-impl<Pos, Vel, For, Float, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, Float, N>
-where
-    For: num::Zero,
-{
-    fn default() -> Self {
-        AuxStorageMechanics {
-            positions: FixedSizeRingBuffer::new(),
-            velocities: FixedSizeRingBuffer::new(),
-            current_force: For::zero(),
-            next_random_mechanics_update: None,
-        }
-    }
 }
 
 impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N>
@@ -179,17 +165,9 @@ pub trait UpdateCycle {
 }
 
 /// Stores intermediate information about the cell cycle.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
     cycle_events: Vec<CycleEvent>,
-}
-
-impl Default for AuxStorageCycle {
-    fn default() -> Self {
-        AuxStorageCycle {
-            cycle_events: Vec::new(),
-        }
-    }
 }
 
 impl UpdateCycle for AuxStorageCycle {
@@ -217,7 +195,7 @@ pub trait UpdateReactions<R> {
     fn incr_conc(&mut self, incr: R);
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactions<R> {
     concentration: R,
 }
@@ -250,7 +228,7 @@ pub trait UpdateInteraction {
     fn incr_current_neighbours(&mut self, neighbours: usize);
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageInteraction {
     neighbour_count: usize,
 }
@@ -719,7 +697,7 @@ pub mod test_derive_aux_storage {
 /// Makes use of a fixed-size array internally.
 /// ```
 /// # use cellular_raza_core::backend::chili::aux_storage::FixedSizeRingBuffer;
-/// let mut ring_buffer = FixedSizeRingBuffer::<i64, 4>::new();
+/// let mut ring_buffer = FixedSizeRingBuffer::<i64, 4>::default();
 ///
 /// // These entries will be made into free space in the buffer.
 /// ring_buffer.push(1_i64);
@@ -823,7 +801,7 @@ where
         let elements = deserializer.deserialize_seq(FixedSizedRingBufferVisitor::<T, N> {
             phantom: core::marker::PhantomData,
         })?;
-        let mut ring_buffer = FixedSizeRingBuffer::new();
+        let mut ring_buffer = FixedSizeRingBuffer::default();
         if elements.len() > N {
             todo!()
         }
@@ -854,6 +832,16 @@ impl<'a, T, const N: usize> Iterator for FixedSizeRingBufferIter<'a, T, N> {
     }
 }
 
+impl<T, const N: usize> Default for FixedSizeRingBuffer<T, N> {
+    fn default() -> Self {
+        Self {
+            items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
+            first: 0,
+            size: 0,
+        }
+    }
+}
+
 impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
     pub fn push(&mut self, new_item: T) {
         let last = (self.first + self.size) % N;
@@ -869,14 +857,6 @@ impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
             left_size: self.size,
         }
     }
-
-    pub fn new() -> Self {
-        Self {
-            items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
-            first: 0,
-            size: 0,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -885,7 +865,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_pushing_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 12>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 12>::default();
         for i in 0..100 {
             ring_buffer.push(i);
             assert_eq!(ring_buffer.iter().last(), Some(&i));
@@ -895,7 +875,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_pushing_overflow() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
         ring_buffer.push("ce");
         assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), vec![&"ce"]);
         ring_buffer.push("ll");
@@ -919,7 +899,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_clone_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
         ring_buffer.push(1_usize);
         ring_buffer.push(2);
         ring_buffer.push(3);
@@ -933,7 +913,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_clone_partial() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 87>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 87>::default();
         for i in 0..100 {
             ring_buffer.push(i);
             let new_ring_buffer = ring_buffer.clone();
@@ -946,7 +926,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_serialize_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
         ring_buffer.push(1_u128);
         ring_buffer.push(2);
         ring_buffer.push(55);
@@ -958,7 +938,7 @@ mod test_ring_buffer {
 
     #[test]
     fn test_serialize_partially_filled() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::new();
+        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
         ring_buffer.push(1_u128);
         ring_buffer.push(2);
 
