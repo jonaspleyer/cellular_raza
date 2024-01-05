@@ -515,9 +515,9 @@ struct NameToken;
 impl syn::parse::Parse for NameToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
-        match ident=="name" {
+        match ident == "name" {
             true => return Ok(Self),
-            _ => return Err(syn::Error::new(ident.span(), "Expected \"name\" token"))
+            _ => return Err(syn::Error::new(ident.span(), "Expected \"name\" token")),
         }
     }
 }
@@ -527,9 +527,9 @@ struct AspectsToken;
 impl syn::parse::Parse for AspectsToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
-        match ident=="aspects" {
+        match ident == "aspects" {
             true => return Ok(Self),
-            _ => return Err(syn::Error::new(ident.span(), "Expected \"aspects\" token"))
+            _ => return Err(syn::Error::new(ident.span(), "Expected \"aspects\" token")),
         }
     }
 }
@@ -591,12 +591,7 @@ impl AuxStorageAspect {
         ]
     }
 
-    fn build_aux(
-        &self,
-    ) -> (
-        Vec<proc_macro2::TokenStream>,
-        proc_macro2::TokenStream,
-    ) {
+    fn build_aux(&self) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
         match &self {
             AuxStorageAspect::Cycle => {
                 let generics = vec![];
