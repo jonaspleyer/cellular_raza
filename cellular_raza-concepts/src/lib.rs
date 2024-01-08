@@ -50,8 +50,6 @@ pub mod cell;
 ///     current_age: f64,
 ///     // Used in cycle later. Divide cell if older than maximum age.
 ///     maximum_age: f64,
-///     // Just a dummy_parameter to remind that intracellular concentrations need to be halfed/adjusted when dividing cells.
-///     intracellular_proteins: [f64; 5],
 ///     // The position of the cell. We cannot have two positions which are the same. Thus we need
 ///     // to update the position as well.
 ///     position: [f64; 2],
@@ -73,10 +71,6 @@ pub mod cell;
 ///         // Prepare the original cell for division.
 ///         // Set the radius of both cells to half of the original radius.
 ///         cell.radius *= 0.5;
-///
-///         // Also set intracellular proteins to half of previous value since both new cells now
-///         // share the original content.
-///         cell.intracellular_proteins.iter_mut().for_each(|x| *x*=0.5);
 ///
 ///         // Also set the current age of the cell to zero again
 ///         cell.current_age = 0.0;
@@ -106,6 +100,7 @@ pub mod cell;
 ///         return Ok(new_cell);
 ///     }
 /// }
+/// ```
 pub mod cycle;
 
 /// Traits and types used to define a domain where cells live in.
