@@ -760,7 +760,7 @@ impl AgentImplementer {
 /// | `Interaction`             | `(Pos, Vel, For, Inf=())`                                             |
 /// | `CellularReactions`       | `(ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular)`   |
 /// | `ExtracellularGradient`   | `(ConcGradientExtracellular)`                                         |
-/// | `Volume`                  | `(F=f64)`                                                         |
+/// | `Volume`                  | `(Float=f64)`                                                         |
 ///
 /// For a description of these type arguments see [cellular_raza_concepts].
 #[proc_macro_derive(
