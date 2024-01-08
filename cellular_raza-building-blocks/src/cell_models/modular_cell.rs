@@ -140,14 +140,14 @@ impl<Mec, Int, Cyc, React, IntExtracellular> Volume
     }
 }
 
-impl<Mec, Int, Cyc, React, IntExtracellular> Cycle<Self>
+impl<Mec, Int, Cyc, Float, React, IntExtracellular> Cycle<Self, Float>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
-    Cyc: Cycle<Self>,
+    Cyc: Cycle<Self, Float>,
 {
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: &f64,
+        dt: &Float,
         cell: &mut Self,
     ) -> Option<CycleEvent> {
         Cyc::update_cycle(rng, dt, cell)

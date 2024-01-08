@@ -21,12 +21,12 @@ pub enum CycleEvent {
 /// The `update_cycle` function is designed to be called frequently and return only something if a
 /// specific cycle event is supposed to be occuring. Backends should implement
 /// the functionality to call the corresponding functions as needed.
-pub trait Cycle<Cell> {
+pub trait Cycle<Cell, Float = f64> {
     /// Continuously updates cellular properties and may spawn a [CycleEvent] which then calls the corresponding functions (see also [CycleEvent]).
     #[must_use]
     fn update_cycle(
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: &f64,
+        dt: &Float,
         cell: &mut Cell,
     ) -> Option<CycleEvent>;
 
@@ -44,7 +44,7 @@ pub trait Cycle<Cell> {
     #[must_use]
     fn update_conditional_phased_death(
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: &f64,
+        dt: &Float,
         cell: &mut Cell,
     ) -> Result<bool, DeathError> {
         Ok(true)

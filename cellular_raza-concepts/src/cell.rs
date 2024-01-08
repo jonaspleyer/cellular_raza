@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// We hope to be deprecating this trait in the future and only rely on individual traits instead.
 /// While this trait could be manually implemented, it is often not necessary (see [cellular_raza-building-blocks](https://docs.rs/cellular_raza-building-blocks))
-pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf>:
-    Cycle<Self>
+pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf, Float = f64>:
+    Cycle<Self, Float>
     + Interaction<Pos, Vel, For, Inf>
     + Mechanics<Pos, Vel, For>
     + Sized
@@ -25,12 +25,12 @@ pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf>:
     + for<'a> serde::Deserialize<'a>
 {
 }
-impl<Pos, Vel, For, Inf, A> Agent<Pos, Vel, For, Inf> for A
+impl<Pos, Vel, For, Inf, Float, A> Agent<Pos, Vel, For, Inf, Float> for A
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: Cycle<Self>
+    A: Cycle<Self, Float>
         + Interaction<Pos, Vel, For, Inf>
         + Mechanics<Pos, Vel, For>
         + Sized

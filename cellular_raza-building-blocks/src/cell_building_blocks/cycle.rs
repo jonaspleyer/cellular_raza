@@ -11,8 +11,8 @@ use pyo3::prelude::*;
 #[cfg_attr(feature = "pyo3", pyclass)]
 pub struct NoCycle;
 
-impl<Cel> Cycle<Cel> for NoCycle {
-    fn update_cycle(_: &mut rand_chacha::ChaCha8Rng, _: &f64, _: &mut Cel) -> Option<CycleEvent> {
+impl<Cel, Float> Cycle<Cel, Float> for NoCycle {
+    fn update_cycle(_: &mut rand_chacha::ChaCha8Rng, _: &Float, _: &mut Cel) -> Option<CycleEvent> {
         None
     }
 

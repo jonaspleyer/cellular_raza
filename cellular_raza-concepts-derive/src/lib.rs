@@ -189,16 +189,28 @@ struct VolumeImplementer {
 
 // -------------------------------------- CYCLE --------------------------------------
 #[derive(Clone)]
-struct CycleParser;
+struct CycleParser {
+    float_type: Option<syn::Type>,
+}
 
 struct CycleImplementer {
+    float_type: Option<syn::Type>,
     field_type: syn::Type,
 }
 
 impl syn::parse::Parse for CycleParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _cycle: syn::Ident = input.parse()?;
-        Ok(Self)
+        let float_type = if input.is_empty() {
+            None
+        } else {
+            let content;
+            syn::parenthesized!(content in input);
+            Some(content.parse()?)
+        };
+        Ok(Self {
+            float_type,
+        })
     }
 }
 
@@ -328,8 +340,9 @@ impl From<AgentParser> for AgentImplementer {
                     .aspects
                     .into_iter()
                     .for_each(|aspect| match aspect {
-                        Aspect::Cycle(_) => {
+                        Aspect::Cycle(p) => {
                             cycle = Some(CycleImplementer {
+                                float_type: p.float_type,
                                 field_type: aspect_field.field.ty.clone(),
                             })
                         }
@@ -411,29 +424,35 @@ impl AgentImplementer {
         let struct_generics = &self.generics;
 
         if let Some(cycle_implementer) = &self.cycle {
+            let float_type = match &cycle_implementer.float_type {
+                Some(ty) => quote!(#ty),
+                None => quote!(f64),
+            };
             let field_type = &cycle_implementer.field_type;
+
+            let tokens = quote!(#struct_name, #float_type);
 
             let new_stream = quote!(
                 #[automatically_derived]
-                impl #struct_generics Cycle<#struct_name> for #struct_name #struct_generics {
+                impl #struct_generics Cycle<#struct_name, #float_type> for #struct_name #struct_generics {
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: &f64,
+                        dt: &#float_type,
                         cell: &mut Self,
                     ) -> Option<CycleEvent> {
-                        <#field_type as Cycle<#struct_name>>::update_cycle(rng, dt, cell)
+                        <#field_type as Cycle<#tokens>>::update_cycle(rng, dt, cell)
                     }
 
                     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Self) -> Result<Self, DivisionError> {
-                        <#field_type as Cycle<#struct_name>>::divide(rng, cell)
+                        <#field_type as Cycle<#tokens>>::divide(rng, cell)
                     }
 
                     fn update_conditional_phased_death(
                         rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: &f64,
+                        dt: &#float_type,
                         cell: &mut Self,
                     ) -> Result<bool, DeathError> {
-                        <#field_type as Cycle<#struct_name>>::update_conditional_phased_death(rng, dt, cell)
+                        <#field_type as Cycle<#tokens>>::update_conditional_phased_death(rng, dt, cell)
                     }
                 }
             );
@@ -718,7 +737,7 @@ impl AgentImplementer {
 ///
 /// | Attribute | Type Arguments |
 /// | --- | --- |
-/// | `Cycle`                   | -                                                                     |
+/// | `Cycle`                   | `(Float=f64)`                                                         |
 /// | `Mechanics`               | `(Pos, Vel, For)`                                                     |
 /// | `Interaction`             | `(Pos, Vel, For, Inf=())`                                             |
 /// | `CellularReactions`       | `(ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular)`   |
