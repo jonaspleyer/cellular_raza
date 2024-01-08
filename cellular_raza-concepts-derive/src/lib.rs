@@ -45,6 +45,8 @@ struct MechanicsParser {
     velocity: syn::Type,
     _comma_2: syn::Token![,],
     force: syn::Type,
+    _comma_3: Option<syn::Token![,]>,
+    float_type: Option<syn::Type>,
 }
 
 impl syn::parse::Parse for MechanicsParser {
@@ -58,6 +60,12 @@ impl syn::parse::Parse for MechanicsParser {
             velocity: content.parse()?,
             _comma_2: content.parse()?,
             force: content.parse()?,
+            _comma_3: content.parse()?,
+            float_type: if content.is_empty() {
+                None
+            } else {
+                Some(content.parse()?)
+            },
         })
     }
 }
@@ -66,6 +74,7 @@ struct MechanicsImplementer {
     position: syn::Type,
     velocity: syn::Type,
     force: syn::Type,
+    float_type: Option<syn::Type>,
     field_type: syn::Type,
     field_name: Option<syn::Ident>,
 }
@@ -217,9 +226,7 @@ impl syn::parse::Parse for CycleParser {
             syn::parenthesized!(content in input);
             Some(content.parse()?)
         };
-        Ok(Self {
-            float_type,
-        })
+        Ok(Self { float_type })
     }
 }
 
@@ -503,8 +510,8 @@ impl AgentImplementer {
                     }
                     fn set_random_variable(&mut self,
                         rng: &mut rand_chacha::ChaCha8Rng,
-                        dt: f64,
-                    ) -> Result<Option<f64>, RngError> {
+                        dt: #float_type,
+                    ) -> Result<Option<#float_type>, RngError> {
                         <#field_type as Mechanics<#tokens>>::set_random_variable(&mut self.#field_name, rng, dt)
                     }
                 }
@@ -749,7 +756,7 @@ impl AgentImplementer {
 /// | Attribute | Type Arguments |
 /// | --- | --- |
 /// | `Cycle`                   | `(Float=f64)`                                                         |
-/// | `Mechanics`               | `(Pos, Vel, For)`                                                     |
+/// | `Mechanics`               | `(Pos, Vel, For, Float=f64)`                                          |
 /// | `Interaction`             | `(Pos, Vel, For, Inf=())`                                             |
 /// | `CellularReactions`       | `(ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular)`   |
 /// | `ExtracellularGradient`   | `(ConcGradientExtracellular)`                                         |

@@ -102,7 +102,7 @@ macro_rules! implement_newton_damped_mechanics(
             }
         }
 
-        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>> for $struct_name
+        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type> for $struct_name
         {
             fn pos(&self) -> SVector<$float_type, $d> {
                 self.pos

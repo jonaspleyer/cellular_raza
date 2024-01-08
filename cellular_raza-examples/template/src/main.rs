@@ -18,7 +18,7 @@ impl Volume for Vol {
 
 #[derive(CellAgent)] //, Deserialize, Serialize)]
 struct Agent {
-    #[Mechanics(Vector2<f32>, Vector2<f32>, Vector2<f32>)]
+    #[Mechanics(Vector2<f32>, Vector2<f32>, Vector2<f32>, f32)]
     pub mechanics: NewtonDamped2DF32,
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     pub interaction: BoundLennardJones,

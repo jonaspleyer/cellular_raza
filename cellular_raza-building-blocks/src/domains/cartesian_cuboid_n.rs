@@ -607,7 +607,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
         impl<C> cellular_raza_concepts::domain_new::Domain<C, $subdomain_name> for $domain_name
         where
-            C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>>,
+            C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
         {
             // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
             type SubDomainIndex = i64;

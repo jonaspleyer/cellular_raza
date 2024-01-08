@@ -58,10 +58,10 @@ pub type Nothing = nalgebra::SVector<f64, 0>;
 
 define_no_cellular_reactions! {Nothing, Nothing}
 
-impl<Pos, Vel, For, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, Vel, For>
+impl<Pos, Vel, For, Float, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, Vel, For, Float>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
-    Mec: Mechanics<Pos, Vel, For>,
+    Mec: Mechanics<Pos, Vel, For, Float>,
     Pos: Position,
     For: Force,
     Vel: Velocity,
@@ -85,8 +85,8 @@ where
     fn set_random_variable(
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64,
-    ) -> Result<Option<f64>, RngError> {
+        dt: Float,
+    ) -> Result<Option<Float>, RngError> {
         self.mechanics.set_random_variable(rng, dt)
     }
 
@@ -158,6 +158,14 @@ where
         cell: &mut Self,
     ) -> Result<Self, cellular_raza_concepts::errors::DivisionError> {
         Cyc::divide(rng, cell)
+    }
+
+    fn update_conditional_phased_death(
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: &Float,
+        cell: &mut Self,
+    ) -> Result<bool, cellular_raza_concepts::prelude::DeathError> {
+        Cyc::update_conditional_phased_death(rng, dt, cell)
     }
 }
 

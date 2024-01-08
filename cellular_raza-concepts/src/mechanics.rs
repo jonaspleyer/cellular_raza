@@ -130,7 +130,7 @@ impl<T> Velocity for T where
 
 // TODO merge this with the interaction trait!
 /// Describes the position of a cell-agent and allows to calculate increments and set/get information of the agent.
-pub trait Mechanics<Pos, Vel, For> {
+pub trait Mechanics<Pos, Vel, For, Float = f64> {
     /// Gets the cells current position.
     fn pos(&self) -> Pos;
     /// Gets the cells current velocity.
@@ -146,8 +146,8 @@ pub trait Mechanics<Pos, Vel, For> {
     fn set_random_variable(
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64,
-    ) -> Result<Option<f64>, RngError> {
+        dt: Float,
+    ) -> Result<Option<Float>, RngError> {
         Ok(None)
     }
 

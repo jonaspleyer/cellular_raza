@@ -43,17 +43,17 @@ pub struct Voxel<C, A> {
 }
 
 impl<C, A> Voxel<C, A> {
-    pub fn calculate_force_between_cells_internally<Pos, Vel, For, F, Inf, const N: usize>(
+    pub fn calculate_force_between_cells_internally<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-        A: UpdateMechanics<Pos, Vel, For, F, N>,
-        For: Clone + core::ops::Mul<F, Output = For> + core::ops::Neg<Output = For>,
-        F: num::Float,
+        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        For: Clone + core::ops::Mul<Float, Output = For> + core::ops::Neg<Output = For>,
+        Float: num::Float,
     {
-        let one_half: F = F::one() / (F::one() + F::one());
+        let one_half: Float = Float::one() / (Float::one() + Float::one());
 
         for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
@@ -85,7 +85,7 @@ impl<C, A> Voxel<C, A> {
         Ok(())
     }
 
-    pub fn calculate_force_between_cells_external<Pos, Vel, For, Inf, F, const N: usize>(
+    pub fn calculate_force_between_cells_external<Pos, Vel, For, Float, Inf, F, const N: usize>(
         &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
@@ -98,7 +98,7 @@ impl<C, A> Voxel<C, A> {
             + core::ops::Mul<F, Output = For>
             + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
+            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, F, N>,
         F: num::Float,
     {
@@ -123,9 +123,9 @@ impl<C, A> Voxel<C, A> {
         Ok(force)
     }
 
-    pub fn update_cell_cycle_3(&mut self, dt: &f64) -> Result<(), CalcError>
+    pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::cycle::Cycle<C> + Id,
+        C: cellular_raza_concepts::cycle::Cycle<C, Float> + Id,
         A: UpdateCycle + Default,
     {
         use cellular_raza_concepts::cycle::CycleEvent;
@@ -358,9 +358,9 @@ where
     }
 
     /// Advances the cycle of a cell by a small time increment `dt`.
-    pub fn update_cycle(&mut self, dt: f64) -> Result<(), CalcError>
+    pub fn update_cycle<Float>(&mut self, dt: Float) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::cycle::Cycle<C>,
+        C: cellular_raza_concepts::cycle::Cycle<C, Float>,
         A: UpdateCycle,
     {
         self.voxels.iter_mut().for_each(|(_, voxel)| {

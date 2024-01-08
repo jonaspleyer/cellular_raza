@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf, Float = f64>:
     Cycle<Self, Float>
     + Interaction<Pos, Vel, For, Inf>
-    + Mechanics<Pos, Vel, For>
+    + Mechanics<Pos, Vel, For, Float>
     + Sized
     + Send
     + Sync
@@ -32,7 +32,7 @@ where
     Vel: Velocity,
     A: Cycle<Self, Float>
         + Interaction<Pos, Vel, For, Inf>
-        + Mechanics<Pos, Vel, For>
+        + Mechanics<Pos, Vel, For, Float>
         + Sized
         + Send
         + Sync
@@ -111,12 +111,12 @@ where
     }
 }
 
-impl<Pos, Vel, For, A> Mechanics<Pos, Vel, For> for CellAgentBox<A>
+impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A>
 where
     Pos: Position,
     For: Force,
     Vel: Velocity,
-    A: Mechanics<Pos, Vel, For> + Serialize + for<'a> Deserialize<'a>,
+    A: Mechanics<Pos, Vel, For, Float> + Serialize + for<'a> Deserialize<'a>,
 {
     fn pos(&self) -> Pos {
         self.cell.pos()
@@ -137,8 +137,8 @@ where
     fn set_random_variable(
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
-        dt: f64,
-    ) -> Result<Option<f64>, RngError> {
+        dt: Float,
+    ) -> Result<Option<Float>, RngError> {
         self.cell.set_random_variable(rng, dt)
     }
 
