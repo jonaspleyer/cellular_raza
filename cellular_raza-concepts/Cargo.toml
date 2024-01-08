@@ -19,6 +19,7 @@ plotters = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
+cellular_raza-concepts-derive = { version = "0.0.5", path = "../cellular_raza-concepts-derive" }
 
 [features]
 default = ["gradients"]

@@ -50,3 +50,267 @@ pub trait Cycle<Cell, Float = f64> {
         Ok(true)
     }
 }
+
+#[allow(unused)]
+#[doc(hidden)]
+mod test_derive {
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle;
+    ///
+    /// impl Cycle<MyAgent> for MyCycle {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent) -> Result<MyAgent, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f64,
+    ///             cell: &mut MyAgent,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent {
+    ///     #[Cycle]
+    ///     cycle: MyCycle
+    /// }
+    /// ```
+    fn derive_cycle_default() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle;
+    ///
+    /// impl Cycle<MyAgent, f32> for MyCycle {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent) -> Result<MyAgent, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f32,
+    ///             cell: &mut MyAgent,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent {
+    ///     #[Cycle(f32)]
+    ///     cycle: MyCycle
+    /// }
+    /// ```
+    fn derive_cycle_f32() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle<F> {
+    ///     some_property: F,
+    /// }
+    ///
+    /// impl<F> Cycle<MyAgent<F>, F> for MyCycle<F> {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent<F>) -> Result<MyAgent<F>, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &F,
+    ///             cell: &mut MyAgent<F>,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent<F> {
+    ///     #[Cycle(F)]
+    ///     cycle: MyCycle<F>
+    /// }
+    /// ```
+    fn derive_cycle_generic_float() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle<G> {
+    ///     some_property: G,
+    /// }
+    ///
+    /// impl<G> Cycle<MyAgent<G>> for MyCycle<G>
+    /// where
+    ///     G: Clone
+    /// {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent<G>) -> Result<MyAgent<G>, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f64,
+    ///             cell: &mut MyAgent<G>,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent<G>
+    /// where
+    ///     G: Clone
+    /// {
+    ///     #[Cycle]
+    ///     cycle: MyCycle<G>
+    /// }
+    /// ```
+    fn derive_cycle_generic_float_where_clause() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle;
+    ///
+    /// impl Cycle<MyAgent> for MyCycle {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent) -> Result<MyAgent, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f64,
+    ///             cell: &mut MyAgent,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent(
+    ///     #[Cycle]
+    ///     MyCycle
+    /// );
+    /// ```
+    fn derive_cycle_unnamed() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle;
+    ///
+    /// impl Cycle<MyAgent, f32> for MyCycle {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent) -> Result<MyAgent, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f32,
+    ///             cell: &mut MyAgent,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent(
+    ///     #[Cycle(f32)]
+    ///     MyCycle
+    /// );
+    /// ```
+    fn derive_cycle_f32_unnamed() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle<F> {
+    ///     some_property: F,
+    /// }
+    ///
+    /// impl<F> Cycle<MyAgent<F>, F> for MyCycle<F> {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent<F>) -> Result<MyAgent<F>, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &F,
+    ///             cell: &mut MyAgent<F>,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent<F>(
+    ///     #[Cycle(F)]
+    ///     MyCycle<F>
+    /// );
+    /// ```
+    fn derive_cycle_generic_float_unnamed() {}
+
+    /// ```
+    /// use cellular_raza_concepts_derive::CellAgent;
+    /// use cellular_raza_concepts::{
+    ///     errors::{DeathError,DivisionError},
+    ///     cycle::{CycleEvent, Cycle}
+    /// };
+    /// struct MyCycle<G> {
+    ///     some_property: G,
+    /// }
+    ///
+    /// impl<G> Cycle<MyAgent<G>> for MyCycle<G>
+    /// where
+    ///     G: Clone
+    /// {
+    ///     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut MyAgent<G>) -> Result<MyAgent<G>, DivisionError> {
+    ///         panic!("This should never be called")
+    ///     }
+    ///
+    ///     fn update_cycle(
+    ///             rng: &mut rand_chacha::ChaCha8Rng,
+    ///             dt: &f64,
+    ///             cell: &mut MyAgent<G>,
+    ///         ) -> Option<CycleEvent> {
+    ///         panic!("This should never be called")
+    ///     }
+    /// }
+    ///
+    /// #[derive(CellAgent)]
+    /// struct MyAgent<G>
+    /// (
+    ///     #[Cycle]
+    ///     MyCycle<G>
+    /// )
+    /// where
+    ///     G: Clone;
+    /// ```
+    fn derive_cycle_generic_float_where_clause_unnamed() {}
+}
