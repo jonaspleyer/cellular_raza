@@ -12,19 +12,28 @@ struct AgentParser {
     struct_token: syn::Token![struct],
     name: syn::Ident,
     generics: syn::Generics,
-    aspects: AspectFields,
+    aspects: Vec<AspectField>,
 }
 
 impl syn::parse::Parse for AgentParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            attrs: input.call(syn::Attribute::parse_outer)?,
-            vis: input.parse()?,
-            struct_token: input.parse()?,
-            name: input.parse()?,
-            generics: input.parse()?,
-            aspects: input.parse()?,
-        })
+        let item_struct: syn::ItemStruct = input.parse()?;
+        let attrs = item_struct.attrs;
+        let vis = item_struct.vis;
+        let struct_token = item_struct.struct_token;
+        let name = item_struct.ident;
+        let generics = item_struct.generics;
+        let aspects = AspectField::from_fields(name.span(), item_struct.fields)?;
+
+        let res = Self {
+            attrs,
+            vis,
+            struct_token,
+            name,
+            generics,
+            aspects,
+        };
+        Ok(res)
     }
 }
 
@@ -273,10 +282,8 @@ struct AspectField {
     field: syn::Field,
 }
 
-impl syn::parse::Parse for AspectField {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let field: syn::Field = input.call(syn::Field::parse_named)?;
-
+impl AspectField {
+    fn from_field(field: syn::Field) -> syn::Result<Self> {
         let mut errors = vec![];
         let aspects = field
             .attrs
@@ -290,23 +297,21 @@ impl syn::parse::Parse for AspectField {
         }
         Ok(Self { aspects, field })
     }
-}
 
-struct AspectFields {
-    #[allow(unused)]
-    brace_token: syn::token::Brace,
-    aspect_fields: syn::punctuated::Punctuated<AspectField, syn::token::Comma>,
-}
-
-impl syn::parse::Parse for AspectFields {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let content;
-        Ok(Self {
-            brace_token: syn::braced!(content in input),
-            aspect_fields: content.call(
-                syn::punctuated::Punctuated::<AspectField, syn::token::Comma>::parse_terminated,
-            )?,
-        })
+    fn from_fields(span: proc_macro2::Span, fields: syn::Fields) -> syn::Result<Vec<AspectField>> {
+        match fields {
+            syn::Fields::Named(fields_named) => Ok(fields_named
+                .named
+                .into_iter()
+                .map(|field| AspectField::from_field(field))
+                .collect::<syn::Result<Vec<_>>>()?),
+            syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
+                .unnamed
+                .into_iter()
+                .map(|field| AspectField::from_field(field))
+                .collect::<syn::Result<Vec<_>>>()?),
+            syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
+        }
     }
 }
 
@@ -331,63 +336,60 @@ impl From<AgentParser> for AgentImplementer {
         let mut extracellular_gradient = None;
         let mut volume = None;
 
-        value
-            .aspects
-            .aspect_fields
-            .into_iter()
-            .for_each(|aspect_field| {
-                aspect_field
-                    .aspects
-                    .into_iter()
-                    .for_each(|aspect| match aspect {
-                        Aspect::Cycle(p) => {
-                            cycle = Some(CycleImplementer {
-                                float_type: p.float_type,
-                                field_type: aspect_field.field.ty.clone(),
-                            })
-                        }
-                        Aspect::Mechanics(p) => {
-                            mechanics = Some(MechanicsImplementer {
-                                position: p.position,
-                                velocity: p.velocity,
-                                force: p.force,
-                                field_type: aspect_field.field.ty.clone(),
-                                field_name: aspect_field.field.ident.clone(),
-                            })
-                        }
-                        Aspect::Interaction(p) => {
-                            interaction = Some(InteractionImplementer {
-                                position: p.position,
-                                velocity: p.velocity,
-                                force: p.force,
-                                information: p.information,
-                                field_type: aspect_field.field.ty.clone(),
-                                field_name: aspect_field.field.ident.clone(),
-                            })
-                        }
-                        Aspect::CellularReactions(p) => {
-                            cellular_reactions = Some(CellularReactionsImplementer {
-                                concvecintracellular: p.concvecintracellular,
-                                concvecextracellular: p.concvecextracellular,
-                                field_type: aspect_field.field.ty.clone(),
-                                field_name: aspect_field.field.ident.clone(),
-                            })
-                        }
-                        Aspect::ExtracellularGradient(p) => {
-                            extracellular_gradient = Some(ExtracellularGradientImplementer {
-                                extracellular_gradient: p.extracellular_gradient,
-                                field_type: aspect_field.field.ty.clone(),
-                            })
-                        }
-                        Aspect::Volume(p) => {
-                            volume = Some(VolumeImplementer {
-                                float_type: p.float_type,
-                                field_type: aspect_field.field.ty.clone(),
-                                field_name: aspect_field.field.ident.clone(),
-                            })
-                        }
-                    })
-            });
+        value.aspects.into_iter().for_each(|aspect_field| {
+            aspect_field
+                .aspects
+                .into_iter()
+                .for_each(|aspect| match aspect {
+                    Aspect::Cycle(p) => {
+                        cycle = Some(CycleImplementer {
+                            float_type: p.float_type,
+                            field_type: aspect_field.field.ty.clone(),
+                        })
+                    }
+                    Aspect::Mechanics(p) => {
+                        mechanics = Some(MechanicsImplementer {
+                            position: p.position,
+                            velocity: p.velocity,
+                            force: p.force,
+                            float_type: p.float_type,
+                            field_type: aspect_field.field.ty.clone(),
+                            field_name: aspect_field.field.ident.clone(),
+                        })
+                    }
+                    Aspect::Interaction(p) => {
+                        interaction = Some(InteractionImplementer {
+                            position: p.position,
+                            velocity: p.velocity,
+                            force: p.force,
+                            information: p.information,
+                            field_type: aspect_field.field.ty.clone(),
+                            field_name: aspect_field.field.ident.clone(),
+                        })
+                    }
+                    Aspect::CellularReactions(p) => {
+                        cellular_reactions = Some(CellularReactionsImplementer {
+                            concvecintracellular: p.concvecintracellular,
+                            concvecextracellular: p.concvecextracellular,
+                            field_type: aspect_field.field.ty.clone(),
+                            field_name: aspect_field.field.ident.clone(),
+                        })
+                    }
+                    Aspect::ExtracellularGradient(p) => {
+                        extracellular_gradient = Some(ExtracellularGradientImplementer {
+                            extracellular_gradient: p.extracellular_gradient,
+                            field_type: aspect_field.field.ty.clone(),
+                        })
+                    }
+                    Aspect::Volume(p) => {
+                        volume = Some(VolumeImplementer {
+                            float_type: p.float_type,
+                            field_type: aspect_field.field.ty.clone(),
+                            field_name: aspect_field.field.ident.clone(),
+                        })
+                    }
+                })
+        });
 
         Self {
             name: value.name,
@@ -421,7 +423,8 @@ fn wrap(input: TokenStream) -> TokenStream {
 impl AgentImplementer {
     fn implement_cycle(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(cycle_implementer) = &self.cycle {
             let float_type = match &cycle_implementer.float_type {
@@ -430,11 +433,11 @@ impl AgentImplementer {
             };
             let field_type = &cycle_implementer.field_type;
 
-            let tokens = quote!(#struct_name, #float_type);
+            let tokens = quote!(#struct_name #struct_ty_generics, #float_type);
 
             let new_stream = quote!(
                 #[automatically_derived]
-                impl #struct_generics Cycle<#struct_name, #float_type> for #struct_name #struct_generics {
+                impl #struct_impl_generics Cycle<#tokens> for #struct_name #struct_ty_generics #struct_where_clause {
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: &#float_type,
@@ -463,20 +466,25 @@ impl AgentImplementer {
 
     fn implement_mechanics(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(mechanics_implementer) = &self.mechanics {
             let position = &mechanics_implementer.position;
             let velocity = &mechanics_implementer.velocity;
             let force = &mechanics_implementer.force;
+            let float_type = match &mechanics_implementer.float_type {
+                Some(ty) => quote!(#ty),
+                None => quote!(f64),
+            };
 
-            let tokens = quote!(#position, #velocity, #force);
+            let tokens = quote!(#position, #velocity, #force, #float_type);
             let field_type = &mechanics_implementer.field_type;
             let field_name = &mechanics_implementer.field_name;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_generics Mechanics<#tokens> for #struct_name #struct_generics
+                impl #struct_impl_generics Mechanics<#tokens> for #struct_name #struct_ty_generics #struct_where_clause
                 {
                     fn pos(&self) -> #position {
                         <#field_type as Mechanics<#tokens>>::pos(&self.#field_name)
@@ -508,7 +516,8 @@ impl AgentImplementer {
 
     fn implement_interaction(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(interaction_implementer) = &self.interaction {
             let field_name = &interaction_implementer.field_name;
@@ -520,12 +529,12 @@ impl AgentImplementer {
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_generics Interaction<
+                impl #struct_impl_generics Interaction<
                     #position,
                     #velocity,
                     #force,
                     #information
-                > for #struct_name #struct_generics {
+                > for #struct_name #struct_ty_generics #struct_where_clause {
                     fn get_interaction_information(&self) -> #information {
                         <#field_type as Interaction<
                             #position,
@@ -602,7 +611,8 @@ impl AgentImplementer {
 
     fn implement_reactions(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(cellular_reactions_implemeneter) = &self.cellular_reactions {
             let field_name = &cellular_reactions_implemeneter.field_name;
@@ -612,10 +622,10 @@ impl AgentImplementer {
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_generics CellularReactions<
+                impl #struct_impl_generics CellularReactions<
                     #concvecintracellular,
                     #concvecextracellular
-                > for #struct_name #struct_generics {
+                > for #struct_name #struct_ty_generics #struct_where_clause {
                     fn get_intracellular(&self) -> #concvecintracellular {
                         <#field_type as CellularReactions<
                             #concvecintracellular,
@@ -659,7 +669,8 @@ impl AgentImplementer {
 
     fn implement_extracellular_gradient(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(extracellular_gradient_implementer) = &self.extracellular_gradient {
             let field_type = &extracellular_gradient_implementer.field_type;
@@ -667,16 +678,16 @@ impl AgentImplementer {
             let extracellular_gradient = &extracellular_gradient_implementer.extracellular_gradient;
             let res = quote! {
                 #[automatically_derived]
-                impl InteractionExtracellularGradient<
-                    #struct_name #struct_generics,
+                impl #struct_impl_generics InteractionExtracellularGradient<
+                    #struct_name #struct_ty_generics,
                     #extracellular_gradient
-                > for #struct_name #struct_generics {
+                > for #struct_name #struct_ty_generics #struct_where_clause {
                     fn sense_gradient(
-                        cell: &mut #struct_name #struct_generics,
+                        cell: &mut #struct_name #struct_ty_generics,
                         gradient: &#extracellular_gradient,
                     ) -> Result<(), CalcError> {
                         <#field_type as InteractionExtracellularGradient<
-                            #struct_name #struct_generics,
+                            #struct_name #struct_ty_generics,
                             #extracellular_gradient
                         >>::sense_gradient(cell, gradient)
                     }
