@@ -374,38 +374,29 @@ where
     }
 }
 
-pub trait SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, const N: usize, const ON: bool> {
-    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError>;
-}
-
-impl<T, Pos, Vel, For, Inf, F, const N: usize>
-    SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, N, false> for T
-{
-    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError> {
-        Ok(())
-    }
-}
-
-impl<S, C, A, Com, Sy, Pos, Vel, For, Inf, F, const N: usize>
-    SubdomainUpdateMechanics<Pos, Vel, For, Inf, F, N, true> for SubDomainBox<S, C, A, Com, Sy>
+impl<S, C, A, Com, Sy> SubDomainBox<S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
-    Pos: Clone,
-    Vel: Clone,
-    Inf: Clone,
-    C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For>,
-    C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-    A: UpdateMechanics<Pos, Vel, For, F, N>,
-    For: Clone
-        + core::ops::AddAssign
-        + core::ops::Mul<F, Output = For>
-        + core::ops::Neg<Output = For>
-        + num::Zero,
-    F: num::Float,
-    <S as SubDomain<C>>::VoxelIndex: Ord,
-    Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
 {
-    fn update_mechanics_step_1(&mut self) -> Result<(), SimulationError> {
+    pub fn update_mechanics_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        Pos: Clone,
+        Vel: Clone,
+        Inf: Clone,
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        For: Clone
+            + core::ops::AddAssign
+            + core::ops::Mul<Float, Output = For>
+            + core::ops::Neg<Output = For>
+            + num::Zero,
+        Float: num::Float,
+        <S as SubDomain<C>>::VoxelIndex: Ord,
+        Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
+    {
         self.voxels
             .iter_mut()
             .map(|(_, vox)| vox.calculate_force_between_cells_internally())
