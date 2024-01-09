@@ -352,6 +352,19 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core_derive::*;
     /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    ///     #[cfg(not(test))]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// }
+    /// ```
+    fn mechanics_other_attributes() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -436,6 +449,20 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core_derive::*;
     /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_concepts::cycle::CycleEvent;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructCycle {
+    ///     #[UpdateCycle]
+    ///     #[cfg(not(test))]
+    ///     aux_cycle: AuxStorageCycle,
+    /// }
+    /// ```
+    fn cycle_other_attributes() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<R> {
@@ -516,6 +543,19 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::aux_storage::*;
     ///
     /// #[derive(AuxStorage)]
+    /// struct TestStructReactions<R> {
+    ///     #[cfg(not(test))]
+    ///     #[UpdateReactions(R)]
+    ///     aux_cycle: AuxStorageReactions<R>,
+    /// }
+    /// ```
+    fn reactions_other_attributes() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
     /// struct TestStructInteraction {
     ///     #[UpdateInteraction]
     ///     aux_interaction: AuxStorageInteraction,
@@ -588,6 +628,19 @@ mod test_derive_aux_storage_compile {
     /// }
     /// ```
     fn interactions_where_clause() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::*;
+    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    ///
+    /// #[derive(AuxStorage)]
+    /// struct TestStructInteraction {
+    ///     #[UpdateInteraction]
+    ///     #[cfg(not(test))]
+    ///     aux_interaction: AuxStorageInteraction,
+    /// }
+    /// ```
+    fn interactions_other_attributes() {}
 }
 
 #[cfg(test)]
