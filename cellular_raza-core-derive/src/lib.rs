@@ -5,6 +5,7 @@
 
 mod aux_storage;
 mod communicator;
+mod simulation_aspects;
 
 #[proc_macro_derive(
     AuxStorage,
