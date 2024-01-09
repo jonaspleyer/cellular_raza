@@ -288,7 +288,7 @@ where
     }
 }
 
-pub trait Communicator<T, I>
+pub trait Communicator<I, T>
 where
     Self: Sized,
 {
@@ -297,12 +297,12 @@ where
 }
 
 #[derive(Clone)]
-pub struct ChannelComm<T, I> {
+pub struct ChannelComm<I, T> {
     senders: std::collections::BTreeMap<I, crossbeam_channel::Sender<T>>,
     receiver: crossbeam_channel::Receiver<T>,
 }
 
-impl<T, I> FromMap<I> for ChannelComm<T, I>
+impl<T, I> FromMap<I> for ChannelComm<I, T>
 where
     I: Clone + core::hash::Hash + Eq + Ord,
 {
@@ -334,7 +334,7 @@ where
     }
 }
 
-impl<T, I> Communicator<T, I> for ChannelComm<T, I>
+impl<I, T> Communicator<I, T> for ChannelComm<I, T>
 where
     I: core::hash::Hash + Eq + Ord,
 {
