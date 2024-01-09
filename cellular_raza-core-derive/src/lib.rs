@@ -4,6 +4,7 @@
 //! For the future, we are planning to have similar functionality with other concepts associated to CellAgents.
 
 mod aux_storage;
+mod communicator;
 
 #[proc_macro_derive(
     AuxStorage,
@@ -17,6 +18,12 @@ pub fn aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[proc_macro]
 pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::construct_aux_storage(input)
+}
+
+/// Derives the [Communicator](cellular_raza_core::backend::chili::simulation_flow) trait.
+#[proc_macro_derive(Communicator, attributes(Comm))]
+pub fn communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    communicator::derive_communicator(input)
 }
 
 /* #[derive(Clone, Debug)]
