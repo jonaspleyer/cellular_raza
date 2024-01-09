@@ -357,6 +357,57 @@ pub struct PosInformation<Pos, Vel, Inf> {
     pub index_receiver: VoxelPlainIndex,
 }
 
+pub struct ForceInformation<For> {
+    pub force: For,
+    pub count: usize,
+    pub index_sender: VoxelPlainIndex,
+}
+
+#[doc(hidden)]
+#[allow(unused)]
+mod test_derive_communicator {
+    /// ```
+    /// use cellular_raza_core::backend::chili::simulation_flow::*;
+    /// use cellular_raza_core_derive::Communicator;
+    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// #[derive(Communicator)]
+    /// struct MyComm<I, T> {
+    ///     #[Comm(I, T)]
+    ///     comm: ChannelComm<I, T>
+    /// }
+    /// ```
+    fn default() {}
+
+    /// ```
+    /// use cellular_raza_core::backend::chili::simulation_flow::*;
+    /// use cellular_raza_core_derive::Communicator;
+    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// #[derive(Communicator)]
+    /// struct MyDouble<I> {
+    ///     #[Comm(I, String)]
+    ///     comm1: ChannelComm<I, String>,
+    ///     #[Comm(I, f64)]
+    ///     comm2: ChannelComm<I, f64>,
+    /// }
+    /// ```
+    fn two_communicators_explicit() {}
+
+    /// ```
+    /// use cellular_raza_core::backend::chili::simulation_flow::*;
+    /// use cellular_raza_core_derive::Communicator;
+    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// struct Message<T>(T);
+    /// #[derive(Communicator)]
+    /// struct MyDouble<I, T> {
+    ///     #[Comm(I, Message<T>)]
+    ///     comm1: ChannelComm<I, Message<T>>,
+    ///     #[Comm(I, f64)]
+    ///     comm2: ChannelComm<I, f64>,
+    /// }
+    /// ```
+    fn two_communicators_generic_one() {}
+}
+
 #[cfg(test)]
 pub mod test_sync {
     use super::*;
