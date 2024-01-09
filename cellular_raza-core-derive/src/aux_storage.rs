@@ -2,11 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 
 // ##################################### PARSING #####################################
-#[allow(unused)]
 pub struct AuxStorageParser {
-    attrs: Vec<syn::Attribute>,
-    vis: syn::Visibility,
-    struct_token: syn::token::Struct,
     name: syn::Ident,
     generics: syn::Generics,
     aspects: AspectFields,
@@ -17,9 +13,6 @@ impl syn::parse::Parse for AuxStorageParser {
         let item_struct: syn::ItemStruct = input.parse()?;
 
         Ok(Self {
-            attrs: item_struct.attrs,
-            vis: item_struct.vis,
-            struct_token: item_struct.struct_token,
             name: item_struct.ident,
             generics: item_struct.generics,
             aspects: AspectFields::from_fields(item_struct.fields)?,
