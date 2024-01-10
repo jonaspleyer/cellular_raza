@@ -540,7 +540,7 @@ pub struct MultiVoxelContainer<
     pub plain_index_to_thread: BTreeMap<PlainIndex, usize>,
     pub index_to_thread: BTreeMap<Ind, usize>,
 
-    pub senders_cell: HashMap<usize, Sender<CellAgentBox<Cel>>>,
+    pub senders_cell: HashMap<usize, Sender<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For , ConcVecIntracellular>)>>,
     pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Vel, Inf>>>,
     pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
@@ -549,7 +549,7 @@ pub struct MultiVoxelContainer<
         HashMap<usize, Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>>,
 
     // Same for receiving
-    pub receiver_cell: Receiver<CellAgentBox<Cel>>,
+    pub receiver_cell: Receiver<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>)>,
     pub receiver_pos: Receiver<PosInformation<Pos, Vel, Inf>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
@@ -757,17 +757,16 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<Cel>) -> Result<(), SimulationError> {
+    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<Cel>, aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>) -> Result<(), SimulationError> {
         let index = self.index_to_plain_index[&self.domain.get_voxel_index(&cell)];
-        let aux_storage = AuxiliaryCellPropertyStorage::default();
 
         match self.voxels.get_mut(&index) {
             Some(vox) => vox.cells.push((cell, aux_storage)),
             None => {
                 let thread_index = self.plain_index_to_thread[&index];
                 match self.senders_cell.get(&thread_index) {
-                    Some(sender) => sender.send(cell),
-                    None => Err(SendError(cell)),
+                    Some(sender) => sender.send((cell, aux_storage)),
+                    None => Err(SendError((cell, aux_storage))),
                 }?;
             }
         }
@@ -1138,7 +1137,7 @@ where
                 // Otherwise send them to the correct other multivoxelcontainer
                 None => match self.senders_cell.get(&new_thread_index) {
                     Some(sender) => {
-                        sender.send(cell)?;
+                        sender.send((cell, aux_storage))?;
                         Ok(())
                     }
                     None => Err(IndexError(format!(
@@ -1154,8 +1153,8 @@ where
     pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError> {
         // Now receive new cells and insert them
         let mut new_cells = self.receiver_cell.try_iter().collect::<Vec<_>>();
-        for cell in new_cells.drain(..) {
-            self.sort_cell_in_voxel(cell)?;
+        for (cell, aux_storage) in new_cells.drain(..) {
+            self.sort_cell_in_voxel(cell, aux_storage)?;
         }
         Ok(())
     }

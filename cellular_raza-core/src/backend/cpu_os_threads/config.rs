@@ -1,3 +1,4 @@
+use crate::backend::cpu_os_threads::prelude::AuxiliaryCellPropertyStorage;
 use crate::storage::concepts::{StorageManager, StorageOptions};
 use cellular_raza_concepts::cell::{Agent, CellAgentBox};
 use cellular_raza_concepts::domain::{Domain, Index, Voxel};
@@ -401,8 +402,8 @@ where
 
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(
-            Sender<CellAgentBox<Cel>>,
-            Receiver<CellAgentBox<Cel>>,
+            Sender<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>)>,
+            Receiver<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>)>,
         )> = (0..n_threads).map(|_| unbounded()).collect();
         let sender_receiver_pairs_pos: Vec<(
             Sender<PosInformation<Pos, Vel, Inf>>,
