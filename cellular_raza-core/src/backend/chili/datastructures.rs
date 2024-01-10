@@ -395,7 +395,7 @@ where
             + num::Zero,
         Float: num::Float,
         <S as SubDomain<C>>::VoxelIndex: Ord,
-        Com: Communicator<PosInformation<Pos, Vel, Inf>, VoxelPlainIndex>,
+        Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
     {
         self.voxels
             .iter_mut()
