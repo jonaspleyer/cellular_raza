@@ -459,6 +459,16 @@ mod test_build_communicator {
     /// );
     /// ```
     fn reactions() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Mechanics, Interaction],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn mechanics_interaction() {}
 }
 
 #[cfg(test)]

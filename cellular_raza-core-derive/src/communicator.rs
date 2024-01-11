@@ -163,7 +163,7 @@ impl SimulationAspect {
             ], vec![
                 quote!(
                     #[Comm(I, #path ::SendCell<Cel, Aux>)]
-                    comm_cell: #path ::ChannelComm<I, #path ::SendCell<Cel, Aux>>,
+                    comm_cell: #path ::ChannelComm<I, #path ::SendCell<Cel, Aux>>
                 )
             ]),
             SimulationAspect::Interaction => (vec![
@@ -205,6 +205,7 @@ impl ConstructInput {
             fields.extend(f);
         });
         quote!(
+            #[allow(non_camel_case_types)]
             #[derive(cellular_raza_core_derive::Communicator)]
             struct #struct_name <#(#generics),*> {
                 #(#fields),*
