@@ -48,7 +48,7 @@ where
     /// Vector containing properties of individual [SubDomains](SubDomain).
     /// Entries are [Domain::SubDomainIndex], [SubDomain], and a vector of cells.
     pub index_subdomain_cells: Vec<(I, S, Vec<C>)>,
-    /// Maps the assigned voxel index to the plain index indicated by a `u128` value.
+    /// Maps the assigned voxel index to the plain index indicated by a `usize` value.
     pub voxel_index_to_plain_index: HashMap<S::VoxelIndex, usize>,
     /// Encapsulates how the subdomains are linked to each other.
     /// Eg. two subdomains without any boundary will never appear in each others collection of neighbors.
