@@ -12,7 +12,7 @@ mod simulation_aspects;
     attributes(UpdateCycle, UpdateMechanics, UpdateInteraction, UpdateReactions)
 )]
 /// Derives the `UpdateCycle` and `UpdateMechanics` trait automatically for the containing struct.
-pub fn aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn _aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::derive_aux_storage(input)
 }
 
@@ -23,7 +23,7 @@ pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
 /// Derives the [Communicator](cellular_raza_core::backend::chili::simulation_flow) trait.
 #[proc_macro_derive(Communicator, attributes(Comm))]
-pub fn communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::derive_communicator(input)
 }
 

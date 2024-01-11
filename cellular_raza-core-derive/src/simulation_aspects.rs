@@ -24,6 +24,8 @@ impl syn::parse::Parse for AspectsToken {
 
 #[derive(Debug)]
 pub enum SimulationAspect {
+    // TODO add generic aspect which should always be present
+    // None,
     Mechanics,
     Interaction,
     Cycle,
