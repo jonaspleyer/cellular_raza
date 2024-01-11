@@ -27,6 +27,11 @@ pub fn communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::derive_communicator(input)
 }
 
+#[proc_macro]
+pub fn construct_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    communicator::construct_communicator(input)
+}
+
 /* #[derive(Clone, Debug)]
 enum Aspect {
     Mechanics,

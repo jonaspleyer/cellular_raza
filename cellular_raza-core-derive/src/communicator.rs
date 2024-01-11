@@ -129,3 +129,92 @@ pub fn derive_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 
     proc_macro::TokenStream::from(stream)
 }
+
+// ################################### CONSTRUCTING ##################################
+struct ConstructInput {
+    name_def: NameDefinition,
+    _comma_1: syn::Token![,],
+    aspects: SimulationAspects,
+    _comma_2: syn::Token![,],
+    path: SpecifiedPath,
+}
+
+impl syn::parse::Parse for ConstructInput {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            name_def: input.parse()?,
+            _comma_1: input.parse()?,
+            aspects: input.parse()?,
+            _comma_2: input.parse()?,
+            path: input.parse()?,
+        })
+    }
+}
+
+impl SimulationAspect {
+    fn build_comm(&self, path: &syn::Path) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
+        match self {
+            SimulationAspect::Cycle => (vec![], vec![]),
+            SimulationAspect::Reactions => (vec![], vec![]),
+            SimulationAspect::Mechanics => (vec![
+                syn::parse2(quote!(I)).unwrap(),
+                syn::parse2(quote!(Cel)).unwrap(),
+                syn::parse2(quote!(Aux)).unwrap(),
+            ], vec![
+                quote!(
+                    #[Comm(I, #path ::SendCell<Cel, Aux>)]
+                    comm_cell: #path ::ChannelComm<I, #path ::SendCell<Cel, Aux>>,
+                )
+            ]),
+            SimulationAspect::Interaction => (vec![
+                syn::parse2(quote!(I)).unwrap(),
+                syn::parse2(quote!(Pos)).unwrap(),
+                syn::parse2(quote!(Vel)).unwrap(),
+                syn::parse2(quote!(For)).unwrap(),
+                syn::parse2(quote!(Inf)).unwrap(),
+            ], vec![
+                quote!(
+                    #[Comm(I, #path ::PosInformation<Pos, Vel, Inf>)]
+                    comm_pos: #path ::ChannelComm<I, #path ::PosInformation<Pos, Vel, Inf>>
+                ),
+                quote!(
+                    #[Comm(I, #path ::ForceInformation<For>)]
+                    comm_force: #path ::ChannelComm<I, #path ::ForceInformation<For>>
+                ),
+            ]),
+        }
+    }
+}
+
+impl ConstructInput {
+    fn build_communicator(self) -> proc_macro2::TokenStream {
+        let struct_name = self.name_def.struct_name;
+        let generics_fields: Vec<_> = self.aspects.items.into_iter().map(|aspect| {
+            aspect.build_comm(&self.path.path)
+        }).collect();
+
+        let mut generics = vec![];
+        let mut fields = vec![];
+
+        generics_fields.into_iter().for_each(|(g, f)| {
+            g.into_iter().for_each(|gi| {
+                if !generics.contains(&gi) {
+                    generics.push(gi);
+                }
+            });
+            fields.extend(f);
+        });
+        quote!(
+            #[derive(cellular_raza_core_derive::Communicator)]
+            struct #struct_name <#(#generics),*> {
+                #(#fields),*
+            }
+        )
+    }
+}
+
+pub fn construct_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let constr = syn::parse_macro_input!(input as ConstructInput);
+    let stream = constr.build_communicator();
+    proc_macro::TokenStream::from(stream)
+}
