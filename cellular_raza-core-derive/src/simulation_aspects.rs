@@ -97,3 +97,33 @@ impl SimulationAspect {
         ]
     }
 }
+
+pub struct PathToken;
+
+impl syn::parse::Parse for PathToken {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _path_token: syn::Ident = input.parse()?;
+        if _path_token == "path" {
+            Ok(Self)
+        } else {
+            Err(syn::Error::new(_path_token.span(), "Expected \"path\""))
+        }
+    }
+}
+
+#[allow(unused)]
+pub struct SpecifiedPath {
+    pub path_token: PathToken,
+    pub double_colon: syn::Token![:],
+    pub path: syn::Path,
+}
+
+impl syn::parse::Parse for SpecifiedPath {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            path_token: input.parse()?,
+            double_colon: input.parse()?,
+            path: input.parse()?,
+        })
+    }
+}
