@@ -409,10 +409,10 @@ mod test_derive_communicator {
 
 #[doc(hidden)]
 #[allow(unused)]
-mod test_construct_communicator {
+mod test_build_communicator {
     /// ```
-    /// use cellular_raza_core_derive::construct_communicator;
-    /// construct_communicator!(
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
     ///     name: __MyComm,
     ///     aspects: [],
     ///     path: cellular_raza_core::backend::chili::simulation_flow
@@ -421,8 +421,8 @@ mod test_construct_communicator {
     fn empty() {}
 
     /// ```
-    /// use cellular_raza_core_derive::construct_communicator;
-    /// construct_communicator!(
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
     ///     name: __MyComm,
     ///     aspects: [Mechanics],
     ///     path: cellular_raza_core::backend::chili::simulation_flow
@@ -431,8 +431,8 @@ mod test_construct_communicator {
     fn mechanics() {}
 
     /// ```
-    /// use cellular_raza_core_derive::construct_communicator;
-    /// construct_communicator!(
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
     ///     name: __MyComm,
     ///     aspects: [Cycle],
     ///     path: cellular_raza_core::backend::chili::simulation_flow
@@ -441,8 +441,8 @@ mod test_construct_communicator {
     fn cycle() {}
 
     /// ```
-    /// use cellular_raza_core_derive::construct_communicator;
-    /// construct_communicator!(
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
     ///     name: __MyComm,
     ///     aspects: [Interaction],
     ///     path: cellular_raza_core::backend::chili::simulation_flow
@@ -451,8 +451,8 @@ mod test_construct_communicator {
     fn interaction() {}
 
     /// ```
-    /// use cellular_raza_core_derive::construct_communicator;
-    /// construct_communicator!(
+    /// use cellular_raza_core_derive::build_communicator;
+    /// build_communicator!(
     ///     name: __MyComm,
     ///     aspects: [Reactions],
     ///     path: cellular_raza_core::backend::chili::simulation_flow
