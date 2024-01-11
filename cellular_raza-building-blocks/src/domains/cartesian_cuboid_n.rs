@@ -610,7 +610,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
         {
             // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
-            type SubDomainIndex = i64;
+            type SubDomainIndex = usize;
             type VoxelIndex = [i64; $d];
 
             fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
@@ -665,12 +665,12 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 ind_n.append(&mut ind_m);
 
                 // Construct a map from voxel_index to plain_index
-                let voxel_index_to_plain_index: std::collections::HashMap::<Self::VoxelIndex,u128> = ind_n.clone()
+                let voxel_index_to_plain_index: std::collections::HashMap::<Self::VoxelIndex, usize> = ind_n.clone()
                     .into_iter()
                     .map(|indices| indices.into_iter())
                     .flatten()
                     .enumerate()
-                    .map(|(i, voxel_index)| (voxel_index, i as u128))
+                    .map(|(i, voxel_index)| (voxel_index, i as usize))
                     .collect();
 
                 // We construct all Voxels which are grouped in their according subdomains
@@ -703,7 +703,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                     .enumerate()
                     .map(|(subdomain_index, voxel_indices)| voxel_indices
                         .into_iter()
-                        .map(move |voxel_index| (voxel_index, subdomain_index as i64))
+                        .map(move |voxel_index| (voxel_index, subdomain_index))
                     )
                     .flatten()
                     .collect::<std::collections::HashMap<Self::VoxelIndex, Self::SubDomainIndex>>();
@@ -749,13 +749,13 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                                         IndexError(format!("Could not find neighboring voxel index {:?} internally which should have been initialized.", neighbor_voxel_index))
                                 )
                             ))
-                            .collect::<Result<Vec<i64>, _>>()
+                            .collect::<Result<Vec<usize>, _>>()
                             .and_then(|neighbors| Ok(neighbors
                                 .into_iter()
                                 .unique()
-                                .filter(|neighbor_index| *neighbor_index!=subdomain_index as i64)
+                                .filter(|neighbor_index| *neighbor_index!=subdomain_index)
                                 .collect::<Vec<_>>()))?;
-                        Ok((subdomain_index.clone() as i64, neighbor_subdomains))
+                        Ok((subdomain_index, neighbor_subdomains))
                     })
                     .collect::<Result<_, DecomposeError>>()?;
 

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Identifier for voxels used internally to get rid of user-defined ones.
 // #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-pub type VoxelPlainIndex = u128;
+pub type VoxelPlainIndex = usize;
 
 /// Identifer or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
