@@ -51,8 +51,6 @@ pub struct NameDefinition {
     #[allow(unused)]
     double_colon_1: syn::Token![:],
     pub struct_name: syn::Ident,
-    #[allow(unused)]
-    comma: syn::Token![,],
 }
 
 impl syn::parse::Parse for NameDefinition {
@@ -61,7 +59,6 @@ impl syn::parse::Parse for NameDefinition {
             name_token: input.parse()?,
             double_colon_1: input.parse()?,
             struct_name: input.parse()?,
-            comma: input.parse()?,
         })
     }
 }

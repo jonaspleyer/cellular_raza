@@ -507,6 +507,7 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
 // #################################### CONSTRUCT ####################################
 struct Arguments {
     name_def: NameDefinition,
+    _comma: syn::Token![,],
     simulation_aspects: SimulationAspects,
 }
 
@@ -514,6 +515,7 @@ impl syn::parse::Parse for Arguments {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
             name_def: input.parse()?,
+            _comma: input.parse()?,
             simulation_aspects: input.parse()?,
         })
     }
