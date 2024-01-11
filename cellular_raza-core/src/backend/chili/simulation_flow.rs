@@ -363,6 +363,8 @@ pub struct ForceInformation<For> {
     pub index_sender: VoxelPlainIndex,
 }
 
+pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
+
 #[doc(hidden)]
 #[allow(unused)]
 mod test_derive_communicator {
