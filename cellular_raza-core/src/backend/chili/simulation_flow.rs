@@ -367,9 +367,8 @@ pub struct ForceInformation<For> {
 #[allow(unused)]
 mod test_derive_communicator {
     /// ```
-    /// use cellular_raza_core::backend::chili::simulation_flow::*;
     /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
     /// #[derive(Communicator)]
     /// struct MyComm<I, T> {
     ///     #[Comm(I, T)]
@@ -379,9 +378,8 @@ mod test_derive_communicator {
     fn default() {}
 
     /// ```
-    /// use cellular_raza_core::backend::chili::simulation_flow::*;
     /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
     /// #[derive(Communicator)]
     /// struct MyDouble<I> {
     ///     #[Comm(I, String)]
@@ -393,9 +391,8 @@ mod test_derive_communicator {
     fn two_communicators_explicit() {}
 
     /// ```
-    /// use cellular_raza_core::backend::chili::simulation_flow::*;
     /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::errors::SimulationError;
+    /// use cellular_raza_core::backend::chili::simulation_flow::*;
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
     /// struct MyDouble<I, T> {
@@ -406,6 +403,60 @@ mod test_derive_communicator {
     /// }
     /// ```
     fn two_communicators_generic_one() {}
+}
+
+#[doc(hidden)]
+#[allow(unused)]
+mod test_construct_communicator {
+    /// ```
+    /// use cellular_raza_core_derive::construct_communicator;
+    /// construct_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn empty() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::construct_communicator;
+    /// construct_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Mechanics],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn mechanics() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::construct_communicator;
+    /// construct_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Cycle],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn cycle() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::construct_communicator;
+    /// construct_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Interaction],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn interaction() {}
+
+    /// ```
+    /// use cellular_raza_core_derive::construct_communicator;
+    /// construct_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Reactions],
+    ///     path: cellular_raza_core::backend::chili::simulation_flow
+    /// );
+    /// ```
+    fn reactions() {}
 }
 
 #[cfg(test)]
