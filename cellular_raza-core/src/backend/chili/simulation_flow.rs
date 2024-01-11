@@ -394,7 +394,7 @@ mod test_derive_communicator {
 
     /// ```
     /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::simulation_flow::*;
+    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
     /// struct MyDouble<I, T> {
