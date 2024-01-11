@@ -68,6 +68,25 @@ impl syn::parse::Parse for CommParser {
 }
 
 // ################################### IMPLEMENTING ##################################
+fn wrap_pre_flags(stream: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    quote!(
+        #[allow(unused)]
+        #[allow(non_camel_case_types)]
+        const _: () = {
+            extern crate cellular_raza_core as _crc;
+            extern crate cellular_raza_core_derive as _crc_derive;
+
+            use _crc::backend::chili::{
+                errors::SimulationError,
+                simulation_flow::Communicator
+            };
+            use _crc_derive::Communicator;
+
+            #stream
+        };
+    )
+}
+
 impl Communicator {
     fn derive_communicator(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.struct_name;
@@ -100,7 +119,7 @@ impl Communicator {
                 }
             )
         }));
-        res
+        wrap_pre_flags(res)
     }
 }
 
