@@ -22,7 +22,7 @@ impl syn::parse::Parse for AspectsToken {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum SimulationAspect {
     // TODO add generic aspect which should always be present
     // None,
@@ -89,6 +89,15 @@ impl syn::parse::Parse for SimulationAspects {
     }
 }
 
+impl SimulationAspects {
+    pub fn to_aspect_list(&self) -> Vec<SimulationAspect> {
+        self.items
+            .iter()
+            .map(|aspect| aspect.clone())
+            .collect::<Vec<_>>()
+    }
+}
+
 impl SimulationAspect {
     pub fn get_aspects() -> Vec<SimulationAspect> {
         vec![
@@ -101,14 +110,32 @@ impl SimulationAspect {
 
     pub fn get_aspects_strings() -> Vec<String> {
         SimulationAspect::get_aspects()
-            .into_iter()
+            .iter()
             .map(|aspect| aspect.into())
             .collect()
     }
+
+    pub fn to_token_stream(&self) -> proc_macro2::TokenStream {
+        match &self {
+            SimulationAspect::Mechanics => quote::quote!(Mechanics),
+            SimulationAspect::Interaction => quote::quote!(Interaction),
+            SimulationAspect::Cycle => quote::quote!(Cycle),
+            SimulationAspect::Reactions => quote::quote!(Reactions),
+        }
+    }
+
+    pub fn to_token_stream_lowercase(&self) -> proc_macro2::TokenStream {
+        match &self {
+            SimulationAspect::Mechanics => quote::quote!(mechanics),
+            SimulationAspect::Interaction => quote::quote!(interaction),
+            SimulationAspect::Cycle => quote::quote!(cycle),
+            SimulationAspect::Reactions => quote::quote!(reactions),
+        }
+    }
 }
 
-impl From<SimulationAspect> for String {
-    fn from(value: SimulationAspect) -> Self {
+impl<'a> From<&'a SimulationAspect> for String {
+    fn from(value: &'a SimulationAspect) -> Self {
         match value {
             SimulationAspect::Cycle => "Cycle",
             SimulationAspect::Interaction => "Interaction",

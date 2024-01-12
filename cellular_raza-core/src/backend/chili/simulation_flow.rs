@@ -413,7 +413,7 @@ mod test_build_communicator {
     macro_rules! test_build_communicator(
         (
             name:$func_name:ident,
-            $($asp:ident),*
+            aspects:[$($asp:ident),*]
         ) => {
             /// ```
             /// use cellular_raza_core_derive::build_communicator;
@@ -430,7 +430,11 @@ mod test_build_communicator {
         };
     );
 
-    cellular_raza_core_derive::test_build_communicator_non_identical_combinations!();
+    cellular_raza_core_derive::run_test_for_aspects!(
+        test: test_build_communicator,
+        aspects: [Mechanics, Interaction, Cycle, Reactions]
+    );
+
 }
 
 #[cfg(test)]

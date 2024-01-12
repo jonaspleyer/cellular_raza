@@ -33,12 +33,98 @@ pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     communicator::construct_communicator(input)
 }
 
-#[doc(hidden)]
 #[proc_macro]
-pub fn test_build_communicator_non_identical_combinations(
-    _: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    testing::get_all_communicators().parse().unwrap()
+/// Run a particularly structured test multiple times for combinations of aspects
+///
+/// The tests which we would like to run are macros that will
+/// be given as one argument to this `proc_macro`.
+/// These tests need to adhere to a strict format.
+/// ```
+/// macro_rules! some_test(
+///     (
+///         name:$test_name:ident,
+///         aspects:[$($asp:ident),*]
+///     ) => {
+///         // Any code can be run here.
+///         // For example, we can create a docstring test by using
+///
+///         /// ```
+///         /// assert_eq!(0_usize, 10_usize - 10_usize);
+///         $(#[doc = concat!("println!(\"", stringify!($asp), "\")")])*
+///         /// ```
+///         fn $test_name () {}
+///     }
+/// );
+///
+/// // This is how you would call the test by hand
+///
+/// some_test!(
+///     name:my_test_name,
+///     aspects: [Mechanics, Interaction]
+/// );
+/// ```
+///
+/// In the next step, we can use `run_test_for_aspects` to run this automatically generated
+/// docstring test for every combination of aspects that we specify.
+///
+/// ```
+/// # macro_rules! some_test(
+/// #     (
+/// #         name:$test_name:ident,
+/// #         aspects:[$($asp:ident),*]
+/// #     ) => {
+/// #         // Any code can be run here.
+/// #         // For example, we can create a docstring test by using
+/// #
+/// #         /// ```
+/// #         /// assert_eq!(0_usize, 10_usize - 10_usize);
+/// #         $(#[doc = concat!("println!(\"", stringify!($asp), "\")")])*
+/// #         /// ```
+/// #         fn $test_name () {}
+/// #     }
+/// # );
+/// # use cellular_raza_core_derive::run_test_for_aspects;
+/// run_test_for_aspects!(
+///     test: some_test,
+///     aspects: [Mechanics, Interaction]
+/// );
+/// ```
+/// This will have generated the following code:
+/// ```
+/// # macro_rules! some_test(
+/// #     (
+/// #         name:$test_name:ident,
+/// #         aspects:[$($asp:ident),*]
+/// #     ) => {
+/// #         // Any code can be run here.
+/// #         // For example, we can create a docstring test by using
+/// #
+/// #         /// ```
+/// #         /// assert_eq!(0_usize, 10_usize - 10_usize);
+/// #         $(#[doc = concat!("println!(\"", stringify!($asp), "\")")])*
+/// #         /// ```
+/// #         fn $test_name () {}
+/// #     }
+/// # );
+/// some_test!(
+///     name:mechanics,
+///     aspects: [Mechanics]
+/// );
+/// some_test!(
+///     name:interaction,
+///     aspects: [Interaction]
+/// );
+/// some_test!(
+///     name:mechanics_interaction,
+///     aspects: [Mechanics, Interaction]
+/// );
+/// some_test!(
+///     name:interaction_mechanics,
+///     aspects: [Interaction, Mechanics]
+/// );
+/// ```
+pub fn run_test_for_aspects(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    testing::run_test_for_aspects(input)
 }
 
 /* #[derive(Clone, Debug)]
