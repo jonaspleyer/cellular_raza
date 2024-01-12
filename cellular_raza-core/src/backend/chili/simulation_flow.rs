@@ -430,17 +430,7 @@ mod test_build_communicator {
         };
     );
 
-    test_build_communicator!(name:empty,);
-    test_build_communicator!(name:mechanics, Mechanics);
-    test_build_communicator!(name:interaction, Interaction);
-    test_build_communicator!(name:cycle, Cycle);
-    test_build_communicator!(name:reactions, Reactions);
-    test_build_communicator!(name:mechanics_interaction, Mechanics, Interaction);
-    test_build_communicator!(name:mechanics_cycle, Mechanics, Cycle);
-    test_build_communicator!(name:mechanics_reactions, Mechanics, Reactions);
-    test_build_communicator!(name:interaction_cycle, Interaction, Cycle);
-    test_build_communicator!(name:interaction_reactions, Interaction, Reactions);
-    test_build_communicator!(name:cycle_reactions, Cycle, Reactions);
+    cellular_raza_core_derive::test_build_communicator_non_identical_combinations!();
 }
 
 #[cfg(test)]

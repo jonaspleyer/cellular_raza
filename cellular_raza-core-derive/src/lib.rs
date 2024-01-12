@@ -6,6 +6,7 @@
 mod aux_storage;
 mod communicator;
 mod simulation_aspects;
+mod testing;
 
 #[proc_macro_derive(
     AuxStorage,
@@ -30,6 +31,14 @@ pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 #[proc_macro]
 pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::construct_communicator(input)
+}
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn test_build_communicator_non_identical_combinations(
+    _: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    testing::get_all_communicators().parse().unwrap()
 }
 
 /* #[derive(Clone, Debug)]

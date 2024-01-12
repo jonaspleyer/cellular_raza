@@ -98,6 +98,25 @@ impl SimulationAspect {
             SimulationAspect::Reactions,
         ]
     }
+
+    pub fn get_aspects_strings() -> Vec<String> {
+        SimulationAspect::get_aspects()
+            .into_iter()
+            .map(|aspect| aspect.into())
+            .collect()
+    }
+}
+
+impl From<SimulationAspect> for String {
+    fn from(value: SimulationAspect) -> Self {
+        match value {
+            SimulationAspect::Cycle => "Cycle",
+            SimulationAspect::Interaction => "Interaction",
+            SimulationAspect::Mechanics => "Mechanics",
+            SimulationAspect::Reactions => "Reactions",
+        }
+        .to_owned()
+    }
 }
 
 pub struct PathToken;
