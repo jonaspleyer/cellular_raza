@@ -448,4 +448,131 @@ where
             .collect::<Result<(), CalcError>>()?;*/
         Ok(())
     }
+
+    pub fn update_mechanics_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        For: Clone
+            + core::ops::AddAssign
+            + num::Zero
+            + core::ops::Mul<Float, Output = For>
+            + core::ops::Neg<Output = For>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        Float: num::Float,
+        Pos: Clone,
+        Vel: Clone,
+        For: Clone,
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
+        Com: Communicator<VoxelPlainIndex, ForceInformation<For>>,
+    {
+        // Receive PositionInformation and send back ForceInformation
+        for pos_info in
+            <Com as Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>>::receive(
+                &mut self.communicator,
+            )
+            .iter()
+        {
+            let vox = self.voxels
+                .get_mut(&pos_info.index_receiver)
+                .ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
+            // Calculate force from cells in voxel
+            let force = vox.calculate_force_between_cells_external(
+                &pos_info.pos,
+                &pos_info.vel,
+                &pos_info.info,
+            )?;
+
+            // Send back force information
+            // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
+            self.communicator.send(
+                &pos_info.index_sender,
+                ForceInformation {
+                    force,
+                    count: pos_info.count,
+                    index_sender: pos_info.index_sender,
+                },
+            )?;
+        }
+        Ok(())
+    }
+
+    /* pub fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
+    where
+        Pos: Position,
+        Vel: Velocity,
+        Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
+    {
+        // Update position and velocity of all cells with new information
+        for obt_forces in self.receiver_force.try_iter() {
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
+            match vox.cells.get_mut(obt_forces.count) {
+                Some((_, aux_storage)) => Ok(aux_storage.force+=obt_forces.force),
+                None => Err(IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
+            }?;
+        }
+
+        // Update position and velocity of cells
+        for (_, vox) in self.voxels.iter_mut() {
+            for (cell, aux_storage) in vox.cells.iter_mut() {
+                // Calculate the current increment
+                let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
+
+                // Use the two-step Adams-Bashforth method. See also: https://en.wikipedia.org/wiki/Linear_multistep_method
+                // TODO We should be able to implement arbitrary steppers here
+                match (
+                    aux_storage.inc_pos_back_1.clone(),
+                    aux_storage.inc_pos_back_2.clone(),
+                    aux_storage.inc_vel_back_1.clone(),
+                    aux_storage.inc_vel_back_2.clone(),
+                ) {
+                    // If all values are present, use the Adams-Bashforth 3rd order
+                    (
+                        Some(inc_pos_back_1),
+                        Some(inc_pos_back_2),
+                        Some(inc_vel_back_1),
+                        Some(inc_vel_back_2),
+                    ) => {
+                        cell.set_pos(
+                            &(cell.pos() + dx.clone() * (23.0 / 12.0) * *dt
+                                - inc_pos_back_1 * (16.0 / 12.0) * *dt
+                                + inc_pos_back_2 * (5.0 / 12.0) * *dt),
+                        );
+                        cell.set_velocity(
+                            &(cell.velocity() + dv.clone() * (23.0 / 12.0) * *dt
+                                - inc_vel_back_1 * (16.0 / 12.0) * *dt
+                                + inc_vel_back_2 * (5.0 / 12.0) * *dt),
+                        );
+                    }
+                    // Otherwise check and use the 2nd order
+                    (Some(inc_pos_back_1), None, Some(inc_vel_back_1), None) => {
+                        cell.set_pos(
+                            &(cell.pos() + dx.clone() * (3.0 / 2.0) * *dt
+                                - inc_pos_back_1 * (1.0 / 2.0) * *dt),
+                        );
+                        cell.set_velocity(
+                            &(cell.velocity() + dv.clone() * (3.0 / 2.0) * *dt
+                                - inc_vel_back_1 * (1.0 / 2.0) * *dt),
+                        );
+                    }
+                    // This case should only exists when the cell was first created
+                    // Then use the Euler Method
+                    _ => {
+                        cell.set_pos(&(cell.pos() + dx.clone() * *dt));
+                        cell.set_velocity(&(cell.velocity() + dv.clone() * *dt));
+                    }
+                }
+
+                // Afterwards update values in auxiliary storage
+                aux_storage.force = For::zero();
+                aux_storage.inc_pos_back_1 = Some(dx);
+                aux_storage.inc_vel_back_1 = Some(dv);
+            }
+        }
+        Ok(())
+    }*/
 }

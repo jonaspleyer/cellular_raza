@@ -434,7 +434,6 @@ mod test_build_communicator {
         test: test_build_communicator,
         aspects: [Mechanics, Interaction, Cycle, Reactions]
     );
-
 }
 
 #[cfg(test)]
