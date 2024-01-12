@@ -410,65 +410,37 @@ mod test_derive_communicator {
 #[doc(hidden)]
 #[allow(unused)]
 mod test_build_communicator {
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn empty() {}
+    macro_rules! test_build_communicator(
+        (
+            name:$func_name:ident,
+            $($asp:ident),*
+        ) => {
+            /// ```
+            /// use cellular_raza_core_derive::build_communicator;
+            /// build_communicator!(
+            ///     name: __MyComm,
+            ///     aspects: [
+            #[doc = stringify!($($asp),*)]
+            ///     ],
+            ///     path: cellular_raza_core::backend::chili::simulation_flow
+            /// );
+            /// ```
+            #[allow(non_snake_case)]
+            fn $func_name () {}
+        };
+    );
 
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [Mechanics],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn mechanics() {}
-
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [Cycle],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn cycle() {}
-
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [Interaction],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn interaction() {}
-
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [Reactions],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn reactions() {}
-
-    /// ```
-    /// use cellular_raza_core_derive::build_communicator;
-    /// build_communicator!(
-    ///     name: __MyComm,
-    ///     aspects: [Mechanics, Interaction],
-    ///     path: cellular_raza_core::backend::chili::simulation_flow
-    /// );
-    /// ```
-    fn mechanics_interaction() {}
+    test_build_communicator!(name:empty,);
+    test_build_communicator!(name:mechanics, Mechanics);
+    test_build_communicator!(name:interaction, Interaction);
+    test_build_communicator!(name:cycle, Cycle);
+    test_build_communicator!(name:reactions, Reactions);
+    test_build_communicator!(name:mechanics_interaction, Mechanics, Interaction);
+    test_build_communicator!(name:mechanics_cycle, Mechanics, Cycle);
+    test_build_communicator!(name:mechanics_reactions, Mechanics, Reactions);
+    test_build_communicator!(name:interaction_cycle, Interaction, Cycle);
+    test_build_communicator!(name:interaction_reactions, Interaction, Reactions);
+    test_build_communicator!(name:cycle_reactions, Cycle, Reactions);
 }
 
 #[cfg(test)]
