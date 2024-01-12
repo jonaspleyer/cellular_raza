@@ -540,7 +540,13 @@ pub struct MultiVoxelContainer<
     pub plain_index_to_thread: BTreeMap<PlainIndex, usize>,
     pub index_to_thread: BTreeMap<Ind, usize>,
 
-    pub senders_cell: HashMap<usize, Sender<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For , ConcVecIntracellular>)>>,
+    pub senders_cell: HashMap<
+        usize,
+        Sender<(
+            CellAgentBox<Cel>,
+            AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
+        )>,
+    >,
     pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Vel, Inf>>>,
     pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
@@ -549,7 +555,10 @@ pub struct MultiVoxelContainer<
         HashMap<usize, Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>>,
 
     // Same for receiving
-    pub receiver_cell: Receiver<(CellAgentBox<Cel>, AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>)>,
+    pub receiver_cell: Receiver<(
+        CellAgentBox<Cel>,
+        AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
+    )>,
     pub receiver_pos: Receiver<PosInformation<Pos, Vel, Inf>>,
     pub receiver_force: Receiver<ForceInformation<For>>,
 
@@ -757,7 +766,11 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    pub fn sort_cell_in_voxel(&mut self, cell: CellAgentBox<Cel>, aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>) -> Result<(), SimulationError> {
+    pub fn sort_cell_in_voxel(
+        &mut self,
+        cell: CellAgentBox<Cel>,
+        aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
+    ) -> Result<(), SimulationError> {
         let index = self.index_to_plain_index[&self.domain.get_voxel_index(&cell)];
 
         match self.voxels.get_mut(&index) {
