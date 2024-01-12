@@ -707,7 +707,8 @@ impl AgentImplementer {
 
     fn implement_volume(&self) -> TokenStream {
         let struct_name = &self.name;
-        let struct_generics = &self.generics;
+        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+            &self.generics.split_for_impl();
 
         if let Some(volume_implementer) = &self.volume {
             let field_type = &volume_implementer.field_type;
@@ -716,7 +717,7 @@ impl AgentImplementer {
 
             let res = quote! {
                 #[automatically_derived]
-                impl Volume<#float_type> for #struct_name #struct_generics {
+                impl #struct_impl_generics Volume<#float_type> for #struct_name #struct_ty_generics #struct_where_clause {
                     fn get_volume(&self) -> #float_type {
                         <#field_type as Volume<#float_type>>::get_volume(
                             &self.#field_name
