@@ -2,4 +2,4 @@
 rustdocflags = ["--document-private-items"]
 
 [alias]
-cr_doc = "doc --no-deps"
+cr_doc = "doc --no-deps --document-private-items"

@@ -12,6 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 autoexamples = false
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--no-deps", "--document-private-items"]
+
 [lib]
 proc-macro = true
 
