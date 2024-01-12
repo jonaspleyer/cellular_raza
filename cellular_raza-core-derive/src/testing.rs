@@ -1,6 +1,6 @@
 use quote::quote;
 
-use super::simulation_aspects::{SimulationAspect,SimulationAspects};
+use super::simulation_aspects::{SimulationAspect, SimulationAspects};
 
 #[allow(unused)]
 struct MacroParser {
@@ -26,9 +26,7 @@ impl syn::parse::Parse for MacroParser {
 impl MacroParser {
     fn spawn_tests(self) -> proc_macro2::TokenStream {
         let macro_name = &self.macro_name;
-        let aspects: Vec<_> = self
-            .aspects
-            .to_aspect_list();
+        let aspects: Vec<_> = self.aspects.to_aspect_list();
         let mut stream = quote!();
         for n in 1..aspects.len() {
             let combinations = get_combinations(n, aspects.clone());
@@ -66,7 +64,10 @@ fn idents_overlap(id1: &proc_macro2::TokenStream, id2: &proc_macro2::TokenStream
     set.len() < l1 + l2
 }
 
-fn get_combinations(n: usize, idents: Vec<SimulationAspect>) -> Vec<(proc_macro2::TokenStream, Vec<SimulationAspect>)> {
+fn get_combinations(
+    n: usize,
+    idents: Vec<SimulationAspect>,
+) -> Vec<(proc_macro2::TokenStream, Vec<SimulationAspect>)> {
     let idents: Vec<(proc_macro2::TokenStream, Vec<SimulationAspect>)> = idents
         .into_iter()
         .map(|s| (s.to_token_stream_lowercase(), vec![s]))

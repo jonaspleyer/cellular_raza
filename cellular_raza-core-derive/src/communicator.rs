@@ -30,9 +30,7 @@ impl syn::parse::Parse for Communicator {
         let comms = item_struct
             .fields
             .iter()
-            .map(|field| {
-                field.attrs.iter().zip(std::iter::repeat(field))
-            })
+            .map(|field| field.attrs.iter().zip(std::iter::repeat(field)))
             .flatten()
             .map(|(attr, field)| {
                 let s = &attr.meta;
@@ -44,7 +42,8 @@ impl syn::parse::Parse for Communicator {
                     index: parsed.index,
                     message: parsed.message,
                 })
-            }).collect::<syn::Result<Vec<_>>>()?;
+            })
+            .collect::<syn::Result<Vec<_>>>()?;
         Ok(Self {
             struct_name: item_struct.ident,
             generics: item_struct.generics,
@@ -94,7 +93,7 @@ impl Communicator {
         let addendum = quote!(I: Clone + core::hash::Hash + Eq + Ord,);
         let where_clause = match where_clause {
             Some(w) => quote!(where #(#w.predicates), #addendum),
-            None => quote!(where #addendum)
+            None => quote!(where #addendum),
         };
 
         let mut res = proc_macro2::TokenStream::new();
@@ -156,32 +155,36 @@ impl SimulationAspect {
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
-            SimulationAspect::Mechanics => (vec![
-                syn::parse2(quote!(I)).unwrap(),
-                syn::parse2(quote!(Cel)).unwrap(),
-                syn::parse2(quote!(Aux)).unwrap(),
-            ], vec![
-                quote!(
+            SimulationAspect::Mechanics => (
+                vec![
+                    syn::parse2(quote!(I)).unwrap(),
+                    syn::parse2(quote!(Cel)).unwrap(),
+                    syn::parse2(quote!(Aux)).unwrap(),
+                ],
+                vec![quote!(
                     #[Comm(I, #path ::SendCell<Cel, Aux>)]
                     comm_cell: #path ::ChannelComm<I, #path ::SendCell<Cel, Aux>>
-                )
-            ]),
-            SimulationAspect::Interaction => (vec![
-                syn::parse2(quote!(I)).unwrap(),
-                syn::parse2(quote!(Pos)).unwrap(),
-                syn::parse2(quote!(Vel)).unwrap(),
-                syn::parse2(quote!(For)).unwrap(),
-                syn::parse2(quote!(Inf)).unwrap(),
-            ], vec![
-                quote!(
-                    #[Comm(I, #path ::PosInformation<Pos, Vel, Inf>)]
-                    comm_pos: #path ::ChannelComm<I, #path ::PosInformation<Pos, Vel, Inf>>
-                ),
-                quote!(
-                    #[Comm(I, #path ::ForceInformation<For>)]
-                    comm_force: #path ::ChannelComm<I, #path ::ForceInformation<For>>
-                ),
-            ]),
+                )],
+            ),
+            SimulationAspect::Interaction => (
+                vec![
+                    syn::parse2(quote!(I)).unwrap(),
+                    syn::parse2(quote!(Pos)).unwrap(),
+                    syn::parse2(quote!(Vel)).unwrap(),
+                    syn::parse2(quote!(For)).unwrap(),
+                    syn::parse2(quote!(Inf)).unwrap(),
+                ],
+                vec![
+                    quote!(
+                        #[Comm(I, #path ::PosInformation<Pos, Vel, Inf>)]
+                        comm_pos: #path ::ChannelComm<I, #path ::PosInformation<Pos, Vel, Inf>>
+                    ),
+                    quote!(
+                        #[Comm(I, #path ::ForceInformation<For>)]
+                        comm_force: #path ::ChannelComm<I, #path ::ForceInformation<For>>
+                    ),
+                ],
+            ),
         }
     }
 }
@@ -189,9 +192,12 @@ impl SimulationAspect {
 impl ConstructInput {
     fn build_communicator(self) -> proc_macro2::TokenStream {
         let struct_name = self.name_def.struct_name;
-        let generics_fields: Vec<_> = self.aspects.items.into_iter().map(|aspect| {
-            aspect.build_comm(&self.path.path)
-        }).collect();
+        let generics_fields: Vec<_> = self
+            .aspects
+            .items
+            .into_iter()
+            .map(|aspect| aspect.build_comm(&self.path.path))
+            .collect();
 
         let mut generics = vec![];
         let mut fields = vec![];
