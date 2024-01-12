@@ -147,6 +147,43 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
     fn get_interaction_information(&self) -> () {}
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+pub struct BoundLennardJonesF32 {
+    /// Interaction strength $\epsilon$ of the potential.
+    pub epsilon: f32,
+    /// Overall size $\sigma$ of the object of the potential.
+    pub sigma: f32,
+    /// Numerical bound $\beta$ of the interaction strength.
+    pub bound: f32,
+    /// Defines a cutoff $\zeta$ after which the potential will be fixed to exactly zero.
+    pub cutoff: f32,
+}
+
+impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, D>>
+    for BoundLennardJonesF32
+{
+    fn calculate_force_between(
+        &self,
+        own_pos: &SVector<f32, D>,
+        _own_vel: &SVector<f32, D>,
+        ext_pos: &SVector<f32, D>,
+        _ext_vel: &SVector<f32, D>,
+        _ext_information: &(),
+    ) -> Option<Result<SVector<f32, D>, CalcError>> {
+        let z = own_pos - ext_pos;
+        let r = z.norm();
+        let dir = z / r;
+        let val = 4.0 * self.epsilon / r
+            * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
+        let max = self.bound / r;
+        let q = if self.cutoff >= r { 1.0 } else { 0.0 };
+        return Some(Ok(dir * q * max.min(val)));
+    }
+
+    fn get_interaction_information(&self) -> () {}
+}
+
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {
