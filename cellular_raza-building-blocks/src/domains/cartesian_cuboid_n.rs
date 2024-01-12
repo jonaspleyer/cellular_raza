@@ -594,6 +594,10 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $subdomain_name {
             pub voxels: Vec<$voxel_name>,
+            domain_min: [$float_type; $d],
+            domain_max: [$float_type; $d],
+            domain_n_voxels: [i64; $d],
+            domain_voxel_sizes: [$float_type; $d],
         }
 
         #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -692,7 +696,13 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                                     ind,
                                 }
                             }).collect::<Vec<_>>();
-                            (i as Self::SubDomainIndex, ($subdomain_name {voxels,}, Vec::<C>::new()))
+                            (i as Self::SubDomainIndex, ($subdomain_name {
+                                voxels,
+                                domain_min: self.min,
+                                domain_max: self.max,
+                                domain_n_voxels: self.n_voxels,
+                                domain_voxel_sizes: self.dx_voxels,
+                            }, Vec::<C>::new()))
                         }
                     ).collect();
 
@@ -769,19 +779,29 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
         }
 
-        impl<C> cellular_raza_concepts::domain_new::SubDomain<C> for $subdomain_name {
+        impl<C> cellular_raza_concepts::domain_new::SubDomain<C> for $subdomain_name
+        where
+            C: cellular_raza_concepts::mechanics::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
+        {
             type VoxelIndex = [i64; $d];
 
             fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-                todo!()
+                let p = cell.pos();
+                let mut out = [0; $d];
+
+                for i in 0..$d {
+                    out[i] = ((p[i] - self.domain_min[0]) / self.domain_voxel_sizes[i]) as i64;
+                    out[i] = out[i].min(self.domain_n_voxels[i]-1).max(0);
+                }
+                Ok(out)
             }
 
             fn get_neighbor_voxel_indices(&self, index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
                 // Create the bounds for the following creation of all the voxel indices
-                /* let bounds: [[i64; 2]; $d] = [$(
+                let bounds: [[i64; 2]; $d] = [$(
                     [
                         max(index[$k] as i32 - 1, 0) as i64,
-                        min(index[$k]+2, self.n_voxels[$k])
+                        min(index[$k]+2, self.domain_n_voxels[$k])
                     ]
                 ),+];
 
@@ -793,8 +813,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                     .filter(|ind| ind!=index)                   // filter the elements such that the current index is not included.
                     .collect();                                 // collect into the correct type
 
-                return v;*/
-                todo!()
+                return v;
             }
 
             fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError> {
@@ -802,7 +821,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
 
             fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
-                todo!()
+                self.voxels.iter().map(|vox| vox.ind.clone()).collect()
             }
         }
     }
