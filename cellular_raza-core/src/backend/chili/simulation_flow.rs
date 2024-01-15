@@ -369,8 +369,11 @@ pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
 #[allow(unused)]
 mod test_derive_communicator {
     /// ```
-    /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
+    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::backend::chili::{
+    ///     errors::SimulationError,
+    ///     simulation_flow::{ChannelComm, Communicator}
+    /// };
     /// #[derive(Communicator)]
     /// struct MyComm<I, T> {
     ///     #[Comm(I, T)]
@@ -380,8 +383,11 @@ mod test_derive_communicator {
     fn default() {}
 
     /// ```
-    /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
+    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::backend::chili::{
+    ///     errors::SimulationError,
+    ///     simulation_flow::{ChannelComm, Communicator}
+    /// };
     /// #[derive(Communicator)]
     /// struct MyDouble<I> {
     ///     #[Comm(I, String)]
@@ -393,8 +399,11 @@ mod test_derive_communicator {
     fn two_communicators_explicit() {}
 
     /// ```
-    /// use cellular_raza_core_derive::Communicator;
-    /// use cellular_raza_core::backend::chili::simulation_flow::ChannelComm;
+    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::backend::chili::{
+    ///     errors::SimulationError,
+    ///     simulation_flow::{ChannelComm, Communicator}
+    /// };
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
     /// struct MyDouble<I, T> {
