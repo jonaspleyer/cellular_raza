@@ -182,7 +182,10 @@ impl syn::parse::Parse for CorePathtoken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let core_path_ident: syn::Ident = input.parse()?;
         if core_path_ident != "core_path" {
-            Err(syn::Error::new(core_path_ident.span(), "Expected core_path"))
+            Err(syn::Error::new(
+                core_path_ident.span(),
+                "Expected core_path",
+            ))
         } else {
             Ok(Self)
         }

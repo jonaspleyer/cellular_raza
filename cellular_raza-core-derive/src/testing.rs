@@ -73,7 +73,7 @@ fn get_combinations(
         .map(|s| (s.to_token_stream_lowercase(), vec![s]))
         .collect();
 
-    if n==0 {
+    if n == 0 {
         return idents;
     }
 

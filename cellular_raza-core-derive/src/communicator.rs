@@ -66,12 +66,17 @@ impl syn::parse::Parse for CommParser {
             index: content.parse()?,
             _comma: content.parse()?,
             message: content.parse()?,
+            _comma_2: content.parse()?,
+            core_path: content.parse()?,
         })
     }
 }
 
 // ################################### IMPLEMENTING ##################################
-fn wrap_pre_flags(core_path: &proc_macro2::TokenStream, stream: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn wrap_pre_flags(
+    core_path: &proc_macro2::TokenStream,
+    stream: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     quote!(
         #[allow(unused)]
         #[allow(non_camel_case_types)]
@@ -90,6 +95,7 @@ fn wrap_pre_flags(core_path: &proc_macro2::TokenStream, stream: proc_macro2::Tok
 impl Communicator {
     fn derive_communicator(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.struct_name;
+
         let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
         let addendum = quote!(I: Clone + core::hash::Hash + Eq + Ord,);
         let where_clause = match where_clause {
@@ -128,9 +134,7 @@ impl Communicator {
     }
 }
 
-pub fn derive_communicator(
-    input: proc_macro::TokenStream
-) -> proc_macro::TokenStream {
+pub fn derive_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let comm = syn::parse_macro_input!(input as Communicator);
     let stream = comm.derive_communicator();
 
@@ -157,7 +161,11 @@ impl syn::parse::Parse for ConstructInput {
             _comma_2: input.parse()?,
             sim_flow_path: input.parse()?,
             _comma_3: input.parse()?,
-            core_path: if input.is_empty() {None} else {Some(input.parse::<CorePath>()?)},
+            core_path: if input.is_empty() {
+                None
+            } else {
+                Some(input.parse::<CorePath>()?)
+            },
         })
     }
 }
@@ -166,7 +174,7 @@ impl SimulationAspect {
     fn build_comm(
         &self,
         sim_flow_path: &syn::Path,
-        core_path: &proc_macro2::TokenStream
+        core_path: &proc_macro2::TokenStream,
     ) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
@@ -212,7 +220,7 @@ impl ConstructInput {
             Some(path) => {
                 let p = path.path;
                 quote!(#p)
-            },
+            }
             None => quote!(cellular_raza::core),
         };
         let generics_fields: Vec<_> = self
