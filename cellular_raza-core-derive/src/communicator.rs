@@ -15,6 +15,8 @@ struct CommParser {
     index: syn::Type,
     _comma: syn::Token![,],
     message: syn::Type,
+    _comma_2: syn::Token![,],
+    core_path: syn::Path,
 }
 
 struct CommField {
@@ -22,6 +24,7 @@ struct CommField {
     field_type: syn::Type,
     index: syn::Type,
     message: syn::Type,
+    core_path: syn::Path,
 }
 
 impl syn::parse::Parse for Communicator {
@@ -41,6 +44,7 @@ impl syn::parse::Parse for Communicator {
                     field_type: field.ty.clone(),
                     index: parsed.index,
                     message: parsed.message,
+                    core_path: parsed.core_path,
                 })
             })
             .collect::<syn::Result<Vec<_>>>()?;
@@ -98,28 +102,35 @@ impl Communicator {
             let field_name = &comm.field_name;
             let field_type = &comm.field_type;
 
+            let core_path = &comm.core_path;
+            let flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
+            let error_path = quote!(#core_path ::backend::chili::errors::);
+
             let index = &comm.index;
             let message = &comm.message;
 
-            quote!(
-                impl #impl_generics Communicator<#index, #message>
+            wrap_pre_flags(&quote!(#core_path), quote!(
+                #[automatically_derived]
+                impl #impl_generics #flow_path Communicator<#index, #message>
                 for #struct_name #ty_generics #where_clause
 
                 {
-                    fn send(&mut self, receiver: &#index, message: #message) -> Result<(), SimulationError> {
-                        <#field_type as Communicator<#index, #message>>::send(&mut self.#field_name, receiver, message)
+                    fn send(&mut self, receiver: &#index, message: #message) -> Result<(), #error_path SimulationError> {
+                        <#field_type as #flow_path Communicator<#index, #message>>::send(&mut self.#field_name, receiver, message)
                     }
                     fn receive(&mut self) -> Vec<#message> {
-                        <#field_type as Communicator<#index, #message>>::receive(&mut self.#field_name)
+                        <#field_type as #flow_path Communicator<#index, #message>>::receive(&mut self.#field_name)
                     }
                 }
-            )
+            ))
         }));
         res
     }
 }
 
-pub fn derive_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_communicator(
+    input: proc_macro::TokenStream
+) -> proc_macro::TokenStream {
     let comm = syn::parse_macro_input!(input as Communicator);
     let stream = comm.derive_communicator();
 
@@ -152,7 +163,11 @@ impl syn::parse::Parse for ConstructInput {
 }
 
 impl SimulationAspect {
-    fn build_comm(&self, path: &syn::Path) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
+    fn build_comm(
+        &self,
+        sim_flow_path: &syn::Path,
+        core_path: &proc_macro2::TokenStream
+    ) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
@@ -163,8 +178,8 @@ impl SimulationAspect {
                     syn::parse2(quote!(Aux)).unwrap(),
                 ],
                 vec![quote!(
-                    #[Comm(I, #path ::SendCell<Cel, Aux>)]
-                    comm_cell: #path ::ChannelComm<I, #path ::SendCell<Cel, Aux>>
+                    #[Comm(I, #sim_flow_path ::SendCell<Cel, Aux>, #core_path)]
+                    comm_cell: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::SendCell<Cel, Aux>>
                 )],
             ),
             SimulationAspect::Interaction => (
@@ -177,12 +192,12 @@ impl SimulationAspect {
                 ],
                 vec![
                     quote!(
-                        #[Comm(I, #path ::PosInformation<Pos, Vel, Inf>)]
-                        comm_pos: #path ::ChannelComm<I, #path ::PosInformation<Pos, Vel, Inf>>
+                        #[Comm(I, #sim_flow_path ::PosInformation<Pos, Vel, Inf>, #core_path)]
+                        comm_pos: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::PosInformation<Pos, Vel, Inf>>
                     ),
                     quote!(
-                        #[Comm(I, #path ::ForceInformation<For>)]
-                        comm_force: #path ::ChannelComm<I, #path ::ForceInformation<For>>
+                        #[Comm(I, #sim_flow_path ::ForceInformation<For>, #core_path)]
+                        comm_force: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::ForceInformation<For>>
                     ),
                 ],
             ),
@@ -198,13 +213,13 @@ impl ConstructInput {
                 let p = path.path;
                 quote!(#p)
             },
-            None => quote!(cellular_raza_core::derive),
+            None => quote!(cellular_raza::core),
         };
         let generics_fields: Vec<_> = self
             .aspects
             .items
             .into_iter()
-            .map(|aspect| aspect.build_comm(&self.sim_flow_path.path))
+            .map(|aspect| aspect.build_comm(&self.sim_flow_path.path, &core_path))
             .collect();
 
         let mut generics = vec![];
@@ -218,15 +233,13 @@ impl ConstructInput {
             });
             fields.extend(f);
         });
-        let input = quote!(
+        quote!(
+            #[derive(#core_path ::derive::Communicator)]
             #[allow(non_camel_case_types)]
             struct #struct_name <#(#generics),*> {
                 #(#fields),*
             }
-        );
-        let derived = super::_communicator(quote!(#[derive(#core_path ::derive::Communicator)] #input).into());
-        let derived = wrap_pre_flags(&core_path, derived.into());
-        quote!(#input #derived)
+        )
     }
 }
 

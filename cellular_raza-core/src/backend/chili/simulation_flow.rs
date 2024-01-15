@@ -376,7 +376,7 @@ mod test_derive_communicator {
     /// };
     /// #[derive(Communicator)]
     /// struct MyComm<I, T> {
-    ///     #[Comm(I, T)]
+    ///     #[Comm(I, T, cellular_raza_core)]
     ///     comm: ChannelComm<I, T>
     /// }
     /// ```
@@ -390,9 +390,9 @@ mod test_derive_communicator {
     /// };
     /// #[derive(Communicator)]
     /// struct MyDouble<I> {
-    ///     #[Comm(I, String)]
+    ///     #[Comm(I, String, cellular_raza_core)]
     ///     comm1: ChannelComm<I, String>,
-    ///     #[Comm(I, f64)]
+    ///     #[Comm(I, f64, cellular_raza_core)]
     ///     comm2: ChannelComm<I, f64>,
     /// }
     /// ```
@@ -407,9 +407,9 @@ mod test_derive_communicator {
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
     /// struct MyDouble<I, T> {
-    ///     #[Comm(I, Message<T>)]
+    ///     #[Comm(I, Message<T>, cellular_raza_core)]
     ///     comm1: ChannelComm<I, Message<T>>,
-    ///     #[Comm(I, f64)]
+    ///     #[Comm(I, f64, cellular_raza_core)]
     ///     comm2: ChannelComm<I, f64>,
     /// }
     /// ```
