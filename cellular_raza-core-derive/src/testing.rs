@@ -28,7 +28,7 @@ impl MacroParser {
         let macro_name = &self.macro_name;
         let aspects: Vec<_> = self.aspects.to_aspect_list();
         let mut stream = quote!();
-        for n in 1..aspects.len() {
+        for n in 0..aspects.len() {
             let combinations = get_combinations(n, aspects.clone());
 
             for (name, list) in combinations {
@@ -72,6 +72,10 @@ fn get_combinations(
         .into_iter()
         .map(|s| (s.to_token_stream_lowercase(), vec![s]))
         .collect();
+
+    if n==0 {
+        return idents;
+    }
 
     fn combine_idents(
         ident1: &(proc_macro2::TokenStream, Vec<SimulationAspect>),
