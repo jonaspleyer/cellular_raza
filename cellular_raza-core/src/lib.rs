@@ -16,4 +16,4 @@ pub mod storage;
 
 // Some re-exports
 pub use cellular_raza_concepts as concepts;
-pub use cellular_raza_core_derive as core_derive;
+pub use cellular_raza_core_derive as derive;

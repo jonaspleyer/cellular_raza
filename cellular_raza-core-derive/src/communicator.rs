@@ -212,7 +212,7 @@ impl ConstructInput {
         });
         quote!(
             #[allow(non_camel_case_types)]
-            #[derive(cellular_raza_core_derive::Communicator)]
+            #[derive(cellular_raza_core::derive::Communicator)]
             struct #struct_name <#(#generics),*> {
                 #(#fields),*
             }
