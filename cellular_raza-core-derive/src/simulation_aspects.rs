@@ -146,12 +146,12 @@ impl<'a> From<&'a SimulationAspect> for String {
     }
 }
 
-pub struct PathToken;
+pub struct SimFlowPathToken;
 
-impl syn::parse::Parse for PathToken {
+impl syn::parse::Parse for SimFlowPathToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _path_token: syn::Ident = input.parse()?;
-        if _path_token == "path" {
+        if _path_token == "simulation_flow_path" {
             Ok(Self)
         } else {
             Err(syn::Error::new(_path_token.span(), "Expected \"path\""))
@@ -160,16 +160,46 @@ impl syn::parse::Parse for PathToken {
 }
 
 #[allow(unused)]
-pub struct SpecifiedPath {
-    pub path_token: PathToken,
+pub struct SimFlowPath {
+    pub path_token: SimFlowPathToken,
     pub double_colon: syn::Token![:],
     pub path: syn::Path,
 }
 
-impl syn::parse::Parse for SpecifiedPath {
+impl syn::parse::Parse for SimFlowPath {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
             path_token: input.parse()?,
+            double_colon: input.parse()?,
+            path: input.parse()?,
+        })
+    }
+}
+
+pub struct CorePathtoken;
+
+impl syn::parse::Parse for CorePathtoken {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let core_path_ident: syn::Ident = input.parse()?;
+        if core_path_ident != "core_path" {
+            Err(syn::Error::new(core_path_ident.span(), "Expected core_path"))
+        } else {
+            Ok(Self)
+        }
+    }
+}
+
+#[allow(unused)]
+pub struct CorePath {
+    pub core_path_token: CorePathtoken,
+    pub double_colon: syn::Token![:],
+    pub path: syn::Path,
+}
+
+impl syn::parse::Parse for CorePath {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            core_path_token: input.parse()?,
             double_colon: input.parse()?,
             path: input.parse()?,
         })

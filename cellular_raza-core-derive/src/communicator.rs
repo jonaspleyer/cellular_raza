@@ -67,19 +67,16 @@ impl syn::parse::Parse for CommParser {
 }
 
 // ################################### IMPLEMENTING ##################################
-fn wrap_pre_flags(stream: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn wrap_pre_flags(core_path: &proc_macro2::TokenStream, stream: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     quote!(
         #[allow(unused)]
         #[allow(non_camel_case_types)]
         const _: () = {
-            extern crate cellular_raza_core as _crc;
-            extern crate cellular_raza_core_derive as _crc_derive;
-
-            use _crc::backend::chili::{
+            use #core_path ::backend::chili::{
                 errors::SimulationError,
                 simulation_flow::Communicator
             };
-            use _crc_derive::Communicator;
+            use #core_path ::derive::Communicator;
 
             #stream
         };
@@ -118,7 +115,7 @@ impl Communicator {
                 }
             )
         }));
-        wrap_pre_flags(res)
+        res
     }
 }
 
@@ -135,7 +132,9 @@ struct ConstructInput {
     _comma_1: syn::Token![,],
     aspects: SimulationAspects,
     _comma_2: syn::Token![,],
-    path: SpecifiedPath,
+    sim_flow_path: SimFlowPath,
+    _comma_3: Option<syn::Token![,]>,
+    core_path: Option<CorePath>,
 }
 
 impl syn::parse::Parse for ConstructInput {
@@ -145,7 +144,9 @@ impl syn::parse::Parse for ConstructInput {
             _comma_1: input.parse()?,
             aspects: input.parse()?,
             _comma_2: input.parse()?,
-            path: input.parse()?,
+            sim_flow_path: input.parse()?,
+            _comma_3: input.parse()?,
+            core_path: if input.is_empty() {None} else {Some(input.parse::<CorePath>()?)},
         })
     }
 }
@@ -192,11 +193,18 @@ impl SimulationAspect {
 impl ConstructInput {
     fn build_communicator(self) -> proc_macro2::TokenStream {
         let struct_name = self.name_def.struct_name;
+        let core_path = match self.core_path {
+            Some(path) => {
+                let p = path.path;
+                quote!(#p)
+            },
+            None => quote!(cellular_raza_core::derive),
+        };
         let generics_fields: Vec<_> = self
             .aspects
             .items
             .into_iter()
-            .map(|aspect| aspect.build_comm(&self.path.path))
+            .map(|aspect| aspect.build_comm(&self.sim_flow_path.path))
             .collect();
 
         let mut generics = vec![];
@@ -210,13 +218,15 @@ impl ConstructInput {
             });
             fields.extend(f);
         });
-        quote!(
+        let input = quote!(
             #[allow(non_camel_case_types)]
-            #[derive(cellular_raza_core::derive::Communicator)]
             struct #struct_name <#(#generics),*> {
                 #(#fields),*
             }
-        )
+        );
+        let derived = super::_communicator(quote!(#[derive(#core_path ::derive::Communicator)] #input).into());
+        let derived = wrap_pre_flags(&core_path, derived.into());
+        quote!(#input #derived)
     }
 }
 

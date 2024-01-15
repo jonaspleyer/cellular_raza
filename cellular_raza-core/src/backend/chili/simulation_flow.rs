@@ -416,13 +416,14 @@ mod test_build_communicator {
             aspects:[$($asp:ident),*]
         ) => {
             /// ```
-            /// use cellular_raza_core_derive::build_communicator;
+            /// use cellular_raza_core::derive::build_communicator;
             /// build_communicator!(
             ///     name: __MyComm,
             ///     aspects: [
             #[doc = stringify!($($asp),*)]
             ///     ],
-            ///     path: cellular_raza_core::backend::chili::simulation_flow
+            ///     simulation_flow_path: cellular_raza_core::backend::chili::simulation_flow,
+            ///     core_path: cellular_raza_core
             /// );
             /// ```
             #[allow(non_snake_case)]
