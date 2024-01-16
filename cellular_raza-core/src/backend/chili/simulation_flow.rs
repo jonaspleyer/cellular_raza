@@ -421,6 +421,76 @@ mod test_derive_communicator {
 
 #[doc(hidden)]
 #[allow(unused)]
+mod test_derive_from_map {
+    /// ```
+    /// use cellular_raza_core::{
+    ///     derive::FromMap,
+    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    /// };
+    /// use cellular_raza_concepts::errors::IndexError;
+    /// #[derive(FromMap)]
+    /// #[FromMapIndex(usize)]
+    /// struct MyNewComm {
+    ///     channel_comm_1: ChannelComm<usize, String>,
+    ///     channel_comm_2: ChannelComm<usize, (f64, f32)>,
+    /// }
+    /// ```
+    fn default() {}
+
+    /// ```
+    /// use cellular_raza_core::{
+    ///     derive::FromMap,
+    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    /// };
+    /// use cellular_raza_concepts::errors::IndexError;
+    /// #[derive(FromMap)]
+    /// #[FromMapIndex(I)]
+    /// struct MyNewComm<I> {
+    ///     channel_comm_1: ChannelComm<I, String>,
+    ///     channel_comm_2: ChannelComm<I, (f64, f32)>,
+    /// }
+    /// ```
+    fn generic_index() {}
+
+    /// ```
+    /// use cellular_raza_core::{
+    ///     derive::FromMap,
+    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    /// };
+    /// use cellular_raza_concepts::errors::IndexError;
+    /// #[derive(FromMap)]
+    /// #[FromMapIndex(i16)]
+    /// struct MyNewComm<T>
+    /// where
+    ///     T: Clone,
+    /// {
+    ///     channel_comm_1: ChannelComm<i16, T>,
+    ///     channel_comm_2: ChannelComm<i16, (f64, f32)>,
+    /// }
+    /// ```
+    fn where_clause() {}
+
+    /// ```
+    /// use cellular_raza_core::{
+    ///     derive::FromMap,
+    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    /// };
+    /// use cellular_raza_concepts::errors::IndexError;
+    /// #[derive(FromMap)]
+    /// #[FromMapIndex(I)]
+    /// struct MyNewComm<I>
+    /// where
+    ///     I: std::fmt::Display,
+    /// {
+    ///     channel_comm_1: ChannelComm<I, f64>,
+    ///     channel_comm_2: ChannelComm<I, (f64, f32)>,
+    /// }
+    /// ```
+    fn where_clause_on_index() {}
+}
+
+#[doc(hidden)]
+#[allow(unused)]
 mod test_build_communicator {
     macro_rules! test_build_communicator(
         (
