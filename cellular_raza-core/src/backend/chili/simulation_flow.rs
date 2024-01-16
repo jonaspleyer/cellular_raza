@@ -58,7 +58,7 @@ where
     /// the specified subdomain indices.
     fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
     where
-        I: Eq + core::hash::Hash + Clone;
+        I: Eq + core::hash::Hash + Clone + Ord;
 }
 
 /// Responsible for syncing the simulation between different threads.
@@ -72,7 +72,7 @@ pub trait SyncSubDomains {
 impl<I> FromMap<I> for BarrierSync {
     fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
     where
-        I: Eq + core::hash::Hash + Clone,
+        I: Eq + core::hash::Hash + Clone + Ord,
     {
         let barrier = hurdles::Barrier::new(map.len());
         let res = map
@@ -304,9 +304,12 @@ pub struct ChannelComm<I, T> {
 
 impl<T, I> FromMap<I> for ChannelComm<I, T>
 where
-    I: Clone + core::hash::Hash + Eq + Ord,
+    I: Ord,
 {
-    fn from_map(map: &HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError> {
+    fn from_map(map: &HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    where
+        I: Clone + core::hash::Hash + Eq,
+    {
         let channels: HashMap<_, _> = map
             .keys()
             .into_iter()

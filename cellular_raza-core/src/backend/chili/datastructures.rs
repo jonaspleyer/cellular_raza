@@ -198,7 +198,7 @@ impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
-    I: Eq + PartialEq + core::hash::Hash + Clone,
+    I: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     A: Default,
     Sy: super::simulation_flow::FromMap<I>,
     Com: super::simulation_flow::FromMap<I>,
