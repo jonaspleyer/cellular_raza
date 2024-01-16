@@ -5,6 +5,7 @@
 
 mod aux_storage;
 mod communicator;
+mod from_map;
 mod simulation_aspects;
 mod testing;
 
@@ -31,6 +32,11 @@ pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 #[proc_macro]
 pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::construct_communicator(input)
+}
+
+#[proc_macro_derive(FromMap, attributes(FromMapIndex))]
+pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    from_map::derive_from_map(input)
 }
 
 #[proc_macro]
