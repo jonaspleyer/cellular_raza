@@ -21,5 +21,7 @@ pub mod datastructures;
 /// Specify a way to set-up and start the simulation.
 pub mod setup;
 
+pub mod solvers;
+
 /// Numerical integration and solving of the model.
 pub mod simulation_flow;
