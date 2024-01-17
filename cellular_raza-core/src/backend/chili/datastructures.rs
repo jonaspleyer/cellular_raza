@@ -14,7 +14,8 @@ use cellular_raza_concepts::domain_new::*;
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 
 pub struct SimulationSupervisor<I, Sb> {
-    subdomain_boxes: HashMap<I, Sb>,
+    // TODO make this private
+    pub subdomain_boxes: HashMap<I, Sb>,
 }
 
 /// Simple trait that will be implemented by a
