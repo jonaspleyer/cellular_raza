@@ -28,44 +28,32 @@ pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
     pub volume: f64,
 }
 
-macro_rules! define_no_cellular_reactions {
-    ($conc_vec_intracellular:ty, $conc_vec_extracellular:ty) => {
-        #[derive(Clone, Debug, Serialize, Deserialize)]
-        pub struct NoCellularReactions;
+/// Do not model intracellular reactions at all.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NoCellularReactions;
 
-        impl CellularReactions<$conc_vec_intracellular, $conc_vec_extracellular>
-            for NoCellularReactions
-        where
-            $conc_vec_intracellular: num::Zero,
-            $conc_vec_extracellular: num::Zero,
-        {
-            fn calculate_intra_and_extracellular_reaction_increment(
-                &self,
-                _internal_concentration_vector: &$conc_vec_intracellular,
-                _external_concentration_vector: &$conc_vec_extracellular,
-            ) -> Result<
-                ($conc_vec_intracellular, $conc_vec_extracellular),
-                cellular_raza_concepts::errors::CalcError,
-            > {
-                Ok((
-                    <$conc_vec_intracellular>::zero(),
-                    <$conc_vec_extracellular>::zero(),
-                ))
-            }
+impl CellularReactions<Nothing, Nothing> for NoCellularReactions
+where
+    Nothing: num::Zero,
+    Nothing: num::Zero,
+{
+    fn calculate_intra_and_extracellular_reaction_increment(
+        &self,
+        _internal_concentration_vector: &Nothing,
+        _external_concentration_vector: &Nothing,
+    ) -> Result<(Nothing, Nothing), cellular_raza_concepts::errors::CalcError> {
+        Ok((<Nothing>::zero(), <Nothing>::zero()))
+    }
 
-            fn get_intracellular(&self) -> $conc_vec_intracellular {
-                <$conc_vec_intracellular>::zero()
-            }
+    fn get_intracellular(&self) -> Nothing {
+        <Nothing>::zero()
+    }
 
-            fn set_intracellular(&mut self, _concentration_vector: $conc_vec_intracellular) {}
-        }
-    };
+    fn set_intracellular(&mut self, _concentration_vector: Nothing) {}
 }
 
 /// Type alias used when not wanting to simulate any cellular reactions for example.
 pub type Nothing = nalgebra::SVector<f64, 0>;
-
-define_no_cellular_reactions! {Nothing, Nothing}
 
 impl<Pos, Vel, For, Float, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos, Vel, For, Float>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
