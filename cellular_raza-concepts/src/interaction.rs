@@ -68,6 +68,11 @@ pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVec
     ) -> Result<(ConcVecIntracellular, ConcVecExtracellular), CalcError>;
 }
 
+/// Obtain the current volume of the cell
+///
+/// This trait is used when updating extracellular reactions and processes.
+/// For more details see [domain](crate::domain).
 pub trait Volume<F = f64> {
+    /// Obtain the cells current volume.
     fn get_volume(&self) -> F;
 }
