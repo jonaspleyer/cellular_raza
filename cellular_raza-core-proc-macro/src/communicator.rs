@@ -139,11 +139,6 @@ impl Communicator {
         let core_path = &self.core_path;
 
         let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
-        let addendum = quote!(I: Clone + core::hash::Hash + Eq + Ord,);
-        let where_clause = match where_clause {
-            Some(w) => quote!(where #(#w.predicates), #addendum),
-            None => quote!(where #addendum),
-        };
 
         let mut res = proc_macro2::TokenStream::new();
         res.extend(self.comms.iter().map(|comm| {
@@ -155,6 +150,12 @@ impl Communicator {
 
             let index = &comm.index;
             let message = &comm.message;
+
+            let addendum = quote!(#index: Clone + core::hash::Hash + Eq + Ord,);
+            let where_clause = match where_clause {
+                Some(w) => quote!(where #(#w.predicates), #addendum),
+                None => quote!(where #addendum),
+            };
 
             wrap_pre_flags(&quote!(#core_path), quote!(
                 #[automatically_derived]
