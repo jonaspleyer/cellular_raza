@@ -154,7 +154,6 @@ pub mod interaction;
 pub mod mechanics;
 
 /// Visualize components of the simulation directly via the [plotters](https://docs.rs/plotters) library.
-#[deprecated]
 pub mod plotting;
 
 /// Exports which can be used to simply access all concepts.
