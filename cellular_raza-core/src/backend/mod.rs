@@ -13,7 +13,7 @@
 /// | [Mechanics](cellular_raza_concepts::mechanics) | ✅ | Fully generic except `Float=f64` |
 /// | [Interaction](cellular_raza_concepts::interaction) | ✅ | Fully generic |
 /// | [Reactions](cellular_raza_concepts::interaction) | ✅ | Fully generic |
-/// | [Volume](cellular_raza_concepts::interaction) | ✅ | |
+/// | [Volume](cellular_raza_concepts::interaction) | ✅ | `Float=f64` |
 ///
 /// # Other Features
 /// | Aspect | Support | Comment |
