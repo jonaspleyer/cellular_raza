@@ -1,5 +1,4 @@
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
+#![deny(missing_docs)]
 //! # cellular_raza - Building Blocks
 //!
 //! Building blocks allow users to quickly construct complex cellular agents.
