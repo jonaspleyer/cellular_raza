@@ -78,9 +78,8 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
 // Sadly this is currently not possible ...
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
-        #[doc = "Cuboid Domain with regular cartesian coordinates in `"]
-        #[doc = stringify!($d)]
-        #[doc = "` dimensions"]
+        /// Cuboid Domain with regular cartesian coordinates in
+        #[doc = concat!(" `", stringify!($d), "D`")]
         #[derive(Clone,Debug,Serialize,Deserialize)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
@@ -161,11 +160,10 @@ macro_rules! define_and_implement_cartesian_cuboid {
 macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
     ($d: literal, $name: ident, $voxel_name: ident, $($k: expr),+) => {
         // Define the struct for the voxel
-        #[doc = "Cuboid Voxel for `"]
+        /// Cuboid Voxel for [
         #[doc = stringify!($name)]
-        #[doc = "` in `"]
-        #[doc = stringify!($d)]
-        #[doc = "` dimensions"]
+        /// ] in
+        #[doc = concat!(" `", stringify!($d), "D`")]
         #[derive(Clone,Debug,Serialize,Deserialize)]
         pub struct $voxel_name<const N: usize> {
                 min: [f64; $d],
@@ -174,11 +172,16 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 dx: [f64; $d],
                 index: [i64; $d],
 
+                /// Concentrations of the different diffusables
                 pub extracellular_concentrations: SVector<f64, N>,
                 #[cfg(feature = "gradients")]
+                /// The gradient of diffusables at this voxel
                 pub extracellular_gradient: SVector<SVector<f64, $d>, N>,
+                /// Local diffusion constant
                 pub diffusion_constant: SVector<f64, N>,
+                /// Local production rate of diffusables
                 pub production_rate: SVector<f64, N>,
+                /// Local degradation rate of diffusables
                 pub degradation_rate: SVector<f64, N>,
                 domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>,
         }
@@ -209,9 +212,13 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 }
             }
 
+            /// Get lower boundary of voxel
             pub fn get_min(&self) -> [f64; $d] {self.min}
+            /// Get upper boundary of voxel
             pub fn get_max(&self) -> [f64; $d] {self.max}
+            /// Get middle of voxel
             pub fn get_middle(&self) -> [f64; $d] {self.middle}
+            /// Get side lengths of voxel
             pub fn get_dx(&self) -> [f64; $d] {self.dx}
 
             fn position_is_in_domain(&self, pos: &SVector<f64, $d>) -> Result<(), RequestError> {
@@ -453,15 +460,23 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         $float_type: ty,
         $($k: expr),+
     ) => {
-        // TODO
         #[derive(Clone, Debug, Deserialize, Serialize)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
+        /// Cartesian cuboid in
+        #[doc = concat!(" `", stringify!($d), "D`")]
+        /// with float type
+        #[doc = concat!(" `", stringify!($float_type), "`")]
         pub struct $domain_name {
+            /// Lower boundary of domain
             pub min: [$float_type; $d],
+            /// Upper boundary of domain
             pub max: [$float_type; $d],
+            /// Number of voxels in domain along axes
             pub n_voxels: [i64; $d],
+            /// Length of individual voxels in domain
             pub dx_voxels: [$float_type; $d],
+            /// Initial seed from which to generate seeds for voxels
             pub rng_seed: u64,
         }
 
@@ -489,6 +504,8 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 Ok(())
             }
 
+            /// Construct the domain from given lower/upper boundaries and maximum
+            /// length of interaction ranges along axes.
             pub fn from_boundaries_and_interaction_ranges(
                 min: [$float_type; $d],
                 max: [$float_type; $d],
@@ -512,6 +529,8 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 })
             }
 
+            /// Construct the domain from given lower/upper boundaries and
+            /// number of voxels along axes.
             pub fn from_boundaries_and_n_voxels(
                 min: [$float_type; $d],
                 max: [$float_type; $d],
@@ -593,6 +612,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
         pub struct $subdomain_name {
+            /// All voxels contained in this subdomain
             pub voxels: Vec<$voxel_name>,
             domain_min: [$float_type; $d],
             domain_max: [$float_type; $d],
@@ -603,9 +623,15 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         #[derive(Clone, Debug, Deserialize, Serialize)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
+        /// Voxel of the [
+        #[doc = stringify!($subdomain_name)]
+        /// ]
         pub struct $voxel_name {
+            /// Lower boundary of the voxel
             pub min: [$float_type; $d],
+            /// Upper boundary of the voxel
             pub max: [$float_type; $d],
+            /// Index of the voxel
             pub ind: [i64; $d],
         }
 
@@ -816,7 +842,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 return v;
             }
 
-            fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError> {
+            fn apply_boundary(&self, _cell: &mut C) -> Result<(), BoundaryError> {
                 todo!()
             }
 

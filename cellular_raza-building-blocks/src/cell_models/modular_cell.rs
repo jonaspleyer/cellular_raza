@@ -9,13 +9,22 @@ use serde::{Deserialize, Serialize};
 
 use num::Zero;
 
+/// Superseeded by the [CellAgent](cellular_raza_concepts_derive::CellAgent) derive macro.
+///
+/// This struct allows to combine different building blocks to create a new Agent.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
+    /// Physical mechanics of the cell
     pub mechanics: Mec,
+    /// Physical interactions with other cells
     pub interaction: Int,
+    /// Interaction with extracellular gradient
     pub interaction_extracellular: IntExtracellular,
+    /// Cell cycle
     pub cycle: Cyc,
+    /// Intracellular reactions
     pub cellular_reactions: React,
+    /// Volume of the cell
     pub volume: f64,
 }
 
@@ -53,7 +62,7 @@ macro_rules! define_no_cellular_reactions {
     };
 }
 
-// #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+/// Type alias used when not wanting to simulate any cellular reactions for example.
 pub type Nothing = nalgebra::SVector<f64, 0>;
 
 define_no_cellular_reactions! {Nothing, Nothing}
@@ -197,6 +206,7 @@ where
     }
 }
 
+/// Type which allows to simply not model gradients.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NoExtracellularGradientSensing;
 

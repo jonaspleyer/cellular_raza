@@ -149,6 +149,7 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+/// Identical to [BoundLennardJones] but for `f32` type.
 pub struct BoundLennardJonesF32 {
     /// Interaction strength $\epsilon$ of the potential.
     pub epsilon: f32,

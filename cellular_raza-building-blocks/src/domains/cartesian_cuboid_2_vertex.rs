@@ -114,10 +114,15 @@ pub struct CartesianCuboidVoxel2Vertex<const D: usize, const N: usize> {
     dx: [f64; 2],
     index: [i64; 2],
 
+    /// Concentrations of the different diffusables
     pub extracellular_concentrations: SVector<f64, N>,
+    /// The gradient of diffusables at this voxel
     pub extracellular_gradient: SVector<SVector<f64, 2>, N>,
+    /// Local diffusion constant
     pub diffusion_constant: SVector<f64, N>,
+    /// Local production rate of diffusables
     pub production_rate: SVector<f64, N>,
+    /// Local degradation rate of diffusables
     pub degradation_rate: SVector<f64, N>,
     domain_boundaries: Vec<([i64; 2], BoundaryCondition<SVector<f64, N>>)>,
 }
@@ -148,15 +153,19 @@ impl<const D: usize, const N: usize> CartesianCuboidVoxel2Vertex<D, N> {
         }
     }
 
+    /// Get lower boundary of voxel
     pub fn get_min(&self) -> [f64; 2] {
         self.min
     }
+    /// Get upper boundary of voxel
     pub fn get_max(&self) -> [f64; 2] {
         self.max
     }
+    /// Get middle of voxel
     pub fn get_middle(&self) -> [f64; 2] {
         self.middle
     }
+    /// Get side lengths of voxel
     pub fn get_dx(&self) -> [f64; 2] {
         self.dx
     }
