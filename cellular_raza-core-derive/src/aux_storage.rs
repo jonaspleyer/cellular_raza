@@ -7,7 +7,7 @@ use quote::quote;
 use super::simulation_aspects::*;
 
 // ##################################### PARSING #####################################
-pub struct AuxStorageParser {
+struct AuxStorageParser {
     name: syn::Ident,
     generics: syn::Generics,
     aspects: AspectFields,
@@ -244,7 +244,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
 
 // ################################## IMPLEMENTING ###################################
 #[allow(unused)]
-pub struct AuxStorageImplementer {
+struct AuxStorageImplementer {
     name: syn::Ident,
     generics: syn::Generics,
     update_mechanics: Option<UpdateMechanicsImplementer>,
