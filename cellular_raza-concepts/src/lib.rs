@@ -1,5 +1,5 @@
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
+#![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
 //! This crate encapsulates concepts which govern an agent-based model specified by [cellular_raza](https://docs.rs/cellular_raza).
 //! To learn how to design your own concepts please refer to the [cellular_raza book](https://jonaspleyer.github.io/cellular_raza/DevelopersDesigningNewConcepts.html).
 
