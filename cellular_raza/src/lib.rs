@@ -11,7 +11,5 @@ pub use cellular_raza_concepts as concepts;
 
 pub use cellular_raza_core as core;
 
-pub use cellular_raza_core_derive as core_derive;
-
 /// Re-exports the default simulation types and traits.
 pub mod prelude;

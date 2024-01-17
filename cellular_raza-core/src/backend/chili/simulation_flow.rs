@@ -530,7 +530,7 @@ mod test_build_communicator {
         };
     );
 
-    cellular_raza_core_derive::run_test_for_aspects!(
+    cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: test_build_communicator,
         aspects: [Mechanics, Interaction, Cycle, Reactions]
     );

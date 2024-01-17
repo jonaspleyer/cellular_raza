@@ -43,8 +43,8 @@ rand_chacha = { workspace = true }
 path = "../cellular_raza-concepts"
 version = "0.0.5"
 
-[dependencies.cellular_raza-core-derive]
-path = "../cellular_raza-core-derive"
+[dependencies.cellular_raza-core-proc-macro]
+path = "../cellular_raza-core-proc-macro"
 version = "0.0.5"
 
 [features]

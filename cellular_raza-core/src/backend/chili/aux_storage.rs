@@ -646,7 +646,7 @@ mod test_derive_aux_storage_compile {
 #[cfg(test)]
 pub mod test_derive_aux_storage {
     use super::*;
-    use cellular_raza_core_derive::AuxStorage;
+    use cellular_raza_core_proc_macro::AuxStorage;
 
     #[derive(AuxStorage)]
     struct TestStructDouble<Pos, Vel, For, Float, const N: usize> {
@@ -1111,7 +1111,7 @@ mod test_build_aux_storage {
         }
     );
 
-    cellular_raza_core_derive::run_test_for_aspects!(
+    cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: construct,
         aspects: [Mechanics, Interaction, Cycle, Reactions]
     );

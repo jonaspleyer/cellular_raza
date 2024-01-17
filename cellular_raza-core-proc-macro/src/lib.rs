@@ -98,7 +98,7 @@ pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// #         fn $test_name () {}
 /// #     }
 /// # );
-/// # use cellular_raza_core_derive::run_test_for_aspects;
+/// # use cellular_raza_core_proc_macro::run_test_for_aspects;
 /// run_test_for_aspects!(
 ///     test: some_test,
 ///     aspects: [Mechanics, Interaction]

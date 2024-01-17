@@ -2,7 +2,6 @@ use cellular_raza::building_blocks::prelude::*;
 use cellular_raza::concepts::prelude::*;
 use cellular_raza::concepts_derive::*;
 use cellular_raza::core::backend::chili::*;
-use cellular_raza::core_derive::*;
 
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};

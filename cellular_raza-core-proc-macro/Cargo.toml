@@ -1,8 +1,8 @@
 [package]
-name = "cellular_raza-core-derive"
+name = "cellular_raza-core-proc-macro"
 description = "Cellular simulation tool"
 readme = "README.md"
-documentation = "https://docs.rs/cellular_raza-core-derive"
+documentation = "https://docs.rs/cellular_raza-core-proc-macro"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

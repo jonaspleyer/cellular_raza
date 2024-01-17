@@ -3,7 +3,7 @@ members = [
     "cellular_raza-benchmarks",
     "cellular_raza-concepts",
     "cellular_raza-core",
-    "cellular_raza-core-derive",
+    "cellular_raza-core-proc-macro",
     "cellular_raza-building-blocks",
     "cellular_raza-examples/*",
 ]
