@@ -208,10 +208,7 @@ fn index_type() -> syn::Type {
 }
 
 impl SimulationAspect {
-    fn build_comm(
-        &self,
-        core_path: &syn::Path,
-    ) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
+    fn build_comm(&self, core_path: &syn::Path) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
         let index_type = index_type();
         let sim_flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
         match self {

@@ -231,10 +231,10 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
         Self {
             name: value.name,
             generics: value.generics,
-            update_cycle: update_cycle,
-            update_mechanics: update_mechanics,
-            update_interaction: update_interaction,
-            update_reactions: update_reactions,
+            update_cycle,
+            update_mechanics,
+            update_interaction,
+            update_reactions,
         }
     }
 }
