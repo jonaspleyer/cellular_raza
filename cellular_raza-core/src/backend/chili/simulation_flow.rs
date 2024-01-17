@@ -393,8 +393,9 @@ mod test_derive_communicator {
     ///     simulation_flow::{ChannelComm, Communicator}
     /// };
     /// #[derive(Communicator)]
+    /// #[CommunicatorCorePath(cellular_raza_core)]
     /// struct MyComm<I, T> {
-    ///     #[Comm(I, T, cellular_raza_core)]
+    ///     #[Comm(I, T)]
     ///     comm: ChannelComm<I, T>
     /// }
     /// ```
@@ -407,10 +408,11 @@ mod test_derive_communicator {
     ///     simulation_flow::{ChannelComm, Communicator}
     /// };
     /// #[derive(Communicator)]
+    /// #[CommunicatorCorePath(cellular_raza_core)]
     /// struct MyDouble<I> {
-    ///     #[Comm(I, String, cellular_raza_core)]
+    ///     #[Comm(I, String)]
     ///     comm1: ChannelComm<I, String>,
-    ///     #[Comm(I, f64, cellular_raza_core)]
+    ///     #[Comm(I, f64)]
     ///     comm2: ChannelComm<I, f64>,
     /// }
     /// ```
@@ -424,10 +426,11 @@ mod test_derive_communicator {
     /// };
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
+    /// #[CommunicatorCorePath(cellular_raza_core)]
     /// struct MyDouble<I, T> {
-    ///     #[Comm(I, Message<T>, cellular_raza_core)]
+    ///     #[Comm(I, Message<T>)]
     ///     comm1: ChannelComm<I, Message<T>>,
-    ///     #[Comm(I, f64, cellular_raza_core)]
+    ///     #[Comm(I, f64)]
     ///     comm2: ChannelComm<I, f64>,
     /// }
     /// ```
@@ -519,7 +522,6 @@ mod test_build_communicator {
             ///     aspects: [
             #[doc = stringify!($($asp),*)]
             ///     ],
-            ///     simulation_flow_path: cellular_raza_core::backend::chili::simulation_flow,
             ///     core_path: cellular_raza_core
             /// );
             /// ```
@@ -532,6 +534,14 @@ mod test_build_communicator {
         test: test_build_communicator,
         aspects: [Mechanics, Interaction, Cycle, Reactions]
     );
+
+    /// ```compile_fail
+    /// build_communicator!(
+    ///     name: __MyComm,
+    ///     aspects: [Mechanics, Cycle],
+    /// );
+    /// ```
+    fn without_path() {}
 }
 
 #[cfg(test)]
