@@ -1,7 +1,7 @@
 use cellular_raza_concepts::{errors::CalcError, prelude::IndexError};
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 
 use super::{errors::SimulationError, VoxelPlainIndex};
 
@@ -59,6 +59,18 @@ where
     fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone + Ord;
+}
+
+impl<I> FromMap<I> for PhantomData<I> {
+    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    where
+        I: Eq + core::hash::Hash + Clone + Ord,
+    {
+        Ok(map
+            .into_iter()
+            .map(|(key, _)| (key.clone(), PhantomData::<I>))
+            .collect())
+    }
 }
 
 /// Responsible for syncing the simulation between different threads.
