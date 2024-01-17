@@ -430,6 +430,14 @@ define_langevin_nd!(Langevin1D, 1);
 define_langevin_nd!(Langevin2D, 2);
 define_langevin_nd!(Langevin3D, 3);
 
+/// Mechanics model which represents cells as vertices with edges between them.
+///
+/// The vertices are attached to each other with springs and a given length between each
+/// vertex.
+/// Furthermore, we define a central pressure that acts when the total cell area is greater
+/// or smaller than the desired one.
+/// Each vertex is damped individually by the same constant.
+// TODO include more formulas for this model
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexMechanics2D<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
@@ -441,7 +449,9 @@ pub struct VertexMechanics2D<const D: usize> {
     dampening_constant: f64,
 }
 
+/// Alias for the spatial representation of a cell
 pub type VertexVector2<const D: usize> = nalgebra::SMatrix<f64, D, 2>;
+/// Alias for a connection quantity between two individual vertices
 pub type VertexConnections2<const D: usize> = nalgebra::SVector<f64, D>;
 
 impl<const D: usize> VertexMechanics2D<D> {
@@ -526,10 +536,12 @@ impl<const D: usize> VertexMechanics2D<D> {
         }
     }
 
+    /// Obtain current cell area
     pub fn get_cell_area(&self) -> f64 {
         self.cell_area
     }
 
+    /// Set the current cell area
     pub fn set_cell_area(&mut self, cell_area: f64) {
         // Calculate the relative difference to current area
         match self.cell_area {
@@ -561,6 +573,7 @@ impl<const D: usize> VertexMechanics2D<D> {
 }
 
 impl VertexMechanics2D<4> {
+    /// Fill a specified rectangle with cells of 4 vertices
     pub fn fill_rectangle(
         cell_area: f64,
         spring_tensions: f64,
