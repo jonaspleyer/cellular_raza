@@ -1,3 +1,6 @@
+//! The main two macros are [derive_aux_storage] and [construct_aux_storage] which allow to
+//! derive individual aspects of the the update traits in [cellular_raza_core::backend::chili::aux_storage].
+
 use proc_macro::TokenStream;
 use quote::quote;
 

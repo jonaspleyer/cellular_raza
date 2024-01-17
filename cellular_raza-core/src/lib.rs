@@ -11,9 +11,10 @@
 /// The backend controls the simulation flow. Multiple variants could be available in the future.
 pub mod backend;
 
+pub mod derive;
+
 /// Interface and methods to store and load simulation aspects.
 pub mod storage;
 
 // Some re-exports
 pub use cellular_raza_concepts as concepts;
-pub use cellular_raza_core_derive as derive;
