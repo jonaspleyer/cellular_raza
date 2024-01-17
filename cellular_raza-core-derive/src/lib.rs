@@ -37,7 +37,7 @@ pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     communicator::construct_communicator(input)
 }
 
-#[proc_macro_derive(FromMap, attributes(FromMapIndex))]
+#[proc_macro_derive(FromMap, attributes(FromMapCorePath, FromMapIndex))]
 pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     from_map::derive_from_map(input)
 }

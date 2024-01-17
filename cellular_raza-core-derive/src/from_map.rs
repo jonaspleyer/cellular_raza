@@ -6,6 +6,7 @@ struct FromMapper {
     generics: syn::Generics,
     index_fields: Vec<MapField>,
     index: syn::Type,
+    core_path: Option<syn::Path>,
 }
 
 #[derive(Clone)]
@@ -46,22 +47,75 @@ fn index_from_attributes(
         })
         .map(|attr| {
             let s = &attr.meta;
-            let stream: proc_macro::TokenStream = quote!(#s).into();
-            let parsed: IndexParser = syn::parse(stream)?;
+            let stream = quote!(#s);
+            let parsed: IndexParser = syn::parse2(stream)?;
             Ok(parsed)
         })
         .collect::<syn::Result<Vec<_>>>()?;
     if candidates.len() != 1 {
-        Err(syn::Error::new(span, ""))
+        Err(syn::Error::new(
+            span,
+            "Expected exactly one #[FromMapIndex(..)] attribute",
+        ))
     } else {
         Ok(candidates[0].index.clone())
     }
+}
+
+struct CorePathParser {
+    #[allow(unused)]
+    from_map_core_path_token: syn::Ident,
+    core_path: syn::Path,
+}
+
+impl syn::parse::Parse for CorePathParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let from_map_core_path_token = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            from_map_core_path_token,
+            core_path: content.parse()?,
+        })
+    }
+}
+
+fn core_path_from_attributes(
+    attrs: &Vec<syn::Attribute>,
+    span: proc_macro2::Span,
+) -> syn::Result<Option<syn::Path>> {
+    let mut candidates = attrs
+        .iter()
+        .filter(|attr| {
+            attr.meta
+                .path()
+                .get_ident()
+                .is_some_and(|ident| ident == "FromMapCorePath")
+        })
+        .map(|attr| {
+            let s = &attr.meta;
+            let stream = quote!(#s);
+            let parsed: CorePathParser = syn::parse2(stream)?;
+            Ok(parsed)
+        })
+        .collect::<syn::Result<Vec<_>>>()?;
+    if candidates.len() > 1 {
+        return Err(syn::Error::new(
+            span,
+            "Expected at most one #[FromMapCorePath(..)] attribute",
+        ));
+    }
+    if candidates.len() == 1 {
+        return Ok(Some(candidates.remove(0).core_path));
+    }
+    Ok(None)
 }
 
 impl syn::parse::Parse for FromMapper {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let struct_def: syn::ItemStruct = input.parse()?;
         let index = index_from_attributes(&struct_def.attrs, struct_def.span())?;
+        let core_path = core_path_from_attributes(&struct_def.attrs, struct_def.span())?;
         Ok(Self {
             struct_name: struct_def.ident,
             generics: struct_def.generics,
@@ -74,12 +128,13 @@ impl syn::parse::Parse for FromMapper {
                 })
                 .collect::<Vec<_>>(),
             index,
+            core_path,
         })
     }
 }
 
 impl FromMapper {
-    fn implement(&self, core_path: Option<proc_macro2::TokenStream>) -> proc_macro2::TokenStream {
+    fn implement(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.struct_name;
         let field_names = self
             .index_fields
@@ -96,7 +151,7 @@ impl FromMapper {
             .into_iter()
             .map(|field| field.field_type);
         let index = &self.index;
-        let (from_map_path, error_path) = match core_path {
+        let (from_map_path, error_path) = match &self.core_path {
             Some(p) => (
                 quote!(#p ::backend::chili::simulation_flow::),
                 quote!(#p ::backend::cpu_os_threads::prelude::),
@@ -146,6 +201,6 @@ impl FromMapper {
 
 pub fn derive_from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let from_mapper = syn::parse_macro_input!(input as FromMapper);
-    let stream = from_mapper.implement(None);
+    let stream = from_mapper.implement();
     stream.into()
 }
