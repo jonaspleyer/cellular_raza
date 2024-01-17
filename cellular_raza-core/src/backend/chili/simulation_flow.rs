@@ -387,7 +387,7 @@ unsafe impl<Cel, Aux> Sync for SendCell<Cel, Aux> {}
 #[allow(unused)]
 mod test_derive_communicator {
     /// ```
-    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{
     ///     errors::SimulationError,
     ///     simulation_flow::{ChannelComm, Communicator}
@@ -402,7 +402,7 @@ mod test_derive_communicator {
     fn default() {}
 
     /// ```
-    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{
     ///     errors::SimulationError,
     ///     simulation_flow::{ChannelComm, Communicator}
@@ -419,7 +419,7 @@ mod test_derive_communicator {
     fn two_communicators_explicit() {}
 
     /// ```
-    /// use cellular_raza_core::derive::Communicator;
+    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{
     ///     errors::SimulationError,
     ///     simulation_flow::{ChannelComm, Communicator}
@@ -442,7 +442,7 @@ mod test_derive_communicator {
 mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
-    ///     derive::FromMap,
+    ///     proc_macro::FromMap,
     ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
@@ -457,7 +457,7 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     derive::FromMap,
+    ///     proc_macro::FromMap,
     ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
@@ -472,7 +472,7 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     derive::FromMap,
+    ///     proc_macro::FromMap,
     ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
@@ -490,7 +490,7 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     derive::FromMap,
+    ///     proc_macro::FromMap,
     ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
@@ -516,7 +516,7 @@ mod test_build_communicator {
             aspects:[$($asp:ident),*]
         ) => {
             /// ```
-            /// use cellular_raza_core::derive::build_communicator;
+            /// use cellular_raza_core::proc_macro::build_communicator;
             /// build_communicator!(
             ///     name: __MyComm,
             ///     aspects: [

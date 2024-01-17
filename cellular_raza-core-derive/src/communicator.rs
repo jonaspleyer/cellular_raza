@@ -126,7 +126,7 @@ fn wrap_pre_flags(
                 errors::SimulationError,
                 simulation_flow::Communicator
             };
-            use #core_path ::derive::Communicator;
+            use #core_path ::proc_macro::Communicator;
 
             #stream
         };
@@ -272,9 +272,9 @@ impl ConstructInput {
         // In the following code, we assume that I
         // is the index as implemented above in the build_comm function
         quote!(
-            #[derive(#core_path ::derive::Communicator)]
+            #[derive(#core_path ::proc_macro::Communicator)]
             #[CommunicatorCorePath(#core_path)]
-            #[derive(#core_path ::derive::FromMap)]
+            #[derive(#core_path ::proc_macro::FromMap)]
             #[FromMapIndex(#index_type)]
             #[FromMapCorePath(#core_path)]
             #[allow(non_camel_case_types)]

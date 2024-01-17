@@ -11,7 +11,7 @@
 /// The backend controls the simulation flow. Multiple variants could be available in the future.
 pub mod backend;
 
-pub mod derive;
+pub mod proc_macro;
 
 /// Interface and methods to store and load simulation aspects.
 pub mod storage;
