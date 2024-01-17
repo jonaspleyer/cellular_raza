@@ -1,4 +1,5 @@
 use quote::quote;
+use syn::spanned::Spanned;
 
 use super::simulation_aspects::*;
 
@@ -8,6 +9,7 @@ struct Communicator {
     struct_name: syn::Ident,
     generics: syn::Generics,
     comms: Vec<CommField>,
+    core_path: Option<syn::Path>,
 }
 
 struct CommParser {
@@ -15,8 +17,24 @@ struct CommParser {
     index: syn::Type,
     _comma: syn::Token![,],
     message: syn::Type,
-    _comma_2: syn::Token![,],
+}
+
+#[allow(unused)]
+struct CommCorePathParser {
+    comm_core_path_token: syn::Ident,
     core_path: syn::Path,
+}
+
+impl syn::parse::Parse for CommCorePathParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let comm_core_path_token = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            comm_core_path_token,
+            core_path: content.parse()?,
+        })
+    }
 }
 
 struct CommField {
@@ -24,7 +42,6 @@ struct CommField {
     field_type: syn::Type,
     index: syn::Type,
     message: syn::Type,
-    core_path: syn::Path,
 }
 
 impl syn::parse::Parse for Communicator {
@@ -44,14 +61,40 @@ impl syn::parse::Parse for Communicator {
                     field_type: field.ty.clone(),
                     index: parsed.index,
                     message: parsed.message,
-                    core_path: parsed.core_path,
                 })
             })
             .collect::<syn::Result<Vec<_>>>()?;
+        let mut core_path_candidates = item_struct
+            .attrs
+            .iter()
+            .filter(|attr| {
+                attr.meta
+                    .path()
+                    .get_ident()
+                    .is_some_and(|p| p == "CommunicatorCorePath")
+            })
+            .map(|attr| {
+                let m = &attr.meta;
+                let s = quote!(#m);
+                let p: CommCorePathParser = syn::parse2(s)?;
+                Ok(p.core_path)
+            })
+            .collect::<syn::Result<Vec<_>>>()?;
+        if core_path_candidates.len() > 1 {
+            return Err(syn::Error::new(
+                core_path_candidates.last().unwrap().span(),
+                "Expected only one or less #[CommCorePath(..)] fields",
+            ));
+        }
+        let mut core_path = None;
+        if core_path_candidates.len() == 1 {
+            core_path = Some(core_path_candidates.remove(0));
+        }
         Ok(Self {
             struct_name: item_struct.ident,
             generics: item_struct.generics,
             comms,
+            core_path,
         })
     }
 }
@@ -66,8 +109,6 @@ impl syn::parse::Parse for CommParser {
             index: content.parse()?,
             _comma: content.parse()?,
             message: content.parse()?,
-            _comma_2: content.parse()?,
-            core_path: content.parse()?,
         })
     }
 }
@@ -95,6 +136,7 @@ fn wrap_pre_flags(
 impl Communicator {
     fn derive_communicator(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.struct_name;
+        let core_path = &self.core_path;
 
         let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
         let addendum = quote!(I: Clone + core::hash::Hash + Eq + Ord,);
@@ -108,7 +150,6 @@ impl Communicator {
             let field_name = &comm.field_name;
             let field_type = &comm.field_type;
 
-            let core_path = &comm.core_path;
             let flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
             let error_path = quote!(#core_path ::backend::chili::errors::);
 
@@ -147,9 +188,7 @@ struct ConstructInput {
     _comma_1: syn::Token![,],
     aspects: SimulationAspects,
     _comma_2: syn::Token![,],
-    sim_flow_path: SimFlowPath,
-    _comma_3: Option<syn::Token![,]>,
-    core_path: Option<CorePath>,
+    core_path: CorePath,
 }
 
 impl syn::parse::Parse for ConstructInput {
@@ -159,40 +198,37 @@ impl syn::parse::Parse for ConstructInput {
             _comma_1: input.parse()?,
             aspects: input.parse()?,
             _comma_2: input.parse()?,
-            sim_flow_path: input.parse()?,
-            _comma_3: input.parse()?,
-            core_path: if input.is_empty() {
-                None
-            } else {
-                Some(input.parse::<CorePath>()?)
-            },
+            core_path: input.parse::<CorePath>()?,
         })
     }
+}
+
+fn index_type() -> syn::Type {
+    syn::parse2(quote!(I)).unwrap()
 }
 
 impl SimulationAspect {
     fn build_comm(
         &self,
-        sim_flow_path: &syn::Path,
-        core_path: &proc_macro2::TokenStream,
+        core_path: &syn::Path,
     ) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
+        let index_type = index_type();
+        let sim_flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
             SimulationAspect::Mechanics => (
                 vec![
-                    syn::parse2(quote!(I)).unwrap(),
                     syn::parse2(quote!(Cel)).unwrap(),
                     syn::parse2(quote!(Aux)).unwrap(),
                 ],
                 vec![quote!(
-                    #[Comm(I, #sim_flow_path ::SendCell<Cel, Aux>, #core_path)]
-                    comm_cell: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::SendCell<Cel, Aux>>
+                    #[Comm(I, #sim_flow_path SendCell<Cel, Aux>)]
+                    comm_cell: #sim_flow_path ChannelComm<#index_type, #sim_flow_path SendCell<Cel, Aux>>
                 )],
             ),
             SimulationAspect::Interaction => (
                 vec![
-                    syn::parse2(quote!(I)).unwrap(),
                     syn::parse2(quote!(Pos)).unwrap(),
                     syn::parse2(quote!(Vel)).unwrap(),
                     syn::parse2(quote!(For)).unwrap(),
@@ -200,12 +236,12 @@ impl SimulationAspect {
                 ],
                 vec![
                     quote!(
-                        #[Comm(I, #sim_flow_path ::PosInformation<Pos, Vel, Inf>, #core_path)]
-                        comm_pos: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::PosInformation<Pos, Vel, Inf>>
+                        #[Comm(I, #sim_flow_path PosInformation<Pos, Vel, Inf>)]
+                        comm_pos: #sim_flow_path ChannelComm<#index_type, #sim_flow_path PosInformation<Pos, Vel, Inf>>
                     ),
                     quote!(
-                        #[Comm(I, #sim_flow_path ::ForceInformation<For>, #core_path)]
-                        comm_force: #sim_flow_path ::ChannelComm<I, #sim_flow_path ::ForceInformation<For>>
+                        #[Comm(I, #sim_flow_path ForceInformation<For>)]
+                        comm_force: #sim_flow_path ChannelComm<#index_type, #sim_flow_path ForceInformation<For>>
                     ),
                 ],
             ),
@@ -216,21 +252,16 @@ impl SimulationAspect {
 impl ConstructInput {
     fn build_communicator(self) -> proc_macro2::TokenStream {
         let struct_name = self.name_def.struct_name;
-        let core_path = match self.core_path {
-            Some(path) => {
-                let p = path.path;
-                quote!(#p)
-            }
-            None => quote!(cellular_raza::core),
-        };
+        let index_type = index_type();
+        let core_path = &self.core_path.path;
         let generics_fields: Vec<_> = self
             .aspects
             .items
             .into_iter()
-            .map(|aspect| aspect.build_comm(&self.sim_flow_path.path, &core_path))
+            .map(|aspect| aspect.build_comm(&self.core_path.path))
             .collect();
 
-        let mut generics = vec![];
+        let mut generics = vec![index_type.clone()];
         let mut fields = vec![];
 
         generics_fields.into_iter().for_each(|(g, f)| {
@@ -241,10 +272,17 @@ impl ConstructInput {
             });
             fields.extend(f);
         });
+        // In the following code, we assume that I
+        // is the index as implemented above in the build_comm function
         quote!(
             #[derive(#core_path ::derive::Communicator)]
+            #[CommunicatorCorePath(#core_path)]
+            #[derive(#core_path ::derive::FromMap)]
+            #[FromMapIndex(#index_type)]
+            #[FromMapCorePath(#core_path)]
             #[allow(non_camel_case_types)]
             struct #struct_name <#(#generics),*> {
+                phantom_data: core::marker::PhantomData<#index_type>,
                 #(#fields),*
             }
         )

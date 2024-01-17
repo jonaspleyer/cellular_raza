@@ -24,7 +24,10 @@ pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 }
 
 /// Derives the [Communicator](cellular_raza_core::backend::chili::simulation_flow) trait.
-#[proc_macro_derive(Communicator, attributes(Comm))]
+///
+/// This proc macros purpose is to support the [build_communicator] macro.
+/// However, we still test individual derivation in the core crate.
+#[proc_macro_derive(Communicator, attributes(CommunicatorCorePath, Comm))]
 pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::derive_communicator(input)
 }
