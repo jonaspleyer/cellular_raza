@@ -380,9 +380,6 @@ pub struct ForceInformation<For> {
 
 pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
 
-unsafe impl<Cel, Aux> Send for SendCell<Cel, Aux> {}
-unsafe impl<Cel, Aux> Sync for SendCell<Cel, Aux> {}
-
 #[doc(hidden)]
 #[allow(unused)]
 mod test_derive_communicator {
