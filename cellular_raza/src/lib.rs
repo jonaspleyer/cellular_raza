@@ -1,7 +1,12 @@
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
-// TODO
-//! `cellular_raza`
+#![deny(missing_docs)]
+#![deny(clippy::missing_docs_in_private_items)]
+//! > “What I cannot create, I do not understand.”
+//! >
+//! >  --- Richard P. Feynman
+//!
+//! [cellular_raza](crate) is an agent-based modeling tool to simulate individual biological cells with a mechanistically
+//! driven mindset.
+//! This means, properties of cells are individually driven by strictly local phenomena.
 
 pub use cellular_raza_building_blocks as building_blocks;
 
