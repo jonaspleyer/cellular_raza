@@ -299,7 +299,7 @@ impl BacteriaReactions {
             food_to_volume_conversion,
             lag_phase_active,
             species,
-            cell_volume: cell_volume,
+            cell_volume,
             uptake_rate,
             inhibition_production_rate,
             inhibition_coefficient,

@@ -502,19 +502,25 @@ where
         Ok(())
     }
 
-    pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float, const N: usize>(&mut self, dt: &Float) -> Result<(), SimulationError>
+    pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float, const N: usize>(
+        &mut self,
+        dt: &Float,
+    ) -> Result<(), SimulationError>
     where
         A: UpdateMechanics<Pos, Vel, For, Float, N>,
         Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<VoxelPlainIndex, ForceInformation<For>>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf> + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float> + Clone,
+        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>
+            + Clone,
         Float: Copy,
     {
         // Update position and velocity of all cells with new information
         for obt_forces in <Com as Communicator<VoxelPlainIndex, ForceInformation<For>>>::receive(
             &mut self.communicator,
         )
-        .into_iter() {
+        .into_iter()
+        {
             let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
             match vox.cells.get_mut(obt_forces.count) {
                 Some((_, aux_storage)) => Ok(aux_storage.add_force(obt_forces.force)),
@@ -524,7 +530,11 @@ where
 
         self.voxels.iter_mut().for_each(|(_, vox)| {
             vox.cells.iter_mut().for_each(|(cellbox, aux_storage)| {
-                super::solvers::mechanics_adams_bashforth::<C, A, Pos, Vel, For, Float, N>(cellbox, aux_storage, *dt)
+                super::solvers::mechanics_adams_bashforth::<C, A, Pos, Vel, For, Float, N>(
+                    cellbox,
+                    aux_storage,
+                    *dt,
+                )
             });
         });
         /*

@@ -1,11 +1,10 @@
 // Use the two-step Adams-Bashforth method. See also: https://en.wikipedia.org/wiki/Linear_multistep_method
 // TODO We should be able to implement arbitrary steppers here
-pub fn mechanics_adams_bashforth<C, A, Pos, Vel, For, Float, const N: usize> (
+pub fn mechanics_adams_bashforth<C, A, Pos, Vel, For, Float, const N: usize>(
     cell: &mut C,
     aux_storage: &mut A,
     dt: Float,
-)
-where
+) where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, N>,
     C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
 {
