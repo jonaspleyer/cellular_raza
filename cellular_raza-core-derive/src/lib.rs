@@ -1,7 +1,13 @@
+// TODO make this deny eventually
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
-//! This crate provides powerful derive macros to automatically implement the `UpdateCycle` and `UpdateMechanics` traits.
-//! For the future, we are planning to have similar functionality with other concepts associated to CellAgents.
+//! This crate provides powerful macros to derive traits from the core crate.
+//! It also provides macros to automatically construct AuxStorage structs
+//! used to store intermediate data for running update steps and Communicator
+//! struct to send messages between threads running the simulation.
+//!
+//! All macros are documented in the core crate unless their functionality can be
+//! displayed without any additional dependencies.
 
 mod aux_storage;
 mod communicator;
@@ -9,34 +15,34 @@ mod from_map;
 mod simulation_aspects;
 mod testing;
 
+#[allow(missing_docs)]
 #[proc_macro_derive(
     AuxStorage,
     attributes(UpdateCycle, UpdateMechanics, UpdateInteraction, UpdateReactions)
 )]
-/// Derives the `UpdateCycle` and `UpdateMechanics` trait automatically for the containing struct.
 pub fn _aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::derive_aux_storage(input)
 }
 
+#[allow(missing_docs)]
 #[proc_macro]
 pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::construct_aux_storage(input)
 }
 
-/// Derives the [Communicator](cellular_raza_core::backend::chili::simulation_flow) trait.
-///
-/// This proc macros purpose is to support the [build_communicator] macro.
-/// However, we still test individual derivation in the core crate.
+#[allow(missing_docs)]
 #[proc_macro_derive(Communicator, attributes(CommunicatorCorePath, Comm))]
 pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::derive_communicator(input)
 }
 
+#[allow(missing_docs)]
 #[proc_macro]
 pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::construct_communicator(input)
 }
 
+#[allow(missing_docs)]
 #[proc_macro_derive(FromMap, attributes(FromMapCorePath, FromMapIndex))]
 pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     from_map::derive_from_map(input)
