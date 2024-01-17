@@ -548,11 +548,6 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 })
             }
 
-            pub fn random_seed(mut self, seed: u64) -> Self {
-                self.rng_seed = seed;
-                self
-            }
-
             fn get_voxel_index(
                 &self,
                 position: &nalgebra::SVector<$float_type, $d>,
