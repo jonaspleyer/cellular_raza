@@ -12,7 +12,9 @@ pub use cellular_raza_core_proc_macro::build_aux_storage;
 /// ```
 pub use cellular_raza_core_proc_macro::FromMap;
 
-/// Derives the [UpdateCycle](cellular_raza_core::backend::chili::simulation_flow::UpdateCycle) and [UpdateMechanics](cellular_raza_core::backend::chili::simulation_flow::UpdateMechanics) trait automatically for the containing struct.
+/// Derives the [UpdateCycle](cellular_raza_core::backend::chili::simulation_flow::UpdateCycle) and
+/// [UpdateMechanics](cellular_raza_core::backend::chili::simulation_flow::UpdateMechanics)
+/// trait automatically for the containing struct.
 pub use cellular_raza_core_proc_macro::AuxStorage;
 
 /// 
