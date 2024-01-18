@@ -5,6 +5,10 @@ use std::ops::{Deref, DerefMut};
 
 use super::CellIdentifier;
 
+/// Wrapper around the user-defined CellAgent
+///
+/// This wrapper serves to provide a unique identifier and the option to specify
+/// the parent of the current cell.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct CellBox<C> {
     /// The identifier is composed of two values, one for the voxel index in which the
@@ -187,11 +191,16 @@ impl UpdateCycle for AuxStorageCycle {
 // --------------------------------- UPDATE-REACTIONS --------------------------------
 /// Interface to store intermediate information about cellular reactions.
 pub trait UpdateReactions<R> {
+    /// Set the value of intracellular concentrations
     fn set_conc(&mut self, conc: R);
+    /// Obtain the current value of intracellular concentrations
     fn get_conc(&self) -> R;
+    /// Add concentrations to the current value
     fn incr_conc(&mut self, incr: R);
 }
 
+/// Helper storage for values regarding intracellular concentrations for the
+/// [CellularReactions](cellular_raza_concepts::interaction::CellularReactions) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactions<R> {
     concentration: R,
@@ -220,11 +229,16 @@ where
 // -------------------------------- UPDATE-Interaction -------------------------------
 /// Interface to store intermediate information about interactions.
 pub trait UpdateInteraction {
+    /// Obtain current number of neighbours
     fn get_current_neighbours(&self) -> usize;
+    /// Set the number of neighbours
     fn set_current_neighbours(&mut self, neighbours: usize);
+    /// Increment the number of current neighbours by the provided value
     fn incr_current_neighbours(&mut self, neighbours: usize);
 }
 
+/// Helper storage for number of neighbours of
+/// [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageInteraction {
     neighbour_count: usize,
@@ -865,6 +879,28 @@ where
     }
 }
 
+/// Iterator of the [FixedSizeRingbuffer] struct.
+///
+/// This iterator does not necessarily contain `N` elements.
+/// It depends on how many entries have been added previously.
+///
+/// ```
+/// # use cellular_raza_core::backend::chili::aux_storage::*;
+/// let mut ring_buffer = FixedSizeRingBuffer::<usize, 4>::default();
+/// ring_buffer.push(1);
+/// ring_buffer.push(33);
+/// let elements = ring_buffer.iter().collect::<Vec<_>>();
+/// assert_eq!(elements.len(), 2);
+/// assert_eq!(elements[0], &1);
+/// assert_eq!(elements[1], &33);
+///
+/// ring_buffer.push(4);
+/// ring_buffer.push(5);
+/// ring_buffer.push(6);
+/// let elements = ring_buffer.iter().collect::<Vec<_>>();
+/// assert_eq!(elements.len(), 4);
+/// assert_eq!(elements, vec![&33, &4, &5, &6]);
+/// ```
 pub struct FixedSizeRingBufferIter<'a, T, const N: usize> {
     items: &'a [std::mem::MaybeUninit<T>; N],
     current: usize,
@@ -896,6 +932,23 @@ impl<T, const N: usize> Default for FixedSizeRingBuffer<T, N> {
 }
 
 impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
+    /// Append one element to the buffer.
+    ///
+    /// This will not grow the buffer but instead replace existing
+    /// entries when the maximum size is reached.
+    /// ```
+    /// # use cellular_raza_core::backend::chili::aux_storage::*;
+    /// let mut ring_buffer = FixedSizeRingBuffer::<f64, 5>::default();
+    /// ring_buffer.push(1.0);
+    /// ring_buffer.push(2.0);
+    /// ring_buffer.push(3.0);
+    /// ring_buffer.push(4.0);
+    /// ring_buffer.push(5.0);
+    /// // Now we begin to drop the first entry when pushing more values.
+    /// ring_buffer.push(6.0);
+    /// let elements = ring_buffer.iter().collect::<Vec<_>>();
+    /// assert_eq!(elements, vec![&2.0, &3.0, &4.0, &5.0, &6.0])
+    /// ```
     pub fn push(&mut self, new_item: T) {
         let last = (self.first + self.size) % N;
         self.items[last].write(new_item);
@@ -903,6 +956,7 @@ impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
         self.size = N.min(self.size + 1);
     }
 
+    /// Iterate over references to elements of the RingBuffer.
     pub fn iter<'a>(&'a self) -> FixedSizeRingBufferIter<'a, T, N> {
         FixedSizeRingBufferIter {
             items: &self.items,
