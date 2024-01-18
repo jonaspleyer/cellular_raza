@@ -48,6 +48,42 @@ pub struct BarrierSync {
     barrier: hurdles::Barrier,
 }
 
+/// Validates a given map.
+///
+/// This algorithm checks if every keys neighbours also contain the specified key.
+/// If this is not the case, the map cannot be considered valid.
+/// Note that this algorithm does not check if all keys are connected.
+/// This means, disjoint sets are allowed.
+///
+/// ```
+/// use cellular_raza_core::backend::chili::simulation_flow::validate_map;
+///
+/// let new_map = std::collections::HashMap::from([
+///     (1_usize, vec![0,2]),
+///     (2_usize, vec![1,3]),
+///     (3_usize, vec![2,0]),
+///     (0_usize, vec![3,1]),
+/// ]);
+///
+/// let is_valid = validate_map(&new_map);
+/// assert_eq!(is_valid, true);
+/// ```
+pub fn validate_map<I>(map: &std::collections::HashMap<I, Vec<I>>) -> bool
+where
+    I: Eq + core::hash::Hash + Clone + Ord,
+{
+    for (index, neighbours) in map.iter() {
+        if neighbours.iter().any(|n| match map.get(n) {
+            Some(reverse_neighbours) => !reverse_neighbours.contains(index),
+            None => true,
+        }) {
+            return false;
+        }
+    }
+    true
+}
+
+// TODO migrate to FromGraph eventually!
 /// Constructs a collection of Items from a map (graph)
 pub trait FromMap<I>
 where
