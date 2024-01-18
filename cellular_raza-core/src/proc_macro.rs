@@ -17,7 +17,42 @@ pub use cellular_raza_core_proc_macro::FromMap;
 /// trait automatically for the containing struct.
 pub use cellular_raza_core_proc_macro::AuxStorage;
 
-/// 
+/// Automatically build communicator struct depending on simulation aspects.
+///
+/// This macro internally constructs a new struct with fields for every given simulation aspect.
+/// Each field is a [ChannelComm](crate::backend::chili::simulation_flow::ChannelComm)
+/// struct with different types.
+///
+/// It also automatically derives the
+/// [FromMap](cellular_raza_core::backend::chili::simulation_flow::FromMap) trait such that a
+/// collection of communicators can be constructed from a given map.
+/// ```
+/// use cellular_raza_core::proc_macro::build_communicator;
+///
+/// build_communicator!(
+///     // Define the name of the generated struct
+///     name: MyCommunicator,
+///
+///     // Which simulation aspects and informatino exchange should be satisfied.
+///     aspects: [Cycle],
+///
+///      // Path to the core library. Use `cellular_raza::core` when
+///     // import from the `cellular_raza` crate.
+///     core_path: cellular_raza_core
+/// );
+///
+/// // Use the new struct in the following.
+/// use cellular_raza_core::backend::chili::simulation_flow::FromMap;
+///
+/// let new_map = std::collections::HashMap::from([
+///     (0, vec![1,3]),
+///     (1, vec![0,2]),
+///     (2, vec![1,3]),
+///     (3, vec![2,0]),
+/// ]);
+/// let communicators = MyCommunicator::from_map(&new_map).unwrap();
+/// assert_eq!(communicators.len(), 4);
+/// ```
 pub use cellular_raza_core_proc_macro::build_communicator;
 
 /// Derives the [Communicator](crate::backend::chili::simulation_flow::Communicator) trait.
