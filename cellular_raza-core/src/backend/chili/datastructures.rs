@@ -502,18 +502,23 @@ where
         Ok(())
     }
 
-    pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float, const N: usize>(
+    pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float>(
         &mut self,
         dt: &Float,
     ) -> Result<(), SimulationError>
     where
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, Float, 0>,
         Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<VoxelPlainIndex, ForceInformation<For>>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>
             + Clone,
         Float: Copy,
+        Pos: core::ops::Mul<Float, Output = Pos>,
+        Pos: core::ops::Add<Pos, Output = Pos>,
+        Vel: core::ops::Mul<Float, Output = Vel>,
+        Vel: core::ops::Add<Vel, Output = Vel>,
+        Vel: num::Zero,
     {
         // Update position and velocity of all cells with new information
         for obt_forces in <Com as Communicator<VoxelPlainIndex, ForceInformation<For>>>::receive(
@@ -528,15 +533,19 @@ where
             }?;
         }
 
-        self.voxels.iter_mut().for_each(|(_, vox)| {
-            vox.cells.iter_mut().for_each(|(cellbox, aux_storage)| {
-                super::solvers::mechanics_adams_bashforth::<C, A, Pos, Vel, For, Float, N>(
-                    cellbox,
-                    aux_storage,
-                    *dt,
-                )
-            });
-        });
+        self.voxels
+            .iter_mut()
+            .map(|(_, vox)| {
+                vox.cells.iter_mut().map(|(cellbox, aux_storage)| {
+                    super::solvers::mechanics_euler::<C, A, Pos, Vel, For, Float>(
+                        cellbox,
+                        aux_storage,
+                        *dt,
+                    )
+                })
+            })
+            .flatten()
+            .collect::<Result<Vec<_>, CalcError>>()?;
         /*
         // Update position and velocity of cells
         for (_, vox) in self.voxels.iter_mut() {
@@ -595,6 +604,95 @@ where
                 aux_storage.inc_vel_back_1 = Some(dv);
             }
         }*/
+        Ok(())
+    }
+
+    pub fn sort_cells_in_voxels_step_1<Pos, Vel, For, Float>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        Com: Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>,
+        S: cellular_raza_concepts::domain_new::SubDomain<C>,
+        S::VoxelIndex: Eq + Hash,
+    {
+        // Store all cells which need to find a new home in this variable
+        let mut find_new_home_cells = Vec::<_>::new();
+
+        for (voxel_index, vox) in self.voxels.iter_mut() {
+            // Drain every cell which is currently not in the correct voxel
+            // TODO use drain_filter when stabilized
+            let mut errors = Vec::new();
+            let (new_voxel_cells, old_voxel_cells): (Vec<_>, Vec<_>) =
+                vox.cells.drain(..).partition(|(c, _)| {
+                    let cell_index = self.subdomain.get_voxel_index_of(&c);
+                    match cell_index {
+                        Ok(index) => {
+                            let plain_index = self.voxel_index_to_plain_index[&index];
+                            &plain_index != voxel_index
+                        }
+                        Err(e) => {
+                            errors.push(e);
+                            false
+                        }
+                    }
+                });
+            find_new_home_cells.extend(new_voxel_cells);
+            vox.cells = old_voxel_cells;
+            /* let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
+                Some(ind) => ind,
+                None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
+            }!=voxel_index);
+            // Check if the cell needs to be sent to another multivoxelcontainer
+            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());*/
+        }
+
+        // Send cells to other multivoxelcontainer or keep them here
+        for (cell, aux_storage) in find_new_home_cells {
+            let ind = self.subdomain.get_voxel_index_of(&cell)?;
+            let cell_index = self.voxel_index_to_plain_index[&ind];
+            // let new_thread_index = self.index_to_thread[&ind];
+            // let cell_index = self.index_to_plain_index[&ind];
+            match self.voxels.get_mut(&cell_index) {
+                // If new voxel is in current multivoxelcontainer then save them there
+                Some(vox) => {
+                    vox.cells.push((cell, aux_storage));
+                    Ok(())
+                }
+                // Otherwise send them to the correct other multivoxelcontainer
+                None => <Com as Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>>::send(
+                    &mut self.communicator,
+                    &cell_index,
+                    SendCell(cell, aux_storage),
+                ),
+            }?;
+        }
+        Ok(())
+    }
+
+    pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
+    where
+        Com: Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>,
+        S::VoxelIndex: Eq + Hash,
+    {
+        // Now receive new cells and insert them
+        for sent_cell in <Com as Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>>::receive(
+            &mut self.communicator,
+        )
+        .into_iter()
+        {
+            let SendCell(cell, aux_storage) = sent_cell;
+            let index =
+                self.voxel_index_to_plain_index[&self.subdomain.get_voxel_index_of(&cell)?];
+
+            match self.voxels.get_mut(&index) {
+                Some(vox) => Ok(vox.cells.push((cell, aux_storage))),
+                None => Err(cellular_raza_concepts::errors::IndexError(format!(
+                    "Cell with index {} was sent to subdomain which does not hold this index",
+                    index
+                ))),
+            }?;
+        }
         Ok(())
     }
 }
