@@ -1,7 +1,10 @@
 use cellular_raza_concepts::{errors::CalcError, prelude::IndexError};
 use serde::{Deserialize, Serialize};
 
-use std::{collections::HashMap, marker::PhantomData};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    marker::PhantomData,
+};
 
 use super::{errors::SimulationError, VoxelPlainIndex};
 

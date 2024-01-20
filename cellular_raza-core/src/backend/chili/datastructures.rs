@@ -201,8 +201,8 @@ where
     S::VoxelIndex: Eq + Hash + Ord + Clone,
     I: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     A: Default,
-    Sy: super::simulation_flow::FromMap<I>,
-    Com: super::simulation_flow::FromMap<I>,
+    Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
+    Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
     // TODO this is not a BoundaryError
     ///
@@ -210,8 +210,35 @@ where
         decomposed_domain: DecomposedDomain<I, S, C>,
     ) -> SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>> {
         // TODO do not unwrap
-        let mut syncers = Sy::from_map(&decomposed_domain.neighbor_map).unwrap();
-        let mut communicators = Com::from_map(&decomposed_domain.neighbor_map).unwrap();
+        let subdomain_index_to_subdomain_plain_index = decomposed_domain
+            .index_subdomain_cells
+            .iter()
+            .enumerate()
+            .map(|(i, (subdomain_index, _, _))| (subdomain_index.clone(), SubDomainPlainIndex(i)))
+            .collect::<HashMap<_, _>>();
+        let neighbor_map = decomposed_domain
+            .neighbor_map
+            .into_iter()
+            .map(|(index, neighbors)| {
+                (
+                    subdomain_index_to_subdomain_plain_index[&index],
+                    neighbors
+                        .into_iter()
+                        .map(|index| subdomain_index_to_subdomain_plain_index[&index])
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+        let mut syncers = Sy::from_map(&neighbor_map).unwrap();
+        let mut communicators = Com::from_map(&neighbor_map).unwrap();
+        let voxel_index_to_plain_index = decomposed_domain
+            .index_subdomain_cells
+            .iter()
+            .map(|(_, subdomain, _)| subdomain.get_all_indices().into_iter())
+            .flatten()
+            .enumerate()
+            .map(|(i, x)| (x, VoxelPlainIndex(i)))
+            .collect::<HashMap<S::VoxelIndex, VoxelPlainIndex>>();
         let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
             .index_subdomain_cells
             .iter()
@@ -225,16 +252,23 @@ where
             .flatten()
             .map(|(subdomain_index, voxel_index)| {
                 (
-                    decomposed_domain.voxel_index_to_plain_index[&voxel_index],
+                    voxel_index_to_plain_index[&voxel_index],
                     SubDomainPlainIndex(subdomain_index),
                 )
             })
             .collect();
+        let voxel_index_to_subdomain = voxel_index_to_plain_index
+            .iter()
+            .map(|(voxel_index, plain_index)| {
+                (voxel_index.clone(), plain_index_to_subdomain[&plain_index])
+            })
+            .collect::<HashMap<_, _>>();
 
         let subdomain_boxes = decomposed_domain
             .index_subdomain_cells
             .into_iter()
             .map(|(index, subdomain, cells)| {
+                let subdomain_plain_index = subdomain_index_to_subdomain_plain_index[&index];
                 let mut cells = cells.into_iter().map(|c| (c, None)).collect();
                 let mut voxel_index_to_neighbor_plain_indices: HashMap<_, _> = subdomain
                     .get_all_indices()
@@ -245,15 +279,13 @@ where
                             subdomain
                                 .get_neighbor_voxel_indices(&voxel_index)
                                 .into_iter()
-                                .map(|neighbor_index| {
-                                    decomposed_domain.voxel_index_to_plain_index[&neighbor_index]
-                                })
+                                .map(|neighbor_index| voxel_index_to_plain_index[&neighbor_index])
                                 .collect::<Vec<_>>(),
                         )
                     })
                     .collect();
                 let voxels = subdomain.get_all_indices().into_iter().map(|voxel_index| {
-                    let plain_index = decomposed_domain.voxel_index_to_plain_index[&voxel_index];
+                    let plain_index = voxel_index_to_plain_index[&voxel_index];
                     let neighbors = voxel_index_to_neighbor_plain_indices
                         .remove(&voxel_index)
                         .unwrap();
@@ -269,21 +301,24 @@ where
                         },
                     )
                 });
-                let syncer = syncers.remove(&index).ok_or(BoundaryError(
+                let syncer = syncers.remove(&subdomain_plain_index).ok_or(BoundaryError(
                     "Index was not present in subdomain map".into(),
                 ))?;
-                let communicator = communicators.remove(&index).ok_or(BoundaryError(
-                    "Index was not present in subdomain map".into(),
-                ))?;
+                let communicator =
+                    communicators
+                        .remove(&subdomain_plain_index)
+                        .ok_or(BoundaryError(
+                            "Index was not present in subdomain map".into(),
+                        ))?;
                 let mut subdomain_box = SubDomainBox {
-                    plain_index_to_subdomain: plain_index_to_subdomain.clone(),
-                    communicator,
                     subdomain,
                     voxels: voxels.collect(),
-                    voxel_index_to_plain_index: decomposed_domain
-                        .voxel_index_to_plain_index
-                        .clone(),
+                    voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
+                    plain_index_to_subdomain: plain_index_to_subdomain.clone(),
+                    voxel_index_to_subdomain: voxel_index_to_subdomain.clone(),
+                    communicator,
                     syncer,
+                    // storage_manager,
                 };
                 subdomain_box.insert_cells(&mut cells)?;
                 Ok((index, subdomain_box))
@@ -307,6 +342,8 @@ where
     pub(crate) plain_index_to_subdomain:
         std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
     pub(crate) communicator: Com,
+    pub(crate) voxel_index_to_subdomain:
+        std::collections::HashMap<S::VoxelIndex, SubDomainPlainIndex>,
     pub(crate) syncer: Sy,
 }
 
@@ -396,7 +433,7 @@ where
             + num::Zero,
         Float: num::Float,
         <S as SubDomain<C>>::VoxelIndex: Ord,
-        Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
+        Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
     {
         self.voxels
             .iter_mut()
@@ -423,7 +460,7 @@ where
                             )?,
                         ),
                         None => Ok(self.communicator.send(
-                            &neighbor_index,
+                            &self.plain_index_to_subdomain[&neighbor_index],
                             PosInformation {
                                 index_sender: voxel_index,
                                 index_receiver: neighbor_index.clone(),
@@ -468,12 +505,12 @@ where
         For: Clone,
         C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
-        Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
-        Com: Communicator<VoxelPlainIndex, ForceInformation<For>>,
+        Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
+        Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in
-            <Com as Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>>::receive(
+            <Com as Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>>::receive(
                 &mut self.communicator,
             )
             .iter()
@@ -491,7 +528,7 @@ where
             // Send back force information
             // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
             self.communicator.send(
-                &pos_info.index_sender,
+                &self.plain_index_to_subdomain[&pos_info.index_sender],
                 ForceInformation {
                     force,
                     count: pos_info.count,
@@ -508,8 +545,8 @@ where
     ) -> Result<(), SimulationError>
     where
         A: UpdateMechanics<Pos, Vel, For, Float, 0>,
-        Com: Communicator<VoxelPlainIndex, PosInformation<Pos, Vel, Inf>>,
-        Com: Communicator<VoxelPlainIndex, ForceInformation<For>>,
+        Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
+        Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
         C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>
             + Clone,
@@ -521,12 +558,13 @@ where
         Vel: num::Zero,
     {
         // Update position and velocity of all cells with new information
-        for obt_forces in <Com as Communicator<VoxelPlainIndex, ForceInformation<For>>>::receive(
-            &mut self.communicator,
-        )
-        .into_iter()
+        for obt_forces in
+            <Com as Communicator<SubDomainPlainIndex, ForceInformation<For>>>::receive(
+                &mut self.communicator,
+            )
+            .into_iter()
         {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Sender with plain index {:?} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
             match vox.cells.get_mut(obt_forces.count) {
                 Some((_, aux_storage)) => Ok(aux_storage.add_force(obt_forces.force)),
                 None => Err(cellular_raza_concepts::errors::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
@@ -612,7 +650,7 @@ where
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
-        Com: Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>,
+        Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         S: cellular_raza_concepts::domain_new::SubDomain<C>,
         S::VoxelIndex: Eq + Hash,
     {
@@ -660,9 +698,9 @@ where
                     Ok(())
                 }
                 // Otherwise send them to the correct other multivoxelcontainer
-                None => <Com as Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>>::send(
+                None => <Com as Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>>::send(
                     &mut self.communicator,
-                    &cell_index,
+                    &self.plain_index_to_subdomain[&cell_index],
                     SendCell(cell, aux_storage),
                 ),
             }?;
@@ -672,14 +710,15 @@ where
 
     pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
     where
-        Com: Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>,
+        Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         S::VoxelIndex: Eq + Hash,
     {
         // Now receive new cells and insert them
-        for sent_cell in <Com as Communicator<VoxelPlainIndex, SendCell<CellBox<C>, A>>>::receive(
-            &mut self.communicator,
-        )
-        .into_iter()
+        for sent_cell in
+            <Com as Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>>::receive(
+                &mut self.communicator,
+            )
+            .into_iter()
         {
             let SendCell(cell, aux_storage) = sent_cell;
             let index =
@@ -688,7 +727,7 @@ where
             match self.voxels.get_mut(&index) {
                 Some(vox) => Ok(vox.cells.push((cell, aux_storage))),
                 None => Err(cellular_raza_concepts::errors::IndexError(format!(
-                    "Cell with index {} was sent to subdomain which does not hold this index",
+                    "Cell with index {:?} was sent to subdomain which does not hold this index",
                     index
                 ))),
             }?;

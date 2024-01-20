@@ -166,22 +166,10 @@ mod test {
                     cells_in_subdomain,
                 ));
             }
-            let mut voxel_index_counter = 0;
-            let voxel_index_to_plain_index: std::collections::HashMap<_, _> = index_subdomain_cells
-                .iter()
-                .map(|(_, subdomain, _)| subdomain.get_all_indices())
-                .flatten()
-                .map(|voxel_index| {
-                    let res = (voxel_index, voxel_index_counter);
-                    voxel_index_counter += 1;
-                    res
-                })
-                .collect();
 
             let n_subdomains = index_subdomain_cells.len();
             let decomposed_domain = DecomposedDomain {
                 n_subdomains,
-                voxel_index_to_plain_index,
                 index_subdomain_cells,
                 neighbor_map: (0..n_subdomains)
                     .map(|i| (i, vec![if i == 0 { n_subdomains } else { i - 1 }, i + 1]))

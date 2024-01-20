@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 /// Identifier for voxels used internally to get rid of user-defined ones.
-// #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-pub type VoxelPlainIndex = usize;
+#[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+pub struct VoxelPlainIndex(usize);
 
 /// Identifer or subdomains
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct SubDomainPlainIndex(usize);
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
