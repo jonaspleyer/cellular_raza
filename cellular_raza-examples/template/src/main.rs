@@ -14,6 +14,7 @@ pub struct SimulationSettings {
     domain_size: f32,
     n_voxels: usize,
     n_threads: usize,
+    n_iterations: usize,
 }
 
 impl Default for SimulationSettings {
@@ -23,6 +24,7 @@ impl Default for SimulationSettings {
             domain_size: 30.0,
             n_voxels: 3,
             n_threads: 4,
+            n_iterations: 10_000,
         }
     }
 }
@@ -102,11 +104,11 @@ fn run_simulation(
         .par_iter_mut()
         .for_each(|(key, sbox)| {
             let mut pb = if key == &0 {
-                Some(tqdm!(total = 1_000))
+                Some(tqdm!(total = simulation_settings.n_iterations))
             } else {
                 None
             };
-            for _ in 0..1_000 {
+            for _ in 0..simulation_settings.n_iterations {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
                 sbox.update_mechanics_step_1().unwrap();
 
