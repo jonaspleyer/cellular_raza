@@ -510,9 +510,10 @@ pub trait StorageInterface<Id, Element> {
         Id: Serialize,
         Element: Serialize,
     {
-        for (id, element) in identifiers_elements.into_iter() {
-            self.store_single_element(iteration, id, element)?;
-        }
+        identifiers_elements
+            .into_iter()
+            .map(|(id, element)| self.store_single_element(iteration, id, element))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(())
     }
 
