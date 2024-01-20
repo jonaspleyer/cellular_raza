@@ -78,7 +78,6 @@ fn run_simulation(
     let decomposed_domain = domain
         .decompose(simulation_settings.n_threads.try_into().unwrap(), agents)
         .unwrap();
-    println!("{:#?}", decomposed_domain.neighbor_map);
     use cellular_raza::core::backend::chili::datastructures::*;
 
     let mut supervisor: SimulationSupervisor<
