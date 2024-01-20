@@ -11,3 +11,5 @@ rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 num = { workspace = true }
+rayon = "1.8"
+kdam = { version="0.5", features = ["template"] }
