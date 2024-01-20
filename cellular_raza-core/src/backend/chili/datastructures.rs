@@ -210,6 +210,9 @@ where
         decomposed_domain: DecomposedDomain<I, S, C>,
     ) -> SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>> {
         // TODO do not unwrap
+        if !validate_map(&decomposed_domain.neighbor_map) {
+            panic!("Map not valid!");
+        }
         let subdomain_index_to_subdomain_plain_index = decomposed_domain
             .index_subdomain_cells
             .iter()
