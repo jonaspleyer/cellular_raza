@@ -514,6 +514,41 @@ mod test_channel_comm {
         }
         Ok(())
     }
+
+    #[test]
+    fn test_send_plain_voxel() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::backend::chili::SubDomainPlainIndex;
+        let map = std::collections::HashMap::from([
+            (
+                SubDomainPlainIndex(0),
+                vec![SubDomainPlainIndex(1), SubDomainPlainIndex(2)],
+            ),
+            (
+                SubDomainPlainIndex(1),
+                vec![SubDomainPlainIndex(0), SubDomainPlainIndex(2)],
+            ),
+            (
+                SubDomainPlainIndex(2),
+                vec![SubDomainPlainIndex(0), SubDomainPlainIndex(1)],
+            ),
+        ]);
+        let mut channel_comms = ChannelComm::from_map(&map)?;
+
+        // Send a dummy value
+        for (index, comm) in channel_comms.iter_mut() {
+            let index = index.0;
+            let next_index = SubDomainPlainIndex((index + 1) % map.len());
+            comm.send(&next_index, next_index)?;
+        }
+
+        // Receive the value
+        for (index, comm) in channel_comms.iter_mut() {
+            let received_elements = comm.receive().into_iter().collect::<Vec<_>>();
+            assert_eq!(received_elements, vec![*index]);
+        }
+
+        Ok(())
+    }
 }
 
 impl<I, T> Communicator<I, T> for ChannelComm<I, T>
