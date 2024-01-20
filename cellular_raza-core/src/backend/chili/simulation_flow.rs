@@ -385,6 +385,134 @@ where
     }
 }
 
+#[cfg(test)]
+mod test_channel_comm {
+    use itertools::Itertools;
+
+    use super::*;
+
+    #[test]
+    fn test_from_map() -> Result<(), IndexError> {
+        let map = std::collections::HashMap::from([
+            (0_usize, vec![3, 1]),
+            (1_usize, vec![0, 2]),
+            (2_usize, vec![1, 3]),
+            (3_usize, vec![2, 0]),
+        ]);
+        assert!(validate_map(&map));
+        let channel_comms = ChannelComm::<usize, ()>::from_map(&map)?;
+        assert_eq!(channel_comms.len(), 4);
+        for i in 0..4 {
+            assert!(channel_comms.keys().contains(&i));
+        }
+        for i in 0..4 {
+            let higher = (i + 1) % 4;
+            let lower = (i + 5) % 4;
+            assert!(channel_comms[&i].senders.contains_key(&lower));
+            assert!(channel_comms[&i].senders.contains_key(&higher));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_from_map_2() -> Result<(), Box<dyn std::error::Error>> {
+        let map = std::collections::HashMap::from([
+            (0, vec![1, 2, 3]),
+            (1, vec![0, 2, 3]),
+            (2, vec![0, 1, 3]),
+            (3, vec![0, 1, 2]),
+        ]);
+        assert!(validate_map(&map));
+        let channel_comms = ChannelComm::<usize, Option<()>>::from_map(&map)?;
+        for i in 0..4 {
+            assert!(channel_comms.keys().contains(&i));
+        }
+        for i in 0..4 {
+            for j in 0..4 {
+                let contains = channel_comms[&i].senders.keys().contains(&j);
+                assert_eq!(contains, i != j);
+            }
+        }
+        Ok(())
+    }
+
+    fn from_map_n_line(n: usize) -> Result<(), Box<dyn std::error::Error>> {
+        if n <= 1 {
+            return Ok(());
+        }
+        let mut map = std::collections::HashMap::from([(0, vec![1, n]), (n, vec![n - 1, 0])]);
+        for i in 1..n {
+            map.insert(i, vec![i - 1, i + 1]);
+        }
+        assert!(validate_map(&map));
+        let mut channel_comms = ChannelComm::<usize, usize>::from_map(&map)?;
+        channel_comms
+            .iter_mut()
+            .map(|(key, comm)| {
+                let recv_key = (key + 1) % (n + 1);
+                comm.send(&recv_key, *key)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        channel_comms.iter_mut().for_each(|(key, comm)| {
+            let results = comm.receive();
+            assert!(results.len() > 0);
+            if key > &0 {
+                assert_eq!(results, vec![key - 1]);
+            } else {
+                assert_eq!(results, vec![n]);
+            }
+        });
+        Ok(())
+    }
+
+    #[test]
+    fn from_map_lines() {
+        for i in 2..100 {
+            from_map_n_line(i).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_send() -> Result<(), Box<dyn std::error::Error>> {
+        let map = std::collections::HashMap::from([(1_usize, vec![2]), (2_usize, vec![1])]);
+        let mut channel_comms = ChannelComm::<usize, bool>::from_map(&map)?;
+        channel_comms.get_mut(&1).unwrap().send(&2, true)?;
+        channel_comms.get_mut(&2).unwrap().send(&1, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_empty_receive() -> Result<(), Box<dyn std::error::Error>> {
+        let map = std::collections::HashMap::from([(1_usize, vec![2]), (2_usize, vec![1])]);
+        let mut channel_comms = ChannelComm::<usize, f64>::from_map(&map)?;
+        for (_, comm) in channel_comms.iter_mut() {
+            let received_elements = comm.receive().into_iter().collect::<Vec<_>>();
+            assert_eq!(received_elements.len(), 0);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_send_receive() -> Result<(), Box<dyn std::error::Error>> {
+        let map =
+            std::collections::HashMap::from([(0, vec![1, 2]), (1, vec![0, 2]), (2, vec![0, 1])]);
+        let mut channel_comms = ChannelComm::from_map(&map)?;
+
+        // Send a dummy value
+        for (index, comm) in channel_comms.iter_mut() {
+            let next_index = (index + 1) % map.len();
+            comm.send(&next_index, next_index as f64)?;
+        }
+
+        // Receive the value
+        for (index, comm) in channel_comms.iter_mut() {
+            let received_elements = comm.receive().into_iter().collect::<Vec<_>>();
+            assert_eq!(received_elements, vec![*index as f64]);
+        }
+        Ok(())
+    }
+}
+
 impl<I, T> Communicator<I, T> for ChannelComm<I, T>
 where
     I: core::hash::Hash + Eq + Ord,
