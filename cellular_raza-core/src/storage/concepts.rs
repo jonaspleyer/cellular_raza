@@ -103,7 +103,7 @@ impl Error for StorageError {}
 /// We currently support saving results in a [sled] databas, as xml files
 /// via [quick_xml] or as a json file by using [serde_json].
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum StorageOptions {
+pub enum StorageOption {
     /// Save results as [sled] database.
     Sled,
     /// Save results as [json](https://www.json.org/json-en.html) file.
@@ -112,11 +112,11 @@ pub enum StorageOptions {
     SerdeXml,
 }
 
-impl StorageOptions {
+impl StorageOption {
     /// Which storage option should be used by default.
     pub fn default_priority() -> Vec<Self> {
         return vec![
-            StorageOptions::SerdeJson,
+            StorageOption::SerdeJson,
             // TODO fix sled! This is currently not working on multiple threads
             // StorageOptions::Sled,
         ];
@@ -140,7 +140,7 @@ pub struct BatchSaveFormat<Id, Element> {
 /// It can load resources from one storage aspect and will
 #[derive(Clone, Debug)]
 pub struct StorageManager<Id, Element> {
-    storage_priority: Vec<StorageOptions>,
+    storage_priority: Vec<StorageOption>,
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     json_storage: Option<JsonStorageInterface<Id, Element>>,
@@ -151,7 +151,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     pub(crate) fn open_or_create_with_priority(
         location: &std::path::Path,
         storage_instance: u64,
-        storage_priority: &Vec<StorageOptions>,
+        storage_priority: &Vec<StorageOption>,
     ) -> Result<Self, StorageError> {
         // Fill the used storage options
         let mut sled_storage = None;
@@ -159,19 +159,19 @@ impl<Id, Element> StorageManager<Id, Element> {
         let mut xml_storage = None;
         for storage_variant in storage_priority.iter() {
             match storage_variant {
-                StorageOptions::SerdeJson => {
+                StorageOption::SerdeJson => {
                     json_storage = Some(JsonStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("json"),
                         storage_instance,
                     )?);
                 }
-                StorageOptions::Sled => {
+                StorageOption::Sled => {
                     sled_storage = Some(SledStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("sled"),
                         storage_instance,
                     )?);
                 }
-                StorageOptions::SerdeXml => {
+                StorageOption::SerdeXml => {
                     xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("xml"),
                         storage_instance,
@@ -197,7 +197,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         location: &std::path::Path,
         storage_instance: u64,
     ) -> Result<Self, StorageError> {
-        let storage_priority = StorageOptions::default_priority();
+        let storage_priority = StorageOption::default_priority();
         Self::open_or_create_with_priority(location, storage_instance, &storage_priority)
     }
 
@@ -262,7 +262,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     {
         for priority in self.storage_priority.iter() {
             let element = match priority {
-                StorageOptions::Sled => {
+                StorageOption::Sled => {
                     if let Some(sled_storage) = &self.sled_storage {
                         sled_storage.load_single_element(iteration, identifier)
                     } else {
@@ -271,7 +271,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeJson => {
+                StorageOption::SerdeJson => {
                     if let Some(json_storage) = &self.json_storage {
                         json_storage.load_single_element(iteration, identifier)
                     } else {
@@ -280,7 +280,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeXml => {
+                StorageOption::SerdeXml => {
                     if let Some(xml_storage) = &self.xml_storage {
                         xml_storage.load_single_element(iteration, identifier)
                     } else {
@@ -306,7 +306,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     {
         for priority in self.storage_priority.iter() {
             let elements = match priority {
-                StorageOptions::Sled => {
+                StorageOption::Sled => {
                     if let Some(sled_storage) = &self.sled_storage {
                         sled_storage.load_all_elements_at_iteration(iteration)
                     } else {
@@ -315,7 +315,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeJson => {
+                StorageOption::SerdeJson => {
                     if let Some(json_storage) = &self.json_storage {
                         json_storage.load_all_elements_at_iteration(iteration)
                     } else {
@@ -324,7 +324,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeXml => {
+                StorageOption::SerdeXml => {
                     if let Some(xml_storage) = &self.xml_storage {
                         xml_storage.load_all_elements_at_iteration(iteration)
                     } else {
@@ -342,7 +342,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
         for priority in self.storage_priority.iter() {
             let iterations = match priority {
-                StorageOptions::Sled => {
+                StorageOption::Sled => {
                     if let Some(sled_storage) = &self.sled_storage {
                         sled_storage.get_all_iterations()
                     } else {
@@ -351,7 +351,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeJson => {
+                StorageOption::SerdeJson => {
                     if let Some(json_storage) = &self.json_storage {
                         json_storage.get_all_iterations()
                     } else {
@@ -360,7 +360,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
                         ))?
                     }
                 }
-                StorageOptions::SerdeXml => {
+                StorageOption::SerdeXml => {
                     if let Some(xml_storage) = &self.xml_storage {
                         xml_storage.get_all_iterations()
                     } else {

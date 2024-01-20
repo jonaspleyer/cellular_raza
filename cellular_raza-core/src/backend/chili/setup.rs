@@ -1,6 +1,6 @@
 use cellular_raza_concepts::domain_new::*;
 
-use crate::storage::concepts::StorageOptions;
+use crate::storage::concepts::StorageOption;
 use cellular_raza_concepts::errors::DecomposeError;
 
 use serde::{Deserialize, Serialize};
