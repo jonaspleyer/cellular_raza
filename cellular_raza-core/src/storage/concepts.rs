@@ -102,7 +102,7 @@ impl Error for StorageError {}
 ///
 /// We currently support saving results in a [sled] databas, as xml files
 /// via [quick_xml] or as a json file by using [serde_json].
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum StorageOption {
     /// Save results as [sled] database.
     Sled,
@@ -112,14 +112,114 @@ pub enum StorageOption {
     SerdeXml,
 }
 
+/// A unique vector containing only non-recurring values but in the correct order.
+///
+/// ```
+/// # use cellular_raza_core::storage::concepts::UniqueVec;
+/// let mut unique_vec = UniqueVec::new();
+/// unique_vec.push(1_usize);
+/// unique_vec.push(2_usize);
+/// let res = unique_vec.push(1_usize);
+/// assert!(res.is_some());
+/// assert_eq!(*unique_vec, vec![1, 2]);
+/// ```
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UniqueVec<T>(Vec<T>);
+
+impl<T> UniqueVec<T> {
+    /// Createa a new empty [UniqueVec].
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    /// Construct a new [UniqueVec] from a given vector.
+    /// This function will also return the rest which was not inserted into the [UniqueVec].
+    ///
+    /// ```
+    /// # use cellular_raza_core::storage::concepts::UniqueVec;
+    /// let input = vec![1, 33, 2, 0, 33, 4, 56, 2];
+    /// let (unique_vec, rest) = UniqueVec::from_vec(input);
+    /// assert_eq!(*unique_vec, vec![1, 33, 2, 0, 4, 56]);
+    /// assert_eq!(rest, vec![33, 2]);
+    /// ```
+    pub fn from_vec(vec: Vec<T>) -> (Self, Vec<T>)
+    where
+        T: PartialEq,
+    {
+        let mut new_inner = Vec::new();
+        let rest = vec
+            .into_iter()
+            .filter_map(|element| {
+                if new_inner.contains(&element) {
+                    Some(element)
+                } else {
+                    new_inner.push(element);
+                    None
+                }
+            })
+            .collect();
+        (Self(new_inner), rest)
+    }
+
+    /// Add an element to the [UniqueVec] if not already present.
+    ///
+    /// ```
+    /// # use cellular_raza_core::storage::concepts::UniqueVec;
+    /// let mut unique_vec = UniqueVec::new();
+    /// assert!(unique_vec.push(1_f64).is_none());
+    /// assert!(unique_vec.push(2_f64).is_none());
+    /// assert!(unique_vec.push(1_f64).is_some());
+    /// assert_eq!(*unique_vec, vec![1_f64, 2_f64]);
+    /// ```
+    pub fn push(&mut self, element: T) -> Option<T>
+    where
+        T: PartialEq,
+    {
+        if self.0.contains(&element) {
+            Some(element)
+        } else {
+            self.0.push(element);
+            None
+        }
+    }
+
+    /// Empties the [UniqueVec] returning all values
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+
+    /// Remove last element from [UniqueVec]
+    pub fn pop(&mut self) -> Option<T> {
+        self.0.pop()
+    }
+}
+
+impl<T> core::ops::Deref for UniqueVec<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> From<Vec<T>> for UniqueVec<T>
+where
+    T: PartialEq,
+{
+    fn from(value: Vec<T>) -> Self {
+        Self::from_vec(value).0
+    }
+}
+
 impl StorageOption {
     /// Which storage option should be used by default.
-    pub fn default_priority() -> Vec<Self> {
+    pub fn default_priority() -> UniqueVec<Self> {
         return vec![
             StorageOption::SerdeJson,
             // TODO fix sled! This is currently not working on multiple threads
             // StorageOptions::Sled,
-        ];
+        ]
+        .into();
     }
 }
 
@@ -140,7 +240,7 @@ pub struct BatchSaveFormat<Id, Element> {
 /// It can load resources from one storage aspect and will
 #[derive(Clone, Debug)]
 pub struct StorageManager<Id, Element> {
-    storage_priority: Vec<StorageOption>,
+    storage_priority: UniqueVec<StorageOption>,
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     json_storage: Option<JsonStorageInterface<Id, Element>>,
@@ -151,7 +251,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     pub(crate) fn open_or_create_with_priority(
         location: &std::path::Path,
         storage_instance: u64,
-        storage_priority: &Vec<StorageOption>,
+        storage_priority: &UniqueVec<StorageOption>,
     ) -> Result<Self, StorageError> {
         // Fill the used storage options
         let mut sled_storage = None;

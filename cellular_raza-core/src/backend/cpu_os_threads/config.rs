@@ -1,5 +1,5 @@
 use crate::backend::cpu_os_threads::prelude::AuxiliaryCellPropertyStorage;
-use crate::storage::concepts::{StorageManager, StorageOption};
+use crate::storage::concepts::{StorageManager, StorageOption, UniqueVec};
 use cellular_raza_concepts::cell::{Agent, CellAgentBox};
 use cellular_raza_concepts::domain::{Domain, Index, Voxel};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
@@ -76,12 +76,12 @@ pub struct TimeSetup {
 /// # use cellular_raza_core::backend::cpu_os_threads::config::StorageConfig;
 /// let output_path = std::path::PathBuf::from("my_output_directory");
 /// let storage_config = StorageConfig::from_path(&output_path)
-///     .storage_priority(vec![StorageOption::SerdeJson]);
+///     .storage_priority(vec![StorageOption::SerdeJson].into());
 /// ```
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     location: std::path::PathBuf,
-    storage_priority: Vec<StorageOption>,
+    storage_priority: UniqueVec<StorageOption>,
     #[cfg(feature = "timestamp")]
     add_date: bool,
 }
@@ -99,7 +99,7 @@ impl StorageConfig {
 
     /// Set the priority in which to store and look for results.
     /// Supplying an empty vector will lead to not storing any results.
-    pub fn storage_priority(mut self, storage_priority: Vec<StorageOption>) -> Self {
+    pub fn storage_priority(mut self, storage_priority: UniqueVec<StorageOption>) -> Self {
         self.storage_priority = storage_priority;
         self
     }
