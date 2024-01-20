@@ -685,15 +685,6 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 // Combine them into one Vector
                 ind_n.append(&mut ind_m);
 
-                // Construct a map from voxel_index to plain_index
-                let voxel_index_to_plain_index: std::collections::HashMap::<Self::VoxelIndex, usize> = ind_n.clone()
-                    .into_iter()
-                    .map(|indices| indices.into_iter())
-                    .flatten()
-                    .enumerate()
-                    .map(|(i, voxel_index)| (voxel_index, i as usize))
-                    .collect();
-
                 // We construct all Voxels which are grouped in their according subdomains
                 // Then we construct the subdomain
                 let mut index_subdomain_cells: std::collections::HashMap<Self::SubDomainIndex, (_, Vec<C>)> = ind_n
@@ -791,7 +782,6 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                     index_subdomain_cells,
                     neighbor_map,
                     rng_seed: self.rng_seed.clone(),
-                    voxel_index_to_plain_index,
                 })
             }
         }
