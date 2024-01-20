@@ -361,9 +361,9 @@ where
         let channels: HashMap<_, _> = map
             .keys()
             .into_iter()
-            .map(|key| {
+            .map(|sender_key| {
                 let (s, r) = crossbeam_channel::unbounded::<T>();
-                (key, (s, r))
+                (sender_key, (s, r))
             })
             .collect();
         let mut comms = HashMap::new();
@@ -373,7 +373,7 @@ where
                 .ok_or(IndexError("Network of communicators could not be constructed due to incorrect entries in map".into()))?
                 .clone()
                 .into_iter()
-                .map(|connected_key| (key.clone(), channels[&connected_key].0.clone())).collect();
+                .map(|connected_key| (connected_key.clone(), channels[&connected_key].0.clone())).collect();
 
             let comm = ChannelComm {
                 senders,
