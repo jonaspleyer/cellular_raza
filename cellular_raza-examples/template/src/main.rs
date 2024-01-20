@@ -15,6 +15,7 @@ pub struct SimulationSettings {
     n_voxels: usize,
     n_threads: usize,
     n_iterations: usize,
+    dt: f32,
 }
 
 impl Default for SimulationSettings {
@@ -25,6 +26,7 @@ impl Default for SimulationSettings {
             n_voxels: 3,
             n_threads: 4,
             n_iterations: 10_000,
+            dt: 0.002,
         }
     }
 }
@@ -98,7 +100,6 @@ fn run_simulation(
 
     use kdam::{tqdm, BarExt};
     use rayon::prelude::*;
-    let dt = 0.002;
     supervisor
         .subdomain_boxes
         .par_iter_mut()
@@ -118,7 +119,8 @@ fn run_simulation(
 
                 sbox.sync();
 
-                sbox.update_mechanics_step_3(&dt).unwrap();
+                sbox.update_mechanics_step_3(&simulation_settings.dt)
+                    .unwrap();
 
                 sbox.sort_cells_in_voxels_step_1().unwrap();
 
