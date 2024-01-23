@@ -122,10 +122,7 @@ fn wrap_pre_flags(
         #[allow(unused)]
         #[allow(non_camel_case_types)]
         const _: () = {
-            use #core_path ::backend::chili::{
-                errors::SimulationError,
-                simulation_flow::Communicator
-            };
+            use #core_path ::backend::chili::{SimulationError,Communicator};
             use #core_path ::proc_macro::Communicator;
 
             #stream
@@ -145,8 +142,7 @@ impl Communicator {
             let field_name = &comm.field_name;
             let field_type = &comm.field_type;
 
-            let flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
-            let error_path = quote!(#core_path ::backend::chili::errors::);
+            let backend_path = quote!(#core_path ::backend::chili::);
 
             let index = &comm.index;
             let message = &comm.message;
@@ -159,15 +155,15 @@ impl Communicator {
 
             wrap_pre_flags(&quote!(#core_path), quote!(
                 #[automatically_derived]
-                impl #impl_generics #flow_path Communicator<#index, #message>
+                impl #impl_generics #backend_path Communicator<#index, #message>
                 for #struct_name #ty_generics #where_clause
 
                 {
-                    fn send(&mut self, receiver: &#index, message: #message) -> Result<(), #error_path SimulationError> {
-                        <#field_type as #flow_path Communicator<#index, #message>>::send(&mut self.#field_name, receiver, message)
+                    fn send(&mut self, receiver: &#index, message: #message) -> Result<(), #backend_path SimulationError> {
+                        <#field_type as #backend_path Communicator<#index, #message>>::send(&mut self.#field_name, receiver, message)
                     }
                     fn receive(&mut self) -> Vec<#message> {
-                        <#field_type as #flow_path Communicator<#index, #message>>::receive(&mut self.#field_name)
+                        <#field_type as #backend_path Communicator<#index, #message>>::receive(&mut self.#field_name)
                     }
                 }
             ))
@@ -211,7 +207,7 @@ fn index_type() -> syn::Type {
 impl SimulationAspect {
     fn build_comm(&self, core_path: &syn::Path) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
         let index_type = index_type();
-        let sim_flow_path = quote!(#core_path ::backend::chili::simulation_flow::);
+        let backend_path = quote!(#core_path ::backend::chili::);
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
@@ -221,8 +217,8 @@ impl SimulationAspect {
                     syn::parse2(quote!(Aux)).unwrap(),
                 ],
                 vec![quote!(
-                    #[Comm(I, #sim_flow_path SendCell<Cel, Aux>)]
-                    comm_cell: #sim_flow_path ChannelComm<#index_type, #sim_flow_path SendCell<Cel, Aux>>
+                    #[Comm(I, #backend_path SendCell<Cel, Aux>)]
+                    comm_cell: #backend_path ChannelComm<#index_type, #backend_path SendCell<Cel, Aux>>
                 )],
             ),
             SimulationAspect::Interaction => (
@@ -234,12 +230,12 @@ impl SimulationAspect {
                 ],
                 vec![
                     quote!(
-                        #[Comm(I, #sim_flow_path PosInformation<Pos, Vel, Inf>)]
-                        comm_pos: #sim_flow_path ChannelComm<#index_type, #sim_flow_path PosInformation<Pos, Vel, Inf>>
+                        #[Comm(I, #backend_path PosInformation<Pos, Vel, Inf>)]
+                        comm_pos: #backend_path ChannelComm<#index_type, #backend_path PosInformation<Pos, Vel, Inf>>
                     ),
                     quote!(
-                        #[Comm(I, #sim_flow_path ForceInformation<For>)]
-                        comm_force: #sim_flow_path ChannelComm<#index_type, #sim_flow_path ForceInformation<For>>
+                        #[Comm(I, #backend_path ForceInformation<For>)]
+                        comm_force: #backend_path ChannelComm<#index_type, #backend_path ForceInformation<For>>
                     ),
                 ],
             ),
