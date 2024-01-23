@@ -1,4 +1,5 @@
 use cellular_raza_concepts::{errors::CalcError, prelude::IndexError};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use std::{collections::HashMap, marker::PhantomData};
@@ -162,16 +163,43 @@ impl<I> UDGraph<I> {
     }
 
     /// Clears the [UDGraph] thus removing all connections.
+    ///
+    /// See [std::vec::Vec::clear].
     pub fn clear(&mut self) {
         self.0.clear()
     }
 
     /// Drains the [UDGraph], thus returning an iterator over the specified elements.
+    ///
+    /// See [std::vec::Vec::drain].
     pub fn drain<R>(&mut self, range: R) -> std::vec::Drain<'_, (I, I)>
     where
         R: core::ops::RangeBounds<usize>,
     {
         self.0.drain(range)
+    }
+
+    /// Returns all nodes currently stored in the [UDGraph].
+    ///
+    /// ```
+    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// let mut ud_graph = UDGraph::new();
+    /// ud_graph.push(("a", "s"));
+    /// ud_graph.push(("a", "K"));
+    /// ud_graph.push(("h", "s"));
+    ///
+    /// assert_eq!(ud_graph.nodes(), vec![&"a", &"s", &"K", &"h"]);
+    /// ```
+    pub fn nodes(&self) -> Vec<&I>
+    where
+        I: Clone + Eq + core::hash::Hash,
+    {
+        self.0
+            .iter()
+            .map(|(c1, c2)| [c1, c2].into_iter())
+            .flatten()
+            .unique()
+            .collect()
     }
 }
 
