@@ -83,6 +83,165 @@ where
     true
 }
 
+/// Undirected graph
+///
+/// This datatype is currently only used to create the simulation subdomains.
+/// There are no plans to extend the use of this object.
+pub struct UDGraph<I>(pub(crate) Vec<(I, I)>);
+
+impl<I> UDGraph<I> {
+    /// Construct a new undirected graph.
+    ///
+    /// ```
+    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// let ud_graph: UDGraph<usize> = UDGraph::new();
+    /// ```
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    /// Push an additional connection between nodes to the UDGraph
+    ///
+    /// This will return an option in either of two cases
+    /// 1. The connection is already contained in the Graph
+    /// 2. The nodes are identical, ie. `new_connection.0==new_connection.1`
+    ///
+    /// ```
+    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// let mut ud_graph = UDGraph::new();
+    /// assert_eq!(ud_graph.push((1, 2)), None);
+    /// assert_eq!(ud_graph.push((1, 3)), None);
+    ///
+    /// // These cases will not return `None` due to the
+    /// // specified reasons above
+    /// assert_eq!(ud_graph.push((1, 2)), Some((1, 2)));
+    /// assert_eq!(ud_graph.push((1, 1)), Some((1, 1)));
+    /// ```
+    pub fn push(&mut self, new_connection: (I, I)) -> Option<(I, I)>
+    where
+        I: PartialEq,
+    {
+        if new_connection.0 == new_connection.1 {
+            return Some(new_connection);
+        }
+        if self
+            .0
+            .iter()
+            .any(|connection| connection == &new_connection)
+        {
+            return Some(new_connection);
+        }
+        self.0.push(new_connection);
+        None
+    }
+
+    /// Extends the [UDGraph] with new connections
+    ///
+    /// Will return all connections which can not be added by the [push](UDGraph::push) method.
+    ///
+    /// ```
+    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// let mut ud_graph = UDGraph::new();
+    /// let new_connections = [
+    ///     (1_f64, 2_f64),
+    ///     (2_f64, 3_f64),
+    ///     (3_f64, 4_f64),
+    /// ];
+    /// let res = ud_graph.extend(new_connections);
+    /// assert_eq!(res, vec![]);
+    /// ```
+    pub fn extend<J>(&mut self, new_connections: J) -> Vec<(I, I)>
+    where
+        I: PartialEq,
+        J: IntoIterator<Item = (I, I)>,
+    {
+        new_connections
+            .into_iter()
+            .filter_map(|new_connection| self.push(new_connection))
+            .collect()
+    }
+
+    /// Clears the [UDGraph] thus removing all connections.
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+
+    /// Drains the [UDGraph], thus returning an iterator over the specified elements.
+    pub fn drain<R>(&mut self, range: R) -> std::vec::Drain<'_, (I, I)>
+    where
+        R: core::ops::RangeBounds<usize>,
+    {
+        self.0.drain(range)
+    }
+}
+
+impl<I> UDGraph<I>
+where
+    I: core::hash::Hash + Clone + Eq,
+{
+    /// Convert the [UDGraph] into a regular [HashMap].
+    ///
+    /// ```
+    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// let mut ud_graph = UDGraph::new();
+    /// ud_graph.push((1, 2));
+    /// ud_graph.push((2, 3));
+    /// ud_graph.push((3, 1));
+    ///
+    /// let map = ud_graph.to_hash_map();
+    /// assert_eq!(map.keys().len(), 3);
+    /// ```
+    pub fn to_hash_map(self) -> std::collections::HashMap<I, Vec<I>> {
+        let mut map: HashMap<_, Vec<I>> = self
+            .0
+            .iter()
+            .map(|x| [(x.0.clone(), Vec::new()), (x.1.clone(), Vec::new())].into_iter())
+            .flatten()
+            .collect();
+        self.0.iter().for_each(|(c1, c2)| {
+            map.entry(c1.clone()).and_modify(|v| v.push(c2.clone()));
+            map.entry(c2.clone()).and_modify(|v| v.push(c1.clone()));
+        });
+        map
+    }
+}
+
+impl<I> core::ops::Deref for UDGraph<I> {
+    type Target = Vec<(I, I)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<I> From<UDGraph<I>> for PhantomData<I> {
+    #[allow(unused)]
+    fn from(value: UDGraph<I>) -> Self {
+        PhantomData
+    }
+}
+
+pub trait BuildFromGraph<I>
+where
+    Self: Sized,
+    I: Clone + Eq + core::hash::Hash + Ord,
+{
+    fn build_from_graph(
+        graph: UDGraph<I>,
+    ) -> Result<std::collections::HashMap<I, Self>, IndexError>;
+}
+
+/* impl<I, T> From<UDGraph<I>> for Result<std::collections::HashMap<I, T>, IndexError>
+where
+    T: FromMap<I>,
+    I: Ord + Clone + core::hash::Hash,
+{
+    fn from(value: UDGraph<I>) -> Self {
+        let map = value.to_hash_map();
+        T::from_map(&map)
+    }
+}*/
+
 // TODO migrate to FromGraph eventually!
 /// Constructs a collection of Items from a map (graph)
 pub trait FromMap<I>
