@@ -1,8 +1,5 @@
 // Imports from this crate
-use cellular_raza_concepts::domain::*;
-use cellular_raza_concepts::errors::*;
-use cellular_raza_concepts::interaction::Volume;
-use cellular_raza_concepts::plotting::*;
+use cellular_raza_concepts::*;
 
 use super::cartesian_cuboid_n::get_decomp_res;
 use crate::cell_building_blocks::mechanics::VertexVector2;
@@ -342,11 +339,7 @@ impl<Cel, const D: usize, const N: usize> Domain<Cel, [i64; 2], CartesianCuboidV
     for CartesianCuboid2Vertex
 // Position, Force and Velocity are all Vector2 supplied by the Nalgebra crate
 where
-    Cel: cellular_raza_concepts::mechanics::Mechanics<
-        VertexVector2<D>,
-        VertexVector2<D>,
-        VertexVector2<D>,
-    >,
+    Cel: Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>,
 {
     fn apply_boundary(&self, cell: &mut Cel) -> Result<(), BoundaryError> {
         let mut pos_single = cell.pos();

@@ -1,8 +1,8 @@
 use crate::backend::cpu_os_threads::prelude::AuxiliaryCellPropertyStorage;
 use crate::storage::concepts::{StorageManager, StorageOption, UniqueVec};
-use cellular_raza_concepts::cell::{Agent, CellAgentBox};
-use cellular_raza_concepts::domain::{Domain, Index, Voxel};
-use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
+use cellular_raza_concepts::{
+    Agent, CellAgentBox, Domain, Force, Index, Position, Velocity, Voxel,
+};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -10,7 +10,7 @@ use super::domain_decomposition::{
 };
 use super::supervisor::ControllerBox;
 use super::supervisor::SimulationSupervisor;
-use cellular_raza_concepts::cell::CellularIdentifier;
+use cellular_raza_concepts::CellularIdentifier;
 
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;

@@ -1,5 +1,4 @@
-use cellular_raza_concepts::errors::CalcError;
-use cellular_raza_concepts::interaction::*;
+use cellular_raza_concepts::*;
 
 use nalgebra::SVector;
 use serde::{Deserialize, Serialize};

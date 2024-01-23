@@ -1,6 +1,6 @@
 use cellular_raza::building_blocks::prelude::*;
 use cellular_raza::concepts::domain_new::Domain;
-use cellular_raza::concepts::prelude::*;
+use cellular_raza::concepts::*;
 use cellular_raza::concepts_derive::*;
 use cellular_raza::core::proc_macro::*;
 

@@ -1,7 +1,7 @@
 use cellular_raza_concepts::domain_new::*;
+use cellular_raza_concepts::*;
 
 use crate::storage::concepts::StorageOption;
-use cellular_raza_concepts::errors::DecomposeError;
 
 use serde::{Deserialize, Serialize};
 
@@ -38,7 +38,7 @@ impl<C, D> SimulationSetup<C, D> {
         n_subdomains: core::num::NonZeroUsize,
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
-        D: Domain<C, S>,
+        D: cellular_raza_concepts::domain_new::Domain<C, S>,
         S: SubDomain<C>,
     {
         self.domain.decompose(n_subdomains, self.cells)
@@ -53,7 +53,7 @@ impl<C, D> SimulationSetup<C, D> {
         self,
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
-        D: Domain<C, S>,
+        D: cellular_raza_concepts::domain_new::Domain<C, S>,
         S: SubDomain<C>,
     {
         todo!();
@@ -95,7 +95,7 @@ mod test {
         total_voxels: usize,
     }
 
-    impl Domain<f64, TestSubDomain> for TestDomain {
+    impl cellular_raza_concepts::domain_new::Domain<f64, TestSubDomain> for TestDomain {
         type SubDomainIndex = usize;
         type VoxelIndex = VoxelIndex;
 
@@ -186,7 +186,7 @@ mod test {
         fn apply_boundary(
             &self,
             cell: &mut f64,
-        ) -> Result<(), cellular_raza_concepts::prelude::BoundaryError> {
+        ) -> Result<(), cellular_raza_concepts::BoundaryError> {
             if self.reflect_at_boundary.0 && *cell < self.min {
                 *cell = self.min;
             } else if self.reflect_at_boundary.1 && *cell > self.max {
@@ -198,13 +198,13 @@ mod test {
         fn get_voxel_index_of(
             &self,
             cell: &f64,
-        ) -> Result<Self::VoxelIndex, cellular_raza_concepts::prelude::BoundaryError> {
+        ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
             for (index, voxel) in self.voxels.iter() {
                 if cell >= &voxel[0] && cell <= &voxel[1] {
                     return Ok(*index);
                 }
             }
-            Err(cellular_raza_concepts::prelude::BoundaryError(
+            Err(cellular_raza_concepts::BoundaryError(
                 "Could not find voxel which contains cell".into(),
             ))
         }

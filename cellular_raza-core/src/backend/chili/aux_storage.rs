@@ -1,4 +1,4 @@
-use cellular_raza_concepts::cycle::CycleEvent;
+use cellular_raza_concepts::CycleEvent;
 use serde::{Deserialize, Serialize};
 
 use std::ops::{Deref, DerefMut};
@@ -879,7 +879,7 @@ where
     }
 }
 
-/// Iterator of the [FixedSizeRingbuffer] struct.
+/// Iterator of the [FixedSizeRingBuffer] struct.
 ///
 /// This iterator does not necessarily contain `N` elements.
 /// It depends on how many entries have been added previously.

@@ -1,5 +1,4 @@
-use cellular_raza_concepts::errors::{CalcError, RngError};
-use cellular_raza_concepts::mechanics::Mechanics;
+use cellular_raza_concepts::{CalcError, Mechanics, RngError};
 
 use itertools::Itertools;
 use nalgebra::SVector;

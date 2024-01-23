@@ -1,4 +1,4 @@
-use cellular_raza_concepts::errors::CalcError;
+use cellular_raza_concepts::CalcError;
 
 pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
@@ -7,7 +7,7 @@ pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
 ) -> Result<(), CalcError>
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, 0>,
-    C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     Pos: core::ops::Mul<Float, Output = Pos>,
     Pos: core::ops::Add<Pos, Output = Pos>,
     Vel: core::ops::Mul<Float, Output = Vel>,
@@ -38,7 +38,7 @@ pub fn mechanics_adams_bashforth<C, A, Pos, Vel, For, Float, const N: usize>(
 ) -> Result<(), CalcError>
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, N>,
-    C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     Pos: core::ops::Mul<Float, Output = Pos>,
     Pos: core::ops::Add<Pos, Output = Pos>,
     Vel: core::ops::Mul<Float, Output = Vel>,

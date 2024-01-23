@@ -1,4 +1,4 @@
-use cellular_raza_concepts::cycle::*;
+use cellular_raza_concepts::*;
 // use crate::impls_cell_properties::cell_model::CellModel;
 
 use serde::{Deserialize, Serialize};
@@ -16,10 +16,7 @@ impl<Cel, Float> Cycle<Cel, Float> for NoCycle {
         None
     }
 
-    fn divide(
-        _: &mut rand_chacha::ChaCha8Rng,
-        _: &mut Cel,
-    ) -> Result<Cel, cellular_raza_concepts::errors::DivisionError> {
+    fn divide(_: &mut rand_chacha::ChaCha8Rng, _: &mut Cel) -> Result<Cel, DivisionError> {
         panic!("This is the divide() function of the NoCycle struct which should never be called. This is a backend error. Please report!")
     }
 }

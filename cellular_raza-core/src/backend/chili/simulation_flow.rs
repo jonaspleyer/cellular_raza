@@ -1,4 +1,4 @@
-use cellular_raza_concepts::{errors::CalcError, prelude::IndexError};
+use cellular_raza_concepts::{CalcError, IndexError};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -7,8 +7,8 @@ use std::{collections::HashMap, marker::PhantomData};
 use super::{errors::SimulationError, VoxelPlainIndex};
 
 ///
-/// This very simple implementation uses the [Barrier](hurdles::Barrier) struct from the [hurdles] crate
-/// which should in theory perform faster than the [std::sync::Barrier] struct from the standard library.
+/// This very simple implementation uses the [hurdles::Barrier] struct which should
+/// in theory perform faster than the [std::sync::Barrier] struct from the standard library.
 ///
 /// By using the [SyncSubDomains] trait, we can automatically create a collection of syncers
 /// which can then be simply given to the respective threads and handle synchronization.

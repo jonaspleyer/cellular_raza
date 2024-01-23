@@ -1,4 +1,5 @@
-use cellular_raza_concepts::errors::{BoundaryError, CalcError};
+use cellular_raza_concepts::domain_new::{DecomposedDomain, Domain, SubDomain};
+use cellular_raza_concepts::*;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -9,7 +10,6 @@ use rand::SeedableRng;
 use super::aux_storage::*;
 use super::errors::*;
 use super::simulation_flow::*;
-use cellular_raza_concepts::domain_new::*;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 
@@ -48,8 +48,8 @@ impl<C, A> Voxel<C, A> {
         &mut self,
     ) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, Float, N>,
         For: Clone + core::ops::Mul<Float, Output = For> + core::ops::Neg<Output = For>,
         Float: num::Float,
@@ -98,8 +98,8 @@ impl<C, A> Voxel<C, A> {
             + num::Zero
             + core::ops::Mul<F, Output = For>
             + core::ops::Neg<Output = For>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, F, N>,
         F: num::Float,
     {
@@ -126,10 +126,11 @@ impl<C, A> Voxel<C, A> {
 
     pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::cycle::Cycle<C, Float> + Id,
+        C: cellular_raza_concepts::Cycle<C, Float>
+            + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
-        use cellular_raza_concepts::cycle::CycleEvent;
+        use cellular_raza_concepts::CycleEvent;
         // Update the cell individual cells
         self.cells
             .iter_mut()
@@ -401,7 +402,7 @@ where
     /// Advances the cycle of a cell by a small time increment `dt`.
     pub fn update_cycle<Float>(&mut self, dt: Float) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::cycle::Cycle<C, Float>,
+        C: cellular_raza_concepts::Cycle<C, Float>,
         A: UpdateCycle,
     {
         self.voxels.iter_mut().for_each(|(_, voxel)| {
@@ -426,8 +427,8 @@ where
         Pos: Clone,
         Vel: Clone,
         Inf: Clone,
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, Float, N>,
         For: Clone
             + core::ops::AddAssign
@@ -499,15 +500,15 @@ where
             + num::Zero
             + core::ops::Mul<Float, Output = For>
             + core::ops::Neg<Output = For>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, Float, N>,
         Float: num::Float,
         Pos: Clone,
         Vel: Clone,
         For: Clone,
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
     {
@@ -520,7 +521,7 @@ where
         {
             let vox = self.voxels
                 .get_mut(&pos_info.index_receiver)
-                .ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
+                .ok_or(cellular_raza_concepts::IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
@@ -550,8 +551,8 @@ where
         A: UpdateMechanics<Pos, Vel, For, Float, 0>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
-        C: cellular_raza_concepts::interaction::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
+            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>
             + Clone,
         Float: Copy,
         Pos: core::ops::Mul<Float, Output = Pos>,
@@ -567,10 +568,10 @@ where
             )
             .into_iter()
         {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::errors::IndexError(format!("EngineError: Sender with plain index {:?} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::IndexError(format!("EngineError: Sender with plain index {:?} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
             match vox.cells.get_mut(obt_forces.count) {
                 Some((_, aux_storage)) => Ok(aux_storage.add_force(obt_forces.force)),
-                None => Err(cellular_raza_concepts::errors::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
+                None => Err(cellular_raza_concepts::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
             }?;
         }
 
@@ -652,7 +653,7 @@ where
         &mut self,
     ) -> Result<(), SimulationError>
     where
-        C: cellular_raza_concepts::mechanics::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         S: cellular_raza_concepts::domain_new::SubDomain<C>,
         S::VoxelIndex: Eq + Hash,
@@ -729,7 +730,7 @@ where
 
             match self.voxels.get_mut(&index) {
                 Some(vox) => Ok(vox.cells.push((cell, aux_storage))),
-                None => Err(cellular_raza_concepts::errors::IndexError(format!(
+                None => Err(cellular_raza_concepts::IndexError(format!(
                     "Cell with index {:?} was sent to subdomain which does not hold this index",
                     index
                 ))),

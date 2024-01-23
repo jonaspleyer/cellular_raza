@@ -1,8 +1,5 @@
 // Imports from this crate
-use cellular_raza_concepts::domain::*;
-use cellular_raza_concepts::errors::*;
-use cellular_raza_concepts::interaction::Volume;
-use cellular_raza_concepts::plotting::*;
+use cellular_raza_concepts::*;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -316,7 +313,7 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
         // Index is an array of size 3 with elements of type usize
         impl<Cel, const N: usize> Domain<Cel, [i64; $d], $voxel_name<N>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where Cel: cellular_raza_concepts::mechanics::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+        where Cel: cellular_raza_concepts::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
         {
             fn apply_boundary(&self, cell: &mut Cel) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();
@@ -628,7 +625,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
         impl<C> cellular_raza_concepts::domain_new::Domain<C, $subdomain_name> for $domain_name
         where
-            C: cellular_raza_concepts::mechanics::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
+            C: cellular_raza_concepts::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
         {
             // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
             type SubDomainIndex = usize;
@@ -788,7 +785,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
         impl<C> cellular_raza_concepts::domain_new::SubDomain<C> for $subdomain_name
         where
-            C: cellular_raza_concepts::mechanics::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
+            C: cellular_raza_concepts::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
         {
             type VoxelIndex = [i64; $d];
 
