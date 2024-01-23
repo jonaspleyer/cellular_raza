@@ -2,8 +2,9 @@ use cellular_raza::building_blocks::prelude::*;
 use cellular_raza::concepts::domain_new::Domain;
 use cellular_raza::concepts::prelude::*;
 use cellular_raza::concepts_derive::*;
-use cellular_raza::core::backend::chili::*;
 use cellular_raza::core::proc_macro::*;
+
+use cellular_raza::core::backend::chili;
 
 use nalgebra::Vector2;
 use rand::SeedableRng;
@@ -56,24 +57,21 @@ struct Agent {
     pub volume: Vol,
 }
 
-use cellular_raza::core::backend::chili::aux_storage::{
-    AuxStorageInteraction, AuxStorageMechanics, FixedSizeRingBufferIter, UpdateInteraction,
-    UpdateMechanics,
-};
-
-build_aux_storage!(name: __cr_AuxStorage, aspects: [Mechanics, Interaction]);
+build_aux_storage!(
+    name: __cr_AuxStorage,
+    aspects: [Mechanics, Interaction],
+    core_path: cellular_raza::core
+);
 build_communicator!(
     name: MyCommunicator,
     aspects: [Mechanics, Interaction],
     core_path: cellular_raza::core
 );
 
-use cellular_raza::core::backend::chili::simulation_flow::BarrierSync;
-
 fn run_simulation(
     simulation_settings: SimulationSettings,
     agents: Vec<Agent>,
-) -> Result<(), errors::SimulationError> {
+) -> Result<(), chili::SimulationError> {
     let domain = CartesianCuboid2NewF32::from_boundaries_and_n_voxels(
         [0.0; 2],
         [simulation_settings.domain_size; 2],
@@ -82,11 +80,10 @@ fn run_simulation(
     let decomposed_domain = domain
         .decompose(simulation_settings.n_threads.try_into().unwrap(), agents)
         .unwrap();
-    use cellular_raza::core::backend::chili::datastructures::*;
 
-    let mut supervisor: SimulationSupervisor<
+    let mut supervisor: chili::SimulationSupervisor<
         _,
-        SubDomainBox<
+        chili::SubDomainBox<
             _,
             _,
             __cr_AuxStorage<_, _, _, _, 0>,
@@ -94,49 +91,57 @@ fn run_simulation(
             // The Agent will have to be replaced with the CellAgentBox<C> or something simlar
             // and the f64 by the __cr_AuxStorage<_, _, _, _, 4> from above
             MyCommunicator<_, _, _, _, _, _, _>,
-            BarrierSync,
+            chili::BarrierSync,
         >,
     > = decomposed_domain.into();
 
     use kdam::{tqdm, BarExt};
     use rayon::prelude::*;
+    let t0: f32 = 0.0;
+    let dt = simulation_settings.dt;
+    let save_points = vec![5.0, 10.0, 15.0, 20.0];
     supervisor
         .subdomain_boxes
         .par_iter_mut()
-        .for_each(|(key, sbox)| {
+        .map(|(key, sbox)| {
+            let mut time_stepper =
+                chili::FixedStepsize::from_save_points(t0, dt, save_points.clone())?;
             let mut pb = if key == &0 {
                 Some(tqdm!(total = simulation_settings.n_iterations))
             } else {
                 None
             };
-            for _ in 0..simulation_settings.n_iterations {
+            use chili::TimeStepper;
+            while let Some((t, iteration, event)) = time_stepper.advance()? {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
-                sbox.update_mechanics_step_1().unwrap();
+                sbox.update_mechanics_step_1()?;
 
                 sbox.sync();
 
-                sbox.update_mechanics_step_2().unwrap();
+                sbox.update_mechanics_step_2()?;
 
                 sbox.sync();
 
                 sbox.update_mechanics_step_3(&simulation_settings.dt)
                     .unwrap();
 
-                sbox.sort_cells_in_voxels_step_1().unwrap();
+                sbox.sort_cells_in_voxels_step_1()?;
 
                 sbox.sync();
 
-                sbox.sort_cells_in_voxels_step_2().unwrap();
+                sbox.sort_cells_in_voxels_step_2()?;
                 match &mut pb {
-                    Some(p) => p.update(1).unwrap(),
+                    Some(p) => p.update(1)?,
                     None => true,
                 };
             }
-        });
+            Ok(())
+        })
+        .collect::<Result<Vec<_>, cellular_raza::core::backend::chili::SimulationError>>()?;
     Ok(())
 }
 
-fn main() -> Result<(), errors::SimulationError> {
+fn main() -> Result<(), chili::SimulationError> {
     use rand::Rng;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
     let simulation_settings = SimulationSettings::default();
