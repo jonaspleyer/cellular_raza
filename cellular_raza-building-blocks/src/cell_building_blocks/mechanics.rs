@@ -18,14 +18,14 @@ macro_rules! implement_newton_damped_mechanics(
         ///     m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
         /// \\end{equation}
         /// where $\vec{F}$ is calculated by the
-        /// [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
+        /// [Interaction](cellular_raza_concepts::Interaction) trait.
         /// The parameter $m$ describes the mass of the object while $\lambda$ is
         /// the damping constant.
         /// If the cell is growing, we need to increase the mass $m$.
         /// By interacting with the outside world, we can adapt $\lambda$ to external values
         /// although this is rarely desirable.
         /// Both operations need to be implemented by other concepts such as
-        /// [Cycle](cellular_raza_concepts::cycle::Cycle).
+        /// [Cycle](cellular_raza_concepts::Cycle).
         #[derive(Clone, Debug, Serialize, Deserialize)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         pub struct $struct_name {

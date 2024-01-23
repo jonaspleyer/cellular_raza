@@ -200,7 +200,7 @@ pub trait UpdateReactions<R> {
 }
 
 /// Helper storage for values regarding intracellular concentrations for the
-/// [CellularReactions](cellular_raza_concepts::interaction::CellularReactions) trait.
+/// [CellularReactions](cellular_raza_concepts::CellularReactions) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactions<R> {
     concentration: R,
@@ -238,7 +238,7 @@ pub trait UpdateInteraction {
 }
 
 /// Helper storage for number of neighbours of
-/// [Interaction](cellular_raza_concepts::interaction::Interaction) trait.
+/// [Interaction](cellular_raza_concepts::Interaction) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageInteraction {
     neighbour_count: usize,
@@ -379,7 +379,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructCycle {
@@ -392,7 +392,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructCycle {
@@ -405,7 +405,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// pub(crate) struct TestStructCycle {
@@ -418,7 +418,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructCycle<T> {
@@ -432,7 +432,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructCycle<const N: usize> {
@@ -446,7 +446,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructCycle<T>
@@ -463,7 +463,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
-    /// use cellular_raza_concepts::cycle::CycleEvent;
+    /// use cellular_raza_concepts::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructCycle {
@@ -1155,7 +1155,7 @@ mod test_build_aux_storage {
             ///     (Cycle) => {
             ///         {
             ///             use cellular_raza_core::backend::chili::UpdateCycle;
-            ///             use cellular_raza_concepts::cycle::CycleEvent;
+            ///             use cellular_raza_concepts::CycleEvent;
             ///             aux_storage.add_cycle_event(CycleEvent::Division);
             ///             assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
             ///         }

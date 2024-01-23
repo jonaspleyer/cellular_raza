@@ -1,13 +1,13 @@
 
-use cellular_raza_concepts::cell::{CellAgent, CellAgentBox, CellularIdentifier};
+use cellular_raza_concepts::{CellAgent, CellAgentBox, CellularIdentifier};
 use cellular_raza_concepts::domain::Index;
 use cellular_raza_concepts::domain::{
     Concentration, Controller, Domain, ExtracellularMechanics, Voxel,
 };
-use cellular_raza_concepts::errors::{ControllerError, DrawingError, RequestError};
-use cellular_raza_concepts::interaction::{CellularReactions, InteractionExtracellularGradient};
+use cellular_raza_concepts::{ControllerError, DrawingError, RequestError};
+use cellular_raza_concepts::{CellularReactions, InteractionExtracellularGradient};
 use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
-use cellular_raza_concepts::plotting::{CreatePlottingRoot, PlotSelf};
+use cellular_raza_concepts::{CreatePlottingRoot, PlotSelf};
 
 use super::errors::*;
 use crate::storage::concepts::{StorageInterface, StorageManager};
@@ -66,7 +66,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         J: Iterator<
             Item = (
                 &'a mut CellAgentBox<Cel>,
-                &'a mut Vec<cellular_raza_concepts::cycle::CycleEvent>,
+                &'a mut Vec<cellular_raza_concepts::CycleEvent>,
             ),
         >,
         Cont: Controller<Cel, Obs>,

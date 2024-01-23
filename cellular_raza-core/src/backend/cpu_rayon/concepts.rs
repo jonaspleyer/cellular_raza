@@ -131,7 +131,7 @@ struct Container {}
 impl Container {
     pub fn update_cell_cycles(&self)
     /* where
-    Cell: cellular_raza_concepts::cycle::Cycle<Cell>,*/
+    Cell: cellular_raza_concepts::Cycle<Cell>,*/
     {
         println!("Update done");
     }

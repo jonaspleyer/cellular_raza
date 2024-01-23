@@ -404,7 +404,7 @@ impl AuxStorageImplementer {
 
             let (cycle_path, backend_path) = match &self.core_path {
                 Some(p) => (
-                    quote!(#p ::concepts::cycle::),
+                    quote!(#p ::concepts::),
                     quote!(#p ::backend::chili::),
                 ),
                 None => (quote!(), quote!()),

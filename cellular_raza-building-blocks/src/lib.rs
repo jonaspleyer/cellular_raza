@@ -18,7 +18,7 @@
 //! Furthermore, we can derive desired concepts by using the [CellAgent](cellular_raza_concepts_derive::CellAgent)
 //! derive macro.
 //! ```rust
-//! # use cellular_raza_concepts::prelude::*;
+//! # use cellular_raza_concepts::*;
 //! # use cellular_raza_building_blocks::prelude::*;
 //! # use nalgebra::Vector2;
 //! # use cellular_raza_concepts_derive::CellAgent;
@@ -49,7 +49,7 @@
 //! ```
 //! For technical reasons, we are required to also once more specify the types for position,
 //! velocity and force when specifying which struct field to derive from.
-//! The optional `Inf` generic parameter of the [Interaction](cellular_raza_concepts::interaction::Interaction) trait was left out and thus defaults to `()`.
+//! The optional `Inf` generic parameter of the [Interaction](cellular_raza_concepts::Interaction) trait was left out and thus defaults to `()`.
 //! It can and needs to also be specified when choosing interactions with non-trivial
 //! interaction information.
 

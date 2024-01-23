@@ -843,7 +843,7 @@ mod test_derive_from_map {
     ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
-    /// use cellular_raza_concepts::errors::IndexError;
+    /// use cellular_raza_concepts::IndexError;
     /// #[derive(FromMap)]
     /// #[FromMapIndex(usize)]
     /// struct MyNewComm {
@@ -858,7 +858,7 @@ mod test_derive_from_map {
     ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
-    /// use cellular_raza_concepts::errors::IndexError;
+    /// use cellular_raza_concepts::IndexError;
     /// #[derive(FromMap)]
     /// #[FromMapIndex(I)]
     /// struct MyNewComm<I> {
@@ -873,7 +873,7 @@ mod test_derive_from_map {
     ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
-    /// use cellular_raza_concepts::errors::IndexError;
+    /// use cellular_raza_concepts::IndexError;
     /// #[derive(FromMap)]
     /// #[FromMapIndex(i16)]
     /// struct MyNewComm<T>
@@ -891,7 +891,7 @@ mod test_derive_from_map {
     ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
-    /// use cellular_raza_concepts::errors::IndexError;
+    /// use cellular_raza_concepts::IndexError;
     /// #[derive(FromMap)]
     /// #[FromMapIndex(I)]
     /// struct MyNewComm<I>

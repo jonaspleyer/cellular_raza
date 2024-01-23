@@ -9,11 +9,11 @@
 /// # Supported Cellular Aspects
 /// | Aspect | Support | Comment |
 /// | --- |:---:| --- |
-/// | [Cycle](cellular_raza_concepts::cycle) | ✅ | Fully generic except `Float=f64` |
-/// | [Mechanics](cellular_raza_concepts::mechanics) | ✅ | Fully generic except `Float=f64` |
-/// | [Interaction](cellular_raza_concepts::interaction) | ✅ | Fully generic |
-/// | [Reactions](cellular_raza_concepts::interaction) | ✅ | Fully generic |
-/// | [Volume](cellular_raza_concepts::interaction) | ✅ | `Float=f64` |
+/// | [Cycle](cellular_raza_concepts::Cycle) | ✅ | Fully generic except `Float=f64` |
+/// | [Mechanics](cellular_raza_concepts::Mechanics) | ✅ | Fully generic except `Float=f64` |
+/// | [Interaction](cellular_raza_concepts::Interaction) | ✅ | Fully generic |
+/// | [Reactions](cellular_raza_concepts::CellularReactions) | ✅ | Fully generic |
+/// | [Volume](cellular_raza_concepts::Volume) | ✅ | `Float=f64` |
 ///
 /// # Other Features
 /// | Aspect | Support | Comment |

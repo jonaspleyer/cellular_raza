@@ -56,10 +56,7 @@ pub trait Cycle<Cell, Float = f64> {
 mod test_derive {
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent> for MyCycle {
@@ -86,10 +83,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent, f32> for MyCycle {
@@ -116,10 +110,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle<F> {
     ///     some_property: F,
     /// }
@@ -148,10 +139,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle<G> {
     ///     some_property: G,
     /// }
@@ -186,10 +174,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent> for MyCycle {
@@ -216,10 +201,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent, f32> for MyCycle {
@@ -246,10 +228,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle<F> {
     ///     some_property: F,
     /// }
@@ -278,10 +257,7 @@ mod test_derive {
 
     /// ```
     /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{
-    ///     errors::{DeathError,DivisionError},
-    ///     cycle::{CycleEvent, Cycle}
-    /// };
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
     /// struct MyCycle<G> {
     ///     some_property: G,
     /// }
