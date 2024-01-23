@@ -62,10 +62,10 @@ fn index_from_attributes(
     }
 }
 
-struct CorePathParser {
+pub struct CorePathParser {
     #[allow(unused)]
-    from_map_core_path_token: syn::Ident,
-    core_path: syn::Path,
+    pub from_map_core_path_token: syn::Ident,
+    pub core_path: syn::Path,
 }
 
 impl syn::parse::Parse for CorePathParser {
