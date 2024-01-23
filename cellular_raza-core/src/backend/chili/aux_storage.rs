@@ -266,7 +266,7 @@ impl UpdateInteraction for AuxStorageInteraction {
 mod test_derive_aux_storage_compile {
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
@@ -278,7 +278,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
@@ -290,7 +290,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub(crate) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
@@ -303,7 +303,7 @@ mod test_derive_aux_storage_compile {
     /// ```
     /// mod some_module {
     ///     use cellular_raza_core::proc_macro::AuxStorage;
-    ///     use cellular_raza_core::backend::chili::aux_storage::*;
+    ///     use cellular_raza_core::backend::chili::*;
     ///
     ///     #[derive(AuxStorage)]
     ///     pub(super) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
@@ -315,7 +315,7 @@ mod test_derive_aux_storage_compile {
     ///     aux_storage: T
     /// ) -> For
     /// where
-    ///     T: cellular_raza_core::backend::chili::aux_storage::UpdateMechanics<Pos, Vel, For, Float, N>,
+    ///     T: cellular_raza_core::backend::chili::UpdateMechanics<Pos, Vel, For, Float, N>,
     /// {
     ///     aux_storage.get_current_force()
     /// }
@@ -324,7 +324,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructMechanics<Pos, Vel, For, Float, T, const N: usize> {
@@ -337,7 +337,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize, const M: usize> {
@@ -350,7 +350,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize>
@@ -365,7 +365,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
@@ -378,7 +378,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -391,7 +391,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -404,7 +404,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -417,7 +417,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -431,7 +431,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -445,7 +445,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -462,7 +462,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::cycle::CycleEvent;
     ///
     /// #[derive(AuxStorage)]
@@ -476,7 +476,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<R> {
@@ -488,7 +488,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructReactions<R> {
@@ -500,7 +500,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub(crate) struct TestStructReactions<R> {
@@ -512,7 +512,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<T, R> {
@@ -525,7 +525,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<R, const N: usize> {
@@ -538,7 +538,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<T, R>
@@ -554,7 +554,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructReactions<R> {
@@ -567,7 +567,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructInteraction {
@@ -579,7 +579,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub struct TestStructInteraction {
@@ -591,7 +591,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// pub(crate) struct TestStructInteraction {
@@ -603,7 +603,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructInteraction<T> {
@@ -616,7 +616,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructInteraction<const N: usize> {
@@ -629,7 +629,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructInteraction<T>
@@ -645,7 +645,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// use cellular_raza_core::proc_macro::AuxStorage;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
     /// struct TestStructInteraction {
@@ -763,7 +763,7 @@ pub mod test_derive_aux_storage {
 /// Small implementation of a ring Buffer with constant size.
 /// Makes use of a fixed-size array internally.
 /// ```
-/// # use cellular_raza_core::backend::chili::aux_storage::FixedSizeRingBuffer;
+/// # use cellular_raza_core::backend::chili::FixedSizeRingBuffer;
 /// let mut ring_buffer = FixedSizeRingBuffer::<i64, 4>::default();
 ///
 /// // These entries will be made into free space in the buffer.
@@ -885,7 +885,7 @@ where
 /// It depends on how many entries have been added previously.
 ///
 /// ```
-/// # use cellular_raza_core::backend::chili::aux_storage::*;
+/// # use cellular_raza_core::backend::chili::*;
 /// let mut ring_buffer = FixedSizeRingBuffer::<usize, 4>::default();
 /// ring_buffer.push(1);
 /// ring_buffer.push(33);
@@ -937,7 +937,7 @@ impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
     /// This will not grow the buffer but instead replace existing
     /// entries when the maximum size is reached.
     /// ```
-    /// # use cellular_raza_core::backend::chili::aux_storage::*;
+    /// # use cellular_raza_core::backend::chili::*;
     /// let mut ring_buffer = FixedSizeRingBuffer::<f64, 5>::default();
     /// ring_buffer.push(1.0);
     /// ring_buffer.push(2.0);
@@ -1081,7 +1081,7 @@ mod test_ring_buffer {
 mod test_derive_serde_ring_buffer {
     /// ```
     /// use serde::Serialize;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// #[derive(Serialize)]
     /// struct Something<T, const N: usize> {
     ///     ring_buffer: FixedSizeRingBuffer<T, N>,
@@ -1091,7 +1091,7 @@ mod test_derive_serde_ring_buffer {
 
     /// ```
     /// use serde::Deserialize;
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// #[derive(Deserialize)]
     /// struct Something<T, const N: usize> {
     ///     ring_buffer: FixedSizeRingBuffer<T, N>,
@@ -1101,7 +1101,7 @@ mod test_derive_serde_ring_buffer {
 
     /// ```
     /// use serde::{Deserialize, Serialize};
-    /// use cellular_raza_core::backend::chili::aux_storage::*;
+    /// use cellular_raza_core::backend::chili::*;
     /// #[derive(Deserialize, Serialize)]
     /// struct Something<T, const N: usize> {
     ///     ring_buffer: FixedSizeRingBuffer<T, N>,
@@ -1119,42 +1119,54 @@ mod test_build_aux_storage {
             /// ```
             /// use serde::{Deserialize, Serialize};
             /// use cellular_raza_core::proc_macro::{build_aux_storage, AuxStorage};
-            /// use cellular_raza_core::backend::chili::aux_storage::*;
             /// build_aux_storage!(
             ///     name: __cr_AuxStorage,
-            #[doc = concat!("aspects: [", $(stringify!($asp,),)* "]")]
+            #[doc = concat!("aspects: [", $(stringify!($asp,),)* "],")]
+            ///     core_path: cellular_raza_core
             /// );
             /// let mut aux_storage = __cr_AuxStorage::default();
             /// macro_rules! test_aspect (
             ///     (Mechanics) => {
-            ///         aux_storage.set_last_position(1_f32);
-            ///         aux_storage.set_last_position(3_f32);
-            ///         let last_positions = aux_storage.previous_positions().map(|f| *f).collect::<Vec<f32>>();
-            ///         assert_eq!(last_positions, vec![1_f32, 3_f32]);
-            ///         aux_storage.set_last_velocity(10_f32);
-            ///         let last_velocities: FixedSizeRingBufferIter<_, 4> = aux_storage.previous_velocities();
-            ///         let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
-            ///         assert_eq!(last_velocities, vec![10_f32]);
-            ///         aux_storage.add_force(22_f32);
-            ///         assert_eq!(aux_storage.get_current_force(), 22_f32);
-            ///         aux_storage.set_next_random_update(Some(44_f64));
-            ///         assert_eq!(aux_storage.get_next_random_update(), Some(44_f64));
+            ///         {
+            ///             use cellular_raza_core::backend::chili::UpdateMechanics;
+            ///             aux_storage.set_last_position(1_f32);
+            ///             aux_storage.set_last_position(3_f32);
+            ///             let last_positions = aux_storage.previous_positions().map(|f| *f).collect::<Vec<f32>>();
+            ///             assert_eq!(last_positions, vec![1_f32, 3_f32]);
+            ///             aux_storage.set_last_velocity(10_f32);
+            ///             let last_velocities: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 4> = aux_storage.previous_velocities();
+            ///             let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
+            ///             assert_eq!(last_velocities, vec![10_f32]);
+            ///             aux_storage.add_force(22_f32);
+            ///             assert_eq!(aux_storage.get_current_force(), 22_f32);
+            ///             aux_storage.set_next_random_update(Some(44_f64));
+            ///             assert_eq!(aux_storage.get_next_random_update(), Some(44_f64));
+            ///         }
             ///     };
             ///     (Interaction) => {
-            ///         aux_storage.incr_current_neighbours(1);
-            ///         aux_storage.incr_current_neighbours(2);
-            ///         aux_storage.incr_current_neighbours(1);
-            ///         assert_eq!(aux_storage.get_current_neighbours(), 4);
+            ///         {
+            ///             use cellular_raza_core::backend::chili::UpdateInteraction;
+            ///             aux_storage.incr_current_neighbours(1);
+            ///             aux_storage.incr_current_neighbours(2);
+            ///             aux_storage.incr_current_neighbours(1);
+            ///             assert_eq!(aux_storage.get_current_neighbours(), 4);
+            ///         }
             ///     };
             ///     (Cycle) => {
-            ///         use cellular_raza_concepts::cycle::CycleEvent;
-            ///         aux_storage.add_cycle_event(CycleEvent::Division);
-            ///         assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
+            ///         {
+            ///             use cellular_raza_core::backend::chili::UpdateCycle;
+            ///             use cellular_raza_concepts::cycle::CycleEvent;
+            ///             aux_storage.add_cycle_event(CycleEvent::Division);
+            ///             assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
+            ///         }
             ///     };
             ///     (Reactions) => {
-            ///         aux_storage.set_conc(0_f32);
-            ///         aux_storage.incr_conc(1.44_f32);
-            ///         assert_eq!(aux_storage.get_conc(), 0_f32 + 1.44_f32);
+            ///         {
+            ///             use cellular_raza_core::backend::chili::UpdateReactions;
+            ///             aux_storage.set_conc(0_f32);
+            ///             aux_storage.incr_conc(1.44_f32);
+            ///             assert_eq!(aux_storage.get_conc(), 0_f32 + 1.44_f32);
+            ///         }
             ///     };
             /// );
             #[doc = concat!($(

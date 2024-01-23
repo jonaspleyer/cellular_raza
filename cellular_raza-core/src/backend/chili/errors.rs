@@ -1,4 +1,5 @@
 pub use crate::storage::concepts::StorageError;
+pub use cellular_raza_concepts::errors::IndexError;
 use cellular_raza_concepts::errors::*;
 use core::any::type_name;
 use core::fmt::{Debug, Display};

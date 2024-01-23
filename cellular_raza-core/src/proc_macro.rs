@@ -6,25 +6,25 @@ pub use cellular_raza_core_proc_macro::run_test_for_aspects;
 /// This proc macros purpose is to support the [build_communicator!] macro.
 pub use cellular_raza_core_proc_macro::build_aux_storage;
 
-/// Derives the [FromMap](crate::backend::chili::simulation_flow::FromMap) trait.
+/// Derives the [FromMap](crate::backend::chili::FromMap) trait.
 ///  ```
-/// use cellular_raza_core::backend::chili::simulation_flow::FromMap;
+/// use cellular_raza_core::backend::chili::FromMap;
 /// ```
 pub use cellular_raza_core_proc_macro::FromMap;
 
-/// Derives the [UpdateCycle](cellular_raza_core::backend::chili::simulation_flow::UpdateCycle) and
-/// [UpdateMechanics](cellular_raza_core::backend::chili::simulation_flow::UpdateMechanics)
+/// Derives the [UpdateCycle](cellular_raza_core::backend::chili::UpdateCycle) and
+/// [UpdateMechanics](cellular_raza_core::backend::chili::UpdateMechanics)
 /// trait automatically for the containing struct.
 pub use cellular_raza_core_proc_macro::AuxStorage;
 
 /// Automatically build communicator struct depending on simulation aspects.
 ///
 /// This macro internally constructs a new struct with fields for every given simulation aspect.
-/// Each field is a [ChannelComm](crate::backend::chili::simulation_flow::ChannelComm)
+/// Each field is a [ChannelComm](crate::backend::chili::ChannelComm)
 /// struct with different types.
 ///
 /// It also automatically derives the
-/// [FromMap](cellular_raza_core::backend::chili::simulation_flow::FromMap) trait such that a
+/// [FromMap](cellular_raza_core::backend::chili::FromMap) trait such that a
 /// collection of communicators can be constructed from a given map.
 /// ```
 /// use cellular_raza_core::proc_macro::build_communicator;
@@ -42,7 +42,7 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// );
 ///
 /// // Use the new struct in the following.
-/// use cellular_raza_core::backend::chili::simulation_flow::FromMap;
+/// use cellular_raza_core::backend::chili::FromMap;
 ///
 /// let new_map = std::collections::HashMap::from([
 ///     (0, vec![1,3]),
@@ -55,7 +55,7 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// ```
 pub use cellular_raza_core_proc_macro::build_communicator;
 
-/// Derives the [Communicator](crate::backend::chili::simulation_flow::Communicator) trait.
+/// Derives the [Communicator](crate::backend::chili::Communicator) trait.
 ///
 /// This macro supports the [build_communicator!] macro.
 /// It is useful when a complex communicator struct should automatically be generated
@@ -64,12 +64,12 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 /// Furthermore, this macro can be used in the future to manually construct communicators
 /// for new backends.
 ///
-/// We use the [ChannelComm](crate::backend::chili::simulation_flow::ChannelComm) struct which has
-/// a working implementation of the [Communicator](crate::backend::chili::simulation_flow::Communicator)
+/// We use the [ChannelComm](crate::backend::chili::ChannelComm) struct which has
+/// a working implementation of the [Communicator](crate::backend::chili::Communicator)
 /// trait.
 /// ```
 /// use cellular_raza_core::{
-///     backend::chili::simulation_flow::ChannelComm,
+///     backend::chili::ChannelComm,
 ///     proc_macro::Communicator
 /// };
 ///

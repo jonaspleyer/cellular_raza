@@ -14,7 +14,7 @@ use super::{errors::SimulationError, VoxelPlainIndex};
 /// which can then be simply given to the respective threads and handle synchronization.
 /// ```
 /// # use std::collections::HashMap;
-/// # use cellular_raza_core::backend::chili::simulation_flow::{BarrierSync, FromMap, SyncSubDomains};
+/// # use cellular_raza_core::backend::chili::{BarrierSync, FromMap, SyncSubDomains};
 /// let map = HashMap::from_iter([
 ///     (0, vec![1]),
 ///     (1, vec![0]),
@@ -57,7 +57,7 @@ pub struct BarrierSync {
 /// This means, disjoint sets are allowed.
 ///
 /// ```
-/// use cellular_raza_core::backend::chili::simulation_flow::validate_map;
+/// use cellular_raza_core::backend::chili::validate_map;
 ///
 /// let new_map = std::collections::HashMap::from([
 ///     (1_usize, vec![0,2]),
@@ -94,7 +94,7 @@ impl<I> UDGraph<I> {
     /// Construct a new undirected graph.
     ///
     /// ```
-    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// # use cellular_raza_core::backend::chili::UDGraph;
     /// let ud_graph: UDGraph<usize> = UDGraph::new();
     /// ```
     pub fn new() -> Self {
@@ -108,7 +108,7 @@ impl<I> UDGraph<I> {
     /// 2. The nodes are identical, ie. `new_connection.0==new_connection.1`
     ///
     /// ```
-    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// # use cellular_raza_core::backend::chili::UDGraph;
     /// let mut ud_graph = UDGraph::new();
     /// assert_eq!(ud_graph.push((1, 2)), None);
     /// assert_eq!(ud_graph.push((1, 3)), None);
@@ -141,7 +141,7 @@ impl<I> UDGraph<I> {
     /// Will return all connections which can not be added by the [push](UDGraph::push) method.
     ///
     /// ```
-    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// # use cellular_raza_core::backend::chili::UDGraph;
     /// let mut ud_graph = UDGraph::new();
     /// let new_connections = [
     ///     (1_f64, 2_f64),
@@ -182,7 +182,7 @@ impl<I> UDGraph<I> {
     /// Returns all nodes currently stored in the [UDGraph].
     ///
     /// ```
-    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// # use cellular_raza_core::backend::chili::UDGraph;
     /// let mut ud_graph = UDGraph::new();
     /// ud_graph.push(("a", "s"));
     /// ud_graph.push(("a", "K"));
@@ -210,7 +210,7 @@ where
     /// Convert the [UDGraph] into a regular [HashMap].
     ///
     /// ```
-    /// # use cellular_raza_core::backend::chili::simulation_flow::UDGraph;
+    /// # use cellular_raza_core::backend::chili::UDGraph;
     /// let mut ud_graph = UDGraph::new();
     /// ud_graph.push((1, 2));
     /// ud_graph.push((2, 3));
@@ -392,7 +392,7 @@ pub trait TimeStepper<F> {
 ///
 /// This time-stepper increments the time variable by the same length.
 /// ```
-/// # use cellular_raza_core::backend::chili::simulation_flow::FixedStepsize;
+/// # use cellular_raza_core::backend::chili::FixedStepsize;
 /// let t0 = 1.0;
 /// let dt = 0.2;
 /// let save_points = vec![3.0, 5.0, 11.0, 20.0];
@@ -795,10 +795,7 @@ pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
 mod test_derive_communicator {
     /// ```
     /// use cellular_raza_core::proc_macro::Communicator;
-    /// use cellular_raza_core::backend::chili::{
-    ///     errors::SimulationError,
-    ///     simulation_flow::{ChannelComm, Communicator}
-    /// };
+    /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// #[derive(Communicator)]
     /// #[CommunicatorCorePath(cellular_raza_core)]
     /// struct MyComm<I, T> {
@@ -810,10 +807,7 @@ mod test_derive_communicator {
 
     /// ```
     /// use cellular_raza_core::proc_macro::Communicator;
-    /// use cellular_raza_core::backend::chili::{
-    ///     errors::SimulationError,
-    ///     simulation_flow::{ChannelComm, Communicator}
-    /// };
+    /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// #[derive(Communicator)]
     /// #[CommunicatorCorePath(cellular_raza_core)]
     /// struct MyDouble<I> {
@@ -827,10 +821,7 @@ mod test_derive_communicator {
 
     /// ```
     /// use cellular_raza_core::proc_macro::Communicator;
-    /// use cellular_raza_core::backend::chili::{
-    ///     errors::SimulationError,
-    ///     simulation_flow::{ChannelComm, Communicator}
-    /// };
+    /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
     /// #[CommunicatorCorePath(cellular_raza_core)]
@@ -850,7 +841,7 @@ mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
     ///     proc_macro::FromMap,
-    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
     /// #[derive(FromMap)]
@@ -865,7 +856,7 @@ mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
     ///     proc_macro::FromMap,
-    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
     /// #[derive(FromMap)]
@@ -880,7 +871,7 @@ mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
     ///     proc_macro::FromMap,
-    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
     /// #[derive(FromMap)]
@@ -898,7 +889,7 @@ mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
     ///     proc_macro::FromMap,
-    ///     backend::chili::simulation_flow::{ChannelComm, FromMap},
+    ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::errors::IndexError;
     /// #[derive(FromMap)]
