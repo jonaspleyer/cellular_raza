@@ -325,6 +325,30 @@ impl<I> FromMap<I> for BarrierSync {
     }
 }
 
+impl<I> BuildFromGraph<I> for BarrierSync
+where
+    I: Clone + Eq + core::hash::Hash + std::cmp::Ord,
+{
+    fn build_from_graph(
+        graph: UDGraph<I>,
+    ) -> Result<std::collections::HashMap<I, Self>, IndexError> {
+        let barrier = hurdles::Barrier::new(graph.len());
+        let res = graph
+            .nodes()
+            .into_iter()
+            .map(|key| {
+                (
+                    key.clone(),
+                    Self {
+                        barrier: barrier.clone(),
+                    },
+                )
+            })
+            .collect();
+        Ok(res)
+    }
+}
+
 impl SyncSubDomains for BarrierSync {
     fn sync(&mut self) {
         self.barrier.wait();
