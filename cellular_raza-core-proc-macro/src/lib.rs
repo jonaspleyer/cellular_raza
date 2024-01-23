@@ -18,7 +18,13 @@ mod testing;
 #[allow(missing_docs)]
 #[proc_macro_derive(
     AuxStorage,
-    attributes(AuxStorageCorePath, UpdateCycle, UpdateMechanics, UpdateInteraction, UpdateReactions)
+    attributes(
+        AuxStorageCorePath,
+        UpdateCycle,
+        UpdateMechanics,
+        UpdateInteraction,
+        UpdateReactions
+    )
 )]
 pub fn _aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     aux_storage::derive_aux_storage(input)

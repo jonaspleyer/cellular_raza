@@ -403,7 +403,10 @@ impl AuxStorageImplementer {
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
             let (cycle_path, backend_path) = match &self.core_path {
-                Some(p) => (quote!(#p ::concepts::cycle::), quote!(#p ::backend::chili::)),
+                Some(p) => (
+                    quote!(#p ::concepts::cycle::),
+                    quote!(#p ::backend::chili::),
+                ),
                 None => (quote!(), quote!()),
             };
 
@@ -586,7 +589,10 @@ impl syn::parse::Parse for Arguments {
 }
 
 impl SimulationAspect {
-    fn build_aux(&self, backend_path: &proc_macro2::TokenStream) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
+    fn build_aux(
+        &self,
+        backend_path: &proc_macro2::TokenStream,
+    ) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
         match &self {
             SimulationAspect::Cycle => {
                 let generics = vec![];
