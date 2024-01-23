@@ -3,6 +3,7 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::spanned::Spanned;
 
 use super::simulation_aspects::*;
 
@@ -11,18 +12,52 @@ struct AuxStorageParser {
     name: syn::Ident,
     generics: syn::Generics,
     aspects: AspectFields,
+    core_path: Option<syn::Path>,
 }
 
 impl syn::parse::Parse for AuxStorageParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let item_struct: syn::ItemStruct = input.parse()?;
+        let core_path = core_path_from_attributes(&item_struct.attrs, item_struct.span())?;
 
         Ok(Self {
             name: item_struct.ident,
             generics: item_struct.generics,
             aspects: AspectFields::from_fields(item_struct.fields)?,
+            core_path,
         })
     }
+}
+
+fn core_path_from_attributes(
+    attrs: &Vec<syn::Attribute>,
+    span: proc_macro2::Span,
+) -> syn::Result<Option<syn::Path>> {
+    let mut candidates = attrs
+        .iter()
+        .filter(|attr| {
+            attr.meta
+                .path()
+                .get_ident()
+                .is_some_and(|ident| ident == "AuxStorageCorePath")
+        })
+        .map(|attr| {
+            let s = &attr.meta;
+            let stream = quote!(#s);
+            let parsed: super::from_map::CorePathParser = syn::parse2(stream)?;
+            Ok(parsed)
+        })
+        .collect::<syn::Result<Vec<_>>>()?;
+    if candidates.len() > 1 {
+        return Err(syn::Error::new(
+            span,
+            "Expected at most one #[FromMapCorePath(..)] attribute",
+        ));
+    }
+    if candidates.len() == 1 {
+        return Ok(Some(candidates.remove(0).core_path));
+    }
+    Ok(None)
 }
 
 struct AspectFields {
@@ -238,6 +273,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
             update_mechanics,
             update_interaction,
             update_reactions,
+            core_path: value.core_path,
         }
     }
 }
@@ -251,6 +287,7 @@ struct AuxStorageImplementer {
     update_cycle: Option<UpdateCycleImplementer>,
     update_interaction: Option<UpdateInteractionImplementer>,
     update_reactions: Option<UpdateReactionsImplementer>,
+    core_path: Option<syn::Path>,
 }
 
 fn wrap_pre_flags(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
@@ -282,6 +319,11 @@ impl AuxStorageImplementer {
             let n_saves = &update_mechanics.n_saves;
             let float_type = &update_mechanics.float_type;
 
+            let backend_path = match &self.core_path {
+                Some(p) => quote!(#p ::backend::chili::),
+                None => quote!(),
+            };
+
             let field_generics = quote!(#position, #velocity, #force, #float_type, #n_saves);
 
             let struct_name = &self.name;
@@ -308,36 +350,36 @@ impl AuxStorageImplementer {
             let field_type = &update_mechanics.field_type;
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #struct_impl_generics UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #where_clause
+                impl #struct_impl_generics #backend_path UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #where_clause
                 {
                     fn set_last_position(&mut self, pos: #position) {
-                        <#field_type as UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
                     }
-                    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, #position, #n_saves> {
-                        <#field_type as UpdateMechanics<#field_generics>>::previous_positions(&self.#field_name)
+                    fn previous_positions<'a>(&'a self) -> #backend_path FixedSizeRingBufferIter<'a, #position, #n_saves> {
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::previous_positions(&self.#field_name)
                     }
                     fn set_last_velocity(&mut self, vel: #velocity) {
-                        <#field_type as UpdateMechanics<#field_generics>>::set_last_velocity(&mut self.#field_name, vel)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::set_last_velocity(&mut self.#field_name, vel)
                     }
-                    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
-                        <#field_type as UpdateMechanics<#field_generics>>::previous_velocities(&self.#field_name)
+                    fn previous_velocities<'a>(&'a self) -> #backend_path FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::previous_velocities(&self.#field_name)
                     }
                     fn add_force(&mut self, force: #force) {
-                        <#field_type as UpdateMechanics<#field_generics>>::add_force(&mut self.#field_name, force);
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::add_force(&mut self.#field_name, force);
                     }
                     fn get_current_force(&self) -> #force {
-                        <#field_type as UpdateMechanics<#field_generics>>::get_current_force(&self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::get_current_force(&self.#field_name)
                     }
                     fn clear_forces(&mut self) {
-                        <#field_type as UpdateMechanics<#field_generics>>::clear_forces(&mut self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::clear_forces(&mut self.#field_name)
                     }
 
                     fn get_next_random_update(&self) -> Option<#float_type> {
-                        <#field_type as UpdateMechanics<#field_generics>>::get_next_random_update(&self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::get_next_random_update(&self.#field_name)
                     }
 
                     fn set_next_random_update(&mut self, next: Option<#float_type>) {
-                        <#field_type as UpdateMechanics<#field_generics>>::set_next_random_update(&mut self.#field_name, next)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::set_next_random_update(&mut self.#field_name, next)
                     }
                 }
             ));
@@ -360,21 +402,26 @@ impl AuxStorageImplementer {
             let struct_name = &self.name;
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
+            let (cycle_path, backend_path) = match &self.core_path {
+                Some(p) => (quote!(#p ::concepts::cycle::), quote!(#p ::backend::chili::)),
+                None => (quote!(), quote!()),
+            };
+
             let field_name = &update_cycle.field_name;
             let field_type = &update_cycle.field_type;
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics UpdateCycle for #struct_name #ty_generics #where_clause {
-                    fn set_cycle_events(&mut self, events: Vec<CycleEvent>) {
-                        <#field_type as UpdateCycle>::set_cycle_events(&mut self.#field_name, events)
+                impl #impl_generics #backend_path UpdateCycle for #struct_name #ty_generics #where_clause {
+                    fn set_cycle_events(&mut self, events: Vec<#cycle_path CycleEvent>) {
+                        <#field_type as #backend_path UpdateCycle>::set_cycle_events(&mut self.#field_name, events)
                     }
 
-                    fn get_cycle_events(&self) -> Vec<CycleEvent> {
-                        <#field_type as UpdateCycle>::get_cycle_events(&self.#field_name)
+                    fn get_cycle_events(&self) -> Vec<#cycle_path CycleEvent> {
+                        <#field_type as #backend_path UpdateCycle>::get_cycle_events(&self.#field_name)
                     }
 
-                    fn add_cycle_event(&mut self, event: CycleEvent) {
-                        <#field_type as UpdateCycle>::add_cycle_event(&mut self.#field_name, event)
+                    fn add_cycle_event(&mut self, event: #cycle_path CycleEvent) {
+                        <#field_type as #backend_path UpdateCycle>::add_cycle_event(&mut self.#field_name, event)
                     }
                 }
             ));
@@ -399,6 +446,11 @@ impl AuxStorageImplementer {
             let struct_name = &self.name;
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
+            let backend_path = match &self.core_path {
+                Some(p) => quote!(#p ::backend::chili::),
+                None => quote!(),
+            };
+
             let field_name = &update_reactions.field_name;
             let field_type = &update_reactions.field_type;
 
@@ -420,22 +472,22 @@ impl AuxStorageImplementer {
             };
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics UpdateReactions<#concentration> for #struct_name #ty_generics #where_clause {
+                impl #impl_generics #backend_path UpdateReactions<#concentration> for #struct_name #ty_generics #where_clause {
                     fn set_conc(&mut self, conc: #concentration) {
-                        <#field_type as UpdateReactions<#concentration>>::set_conc(
+                        <#field_type as #backend_path UpdateReactions<#concentration>>::set_conc(
                             &mut self.#field_name,
                             conc
                         )
                     }
 
                     fn get_conc(&self) -> #concentration {
-                        <#field_type as UpdateReactions<#concentration>>::get_conc(
+                        <#field_type as #backend_path UpdateReactions<#concentration>>::get_conc(
                             &self.#field_name
                         )
                     }
 
                     fn incr_conc(&mut self, incr: #concentration) {
-                        <#field_type as UpdateReactions<#concentration>>::incr_conc(
+                        <#field_type as #backend_path UpdateReactions<#concentration>>::incr_conc(
                             &mut self.#field_name,
                             incr
                         )
@@ -463,23 +515,28 @@ impl AuxStorageImplementer {
             let struct_name = &self.name;
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
+            let backend_path = match &self.core_path {
+                Some(p) => quote!(#p ::backend::chili::),
+                None => quote!(),
+            };
+
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics UpdateInteraction for #struct_name #ty_generics #where_clause {
+                impl #impl_generics #backend_path UpdateInteraction for #struct_name #ty_generics #where_clause {
                     fn get_current_neighbours(&self) -> usize {
-                        <#field_type as UpdateInteraction>::get_current_neighbours(
+                        <#field_type as #backend_path UpdateInteraction>::get_current_neighbours(
                             &self.#field_name
                         )
                     }
 
                     fn incr_current_neighbours(&mut self, neighbours: usize) {
-                        <#field_type as UpdateInteraction>::incr_current_neighbours(
+                        <#field_type as #backend_path UpdateInteraction>::incr_current_neighbours(
                             &mut self.#field_name,
                             neighbours
                         )
                     }
 
                     fn set_current_neighbours(&mut self, neighbours: usize) {
-                        <#field_type as UpdateInteraction>::set_current_neighbours(
+                        <#field_type as #backend_path UpdateInteraction>::set_current_neighbours(
                             &mut self.#field_name,
                             neighbours
                         )
@@ -512,6 +569,8 @@ struct Arguments {
     name_def: NameDefinition,
     _comma: syn::Token![,],
     simulation_aspects: SimulationAspects,
+    _comma_2: syn::Token![,],
+    core_path: CorePath,
 }
 
 impl syn::parse::Parse for Arguments {
@@ -520,18 +579,20 @@ impl syn::parse::Parse for Arguments {
             name_def: input.parse()?,
             _comma: input.parse()?,
             simulation_aspects: input.parse()?,
+            _comma_2: input.parse()?,
+            core_path: input.parse()?,
         })
     }
 }
 
 impl SimulationAspect {
-    fn build_aux(&self) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
+    fn build_aux(&self, backend_path: &proc_macro2::TokenStream) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
         match &self {
             SimulationAspect::Cycle => {
                 let generics = vec![];
                 let field = quote!(
                     #[UpdateCycle]
-                    cycle: AuxStorageCycle,
+                    cycle: #backend_path AuxStorageCycle,
                 );
                 (generics, field)
             }
@@ -545,7 +606,7 @@ impl SimulationAspect {
                 ];
                 let field = quote!(
                     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-                    mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+                    mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, Float, N>,
                 );
                 (generics, field)
             }
@@ -553,7 +614,7 @@ impl SimulationAspect {
                 let generics = vec![quote!(R)];
                 let field = quote!(
                     #[UpdateReactions(R)]
-                    reactions: AuxStorageReactions<R>,
+                    reactions: #backend_path AuxStorageReactions<R>,
                 );
                 (generics, field)
             }
@@ -561,7 +622,7 @@ impl SimulationAspect {
                 let generics = vec![];
                 let field = quote!(
                     #[UpdateInteraction]
-                    interaction: AuxStorageInteraction,
+                    interaction: #backend_path AuxStorageInteraction,
                 );
                 (generics, field)
             }
@@ -572,10 +633,12 @@ impl SimulationAspect {
 impl Arguments {
     fn build_aux_storage(self) -> proc_macro2::TokenStream {
         let struct_name = self.name_def.struct_name;
+        let p = self.core_path.path;
+        let (core_path, backend_path) = (quote!(#p), quote!(#p ::backend::chili::));
         let mut generics = vec![];
         let mut fields = vec![];
         for item in self.simulation_aspects.items.into_iter() {
-            let (item_generics, item_field) = item.build_aux();
+            let (item_generics, item_field) = item.build_aux(&backend_path);
             generics.extend(item_generics);
             fields.extend(item_field);
         }
@@ -583,7 +646,8 @@ impl Arguments {
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
             #[derive(Clone, Default, Deserialize, Serialize)]
-            #[derive(AuxStorage)]
+            #[derive(#core_path ::proc_macro::AuxStorage)]
+            #[AuxStorageCorePath(#core_path)]
             pub struct #struct_name<#(#generics),*> {
                 #(#fields)*
             }
