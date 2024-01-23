@@ -1,7 +1,7 @@
 use cellular_raza_concepts::domain_new::*;
 use cellular_raza_concepts::*;
 
-use crate::storage::concepts::StorageOption;
+use crate::storage::StorageOption;
 
 use serde::{Deserialize, Serialize};
 

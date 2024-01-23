@@ -10,7 +10,7 @@ use cellular_raza_concepts::mechanics::{Force, Position, Velocity};
 use cellular_raza_concepts::{CreatePlottingRoot, PlotSelf};
 
 use super::errors::*;
-use crate::storage::concepts::{StorageInterface, StorageManager};
+use crate::storage::{StorageInterface, StorageManager};
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,

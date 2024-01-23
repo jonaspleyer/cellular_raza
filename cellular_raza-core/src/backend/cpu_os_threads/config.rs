@@ -1,5 +1,5 @@
 use crate::backend::cpu_os_threads::prelude::AuxiliaryCellPropertyStorage;
-use crate::storage::concepts::{StorageManager, StorageOption, UniqueVec};
+use crate::storage::{StorageManager, StorageOption, UniqueVec};
 use cellular_raza_concepts::{
     Agent, CellAgentBox, Domain, Force, Index, Position, Velocity, Voxel,
 };
@@ -72,7 +72,7 @@ pub struct TimeSetup {
 /// Contains settings on how to handle storing results.
 ///
 /// ```rust
-/// # use cellular_raza_core::storage::concepts::StorageOption;
+/// # use cellular_raza_core::storage::StorageOption;
 /// # use cellular_raza_core::backend::cpu_os_threads::config::StorageConfig;
 /// let output_path = std::path::PathBuf::from("my_output_directory");
 /// let storage_config = StorageConfig::from_path(&output_path)

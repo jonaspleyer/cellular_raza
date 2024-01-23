@@ -115,7 +115,7 @@ pub enum StorageOption {
 /// A unique vector containing only non-recurring values but in the correct order.
 ///
 /// ```
-/// # use cellular_raza_core::storage::concepts::UniqueVec;
+/// # use cellular_raza_core::storage::UniqueVec;
 /// let mut unique_vec = UniqueVec::new();
 /// unique_vec.push(1_usize);
 /// unique_vec.push(2_usize);
@@ -136,7 +136,7 @@ impl<T> UniqueVec<T> {
     /// This function will also return the rest which was not inserted into the [UniqueVec].
     ///
     /// ```
-    /// # use cellular_raza_core::storage::concepts::UniqueVec;
+    /// # use cellular_raza_core::storage::UniqueVec;
     /// let input = vec![1, 33, 2, 0, 33, 4, 56, 2];
     /// let (unique_vec, rest) = UniqueVec::from_vec(input);
     /// assert_eq!(*unique_vec, vec![1, 33, 2, 0, 4, 56]);
@@ -164,7 +164,7 @@ impl<T> UniqueVec<T> {
     /// Add an element to the [UniqueVec] if not already present.
     ///
     /// ```
-    /// # use cellular_raza_core::storage::concepts::UniqueVec;
+    /// # use cellular_raza_core::storage::UniqueVec;
     /// let mut unique_vec = UniqueVec::new();
     /// assert!(unique_vec.push(1_f64).is_none());
     /// assert!(unique_vec.push(2_f64).is_none());

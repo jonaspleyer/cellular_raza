@@ -2,7 +2,7 @@ use cellular_raza_concepts::*;
 use kdam::BarExt;
 
 use super::errors::*;
-use crate::storage::concepts::{StorageInterface, StorageManager};
+use crate::storage::{StorageInterface, StorageManager};
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
