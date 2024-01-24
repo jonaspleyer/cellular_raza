@@ -44,7 +44,14 @@ pub struct Voxel<C, A> {
 }
 
 impl<C, A> Voxel<C, A> {
-    pub fn calculate_force_between_cells_internally<Pos, Vel, For, Float, Inf, const N: usize>(
+    pub(crate) fn calculate_force_between_cells_internally<
+        Pos,
+        Vel,
+        For,
+        Float,
+        Inf,
+        const N: usize,
+    >(
         &mut self,
     ) -> Result<(), CalcError>
     where
@@ -86,7 +93,15 @@ impl<C, A> Voxel<C, A> {
         Ok(())
     }
 
-    pub fn calculate_force_between_cells_external<Pos, Vel, For, Float, Inf, F, const N: usize>(
+    pub(crate) fn calculate_force_between_cells_external<
+        Pos,
+        Vel,
+        For,
+        Float,
+        Inf,
+        F,
+        const N: usize,
+    >(
         &mut self,
         ext_pos: &Pos,
         ext_vel: &Vel,
@@ -124,13 +139,12 @@ impl<C, A> Voxel<C, A> {
         Ok(force)
     }
 
-    pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), CalcError>
+    pub(crate) fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
             + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
-        use cellular_raza_concepts::CycleEvent;
         // Update the cell individual cells
         self.cells
             .iter_mut()
