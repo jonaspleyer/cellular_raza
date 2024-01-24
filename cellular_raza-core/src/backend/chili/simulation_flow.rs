@@ -203,6 +203,18 @@ impl<I> UDGraph<I> {
     }
 }
 
+impl<I> IntoIterator for UDGraph<I> {
+    type Item = (I, I);
+    type IntoIter = std::vec::IntoIter<(I, I)>;
+
+    /// Consumes the graph and returns iterator over elements.
+    ///
+    /// See [std::vec::Vec::into_iter].
+    fn into_iter(self) -> std::vec::IntoIter<(I, I)> {
+        self.0.into_iter()
+    }
+}
+
 impl<I> UDGraph<I>
 where
     I: core::hash::Hash + Clone + Eq,
