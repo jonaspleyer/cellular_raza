@@ -547,14 +547,57 @@ where
     }
 }
 
+/// Handles communications between different simulation processes.
+///
+/// Often times, information needs to be exchanged between threads.
+/// For example, positional and force information of cells living at the boundary.
+///
+/// The receiver is referenced by the index `I` and will obtain the message `T`.
+/// The trait was designed around the [crossbeam_channel] sender-receiver pair.
+/// However, it should allow for more generic setups where eg. information could be shared
+/// by different means such as sharing memory.
+///
+/// Between the [Communicator::send] and [Communicator::receive] method, a synchronization step
+/// needs to happen. Otherwise, dataraces can occur and invalidate given results.
+/// See the [Sync] trait for more details on syncing between threads.
 pub trait Communicator<I, T>
 where
     Self: Sized,
 {
+    /// Sends information to a particular receiver.
     fn send(&mut self, receiver: &I, message: T) -> Result<(), SimulationError>;
+    /// Receives the information previously sent
+    ///
+    /// When implementing this trait, make sure to empty any existing queue or shared memory.
+    /// Otherwise received messages will be stacking up, using up more memory+
+    /// and yielding wrong results.
     fn receive(&mut self) -> Vec<T>;
 }
 
+/// Sender-Receiver [Communicator] based on [crossbeam_channel].
+///
+/// This struct contains one receiver and multiple senders.
+/// It can be constructed by using the [FromMap] trait.
+/// ```
+/// # use cellular_raza_core::backend::chili::{ChannelComm, Communicator, FromMap};
+/// # use std::collections::HashMap;
+/// let map = HashMap::from([
+///     (0, vec![1]),
+///     (1, vec![0, 2]),
+///     (2, vec![1]),
+/// ]);
+///
+/// // Construct multiple communicators from a given map.
+/// let mut channel_comms = ChannelComm::from_map(&map).unwrap();
+///
+/// // Send a message from 0 to 1
+/// channel_comms.get_mut(&0).unwrap().send(&1, true);
+/// channel_comms.get_mut(&0).unwrap().send(&1, false);
+/// // Receive all elements at communicator 1
+/// let elements = channel_comms.get_mut(&1).unwrap().receive();
+///
+/// assert_eq!(elements, vec![true, false]);
+/// ```
 #[derive(Clone)]
 pub struct ChannelComm<I, T> {
     senders: std::collections::BTreeMap<I, crossbeam_channel::Sender<T>>,
