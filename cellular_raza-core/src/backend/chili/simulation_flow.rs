@@ -271,6 +271,21 @@ where
     ) -> Result<std::collections::HashMap<I, Self>, IndexError>;
 }
 
+impl<I> BuildFromGraph<I> for PhantomData<I>
+where
+    Self: Sized,
+    I: Clone + Eq + core::hash::Hash + Ord,
+{
+    fn build_from_graph(
+        graph: UDGraph<I>,
+    ) -> Result<std::collections::HashMap<I, Self>, IndexError> {
+        Ok(graph
+            .into_iter()
+            .map(|(key, _)| (key, PhantomData::<I>))
+            .collect())
+    }
+}
+
 /* impl<I, T> From<UDGraph<I>> for Result<std::collections::HashMap<I, T>, IndexError>
 where
     T: FromMap<I>,
