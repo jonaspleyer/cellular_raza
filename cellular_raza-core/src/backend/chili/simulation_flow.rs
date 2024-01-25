@@ -261,11 +261,17 @@ impl<I> From<UDGraph<I>> for PhantomData<I> {
     }
 }
 
+/// Construct a HashMap of the type from a graph
+///
+/// The types should be connected according to the connections specified in the graph.
+/// Afterwards, this HashMap can over multiple threads and used since all components
+/// are connected according the the initial graph.
 pub trait BuildFromGraph<I>
 where
     Self: Sized,
     I: Clone + Eq + core::hash::Hash + Ord,
 {
+    /// Builds the HashMap
     fn build_from_graph(
         graph: UDGraph<I>,
     ) -> Result<std::collections::HashMap<I, Self>, IndexError>;
