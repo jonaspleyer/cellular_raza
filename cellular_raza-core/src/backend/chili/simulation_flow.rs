@@ -847,14 +847,14 @@ pub struct PosInformation<Pos, Vel, Inf> {
     pub pos: Pos,
     pub vel: Vel,
     pub info: Inf,
-    pub count: usize,
+    pub cell_index_in_vector: usize,
     pub index_sender: VoxelPlainIndex,
     pub index_receiver: VoxelPlainIndex,
 }
 
 pub struct ForceInformation<For> {
     pub force: For,
-    pub count: usize,
+    pub cell_index_in_vector: usize,
     pub index_sender: VoxelPlainIndex,
 }
 

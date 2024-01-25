@@ -462,10 +462,14 @@ where
         let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
 
         for voxel_index in key_iterator {
-            for cell_count in 0..self.voxels[&voxel_index].cells.len() {
-                let cell_pos = self.voxels[&voxel_index].cells[cell_count].0.pos();
-                let cell_vel = self.voxels[&voxel_index].cells[cell_count].0.velocity();
-                let cell_inf = self.voxels[&voxel_index].cells[cell_count]
+            for cell_index_in_vector in 0..self.voxels[&voxel_index].cells.len() {
+                let cell_pos = self.voxels[&voxel_index].cells[cell_index_in_vector]
+                    .0
+                    .pos();
+                let cell_vel = self.voxels[&voxel_index].cells[cell_index_in_vector]
+                    .0
+                    .velocity();
+                let cell_inf = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
                     .get_interaction_information();
                 let mut force = For::zero();
@@ -485,12 +489,12 @@ where
                                 pos: cell_pos.clone(),
                                 vel: cell_vel.clone(),
                                 info: cell_inf.clone(),
-                                count: cell_count,
+                                cell_index_in_vector,
                             },
                         )?),
                     }?;
                 }
-                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_count]
+                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_index_in_vector]
                     .1
                     .add_force(force);
             }
@@ -549,7 +553,7 @@ where
                 &self.plain_index_to_subdomain[&pos_info.index_sender],
                 ForceInformation {
                     force,
-                    count: pos_info.count,
+                    cell_index_in_vector: pos_info.cell_index_in_vector,
                     index_sender: pos_info.index_sender,
                 },
             )?;
@@ -583,9 +587,9 @@ where
             .into_iter()
         {
             let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::IndexError(format!("EngineError: Sender with plain index {:?} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
-            match vox.cells.get_mut(obt_forces.count) {
+            match vox.cells.get_mut(obt_forces.cell_index_in_vector) {
                 Some((_, aux_storage)) => Ok(aux_storage.add_force(obt_forces.force)),
-                None => Err(cellular_raza_concepts::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
+                None => Err(cellular_raza_concepts::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.cell_index_in_vector))),
             }?;
         }
 
