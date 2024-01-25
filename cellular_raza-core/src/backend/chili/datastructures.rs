@@ -336,7 +336,6 @@ where
                     voxel_index_to_subdomain: voxel_index_to_subdomain.clone(),
                     communicator,
                     syncer,
-                    // storage_manager,
                 };
                 subdomain_box.insert_cells(&mut cells)?;
                 Ok((index, subdomain_box))
