@@ -364,6 +364,9 @@ impl AuxStorageImplementer {
                     fn previous_velocities<'a>(&'a self) -> #backend_path FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>::previous_velocities(&self.#field_name)
                     }
+                    fn n_previous_values(&self) -> usize {
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::n_previous_values(&self.#field_name)
+                    }
                     fn add_force(&mut self, force: #force) {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>::add_force(&mut self.#field_name, force);
                     }
@@ -416,8 +419,12 @@ impl AuxStorageImplementer {
                         <#field_type as #backend_path UpdateCycle>::set_cycle_events(&mut self.#field_name, events)
                     }
 
-                    fn get_cycle_events(&self) -> Vec<#cycle_path CycleEvent> {
+                    fn get_cycle_events(&self) -> &Vec<#cycle_path CycleEvent> {
                         <#field_type as #backend_path UpdateCycle>::get_cycle_events(&self.#field_name)
+                    }
+
+                    fn drain_cycle_events(&mut self) -> std::vec::Drain<#cycle_path CycleEvent> {
+                        <#field_type as #backend_path UpdateCycle>::drain_cycle_events(&mut self.#field_name)
                     }
 
                     fn add_cycle_event(&mut self, event: #cycle_path CycleEvent) {

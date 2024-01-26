@@ -73,6 +73,11 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
     /// velocities but never exceeds it.
     fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N>;
 
+    /// Get the number of previous values currently stored
+    ///
+    /// This number is by definition between 0 and `N`.
+    fn n_previous_values(&self) -> usize;
+
     /// Add force to currently stored forces
     fn add_force(&mut self, force: For);
 
@@ -112,6 +117,11 @@ where
     #[inline]
     fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N> {
         self.velocities.iter()
+    }
+
+    #[inline]
+    fn n_previous_values(&self) -> usize {
+        self.positions.size
     }
 
     #[inline]
@@ -159,7 +169,10 @@ pub trait UpdateCycle {
     fn set_cycle_events(&mut self, events: Vec<CycleEvent>);
 
     /// Get all cycle events currently stored.
-    fn get_cycle_events(&self) -> Vec<CycleEvent>;
+    fn get_cycle_events(&self) -> &Vec<CycleEvent>;
+
+    /// Drain all cycle events
+    fn drain_cycle_events(&mut self) -> std::vec::Drain<CycleEvent>;
 
     /// Add another cycle event to the storage.
     fn add_cycle_event(&mut self, event: CycleEvent);
@@ -178,8 +191,13 @@ impl UpdateCycle for AuxStorageCycle {
     }
 
     #[inline]
-    fn get_cycle_events(&self) -> Vec<CycleEvent> {
-        self.cycle_events.clone()
+    fn get_cycle_events(&self) -> &Vec<CycleEvent> {
+        &self.cycle_events
+    }
+
+    #[inline]
+    fn drain_cycle_events(&mut self) -> std::vec::Drain<CycleEvent> {
+        self.cycle_events.drain(..)
     }
 
     #[inline]
@@ -688,7 +706,7 @@ pub mod test_derive_aux_storage {
     {
         aux_storage.add_cycle_event(CycleEvent::Division);
         let events = aux_storage.get_cycle_events();
-        assert_eq!(events, vec![CycleEvent::Division]);
+        assert_eq!(events, &vec![CycleEvent::Division]);
     }
 
     fn set_get_events<A>(aux_storage: &mut A)
@@ -703,7 +721,7 @@ pub mod test_derive_aux_storage {
         aux_storage.set_cycle_events(initial_events.clone());
         let events = aux_storage.get_cycle_events();
         assert_eq!(events.len(), 3);
-        assert_eq!(events, initial_events);
+        assert_eq!(events, &initial_events);
     }
 
     #[test]
@@ -1157,7 +1175,7 @@ mod test_build_aux_storage {
             ///             use cellular_raza_core::backend::chili::UpdateCycle;
             ///             use cellular_raza_concepts::CycleEvent;
             ///             aux_storage.add_cycle_event(CycleEvent::Division);
-            ///             assert_eq!(aux_storage.get_cycle_events(), vec![CycleEvent::Division]);
+            ///             assert_eq!(aux_storage.get_cycle_events(), &vec![CycleEvent::Division]);
             ///         }
             ///     };
             ///     (Reactions) => {
