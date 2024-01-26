@@ -86,7 +86,7 @@ fn run_simulation(
         chili::SubDomainBox<
             _,
             _,
-            __cr_AuxStorage<_, _, _, _, 0>,
+            __cr_AuxStorage<_, _, _, _, 2>,
             // TODO these two are just to fill in SOMETHING
             // The Agent will have to be replaced with the CellAgentBox<C> or something simlar
             // and the f64 by the __cr_AuxStorage<_, _, _, _, 4> from above
