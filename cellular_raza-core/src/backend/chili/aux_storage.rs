@@ -186,6 +186,25 @@ pub trait UpdateCycle {
 }
 
 /// Stores intermediate information about the cell cycle.
+///
+/// This struct is used in the [build_aux_storage](crate::build_aux_storage) macro.
+/// It can in principle also be re-used on its own since it implements the [UpdateCycle] trait.
+///
+/// ```
+/// use cellular_raza_core::backend::chili::{AuxStorageCycle,UpdateCycle};
+/// use cellular_raza_concepts::CycleEvent;
+///
+/// // Construct a new empty AuxStorageCycle
+/// let mut aux_storage_cycle = AuxStorageCycle::default();
+///
+/// // Add one element
+/// aux_storage_cycle.add_cycle_event(CycleEvent::Division);
+/// assert_eq!(aux_storage_cycle.get_cycle_events().len(), 1);
+///
+/// // Drain all elements currently present
+/// let events = aux_storage_cycle.drain_cycle_events();
+/// assert_eq!(events.len(), 1);
+/// ```
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageCycle {
     cycle_events: Vec<CycleEvent>,
