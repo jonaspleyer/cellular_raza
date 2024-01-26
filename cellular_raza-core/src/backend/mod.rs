@@ -17,6 +17,7 @@
 //! | [Volume](cellular_raza_concepts::Volume) | ✅¹ | ❌ |
 //! | [Domain](cellular_raza_concepts::domain::Domain) | ✅ | ❌ |
 //! | [DomainNew](cellular_raza_concepts::domain_new::Domain) | ❌ | ✅ |
+//! | [Controller](cellular_raza_concepts::Controller) | ✅ | ❌ |
 //! | [Plotting](cellular_raza_concepts::plotting) | ✅ | ❌ |
 //!
 //! ¹Only supports `Float=f64`.
