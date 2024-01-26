@@ -100,19 +100,19 @@ fn run_simulation(
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
     let save_points = vec![5.0, 10.0, 15.0, 20.0];
+    let time_stepper = chili::FixedStepsize::from_save_points(t0, dt, save_points.clone())?;
     supervisor
         .subdomain_boxes
         .par_iter_mut()
         .map(|(key, sbox)| {
-            let mut time_stepper =
-                chili::FixedStepsize::from_save_points(t0, dt, save_points.clone())?;
+            let mut time_stepper = time_stepper.clone();
             let mut pb = if key == &0 {
                 Some(tqdm!(total = simulation_settings.n_iterations))
             } else {
                 None
             };
             use chili::TimeStepper;
-            while let Some((t, iteration, event)) = time_stepper.advance()? {
+            while let Some(_next_time_point) = time_stepper.advance()? {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
                 sbox.update_mechanics_step_1()?;
 
