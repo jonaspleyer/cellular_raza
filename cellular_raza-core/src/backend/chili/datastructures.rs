@@ -197,11 +197,7 @@ impl<C, A> Voxel<C, A> {
             .extend(self.new_cells.drain(..).map(|(cell, parent_id)| {
                 self.id_counter += 1;
                 (
-                    CellBox::new(
-                        CellIdentifier(self.plain_index, self.id_counter),
-                        parent_id,
-                        cell,
-                    ),
+                    CellBox::new(self.plain_index, self.id_counter, cell, parent_id),
                     A::default(),
                 )
             }));
@@ -401,12 +397,8 @@ where
                 "Could not find correct voxel for cell".to_owned(),
             ))?;
             voxel.cells.push((
-                CellBox::new(
-                    CellIdentifier(voxel.plain_index, voxel.id_counter),
-                    None,
-                    cell.0,
-                ),
-                cell.1.map_or(A::default(), |x| x),
+                CellBox::new(voxel.plain_index, voxel.id_counter, cell, None),
+                aux_storage.map_or(A::default(), |x| x),
             ));
         }
         Ok(())

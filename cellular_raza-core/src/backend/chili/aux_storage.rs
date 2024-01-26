@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use std::ops::{Deref, DerefMut};
 
-use super::CellIdentifier;
+use super::{CellIdentifier, VoxelPlainIndex};
 
 /// Wrapper around the user-defined CellAgent
 ///
@@ -44,9 +44,16 @@ impl<C> cellular_raza_concepts::domain_new::Id for CellBox<C> {
 }
 
 impl<C> CellBox<C> {
-    pub(crate) fn new(identifier: CellIdentifier, parent: Option<CellIdentifier>, cell: C) -> Self {
-        Self {
-            identifier,
+    /// Create a new [CellAgentBox] at a specific voxel with a voxel-unique number
+    /// of cells that has already been created at this position.
+    pub fn new(
+        voxel_index: VoxelPlainIndex,
+        n_cell: u64,
+        cell: C,
+        parent: Option<CellIdentifier>,
+    ) -> CellBox<C> {
+        CellBox::<C> {
+            identifier: CellIdentifier(voxel_index, n_cell),
             parent,
             cell,
         }
