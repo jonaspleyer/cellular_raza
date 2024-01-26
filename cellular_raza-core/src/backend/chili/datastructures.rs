@@ -139,7 +139,7 @@ impl<C, A> Voxel<C, A> {
         Ok(force)
     }
 
-    pub(crate) fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), CalcError>
+    pub(crate) fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
             + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
@@ -151,11 +151,10 @@ impl<C, A> Voxel<C, A> {
             .map(|(cbox, aux_storage)| {
                 // Check for cycle events and do update if necessary
                 let mut remaining_events = Vec::new();
-                for event in aux_storage.get_cycle_events() {
+                for event in aux_storage.drain_cycle_events() {
                     match event {
                         CycleEvent::Division => {
-                            // TODO catch this error
-                            let new_cell = C::divide(&mut self.rng, &mut cbox.cell).unwrap();
+                            let new_cell = C::divide(&mut self.rng, &mut cbox.cell)?;
                             self.new_cells.push((new_cell, Some(cbox.get_id())));
                         }
                         CycleEvent::Remove => remaining_events.push(event),
@@ -170,10 +169,7 @@ impl<C, A> Voxel<C, A> {
                     .get_cycle_events()
                     .contains(&CycleEvent::PhasedDeath)
                 {
-                    // TODO catch this error!
-                    match C::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)
-                        .unwrap()
-                    {
+                    match C::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)? {
                         true => aux_storage.add_cycle_event(CycleEvent::Remove),
                         false => (),
                     }
@@ -185,7 +181,7 @@ impl<C, A> Voxel<C, A> {
                 }
                 Ok(())
             })
-            .collect::<Result<(), CalcError>>()?;
+            .collect::<Result<(), SimulationError>>()?;
 
         // Remove cells which are flagged for death
         self.cells.retain(|(_, aux_storage)| {
