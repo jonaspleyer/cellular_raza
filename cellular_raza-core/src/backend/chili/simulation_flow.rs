@@ -398,6 +398,13 @@ pub enum TimeEvent {
     FullSave,
 }
 
+pub struct NextTimePoint<F> {
+    pub increment: F,
+    pub time: F,
+    pub iteration: i64,
+    pub event: Option<TimeEvent>,
+}
+
 /// Increments time of the simulation
 ///
 /// In the future we hope to add adaptive steppers depending on a specified accuracy function.
@@ -405,16 +412,7 @@ pub trait TimeStepper<F> {
     /// Advances the time stepper to the next time point. Also returns if there is an event
     /// scheduled to take place and the next time value and iteration number
     #[must_use]
-    fn advance(&mut self) -> Result<Option<(F, i64, Option<TimeEvent>)>, CalcError>;
-
-    /// Obtains the current time the simulation is at
-    fn get_current_time(&self) -> Option<F>;
-
-    /// Obtains the current number of iteration
-    fn get_current_iteration(&self) -> Option<i64>;
-
-    /// Obtains information about if a [TimeEvent] is scheduled to take place this iteration.
-    fn get_current_event(&self) -> Option<TimeEvent>;
+    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, CalcError>;
 
     /// Retrieved the last point at which the simulation was fully recovered.
     /// This might be helpful in the future when error handling is more mature and able to recover.
@@ -516,58 +514,30 @@ impl<F> TimeStepper<F> for FixedStepsize<F>
 where
     F: num::Float + num::FromPrimitive,
 {
-    fn advance(&mut self) -> Result<Option<(F, i64, Option<TimeEvent>)>, CalcError> {
+    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, CalcError> {
         self.current_iteration += 1;
         self.current_time = F::from_i64(self.current_iteration).ok_or(CalcError(
             "Error when casting from i64 to floating point value".to_owned(),
         ))? * self.dt
             + self.t0;
         // TODO Check if a current event should take place
-        if let Some((_, _, event)) = self
+        let event = self
             .all_events
             .iter()
             .filter(|(_, iteration, _)| *iteration == self.current_iteration)
-            .last()
-        {
-            self.current_event = Some(*event);
-        } else {
-            self.current_event = None;
-        }
+            .map(|(_, _, event)| event.clone())
+            .last();
 
-        match (
-            self.get_current_time(),
-            self.get_current_iteration(),
-            self.get_current_event(),
-        ) {
-            (Some(time), Some(iteration), event) => {
-                match event {
-                    Some(e) => self.past_events.push((time, iteration, e)),
-                    _ => (),
-                }
-                Ok(Some((time, iteration, event)))
-            }
-            _ => Ok(None),
-        }
-    }
-
-    fn get_current_time(&self) -> Option<F> {
         if self.current_iteration <= self.maximum_iterations {
-            Some(self.current_time)
+            Ok(Some(NextTimePoint {
+                increment: self.dt,
+                time: self.current_time,
+                iteration: self.current_iteration,
+                event,
+            }))
         } else {
-            None
+            Ok(None)
         }
-    }
-
-    fn get_current_iteration(&self) -> Option<i64> {
-        if self.current_iteration <= self.maximum_iterations {
-            Some(self.current_iteration)
-        } else {
-            None
-        }
-    }
-
-    fn get_current_event(&self) -> Option<TimeEvent> {
-        self.current_event
     }
 
     fn get_last_full_save(&self) -> Option<(F, i64)> {
@@ -1165,9 +1135,10 @@ pub mod test_time_stepper {
         let dt = 0.2;
         let save_points = vec![3.0, 5.0, 11.0, 20.0];
         let time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
-        assert_eq!(Some(t0), time_stepper.get_current_time());
-        assert_eq!(Some(0), time_stepper.get_current_iteration());
-        assert_eq!(None, time_stepper.get_current_event());
+        assert_eq!(t0, time_stepper.current_time);
+        assert_eq!(0.2, time_stepper.dt);
+        assert_eq!(0, time_stepper.current_iteration);
+        assert_eq!(None, time_stepper.current_event);
     }
 
     #[test]
@@ -1187,30 +1158,17 @@ pub mod test_time_stepper {
         let save_points = vec![3.0, 5.0, 11.0, 20.0];
         let mut time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
 
-        assert_eq!(Some(t0), time_stepper.get_current_time());
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + dt, 1_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 2.0 * dt, 2_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 3.0 * dt, 3_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 4.0 * dt, 4_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 5.0 * dt, 5_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 6.0 * dt, 6_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 7.0 * dt, 7_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 8.0 * dt, 8_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 9.0 * dt, 9_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(
-            Some((t0 + 10.0 * dt, 10_i64, Some(TimeEvent::PartialSave))),
-            next
-        );
+        for i in 1..11 {
+            let next = time_stepper.advance().unwrap().unwrap();
+            assert_eq!(dt, next.increment);
+            assert_eq!(t0 + i as f64 * dt, next.time);
+            assert_eq!(i as i64 , next.iteration);
+            if i == 10 {
+                assert_eq!(Some(TimeEvent::PartialSave), next.event);
+            } else {
+                assert_eq!(None, next.event);
+            }
+        }
     }
 
     #[test]
@@ -1218,41 +1176,18 @@ pub mod test_time_stepper {
         let t0 = 0.0;
         let dt = 0.1;
         let save_points = vec![0.5, 0.7, 0.9, 1.0];
-        let mut time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
+        let mut time_stepper = FixedStepsize::from_save_points(t0, dt, save_points.clone()).unwrap();
 
-        assert_eq!(Some(t0), time_stepper.get_current_time());
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + dt, 1_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 2.0 * dt, 2_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 3.0 * dt, 3_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 4.0 * dt, 4_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(
-            Some((t0 + 5.0 * dt, 5_i64, Some(TimeEvent::PartialSave))),
-            next
-        );
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 6.0 * dt, 6_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(
-            Some((t0 + 7.0 * dt, 7_i64, Some(TimeEvent::PartialSave))),
-            next
-        );
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(Some((t0 + 8.0 * dt, 8_i64, None)), next);
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(
-            Some((t0 + 9.0 * dt, 9_i64, Some(TimeEvent::PartialSave))),
-            next
-        );
-        let next = time_stepper.advance().unwrap();
-        assert_eq!(
-            Some((t0 + 10.0 * dt, 10_i64, Some(TimeEvent::PartialSave))),
-            next
-        );
+        assert_eq!(t0, time_stepper.current_time);
+        for i in 1..11 {
+            let next = time_stepper.advance().unwrap().unwrap();
+            assert_eq!(dt, next.increment);
+            assert_eq!(t0 + i as f64 * dt, next.time);
+            assert_eq!(i as i64, next.iteration);
+            if save_points.contains(&next.time) {
+                assert_eq!(Some(TimeEvent::PartialSave), next.event);
+            }
+        }
     }
 
     fn test_stepping(rng_seed: u64) {
