@@ -685,4 +685,22 @@ where
         }
         Ok(())
     }
+
+    /// Separate function to update the cell cycle
+    ///
+    /// Instead of running one big update function for all local rules, we have to treat this cell
+    /// cycle differently since new cells could be generated and thus have consequences for other
+    /// update steps as well.
+    pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
+    where
+        C: cellular_raza_concepts::Cycle<C, Float>
+            + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
+        A: UpdateCycle + Default,
+    {
+        self.voxels
+            .iter_mut()
+            .map(|(_, vox)| vox.update_cell_cycle_3(dt))
+            .collect::<Result<(), SimulationError>>()?;
+        Ok(())
+    }
 }
