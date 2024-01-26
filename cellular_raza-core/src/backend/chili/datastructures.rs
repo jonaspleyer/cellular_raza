@@ -1,5 +1,6 @@
-use cellular_raza_concepts::domain_new::{DecomposedDomain, Domain, SubDomain};
+use cellular_raza_concepts::domain_new::{DecomposedDomain, SubDomain};
 use cellular_raza_concepts::*;
+use num::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -386,8 +387,8 @@ where
         S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
     {
-        for cell in new_cells.drain(..) {
-            let voxel_index = self.subdomain.get_voxel_index_of(&cell.0)?;
+        for (cell, aux_storage) in new_cells.drain(..) {
+            let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];
             let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
                 "Could not find correct voxel for cell".to_owned(),
@@ -553,18 +554,21 @@ where
         dt: &Float,
     ) -> Result<(), SimulationError>
     where
-        A: UpdateMechanics<Pos, Vel, For, Float, 0>,
+        A: UpdateMechanics<Pos, Vel, For, Float, 2>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>
             + Clone,
-        Float: Copy,
+        Float: num::Float + Copy + FromPrimitive,
         Pos: core::ops::Mul<Float, Output = Pos>,
         Pos: core::ops::Add<Pos, Output = Pos>,
+        Pos: core::ops::Sub<Pos, Output = Pos>,
+        Pos: Clone,
         Vel: core::ops::Mul<Float, Output = Vel>,
         Vel: core::ops::Add<Vel, Output = Vel>,
-        Vel: num::Zero,
+        Vel: core::ops::Sub<Vel, Output = Vel>,
+        Vel: Clone,
     {
         // Update position and velocity of all cells with new information
         for obt_forces in
@@ -584,7 +588,7 @@ where
             .iter_mut()
             .map(|(_, vox)| {
                 vox.cells.iter_mut().map(|(cellbox, aux_storage)| {
-                    super::solvers::mechanics_euler::<C, A, Pos, Vel, For, Float>(
+                    super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
                         cellbox,
                         aux_storage,
                         *dt,
