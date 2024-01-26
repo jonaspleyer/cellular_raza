@@ -8,8 +8,14 @@ pub struct VoxelPlainIndex(usize);
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct SubDomainPlainIndex(usize);
 
+/// Unique identifier which is given to every cell in the simulation
+///
+/// The identifier is comprised of the [VoxelPlainIndex] in which the cell was first spawned.
+/// This can be due to initial setup or due to other methods such as division in a cell cycle.
+/// The second parameter is a counter which is unique for each voxel.
+/// This ensures that each cell obtains a unique identifier over the course of the simulation.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-pub struct CellIdentifier(VoxelPlainIndex, u64);
+pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
 mod aux_storage;
