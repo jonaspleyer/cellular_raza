@@ -1162,7 +1162,7 @@ pub mod test_time_stepper {
             let next = time_stepper.advance().unwrap().unwrap();
             assert_eq!(dt, next.increment);
             assert_eq!(t0 + i as f64 * dt, next.time);
-            assert_eq!(i as i64 , next.iteration);
+            assert_eq!(i as i64, next.iteration);
             if i == 10 {
                 assert_eq!(Some(TimeEvent::PartialSave), next.event);
             } else {
@@ -1176,7 +1176,8 @@ pub mod test_time_stepper {
         let t0 = 0.0;
         let dt = 0.1;
         let save_points = vec![0.5, 0.7, 0.9, 1.0];
-        let mut time_stepper = FixedStepsize::from_save_points(t0, dt, save_points.clone()).unwrap();
+        let mut time_stepper =
+            FixedStepsize::from_save_points(t0, dt, save_points.clone()).unwrap();
 
         assert_eq!(t0, time_stepper.current_time);
         for i in 1..11 {

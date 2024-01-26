@@ -28,7 +28,6 @@
 //! save these in a given format.
 //! The methods needed to do this have not yet been developed and are part of future releases.
 
-/// The backend controls the simulation flow. Multiple variants could be available in the future.
 pub mod backend;
 
 /// Derive traits and generate code for different traits.
