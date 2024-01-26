@@ -38,10 +38,24 @@ macro_rules! impl_from_error {
 
 /// Covers all errors that can occur in this Simulation
 /// The errors are listed from very likely to be a user error from almost certainly an internal error.
+///
+/// # Categorization of errors
+/// Some errors are more likely to be occuring due to an incorrect usage by an end user
+/// while others are highly likely to be due to some internal implementation problem.
+/// Independent of the exact reason, why they are occuring, some can be handled explicitly
+/// while others force an abort of the simulation. See also [HandlingStrategies].
+///
+/// | Error Variant | Comment | User Fault |
+/// | --- | --- |:---:|
+/// | [SimulationError::CalcError] | | 9/10 |
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
+    /// Occurs during calculations of any mathematical update steps such as
+    /// [Interaction](cellular_raza_concepts::Interaction) between cells.
     CalcError(CalcError),
+    /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
+    /// trait.
     ControllerError(ControllerError),
     RequestError(RequestError),
     StepsizeError(StepsizeError),
