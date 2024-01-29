@@ -160,7 +160,11 @@ where
 /// and accurate serialization/deserialization of the whole simulation state is setup (see
 /// [storage](crate::storage) module for more details).
 // TODO implement more of this
-pub enum HandlingStrategies {
+pub enum HandlingStrategy {
+    /// Throw away current results, return to last known good simulation state.
+    /// Load these results (possibly from disk) and try again with increased accuracy.
     RevertChangeAccuracy,
+    /// Throw away current results and stop the simulation entire.
+    /// This represents a non-recoverable state.
     AbortSimulation,
 }
