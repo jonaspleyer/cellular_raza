@@ -68,7 +68,6 @@ pub enum SimulationError {
     /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
     /// trait.
     ControllerError(ControllerError),
-    StepsizeError(StepsizeError),
     /// An error specific to cell-division events by the
     ///
     /// [Cycle](cellular_raza_concepts::Cycle) trait.
@@ -98,22 +97,19 @@ pub enum SimulationError {
     /// When writing to output files or reading from them.
     /// See [std::io::Error]
     IoError(std::io::Error),
-    ThreadingError(rayon::ThreadPoolBuildError),
 }
 
 impl_from_error! {SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
     (ControllerError, ControllerError),
-    (StepsizeError, StepsizeError),
     (DivisionError, DivisionError),
     (DeathError, DeathError),
     (BoundaryError, BoundaryError),
     (IndexError, IndexError),
     (IoError, std::io::Error),
     (DrawingError, DrawingError),
-    (StorageError, StorageError),
-    (ThreadingError, rayon::ThreadPoolBuildError)
+    (StorageError, StorageError)
 }
 
 impl_error_variant! {SimulationError,
@@ -121,15 +117,13 @@ impl_error_variant! {SimulationError,
     ReceiveError,
     CalcError,
     ControllerError,
-    StepsizeError,
     DivisionError,
     DeathError,
     BoundaryError,
     IndexError,
     IoError,
     DrawingError,
-    StorageError,
-    ThreadingError
+    StorageError
 }
 
 // Implement the general error property
