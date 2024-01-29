@@ -45,9 +45,20 @@ macro_rules! impl_from_error {
 /// Independent of the exact reason, why they are occuring, some can be handled explicitly
 /// while others force an abort of the simulation. See also [HandlingStrategies].
 ///
-/// | Error Variant | Comment | User Fault |
-/// | --- | --- |:---:|
-/// | [SimulationError::CalcError] | | 9/10 |
+/// | Variant | Concept Implementation | Engine-Fault | Time Increment |
+/// | --- |:---:|:---:|:---:|
+/// | [CalcError](SimulationError::CalcError) | 8/10 | 2/10 | 0/10 |
+/// | [ControllerError](SimulationError::ControllerError) | 8/10 | 1/10 | 1/10 |
+/// | [DivisionError](SimulationError::DivisionError) | 8/10 | 1/10 | 1/10 |
+/// | [DeathError](SimulationError::DeathError) | 8/10 | 1/10 | 1/10 |
+/// | [BoundaryError](SimulationError::BoundaryError) | 7/10 | 1/10 | 2/10 |
+/// | [DrawingError](SimulationError::DrawingError) | 9/10 | 1/10 | 0/10 |
+/// | [IndexError](SimulationError::IndexError) | 6/10 | 2/10 | 2/10 |
+/// | [SendError](SimulationError::SendError) | 3/10 | 6/10 | 1/10 |
+/// | [ReceiveError](SimulationError::ReceiveError) | 3/10 | 6/10 | 1/10 |
+/// | [StorageError](SimulationError::StorageError) | 3/10 | 7/10 | 0/10 |
+/// | [IoError](SimulationError::IoError) | 1/10 | 9/10 | 0/10 |
+/// | [ThreadingError](SimulationError::ThreadingError) | 1/10 | 8/10 | 1/10 |
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
@@ -58,18 +69,34 @@ pub enum SimulationError {
     /// trait.
     ControllerError(ControllerError),
     StepsizeError(StepsizeError),
+    /// An error specific to cell-division events by the
+    ///
+    /// [Cycle](cellular_raza_concepts::Cycle) trait.
     DivisionError(DivisionError),
+    /// Related to the [PhasedDeath](cellular_raza_concepts::CycleEvent::PhasedDeath) event.
+    /// This error can only occurr during the
+    /// [update_conditional_phased_death](cellular_raza_concepts::Cycle::update_conditional_phased_death)
+    /// method.
     DeathError(DeathError),
+    /// Enforcing boundary conditions on cells can exhibhit this boundary error.
     BoundaryError(BoundaryError),
+    /// Plotting results. See also [cellular_raza_concepts::plotting].
     DrawingError(DrawingError),
+    /// Mostly caused by trying to find a voxel by its index.
+    /// This error can also occurr when applying too large simulation-steps.
+    IndexError(IndexError),
 
     // Less likely but possible to be user errors
+    /// Sending information between threads fails
     SendError(String),
+    /// Receiving information from another thread fails
     ReceiveError(RecvError),
+    /// Storing results fails
     StorageError(StorageError),
 
     // Highly unlikely to be user errors
-    IndexError(IndexError),
+    /// When writing to output files or reading from them.
+    /// See [std::io::Error]
     IoError(std::io::Error),
     ThreadingError(rayon::ThreadPoolBuildError),
 }
