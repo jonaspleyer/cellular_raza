@@ -100,7 +100,7 @@ fn run_simulation(
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
     let save_points = vec![5.0, 10.0, 15.0, 20.0];
-    let time_stepper = chili::FixedStepsize::from_save_points(t0, dt, save_points.clone())?;
+    let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_points(t0, dt, save_points.clone())?;
     supervisor
         .subdomain_boxes
         .par_iter_mut()

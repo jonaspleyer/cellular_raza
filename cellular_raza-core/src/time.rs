@@ -40,8 +40,8 @@ pub trait TimeStepper<F> {
 /// # use cellular_raza_core::backend::chili::FixedStepsize;
 /// let t0 = 1.0;
 /// let dt = 0.2;
-/// let save_points = vec![3.0, 5.0, 11.0, 20.0];
-/// let time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
+/// let partial_save_points = vec![3.0, 5.0, 11.0, 20.0];
+/// let time_stepper = FixedStepsize::from_partial_save_points(t0, dt, partial_save_points).unwrap();
 /// ```
 #[derive(Clone, Deserialize, Serialize)]
 pub struct FixedStepsize<F> {
@@ -70,7 +70,7 @@ where
         partial_save_points: Vec<F>,
     ) -> Result<Self, StepsizeError> {
         // Sort the save points
-        let mut save_points = save_points;
+        let mut save_points = partial_save_points;
         save_points.sort_by(|x, y| x.partial_cmp(y).unwrap());
         if save_points.iter().any(|x| t0 > *x) {
             return Err(StepsizeError(
@@ -188,7 +188,7 @@ pub mod test_time_stepper {
             <F as From<_>>::from(rng.gen_range(4.01..5.8)),
             <F as From<_>>::from(rng.gen_range(6.01..7.8)),
         ];
-        FixedStepsize::<F>::from_save_points(t0, dt, save_points).unwrap()
+        FixedStepsize::<F>::from_partial_save_points(t0, dt, save_points).unwrap()
     }
 
     #[test]
@@ -196,7 +196,7 @@ pub mod test_time_stepper {
         let t0 = 1.0;
         let dt = 0.2;
         let save_points = vec![3.0, 5.0, 11.0, 20.0];
-        let time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
+        let time_stepper = FixedStepsize::from_partial_save_points(t0, dt, save_points).unwrap();
         assert_eq!(t0, time_stepper.current_time);
         assert_eq!(0.2, time_stepper.dt);
         assert_eq!(0, time_stepper.current_iteration);
@@ -210,7 +210,7 @@ pub mod test_time_stepper {
         let dt = 0.2;
         let save_points = vec![3.0, 5.0, 11.0, 20.0];
         // This call should fail since t0 is larger than the first two save points
-        let _time_stepper = FixedStepsize::from_save_points(t0, dt, save_points).unwrap();
+        let _time_stepper = FixedStepsize::from_partial_save_points(t0, dt, save_points).unwrap();
     }
 
     #[test]
@@ -240,7 +240,7 @@ pub mod test_time_stepper {
         let dt = 0.1;
         let save_points = vec![0.5, 0.7, 0.9, 1.0];
         let mut time_stepper =
-            FixedStepsize::from_save_points(t0, dt, save_points.clone()).unwrap();
+            FixedStepsize::from_partial_save_points(t0, dt, save_points.clone()).unwrap();
 
         assert_eq!(t0, time_stepper.current_time);
         for i in 1..11 {
