@@ -46,7 +46,7 @@ pub trait TimeStepper<F> {
 ///
 /// This time-stepper increments the time variable by the same length.
 /// ```
-/// # use cellular_raza_core::backend::chili::FixedStepsize;
+/// # use cellular_raza_core::time::FixedStepsize;
 /// let t0 = 1.0;
 /// let dt = 0.2;
 /// let partial_save_points = vec![3.0, 5.0, 11.0, 20.0];
