@@ -23,7 +23,7 @@ pub struct NextTimePoint<F> {
     /// Time value $t$
     pub time: F,
     /// Current iteration
-    pub iteration: i64,
+    pub iteration: usize,
     /// Event at this iteration, or None
     pub event: Option<TimeEvent>,
 }
@@ -39,7 +39,7 @@ pub trait TimeStepper<F> {
 
     /// Retrieved the last point at which the simulation was fully recovered.
     /// This might be helpful in the future when error handling is more mature and able to recover.
-    fn get_last_full_save(&self) -> Option<(F, i64)>;
+    fn get_last_full_save(&self) -> Option<(F, usize)>;
 }
 
 /// Time stepping with a fixed time length
@@ -58,12 +58,12 @@ pub struct FixedStepsize<F> {
     dt: F,
     t0: F,
     // An ordered set of time points to store every value at which we should evaluate
-    all_events: Vec<(F, i64, TimeEvent)>,
+    all_events: Vec<(F, usize, TimeEvent)>,
     current_time: F,
-    current_iteration: i64,
-    maximum_iterations: i64,
+    current_iteration: usize,
+    maximum_iterations: usize,
     current_event: Option<TimeEvent>,
-    past_events: Vec<(F, i64, TimeEvent)>,
+    past_events: Vec<(F, usize, TimeEvent)>,
 }
 
 impl<F> FixedStepsize<F>
@@ -106,7 +106,7 @@ where
             .map(|x| {
                 (
                     x,
-                    ((x - t0) / dt).round().to_i64().unwrap(),
+                    ((x - t0) / dt).round().to_usize().unwrap(),
                     TimeEvent::PartialSave,
                 )
             })
@@ -144,7 +144,7 @@ where
     fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, TimeError> {
         self.current_iteration += 1;
         self.current_time = F::from_usize(self.current_iteration).ok_or(TimeError(
-            "Error when casting from i64 to floating point value".to_owned(),
+            "Error when casting from usize to floating point value".to_owned(),
         ))? * self.dt
             + self.t0;
         // TODO Check if a current event should take place
@@ -167,7 +167,7 @@ where
         }
     }
 
-    fn get_last_full_save(&self) -> Option<(F, i64)> {
+    fn get_last_full_save(&self) -> Option<(F, usize)> {
         self.past_events
             .clone()
             .into_iter()
@@ -234,7 +234,7 @@ pub mod test_time_stepper {
             let next = time_stepper.advance().unwrap().unwrap();
             assert_eq!(dt, next.increment);
             assert_eq!(t0 + i as f64 * dt, next.time);
-            assert_eq!(i as i64, next.iteration);
+            assert_eq!(i, next.iteration);
             if i == 10 {
                 assert_eq!(Some(TimeEvent::PartialSave), next.event);
             } else {
@@ -256,7 +256,7 @@ pub mod test_time_stepper {
             let next = time_stepper.advance().unwrap().unwrap();
             assert_eq!(dt, next.increment);
             assert_eq!(t0 + i as f64 * dt, next.time);
-            assert_eq!(i as i64, next.iteration);
+            assert_eq!(i, next.iteration);
             if save_points.contains(&next.time) {
                 assert_eq!(Some(TimeEvent::PartialSave), next.event);
             }
