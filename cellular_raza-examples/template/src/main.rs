@@ -11,7 +11,7 @@ use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
 pub struct SimulationSettings {
-    n_angents: usize,
+    n_agents: usize,
     domain_size: f32,
     n_voxels: usize,
     n_threads: usize,
@@ -22,7 +22,7 @@ pub struct SimulationSettings {
 impl Default for SimulationSettings {
     fn default() -> Self {
         Self {
-            n_angents: 100,
+            n_agents: 200,
             domain_size: 30.0,
             n_voxels: 3,
             n_threads: 4,
@@ -162,7 +162,7 @@ fn main() -> Result<(), chili::SimulationError> {
         },
         volume: Vol(1.0),
     };
-    let agents = (0..simulation_settings.n_angents)
+    let agents = (0..simulation_settings.n_agents)
         .map(|_| {
             let mut new_agent = agent.clone();
             new_agent.set_pos(&Vector2::from([
