@@ -43,3 +43,6 @@ pub mod cpu_os_threads;
 /// In the future it will take over the role of the [cpu_os_threads](crate::backend::cpu_os_threads)
 /// backend as the default backend.
 pub mod chili;
+
+/// 🐯 GPU-centered backend using [OpenCL](https://www.khronos.org/opencl/)
+pub mod cara {}
