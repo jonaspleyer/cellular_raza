@@ -65,6 +65,7 @@ pub enum SimulationError {
     /// Occurs during calculations of any mathematical update steps such as
     /// [Interaction](cellular_raza_concepts::Interaction) between cells.
     CalcError(CalcError),
+    StepsizeError(StepsizeError),
     /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
     /// trait.
     ControllerError(ControllerError),
@@ -102,6 +103,7 @@ pub enum SimulationError {
 impl_from_error! {SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
+    (StepsizeError,StepsizeError),
     (ControllerError, ControllerError),
     (DivisionError, DivisionError),
     (DeathError, DeathError),
@@ -116,6 +118,7 @@ impl_error_variant! {SimulationError,
     SendError,
     ReceiveError,
     CalcError,
+    StepsizeError,
     ControllerError,
     DivisionError,
     DeathError,
