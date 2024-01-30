@@ -598,10 +598,24 @@ where
             )
             .into_iter()
         {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(cellular_raza_concepts::IndexError(format!("EngineError: Sender with plain index {:?} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
+            let error_1 = format!(
+                "EngineError: Sender with plain index {:?} was ended up in location\
+                where index is not present anymore",
+                obt_forces.index_sender
+            );
+            let vox = self
+                .voxels
+                .get_mut(&obt_forces.index_sender)
+                .ok_or(cellular_raza_concepts::IndexError(error_1))?;
+            let error_2 = format!(
+                "\
+                EngineError: Force Information with sender index {:?} and\
+                cell at vector position {} could not be matched",
+                obt_forces.index_sender, obt_forces.cell_index_in_vector
+            );
             match vox.cells.get_mut(obt_forces.cell_index_in_vector) {
                 Some((_, aux_storage)) => Ok(aux_storage.add_force(obt_forces.force)),
-                None => Err(cellular_raza_concepts::IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.cell_index_in_vector))),
+                None => Err(cellular_raza_concepts::IndexError(error_2)),
             }?;
         }
 
