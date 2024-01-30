@@ -1,8 +1,7 @@
 ---
-title: Coding Guidelines
+title: ☕ Coding Guidelines
 type: docs
-prev: docs/
-next: docs/roadmap
+weight: 100
 ---
 
 ## Style Guide

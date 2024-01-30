@@ -1,8 +1,9 @@
-    ---
-title: Roadmap
+---
+title: 🎏 Roadmap
 type: docs
 prev: docs/coding-guidelines
 next: docs/
+weight: 110
 ---
 
 The following points outline which features will be worked on in the future.
