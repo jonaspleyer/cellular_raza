@@ -1,5 +1,5 @@
 ---
-title: Cellular Modeling Mindset
+title: Introduction
 weight: 5
 ---
 
@@ -7,6 +7,7 @@ weight: 5
 > 
 > --- Richard P. Feynman
 
+## Cellular Modeling Mindset
 By using `cellular_raza` you, the researcher will be strongly encouraged to follow
 mechanistically-driven thought processes from the perspective of individual biological cells.
 Global behaviour such as number of branches or speed of growth of a tissue can often be mathematically described with simplistic models.
