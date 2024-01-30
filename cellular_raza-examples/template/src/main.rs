@@ -1,8 +1,11 @@
-use cellular_raza::building_blocks::prelude::*;
+use cellular_raza::building_blocks::{
+    cell_building_blocks::{interaction::BoundLennardJonesF32, mechanics::NewtonDamped2DF32},
+    domains::cartesian_cuboid_n::CartesianCuboid2NewF32,
+};
 use cellular_raza::concepts::domain_new::Domain;
-use cellular_raza::concepts::*;
-use cellular_raza::concepts_derive::*;
-use cellular_raza::core::proc_macro::*;
+use cellular_raza::concepts::{CalcError, Interaction, Mechanics, RngError, Volume};
+use cellular_raza::concepts_derive::CellAgent;
+use cellular_raza::core::proc_macro::{build_aux_storage, build_communicator};
 
 use cellular_raza::core::backend::chili;
 
