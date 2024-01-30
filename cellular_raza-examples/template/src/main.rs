@@ -79,7 +79,7 @@ fn run_simulation(
         .decompose(simulation_settings.n_threads.try_into().unwrap(), agents)
         .unwrap();
 
-    let mut supervisor: chili::SimulationSupervisor<
+    let mut runner: chili::SimulationRunner<
         _,
         chili::SubDomainBox<
             _,
@@ -99,7 +99,7 @@ fn run_simulation(
         dt,
         save_points.clone(),
     )?;
-    supervisor
+    runner
         .subdomain_boxes
         .par_iter_mut()
         .map(|(key, sbox)| {

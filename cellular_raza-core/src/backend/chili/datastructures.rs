@@ -14,8 +14,15 @@ use super::simulation_flow::*;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 
-pub struct SimulationSupervisor<I, Sb> {
+/// Intermediate object which gets consumed once the simulation is run
+///
+/// This Setup contains structural information needed to run a simulation.
+/// In the future, we hope to change the types stored in this object to
+/// simple iterators and non-allocating types in general.
+pub struct SimulationRunner<I, Sb> {
     // TODO make this private
+    /// One [SubDomainBox] represents one single thread over which we are parallelizing
+    /// our simulation.
     pub subdomain_boxes: HashMap<I, Sb>,
 }
 
@@ -196,7 +203,7 @@ impl<C, A> Voxel<C, A> {
 }
 
 impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
-    for SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>>
+    for SimulationRunner<I, SubDomainBox<S, C, A, Com, Sy>>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
@@ -209,7 +216,7 @@ where
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> SimulationSupervisor<I, SubDomainBox<S, C, A, Com, Sy>> {
+    ) -> SimulationRunner<I, SubDomainBox<S, C, A, Com, Sy>> {
         // TODO do not unwrap
         if !validate_map(&decomposed_domain.neighbor_map) {
             panic!("Map not valid!");
@@ -328,8 +335,8 @@ where
             })
             .collect::<Result<HashMap<_, _>, BoundaryError>>()
             .unwrap();
-        let simulation_supervisor = SimulationSupervisor { subdomain_boxes };
-        simulation_supervisor
+        let simulatino_runner = SimulationRunner { subdomain_boxes };
+        simulatino_runner
     }
 }
 
