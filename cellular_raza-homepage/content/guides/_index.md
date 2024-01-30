@@ -15,8 +15,5 @@ Although beneficial, we do not expect the reader of these guides to be familiar 
 | [Getting Started](getting-started.md) | Step-by-step tutorial on how to write, run and visualize your first simulation |
 | [Predefined Cell Models](predefined-cell-models) | Use given cell-models to run a simulation |
 | [Building Blocks](building-blocks) | Use predefined building blocks to combine them into a fully working simulation. |
-| [Physical Domain](physical-domain) | |
-
-| [Implement your own Concepts](UserGuides-ImplementOwnConcepts.md) | In order to fully take advantage of `cellular_raza`, you can define your own cellular properties and implement them. Learn how to go about this in this guide. |
-| [Using Predefined Cellular Modules](UserGuides-PredefinedCellularModules.md) | `cellular_raza` provides some predefined cellular properties. Learn how to use them in your simulation. |
-| [Starting from a previous simualtion](UserGuides-StartFromPreviousSimualtion.md) | `cellular_raza` allows to run simulations, stop them and continue running them from the last known savepoint. Learn how you can exploit this functionality. |
+| [Physical Domain](physical-domain) | How does the [domain](/internals/concepts/domain) in which the cells live work? You will learn what responsibilities are taken over by the domain. |
+| [Load a previous Simulation](load-previous-simulation) | Learn how to load data from a previous simulation snapshot and continue to run the simulation. This can be useful when doing complex parameter screening in high-dimensional spaces. |
