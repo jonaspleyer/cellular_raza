@@ -15,7 +15,6 @@ pub struct SimulationSettings {
     domain_size: f32,
     n_voxels: usize,
     n_threads: usize,
-    n_iterations: usize,
     dt: f32,
 }
 
@@ -26,7 +25,6 @@ impl Default for SimulationSettings {
             domain_size: 30.0,
             n_voxels: 3,
             n_threads: 4,
-            n_iterations: 10_000,
             dt: 0.002,
         }
     }
@@ -100,19 +98,23 @@ fn run_simulation(
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
     let save_points = vec![5.0, 10.0, 15.0, 20.0];
-    let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_points(t0, dt, save_points.clone())?;
+    let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_points(
+        t0,
+        dt,
+        save_points.clone(),
+    )?;
     supervisor
         .subdomain_boxes
         .par_iter_mut()
         .map(|(key, sbox)| {
             let mut time_stepper = time_stepper.clone();
             let mut pb = if key == &0 {
-                Some(tqdm!(total = simulation_settings.n_iterations))
+                Some(tqdm!(total = save_points.len()))
             } else {
                 None
             };
-            use chili::TimeStepper;
-            while let Some(_next_time_point) = time_stepper.advance()? {
+            use cellular_raza::prelude::time::TimeStepper;
+            while let Some(next_time_point) = time_stepper.advance()? {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
                 sbox.update_mechanics_step_1()?;
 
@@ -130,9 +132,9 @@ fn run_simulation(
                 sbox.sync();
 
                 sbox.sort_cells_in_voxels_step_2()?;
-                match &mut pb {
-                    Some(p) => p.update(1)?,
-                    None => true,
+                match (&mut pb, next_time_point.event) {
+                    (Some(p), Some(_)) => p.update(1)?,
+                    _ => true,
                 };
             }
             Ok(())
