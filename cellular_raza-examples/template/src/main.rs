@@ -124,8 +124,7 @@ fn run_simulation(
 
                 sbox.sync();
 
-                sbox.update_mechanics_step_3(&simulation_settings.dt)
-                    .unwrap();
+                sbox.update_mechanics_step_3(&simulation_settings.dt)?;
 
                 sbox.sort_cells_in_voxels_step_1()?;
 
