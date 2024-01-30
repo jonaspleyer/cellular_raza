@@ -90,7 +90,6 @@ fn run_simulation(
         >,
     > = decomposed_domain.into();
 
-    use kdam::{tqdm, BarExt};
     use rayon::prelude::*;
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
@@ -105,12 +104,11 @@ fn run_simulation(
         .par_iter_mut()
         .map(|(key, sbox)| {
             let mut time_stepper = time_stepper.clone();
-            let mut pb = if key == &0 {
-                Some(tqdm!(total = save_points.len()))
-            } else {
-                None
-            };
             use cellular_raza::prelude::time::TimeStepper;
+            let mut pb = match key {
+                0 => Some(time_stepper.initialize_bar()?),
+                _ => None,
+            };
             while let Some(next_time_point) = time_stepper.advance()? {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
                 sbox.update_mechanics_step_1()?;
@@ -128,9 +126,9 @@ fn run_simulation(
                 sbox.sync();
 
                 sbox.sort_cells_in_voxels_step_2()?;
-                match (&mut pb, next_time_point.event) {
-                    (Some(p), Some(_)) => p.update(1)?,
-                    _ => true,
+                match &mut pb {
+                    Some(bar) => time_stepper.update_bar(bar)?,
+                    None => (),
                 };
             }
             Ok(())
