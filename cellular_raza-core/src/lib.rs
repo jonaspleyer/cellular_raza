@@ -36,5 +36,8 @@ pub mod proc_macro;
 /// Interface and methods to store and load simulation aspects.
 pub mod storage;
 
+/// Controls how the simulation time is advanced
+pub mod time;
+
 // Some re-exports
 pub use cellular_raza_concepts as concepts;
