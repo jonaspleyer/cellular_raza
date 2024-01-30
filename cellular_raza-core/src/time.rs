@@ -1,3 +1,4 @@
+use kdam::BarExt;
 use serde::{Deserialize, Serialize};
 
 use cellular_raza_concepts::TimeError;
@@ -40,6 +41,13 @@ pub trait TimeStepper<F> {
     /// Retrieved the last point at which the simulation was fully recovered.
     /// This might be helpful in the future when error handling is more mature and able to recover.
     fn get_last_full_save(&self) -> Option<(F, usize)>;
+
+    /// Creates a bar that tracks the simulation progress
+    fn initialize_bar(&self) -> Result<kdam::Bar, TimeError>;
+
+    /// Update a given bar to show the current simulation state
+    #[allow(unused)]
+    fn update_bar(&self, bar: &mut kdam::Bar) -> Result<(), std::io::Error>;
 }
 
 /// Time stepping with a fixed time length
@@ -174,6 +182,24 @@ where
             .filter(|(_, _, event)| *event == TimeEvent::FullSave)
             .last()
             .and_then(|x| Some((x.0, x.1)))
+    }
+
+    fn initialize_bar(&self) -> Result<kdam::Bar, TimeError> {
+        let bar_format = "\
+        {desc}{percentage:3.0}%|{animation}| \
+        {count}/{total} \
+        [{elapsed}, \
+        {rate:.2}{unit}/s{postfix}]";
+        Ok(kdam::BarBuilder::default()
+            .total(self.maximum_iterations)
+            .bar_format(bar_format)
+            .dynamic_ncols(true)
+            .build()?)
+    }
+
+    fn update_bar(&self, bar: &mut kdam::Bar) -> Result<(), std::io::Error> {
+        let _ = bar.update(1)?;
+        Ok(())
     }
 }
 
