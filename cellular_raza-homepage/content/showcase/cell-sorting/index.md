@@ -1,7 +1,6 @@
 ---
 title: 3D Cell Sorting
-type: showcase
-prev: showcase
+date: 2024-01-10
 ---
 
 # TODO
