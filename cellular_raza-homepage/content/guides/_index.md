@@ -2,8 +2,6 @@
 title: Guides
 cascade:
   type: docs
-prev: /
-next: guides/first-sim
 ---
 
 All user Guides assume a basic knowledge of the Rust programming language.
