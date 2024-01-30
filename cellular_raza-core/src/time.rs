@@ -12,10 +12,19 @@ pub enum TimeEvent {
     FullSave,
 }
 
+/// Represents the next time point which is returned by the [TimeStepper::advance] method.
+///
+/// It is important to note that the absolute time value $t$ is not meant to be used
+/// in updating steps but rather for saving results and annotating them correctly.
+/// Library authors are advised to keep this in mind.
 pub struct NextTimePoint<F> {
+    /// Time increment $dt$
     pub increment: F,
+    /// Time value $t$
     pub time: F,
+    /// Current iteration
     pub iteration: i64,
+    /// Event at this iteration, or None
     pub event: Option<TimeEvent>,
 }
 
