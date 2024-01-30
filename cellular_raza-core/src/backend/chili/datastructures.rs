@@ -635,6 +635,15 @@ where
         Ok(())
     }
 
+    /// Sort new cells into respective voxels
+    ///
+    /// This step determines if a cell is still in its correct location
+    /// after its position has changed. This can be due to the [SubDomainBox::update_mechanics_step_3]
+    /// method or due to other effects such as cell-division by the [cellular_raza_concepts::Cycle]
+    /// trait.
+    ///
+    /// If the cell is not in the correct voxel, we either directly insert this cell into the voxel
+    /// or send it to the other [SubDomainBox] to take care of this.
     pub fn sort_cells_in_voxels_step_1<Pos, Vel, For, Float>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -698,6 +707,11 @@ where
         Ok(())
     }
 
+    /// Sort new cells into respective voxels
+    ///
+    /// After having sent cells to the new [SubDomainBox] in the
+    /// [SubDomainBox::sort_cells_in_voxels_step_1] method, we receive these new cells and insert
+    /// them into their respective voxels.
     pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
