@@ -25,29 +25,23 @@ The overall global effects can be deduced by formulating local rules on the cell
 The name `cellular_raza` is an artistic combination of "cell" and ["tabula rasa"](https://en.wikipedia.org/wiki/Tabula_rasa).
 While the original intent was to describe the simulation tool as written from a "blank slate", many of the interpretations from the wikipedia article are interesting and fitting. The logo has the [Rust](https://www.rust-lang.org/) symbol embedded, but when referring to the package in text, the snake case version `cellular_raza` in a monospaced font should be used.
 
-<!-- TODO check these points and possibly attach them to another subsection -->
-## What this crate does not aim to offer
-- A graphical user interface
-    - Models should be created with native Rust Code (or in the future by interacting with Python or Julia)
-    - Data Analysis can be done with Python/Julia
-- The option to freely change everything however you like during runtime
+## What this crate aims to offer
+`cellular_raza` offers a concise language in the form of [concepts](/internals/concepts)
+that specify how cells behave.
+Once the cellular behaviour is formulated in terms of these abstractions, we are able to
+numerically solve the given system.
+Furthermore, we offer features that simplify building a fully working simulation and customizing it.
+In comparison with other tools, we provide more freedom in model design, thus enabling higher
+levels of overall model complexity.
 
-<!-- TODO complete quadrant graph -->
 ```mermaid
 quadrantChart
-    x-axis Code Complexity
-    y-axis Solve Specific Problem --> General Purpose Solver
-    Campaign A: [0.3, 0.6]
-    Campaign F: [0.35, 0.78]
+    x-axis Possible Model Complexity
+    y-axis Possible Design Choices
+    Cellular Automata: [0.15, 0.15]
+    ODEs: [0.3, 0.6]
+    PDEs: [0.4, 0.7]
+    MD Tools: [0.6, 0.3]
+    ABMs: [0.7, 0.4]
+    cellular_raza: [0.8, 0.8]
 ```
-
-## Only Local Rules
-- Additions are commutative
-    - This is inherently not true in almost all modern computers using floating point arithmetics
-    It can lead to results which are not identical on a binary level, but should agree within their numerical uncertainty respective of the solver used.
-- Multiplication with floats like f64 are commutative
-- There should only be local rules
-    - CellAgents are interacting with themselves, their neighbors and the extracellular properties around them.
-      There is no exact definition of "local" but the first idea was to restrict interaction ranges.
-- Any multithreading or implementaional details of how information is transported on an actual computer should be hidden from the end user.
-    - Defining new cell-properties and domain/voxels should not involve thinking about parallelization etc.
