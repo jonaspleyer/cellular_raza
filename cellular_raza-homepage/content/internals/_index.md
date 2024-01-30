@@ -9,10 +9,13 @@ next: internals/folder/
 `cellular_raza` consists of multiple crates working in tandem.
 
 ```mermaid
-classDiagram
-    concepts <|-- core
-    concepts <|-- building_blocks
-    concepts <|-- examples
-    core <|-- examples
-    building_blocks <|-- examples
+stateDiagram-v2
+    concepts --> core
+    concepts --> building_blocks
+    concepts --> examples
+    concepts --> benchmarks
+    core --> examples
+    core --> benchmarks
+    building_blocks --> examples
+    building_blocks --> benchmarks
 ```
