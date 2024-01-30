@@ -53,8 +53,8 @@ define_errors!(
     (SetupError, "Occurs during setup of a new simulation"),
     (CalcError, "General Calculation Error"),
     (
-        StepsizeError,
-        "Error occuring when choosing a non-appropriate stepsize"
+        TimeError,
+        "Error related to advancing the simulation time or displaying its progress"
     ),
     // (
     //     DecomposeError,

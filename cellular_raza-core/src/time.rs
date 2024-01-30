@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use cellular_raza_concepts::StepsizeError;
+use cellular_raza_concepts::TimeError;
 
 /// A [TimeEvent] describes that a certain action is to be executed after the next iteration step.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -35,7 +35,7 @@ pub trait TimeStepper<F> {
     /// Advances the time stepper to the next time point. Also returns if there is an event
     /// scheduled to take place and the next time value and iteration number
     #[must_use]
-    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, StepsizeError>;
+    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, TimeError>;
 
     /// Retrieved the last point at which the simulation was fully recovered.
     /// This might be helpful in the future when error handling is more mature and able to recover.
@@ -77,12 +77,12 @@ where
         t0: F,
         dt: F,
         partial_save_points: Vec<F>,
-    ) -> Result<Self, StepsizeError> {
+    ) -> Result<Self, TimeError> {
         // Sort the save points
         let mut save_points = partial_save_points;
         save_points.sort_by(|x, y| x.partial_cmp(y).unwrap());
         if save_points.iter().any(|x| t0 > *x) {
-            return Err(StepsizeError(
+            return Err(TimeError(
                 "Invalid time configuration! Evaluation time point is before starting time point."
                     .to_owned(),
             ));
@@ -91,14 +91,14 @@ where
             .clone()
             .into_iter()
             .max_by(|x, y| x.partial_cmp(y).unwrap())
-            .ok_or(StepsizeError(
+            .ok_or(TimeError(
                 "No savepoints specified. Simulation will not save any results.".to_owned(),
             ))?;
         let maximum_iterations =
             (((last_save_point - t0) / dt).round())
-                .to_i64()
-                .ok_or(StepsizeError(
-                    "An error in casting of float type to i64 occurred".to_owned(),
+                .to_usize()
+                .ok_or(TimeError(
+                    "An error in casting of float type to usize occurred".to_owned(),
                 ))?;
         let all_events = save_points
             .clone()
@@ -141,9 +141,9 @@ impl<F> TimeStepper<F> for FixedStepsize<F>
 where
     F: num::Float + num::FromPrimitive,
 {
-    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, StepsizeError> {
+    fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, TimeError> {
         self.current_iteration += 1;
-        self.current_time = F::from_i64(self.current_iteration).ok_or(StepsizeError(
+        self.current_time = F::from_usize(self.current_iteration).ok_or(TimeError(
             "Error when casting from i64 to floating point value".to_owned(),
         ))? * self.dt
             + self.t0;
