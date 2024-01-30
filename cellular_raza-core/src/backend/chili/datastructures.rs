@@ -413,6 +413,13 @@ impl<S, C, A, Com, Sy> SubDomainBox<S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
 {
+    /// Update cells position and velocity
+    ///
+    /// We assume that cells implement the
+    /// [Mechanics](cellular_raza_concepts::Mechanics) and
+    /// [Interaction](cellular_raza_concepts::Interaction) traits.
+    /// Then, threads will exchange information in the [PosInformation] format
+    /// to calculate the forces acting on the cells.
     pub fn update_mechanics_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -488,6 +495,14 @@ where
         Ok(())
     }
 
+    /// Update cells position and velocity
+    ///
+    /// We assume that cells implement the
+    /// [Mechanics](cellular_raza_concepts::Mechanics) and
+    /// [Interaction](cellular_raza_concepts::Interaction) traits.
+    /// Then, threads will use the previously exchanged [PosInformation] to calculate forces
+    /// and send back information about the acting force in the [ForceInformation] format.
+    /// In addition, this method also applies the inverse force to local cells.
     pub fn update_mechanics_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -540,6 +555,21 @@ where
         Ok(())
     }
 
+    /// Update cells position and velocity
+    ///
+    /// We assume that cells implement the
+    /// [Mechanics](cellular_raza_concepts::Mechanics) and
+    /// [Interaction](cellular_raza_concepts::Interaction) traits.
+    /// In this last step, all [ForceInformation] are gathered and used to update the
+    /// cells positions and velocities.
+    ///
+    /// For the future, we hope to provide an abstracted method to use
+    /// any of our implemented solvers.
+    /// The solver currently limits the number of saved previous increments in the [UpdateMechanics]
+    /// trait.
+    ///
+    /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
+    /// solver.
     pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float>(
         &mut self,
         dt: &Float,
