@@ -19,13 +19,6 @@ pub struct SimulationSupervisor<I, Sb> {
     pub subdomain_boxes: HashMap<I, Sb>,
 }
 
-/// Simple trait that will be implemented by a
-pub trait Supervisor {
-    type SimulationResult;
-
-    fn solve_full_system(self) -> Self::SimulationResult;
-}
-
 /// Stores information related to a voxel of the physical simulation domain.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Voxel<C, A> {
