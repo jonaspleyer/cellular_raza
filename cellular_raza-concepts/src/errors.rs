@@ -89,6 +89,12 @@ define_errors!(
     )
 );
 
+impl From<String> for TimeError {
+    fn from(value: String) -> Self {
+        TimeError(value)
+    }
+}
+
 impl From<std::io::Error> for DecomposeError {
     fn from(value: std::io::Error) -> Self {
         DecomposeError::BoundaryError(BoundaryError(format!("{}", value)))
