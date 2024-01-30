@@ -268,12 +268,6 @@ where
                 )
             })
             .collect();
-        let voxel_index_to_subdomain = voxel_index_to_plain_index
-            .iter()
-            .map(|(voxel_index, plain_index)| {
-                (voxel_index.clone(), plain_index_to_subdomain[&plain_index])
-            })
-            .collect::<HashMap<_, _>>();
 
         let subdomain_boxes = decomposed_domain
             .index_subdomain_cells
@@ -326,7 +320,6 @@ where
                     voxels: voxels.collect(),
                     voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
                     plain_index_to_subdomain: plain_index_to_subdomain.clone(),
-                    voxel_index_to_subdomain: voxel_index_to_subdomain.clone(),
                     communicator,
                     syncer,
                 };
@@ -352,8 +345,6 @@ where
     pub(crate) plain_index_to_subdomain:
         std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
     pub(crate) communicator: Com,
-    pub(crate) voxel_index_to_subdomain:
-        std::collections::HashMap<S::VoxelIndex, SubDomainPlainIndex>,
     pub(crate) syncer: Sy,
 }
 
