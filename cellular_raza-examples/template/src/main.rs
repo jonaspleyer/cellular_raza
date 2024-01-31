@@ -42,7 +42,7 @@ impl Volume for Vol {
     }
 }
 
-#[derive(CellAgent, Clone)] // Deserialize, Serialize
+#[derive(CellAgent, Clone, Deserialize, Serialize)]
 struct Agent {
     #[Mechanics(Vector2<f32>, Vector2<f32>, Vector2<f32>, f32)]
     pub mechanics: NewtonDamped2DF32,
@@ -94,6 +94,10 @@ fn run_simulation(
         >,
     > = decomposed_domain.into();
 
+    let location = std::path::Path::new("./out");
+    let mut storage_priority = cellular_raza::prelude::UniqueVec::new();
+    storage_priority.push(cellular_raza::prelude::StorageOption::SerdeJson);
+
     use rayon::prelude::*;
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
@@ -113,6 +117,15 @@ fn run_simulation(
                 0 => Some(time_stepper.initialize_bar()?),
                 _ => None,
             };
+
+            // Initialize the storage manager
+            let storage_manager =
+                cellular_raza::prelude::StorageManager::open_or_create_with_priority(
+                    location,
+                    *key as u64,
+                    &storage_priority,
+                )?;
+
             while let Some(next_time_point) = time_stepper.advance()? {
                 // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
                 sbox.update_mechanics_step_1()?;
@@ -134,6 +147,8 @@ fn run_simulation(
                     Some(bar) => time_stepper.update_bar(bar)?,
                     None => (),
                 };
+
+                sbox.save_voxels(&storage_manager, &next_time_point)?;
             }
             Ok(())
         })
