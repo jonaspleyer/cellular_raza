@@ -86,4 +86,6 @@ pub trait Id {
 
     /// Retrieves the Identifier from the object.
     fn get_id(&self) -> Self::Identifier;
+    /// Returns a reference to the id of the object.
+    fn ref_id(&self) -> &Self::Identifier;
 }

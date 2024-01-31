@@ -41,6 +41,10 @@ impl<C> cellular_raza_concepts::domain_new::Id for CellBox<C> {
     fn get_id(&self) -> CellIdentifier {
         self.identifier
     }
+
+    fn ref_id(&self) -> &Self::Identifier {
+        &self.identifier
+    }
 }
 
 impl<C> CellBox<C> {
