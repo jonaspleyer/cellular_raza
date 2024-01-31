@@ -1,7 +1,6 @@
 [build]
 incremental = true
 rustflags = "-C target-cpu=native"
-rustdocflags = [ "--html-in-header", "./doc/docs-header.html" ]
 
 [target.x86_64-apple-darwin]
 rustflags = [

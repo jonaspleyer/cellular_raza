@@ -1,2 +1,5 @@
+[build]
+rustdocflags = [ "--html-in-header", ".docs-header.html" ]
+
 [alias]
 cr_doc = "doc --no-deps"
