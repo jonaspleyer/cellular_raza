@@ -87,6 +87,7 @@ fn run_simulation(
         chili::SubDomainBox<
             _,
             _,
+            _,
             __cr_AuxStorage<_, _, _, _, 2>,
             MyCommunicator<_, _, _, _, _, _, _>,
             chili::BarrierSync,

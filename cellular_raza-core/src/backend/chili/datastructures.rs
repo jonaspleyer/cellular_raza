@@ -203,7 +203,7 @@ impl<C, A> Voxel<C, A> {
 }
 
 impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
-    for SimulationRunner<I, SubDomainBox<S, C, A, Com, Sy>>
+    for SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
@@ -216,7 +216,7 @@ where
     ///
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> SimulationRunner<I, SubDomainBox<S, C, A, Com, Sy>> {
+    ) -> SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>> {
         // TODO do not unwrap
         if !validate_map(&decomposed_domain.neighbor_map) {
             panic!("Map not valid!");
@@ -316,6 +316,7 @@ where
                             "Index was not present in subdomain map".into(),
                         ))?;
                 let mut subdomain_box = SubDomainBox {
+                    index: index.clone(),
                     subdomain,
                     voxels: voxels.collect(),
                     voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
@@ -334,10 +335,11 @@ where
 }
 
 /// Encapsulates a subdomain with cells and other simulation aspects.
-pub struct SubDomainBox<S, C, A, Com, Sy = BarrierSync>
+pub struct SubDomainBox<I, S, C, A, Com, Sy = BarrierSync>
 where
     S: SubDomain<C>,
 {
+    pub(crate) index: I,
     pub(crate) subdomain: S,
     pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
     pub(crate) voxel_index_to_plain_index:
@@ -409,7 +411,7 @@ where
     }
 }
 
-impl<S, C, A, Com, Sy> SubDomainBox<S, C, A, Com, Sy>
+impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
 {
