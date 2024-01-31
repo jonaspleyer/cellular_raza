@@ -1,1 +1,0 @@
-# Designing new Concepts
