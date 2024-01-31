@@ -33,6 +33,9 @@ menu:
     - name: Internals
       pageRef: /internals
       weight: 4
+    - name: Docs
+      pageRef: /docs/cellular_raza
+      weight: 5
     - name: Search
       weight: 10
       params:
