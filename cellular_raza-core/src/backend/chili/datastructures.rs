@@ -350,7 +350,7 @@ where
     pub(crate) syncer: Sy,
 }
 
-impl<S, C, A, Com, Sy> SubDomainBox<S, C, A, Com, Sy>
+impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
 {
