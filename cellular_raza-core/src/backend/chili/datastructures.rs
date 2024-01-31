@@ -758,4 +758,23 @@ where
             .collect::<Result<(), SimulationError>>()?;
         Ok(())
     }
+
+    /// Save all voxels (containing all cells) with the given storage manager.
+    pub fn save_voxels<F>(
+        &self,
+        storage_manager: &crate::storage::StorageManager<&VoxelPlainIndex, &Voxel<C, A>>,
+        next_time_point: &crate::time::NextTimePoint<F>,
+    ) -> Result<(), StorageError>
+    where
+        A: Serialize,
+        C: Serialize,
+        Voxel<C, A>: Serialize,
+    {
+        if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
+            let voxels = self.voxels.iter().collect::<Vec<_>>();
+            use crate::storage::StorageInterface;
+            storage_manager.store_batch_elements(next_time_point.iteration as u64, &voxels)?;
+        }
+        Ok(())
+    }
 }

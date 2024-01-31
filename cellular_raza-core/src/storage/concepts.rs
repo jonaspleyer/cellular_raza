@@ -248,7 +248,7 @@ pub struct StorageManager<Id, Element> {
 }
 
 impl<Id, Element> StorageManager<Id, Element> {
-    pub(crate) fn open_or_create_with_priority(
+    pub fn open_or_create_with_priority(
         location: &std::path::Path,
         storage_instance: u64,
         storage_priority: &UniqueVec<StorageOption>,
