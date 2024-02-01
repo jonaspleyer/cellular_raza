@@ -1,7 +1,6 @@
 TARGETS=(
 	cellular_raza
 	cellular_raza-benchmarks
-	cellular_raza-book
 	cellular_raza-building-blocks
 	cellular_raza-concepts
 	cellular_raza-concepts-derive
@@ -19,10 +18,11 @@ done
 
 cp -r target/doc cellular_raza-homepage/cr_doc
 cd cellular_raza-homepage
-hugo
-	rm -rf content/docs
-mv cr_doc content/docs
-cd ..
 
-echo "Finished building website"
+rm -rf content/docs
+mv cr_doc content/docs
+
+hugo -d public_html
+
+scp -r public_html celluld@www139.your-server.de:/
 
