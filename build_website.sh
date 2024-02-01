@@ -24,5 +24,16 @@ mv cr_doc content/docs
 
 hugo -d public_html
 
-scp -r public_html celluld@www139.your-server.de:/
+# This command can also be used to simply recursively copy all files
+# id does not filter duplicates and thus takes a long time
+# scp -r public_html celluld@www139.your-server.de:/
+
+cwd="$PWD"
+echo $cwd
+sftp celluld@www139.your-server.de <<EOF
+# Enable this command to completely refresh the page
+rmdir public_html
+put -aR $cwd/public_html
+exit
+EOF
 
