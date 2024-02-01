@@ -1,5 +1,6 @@
 # Hugo output
 public/
+public_html/
 resources/
 .hugo_build.lock
 
