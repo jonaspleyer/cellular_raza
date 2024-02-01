@@ -766,8 +766,6 @@ where
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
-        A: Serialize,
-        C: Serialize,
         Voxel<C, A>: Serialize,
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
