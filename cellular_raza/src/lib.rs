@@ -4,7 +4,8 @@
 //! >
 //! >  --- Richard P. Feynman
 //!
-//! [cellular_raza](crate) is an agent-based modeling tool to simulate individual biological cells with a mechanistically
+//! [cellular_raza](crate) is an agent-based modeling tool to simulate individual biological
+//! cells with a mechanistically
 //! driven mindset.
 //! This means, properties of cells are individually driven by strictly local phenomena.
 
