@@ -25,7 +25,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct Bacteria {
-    /// [NewtonDamped2D](crate::cell_building_blocks::mechanics::NewtonDamped2D) mechanics
+    /// See [NewtonDamped2D](crate::cell_building_blocks::mechanics::NewtonDamped2D) mechanics
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     pub mechanics: NewtonDamped2D,
 
@@ -50,13 +50,16 @@ pub struct Bacteria {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaTemplate {
-    ///
+    /// See [NewtonDamped2D](crate::cell_building_blocks::mechanics::NewtonDamped2D) mechanics
     pub mechanics: pyo3::Py<NewtonDamped2D>,
-    ///
+
+    /// See [BacteriaCycle]
     pub cycle: pyo3::Py<BacteriaCycle>,
-    ///
+
+    /// See [BacteriaReactions]
     pub cellular_reactions: pyo3::Py<BacteriaReactions>,
-    ///
+
+    /// See [GradientSensing]
     pub interactionextracellulargradient: pyo3::Py<GradientSensing>,
 }
 
@@ -101,7 +104,8 @@ impl BacteriaTemplate {
         })
     }
 
-    ///
+    /// Constructs the default bacteria template by using default values
+    /// for every field in the struct.
     #[staticmethod]
     pub fn default(py: Python) -> PyResult<Self> {
         Ok(Self {
@@ -119,7 +123,7 @@ fn volume_to_radius(volume: f64) -> f64 {
 
 #[pymethods]
 impl Bacteria {
-    ///
+    /// Convert a [BacteriaTemplate] into a [Bacteria]
     #[staticmethod]
     pub fn from(py: Python, bacteria_template: BacteriaTemplate) -> PyResult<Self> {
         Ok(Self {
@@ -140,12 +144,12 @@ impl Bacteria {
         1.09 * volume
     }
 
-    ///
+    /// Conversion function of mass to volume
     pub fn mass_to_volume(&self, mass: f64) -> f64 {
         mass / 1.09
     }
 
-    ///
+    /// Modifies the cell and increases the overall volume by the specified amount.
     pub fn increase_volume(&mut self, volume_increment: f64) {
         let current_volume = self.get_volume();
         let final_volume = current_volume + volume_increment;
@@ -153,7 +157,7 @@ impl Bacteria {
         self.mechanics.mass = self.volume_to_mass(final_volume);
     }
 
-    ///
+    /// Obtain the current cell radius
     pub fn cell_radius(&self) -> f64 {
         volume_to_radius(self.cellular_reactions.cell_volume)
     }
@@ -186,7 +190,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
     }
 }
 
-///
+/// Imlementation of the [cellular_raza_concepts::Cycle] trait for the [Bacteria] struct
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaCycle {
@@ -220,7 +224,7 @@ impl BacteriaCycle {
         }
     }
 
-    ///
+    /// Construct the default [BacteriaCycle] by using default values
     #[staticmethod]
     pub fn default() -> Self {
         let bacteria_volume = bacteria_default_volume();
@@ -288,7 +292,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
     }
 }
 
-///
+/// Species of the cells (S1, S2)
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass]
 pub enum Species {
@@ -298,31 +302,33 @@ pub enum Species {
     S2,
 }
 
-///
+/// Implementation of the [cellular_raza_concepts::CellularReactions] trait and
+/// [cellular_raza_concepts::Interaction] trait for [Bacteria].
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaReactions {
-    ///
+    /// Overall interaction strength for physical interaction
     pub potential_strength: f64,
     /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
     pub food_to_volume_conversion: f64,
-    ///
+    /// flag if the cell is stil in lag phase
     pub lag_phase_active: bool,
-    ///
+    /// Species of the cell. This determines if a cell will secrete inhibitor or be
+    /// affected by it.
     pub species: Species,
-    ///
+    /// Total current volume of the cell
     pub cell_volume: f64,
-    ///
+    /// Uptake rate of nutrients
     pub uptake_rate: f64,
-    ///
+    /// Production rate of inhibitor
     pub inhibition_production_rate: f64,
-    ///
+    /// Inhibition rate of the growth of the cell
     pub inhibition_coefficient: f64,
 }
 
 #[pymethods]
 impl BacteriaReactions {
-    ///
+    /// Construct a new [BacteriaReactions] object
     #[new]
     #[pyo3(signature = (
         potential_strength=0.5,
@@ -370,7 +376,7 @@ impl BacteriaReactions {
         )
     }
 
-    ///
+    /// Obtain current cell radius
     pub fn cell_radius(&self) -> f64 {
         volume_to_radius(self.cell_volume)
     }
@@ -423,7 +429,7 @@ impl Volume for Bacteria {
     }
 }
 
-///
+/// This struct does nothing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct GradientSensing;
