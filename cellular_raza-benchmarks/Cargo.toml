@@ -28,6 +28,7 @@ version = "0.0.5"
 
 [features]
 default = ["gradients"]
+pyo3 = ["cellular_raza/pyo3"]
 
 # Simulation aspects
 gradients = []
