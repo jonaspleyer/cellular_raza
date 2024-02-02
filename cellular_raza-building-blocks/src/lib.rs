@@ -1,4 +1,3 @@
-#![deny(missing_docs)]
 //! # cellular_raza - Building Blocks
 //!
 //! Building blocks allow users to quickly construct complex cellular agents.
@@ -52,6 +51,15 @@
 //! The optional `Inf` generic parameter of the [Interaction](cellular_raza_concepts::Interaction) trait was left out and thus defaults to `()`.
 //! It can and needs to also be specified when choosing interactions with non-trivial
 //! interaction information.
+//!
+//! # Optional Features
+//! Features guard implementations which introduce additional dependencies.
+//! To simplify usability, we enable commonly used features by default.
+//!
+//! - [pyo3](https://docs.rs/pyo3/latest/pyo3/) Rust bindings to the Python interpreter
+
+#![deny(missing_docs)]
+#![cfg_attr(doc_cfg, feature(doc_cfg))]
 
 /// Construct cells from individual components
 pub mod cell_building_blocks;

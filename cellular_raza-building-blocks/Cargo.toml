@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [package.metadata.docs.rs]
-rustdoc-args = ["--no-deps"]
+rustdoc-args = ["--no-deps", "--cfg", "doc_cfg"]
 all-features = true
 
 [dependencies]
