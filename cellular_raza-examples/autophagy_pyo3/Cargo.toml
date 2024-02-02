@@ -15,7 +15,7 @@ serde_json = { version = "1.0" }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
-cellular_raza = { path="../../cellular_raza", version="0.0.5", features=["pyo3"] }
+cellular_raza = { path="../../cellular_raza", version="0.0.6", features=["pyo3"] }
 num = { workspace = true }
 itertools = { workspace = true }
 rayon = "1.7"
