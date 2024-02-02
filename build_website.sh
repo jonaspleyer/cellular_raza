@@ -29,11 +29,9 @@ hugo -d public_html
 # scp -r public_html celluld@www139.your-server.de:/
 
 cwd="$PWD"
-echo $cwd
+
 sftp celluld@www139.your-server.de <<EOF
-# Enable this command to completely refresh the page
-rmdir public_html
-put -aR $cwd/public_html
+put -a $cwd/public_html
 exit
 EOF
 
