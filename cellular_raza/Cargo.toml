@@ -14,6 +14,7 @@ autoexamples = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", ".docs-header.html" ]
+all-features = true
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"

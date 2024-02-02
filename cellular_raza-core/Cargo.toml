@@ -14,7 +14,7 @@ autoexamples = false
 
 [package.metadata.docs.rs]
 rustdoc-args = [ "--html-in-header", ".docs-header.html" ]
-
+all-features = true
 
 [dependencies]
 # Core

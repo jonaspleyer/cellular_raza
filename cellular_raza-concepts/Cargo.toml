@@ -13,6 +13,7 @@ categories.workspace = true
 
 [package.metadata.docs.rs]
 rustdoc-args = []
+all-features = true
 
 [dependencies]
 num = { workspace = true }
@@ -22,7 +23,10 @@ plotters = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
-cellular_raza-concepts-derive = { version = "0.0.6", path = "../cellular_raza-concepts-derive" }
+
+[dev-dependencies.cellular_raza-concepts-derive]
+path = "../cellular_raza-concepts-derive"
+version = "0.0.6"
 
 [features]
 default = ["gradients"]
