@@ -775,4 +775,29 @@ where
         }
         Ok(())
     }
+
+    pub fn save_cells<F>(
+        &self,
+        storage_manager: &crate::storage::StorageManager<&CellIdentifier, (&CellBox<C>, &A)>,
+        next_time_point: &crate::time::NextTimePoint<F>,
+    ) -> Result<(), StorageError>
+    where
+        A: Serialize,
+        C: Serialize,
+        CellBox<C>: cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
+    {
+        if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
+            use crate::storage::StorageInterface;
+            use cellular_raza_concepts::domain_new::Id;
+            let cells = self
+                .voxels
+                .iter()
+                .map(|(_, vox)| vox.cells.iter())
+                .flatten()
+                .map(|(c, a)| (c.ref_id(), (c, a)))
+                .collect::<Vec<_>>();
+            storage_manager.store_batch_elements(next_time_point.iteration as u64, &cells)?;
+        }
+        Ok(())
+    }
 }
