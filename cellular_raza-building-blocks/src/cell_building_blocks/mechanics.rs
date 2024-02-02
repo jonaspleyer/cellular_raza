@@ -11,16 +11,25 @@ use pyo3::prelude::*;
 macro_rules! implement_newton_damped_mechanics(
     ($struct_name:ident, $d:literal) => {implement_newton_damped_mechanics!($struct_name, $d, f64);};
     ($struct_name:ident, $d:literal, $float_type:ty) => {
-        /// Simple newtonian dynamics governed by mass and damping.
+        /// Newtonian dynamics governed by mass and damping.
         ///
+        /// # Parameters
+        /// | Symbol | Parameter | Description |
+        /// | --- | --- | --- |
+        /// | $\vec{x}$ | `pos` | Position of the particle. |
+        /// | $\dot{\vec{x}}$ | `vel` | Velocity of the particle. |
+        /// | $\lambda$ | `damping` | Damping constant |
+        /// | $m$ | `mass` | Mass of the particle. |
+        ///
+        /// # Equations
         /// The equation of motion is given by
         /// \\begin{equation}
         ///     m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
         /// \\end{equation}
-        /// where $\vec{F}$ is calculated by the
+        /// where $\vec{F}$ is the force as calculated by the
         /// [Interaction](cellular_raza_concepts::Interaction) trait.
-        /// The parameter $m$ describes the mass of the object while $\lambda$ is
-        /// the damping constant.
+        ///
+        /// # Comments
         /// If the cell is growing, we need to increase the mass $m$.
         /// By interacting with the outside world, we can adapt $\lambda$ to external values
         /// although this is rarely desirable.
@@ -174,7 +183,7 @@ fn generate_random_vector<const D: usize>(
 
 macro_rules! implement_brownian_mechanis(
     ($struct_name:ident, $d:literal) => {
-        /// Brownian motion of particles represented by a spherical potential in arbitrary dimension.
+        /// Brownian motion of particles
         ///
         /// # Parameters
         /// | Symbol | Parameter | Description |
@@ -182,9 +191,9 @@ macro_rules! implement_brownian_mechanis(
         /// | $\vec{x}$ | `pos` | Position of the particle. |
         /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
         /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-        /// | $\Delta t$ | 'update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
+        /// | $\Delta t$ | `update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
         ///
-        /// # Position Update
+        /// # Equations
         /// We integrate the standard brownian motion stochastic differential equation.
         /// \\begin{equation}
         ///     \dot{\vec{x}} = -\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)
@@ -275,9 +284,23 @@ implement_brownian_mechanis!(Brownian3D, 3);
 
 macro_rules! define_langevin_nd(
     ($struct_name:ident, $d:literal) => {
-        /// Langevin dynamics in
-        #[doc = stringify!($d)]
-        /// dimensions
+        /// Langevin dynamics
+        ///
+        /// # Parameters
+        /// | Symbol | Parameter | Description |
+        /// | --- | --- | --- |
+        /// | $\vec{X}$ | `pos` | Position of the particle. |
+        /// | $\dot{\vec{X}}$ | `vel` | Velocity of the particle. |
+        /// | $M$ | `mass` | Mass of the particle. |
+        /// | $\gamma$ | `damping` | Damping constant |
+        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+        /// | $\Delta t$ | `update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
+        ///
+        /// # Equations
+        ///
+        /// \\begin{equation}
+        ///     M \ddot{\mathbf{X}} = - \mathbf{\nabla} U(\mathbf{X}) - \gamma M\dot{\mathbf{X}} + \sqrt{2 M \gamma k_{\rm B} T}\mathbf{R}(t)
+        /// \\end{equation}
         #[cfg_attr(feature = "pyo3", pyclass)]
         #[derive(Clone, Debug, Deserialize, Serialize)]
         pub struct $struct_name {
@@ -336,7 +359,9 @@ macro_rules! define_langevin_nd(
         #[cfg(feature = "pyo3")]
         #[pymethods]
         impl $struct_name {
-            /// Creates a new [Langevin] struct from position, velocity, mass, damping,
+            /// Creates a new [
+            #[doc = stringify!($struct_name)]
+            /// ] struct from position, velocity, mass, damping,
             /// kb_temperature and the update interval of the mechanics aspect.
             #[new]
             pub fn new(
