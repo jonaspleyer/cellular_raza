@@ -13,7 +13,7 @@ categories.workspace = true
 autoexamples = false
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--no-deps", "--html-in-header", ".docs-header.html" ]
+rustdoc-args = [ "--html-in-header", ".docs-header.html" ]
 
 
 [dependencies]
