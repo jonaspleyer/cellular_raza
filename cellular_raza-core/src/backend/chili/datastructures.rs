@@ -776,6 +776,7 @@ where
         Ok(())
     }
 
+    /// Stores all cells of the subdomain via the given [storage_manager}(crate::storage)
     pub fn save_cells<F>(
         &self,
         storage_manager: &crate::storage::StorageManager<&CellIdentifier, (&CellBox<C>, &A)>,
