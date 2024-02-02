@@ -1,7 +1,7 @@
 <div align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://cellular_raza.com/logos/cellular_raza_dark_mode.svg">
-        <source media="(prefers-color-scheme: light)" srcset="https://cellular_raza.com/logos/cellular_raza.svg">
+        <source media="(prefers-color-scheme: dark)" srcset="cellular_raza-homepage/static/logos/cellular_raza_dark_mode.svg">
+        <source media="(prefers-color-scheme: light)" srcset="cellular_raza-homepage/static/logos/cellular_raza.svg">
         <img alt="The cellular_raza logo" src="doc/cellular_raza.svg">
     </picture>
 </div>
@@ -18,7 +18,7 @@
 A cellular Agent-Based modeling tool.
 
 ## Documentation
-Read the [book](https://jonaspleyer.github.io/cellular_raza/).
+Read the documentation at [cellular_raza.com](https://cellular_raza.com/).
 Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of the package.
 Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentation of the code.
 
