@@ -1,0 +1,428 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>cellular_raza - Think like a cell!</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="cellular_raza-theme.css">
+		<link rel="stylesheet" href="columns.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+      <div>
+      <div style="
+        margin-top: 0;
+        width: 100%;
+        height: 2em;
+        font-size: 0.75em;
+        display: grid;
+        grid-template-columns: 20% 60% 20%;
+      ">
+          <div style="margin: 0.5em;">
+            Jonas Pleyer
+          </div>
+          <div style="text-align: center; margin: 0.5em;">
+            <a href="https://cellular-raza.com/publications">
+              <img src="media/cellular_raza_dark_mode.svg" style="height: 1.5em; display: inline; vertical-align: middle; margin: 0;">
+            </a>
+            - Think like a cell!
+          </div>
+          <div style="margin: 0.5em; text-align: right;">
+            05.02.2024
+          </div>
+        </div>
+      </div>
+			<div class="slides">
+        <section>
+          <img src="media/cellular_raza_dark_mode.svg">
+          <h2>Think like a cell!</h2>
+					<br>
+					<h4>05.02.2024</h4>
+					<h4>Jonas Pleyer</h4>
+          <img src="JonasPleyer-edited.jpeg" style="border-radius: 50%; height: 6em;">
+        </section>
+        <section>
+          <h2>Outline</h2>
+          <br>
+          <h3 class="fragment">Agent-Based Modelling</h3>
+          <ul class="fragment">
+            <li>What? Why? How?</li>
+            <li>Example Workflow</li>
+          </ul>
+          <br>
+          <br>
+          <h3 class="fragment">
+            <img src="media/cellular_raza_dark_mode.svg" style="height: 1.5em; display: inline; margin: 0;">
+          </h3>
+          <ul class="fragment">
+            <li>TODO</li>
+          </ul>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## What is Agent-Based Modelling?
+            ### - It's a mindset<!-- .element: class="fragment" -->
+            - Specific way to construct cellular models<!-- .element: class="fragment" -->
+            - Model individual cells<!-- .element: class="fragment" -->
+            - Abstraction of cellular properties<!-- .element: class="fragment" -->
+            - .. and physical domain<!-- .element: class="fragment" -->
+            - Describe time evolution<!-- .element: class="fragment" -->
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Cellular Properties
+            | Property | Examples |
+            |---|---|
+            | Mechanics | Stochastic Motion, Chemotaxis |
+            | Forces | Collision, Friction, Adhesion |
+            | Intracellular Dynamics | Reaction Networks, Metabolics |
+            | Cycle | Division, Death, Differentiation |
+            <div style="margin-left: auto; margin-right: auto; font-size: 0.75em;">
+              <img src="media/E._coli_Bacteria_(16578744517).jpg" width="600px">
+              <p>Credit: 
+                <a href="https://upload.wikimedia.org/wikipedia/commons/d/d5/E._coli_Bacteria_%2816578744517%29.jpg">en.m.wikipedia.org/</a>
+                (under CC 2.0 License)
+              </p>
+            </div>
+
+            ---
+
+            ## Domain Properties
+            | Property | Examples |
+            |---|---|
+            | Physical Shape | Petri Dish, Mother-Machine |
+            | Fluid-Dynamics | Diffusion, Flow |
+            | Custom | Removal/Insertion of cells |
+            <div style="margin-left: auto; margin-right: auto; font-size: 0.75em;">
+              <img src="media/202004_petri_dish_with_cultured_bacteria_blue.svg" width="600px">
+              <p>Credit: 
+                <a href="https://upload.wikimedia.org/wikipedia/commons/7/73/202004_petri_dish_with_cultured_bacteria_blue.svg">en.m.wikipedia.org/</a>
+                (under CC 4.0 License)
+              </p>
+            </div>
+
+            ---
+
+            ## Bacterial Growth Model
+            Include metabolism in growth model
+
+            \\begin{alignat}{7}
+              \dot{L} &= -&&\lambda R L\\\\
+              \dot{G} &= &&\lambda R L &+ \alpha R &G\\\\
+              \dot{R} &= &&&-\frac{\alpha}{G_\text{max}} R &G
+            \\end{alignat}
+
+            | Variable | Description |
+            | --- | --- |
+            | $L$ | Cells in lag-phase |
+            | $G$ | Cells in growth-phase
+            | $\lambda$ | Transition rate from $L$ to $G$ |
+            | $\alpha$ | Growth rate |
+
+            ---
+
+            ## Two-Species Model
+            ### with inhibition
+
+            \\begin{alignat}{7}
+              \dot{L_A} &= -&&\lambda_A R L_A\\\\
+              \dot{G_A} &= &&\lambda_A R L_A &+ \alpha_A R &G_A\\\\
+              \dot{L_B} &= -&&\lambda_B R L_B\\\\
+              \dot{G_B} &= &&\lambda_B R L_B &&&+ \frac{\alpha_B}{1 + \mu_I I} &R G_B\\\\
+              \dot{R} &= &&&-\frac{\alpha_A}{G_\text{max}} R &G_A &-\frac{\alpha_B}{(1 + \mu_I I) G_\text{max}} &R G_B \\\\
+              \dot{I}   &= &&\kappa G_A
+            \\end{alignat}
+
+            - Inhibitor $I$ is produced with $\kappa$ by species $A$
+
+            ---
+
+            ## Observations
+            - Variables $L,G,R,I$ are global
+            - Parameters $\lambda,\alpha,\kappa,\mu$ correspond to global processes
+            - $G_{max}$ is heuristic
+
+            ---
+
+            ## Think like a cell
+            - Identify processes<!-- .element: class="fragment" -->
+            - Link to cellular properties<!-- .element: class="fragment" -->
+            - Find mathematical description<!-- .element: class="fragment" -->
+            - Choose physical domain<!-- .element: class="fragment" -->
+
+            ---
+
+            ## Processes
+
+            | Process | Cellular Property | Description | 
+            | --- | --- | --- |
+            | $L \longrightarrow G$ | Cycle | Stochastic event |
+            | Proliferation | Cycle | Division rule |
+            | Shape | Forces + Mechanics | Spherical Potential |
+            | Nutrient consumption | Intracellular Dynamics | coupled ODE |
+
+            <br>
+
+            ### Physical Domain
+            Cartesian Cuboid with extracellular diffusion
+
+            ---
+
+            ### Reactions
+            \\begin{align}
+              \dot{V_c} &= \frac{u}{1+\nu_I [I]} \sigma [R]V_c\\\\
+              \dot{[R]} &= \sum\limits_c -\frac{u}{1+\nu_I [I]} \frac{V_c}{V_D} [R] \delta(x-x_c) + D_R\Delta [R]\\\\
+              \dot{[I]} &= \sum\limits_c b\frac{V_c}{V_D}\delta(x-x_c) + D_I\Delta [I]
+            \\end{align}
+
+            ### Forces + Mechanics
+            \\begin{equation}
+              m \ddot{\vec{x}} = \vec{F} - \lambda \dot{\vec{x}}
+            \\end{equation}
+
+            ### Cycle
+            - Custom update rules for agents
+
+            ---
+
+            <h2>Snapshots</h2>
+            <div style="display: grid; grid-template-columns: 40% 40%; margin-left: 20%;">
+              <img src="media/pool_model-snapshot_00006000.png" style="width: 100%; margin: 0;">
+              <img src="media/pool_model-snapshot_00012000.png" style="width: 100%; margin: 0;">
+              <img src="media/pool_model-snapshot_00018000.png" style="width: 100%; margin: 0;">
+              <img src="media/pool_model-snapshot_00024000.png" style="width: 100%; margin: 0;">
+            </div>
+
+            ---
+
+            ## Comments
+            - only mechanistic parameters<!-- .element: class="fragment" -->
+            - coarse-grained case is readily obtained<!-- .element: class="fragment" -->
+              - same amount of parameters<!-- .element: class="fragment" -->
+            - even just the mindset is helpful<!-- .element: class="fragment" -->
+              - no numerical simulation required<!-- .element: class="fragment" -->
+
+            ---
+
+            <div>
+              <img src="media/cellular_raza_dark_mode.svg" style="height: 3em;">
+            </div>
+
+            - Transfer approach to computational model<!-- .element: class="fragment" -->
+            - Require Flexibility in model design<!-- .element: class="fragment" -->
+            - User should be in control<!-- .element: class="fragment" -->
+            - Aim for good performance<!-- .element: class="fragment" -->
+
+            <br>
+            <br>
+
+            ## Etymology<!-- .element: class="fragment" -->
+
+            <div>
+
+              `cellular_raza` = Cell + "tabula rasa"
+
+            </div><!-- .element: class="fragment" -->
+
+            - Start from "clean slate"<!-- .element: class="fragment" -->
+
+            ---
+
+            ## Implementation
+
+            - Use generic programming
+              - Allows for flexibility<!-- .element: class="fragment" -->
+              - Retains performance<!-- .element: class="fragment" -->
+
+            <div class="fragment" style="display: grid; grid-template-columns: 50% 50%;">
+
+            ```rust
+            // Rust example
+            fn update<T>(vec: &mut Vec<T>) {...}
+            //                         ↑
+            //         This is a generic argument
+            ```
+
+            ```cpp
+            // C++ example
+            template<class T>
+            void update(vector<T> &vec) {...}
+            //                      ↑
+            //        This is a template argument
+            ```
+
+            </div>
+
+            - Build all update functions with generics<!-- .element: class="fragment" -->
+
+            ---
+
+            ## Inherent Assumptions
+            - All interactions are local (finite range)
+              - Cells only interact with environment
+              - and next neighbours
+              - No global rules
+            - No explicit time-dependence in system
+
+            ---
+
+            ## Mechanics
+            ```rust
+            pub trait Mechanics<Pos, Vel, For, Float = f64> {
+              fn pos(&self) -> Pos;
+              fn velocity(&self) -> Vel;
+              fn set_pos(&mut self, pos: &Pos);
+              fn set_velocity(&mut self, velocity: &Vel);
+              fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError>;
+            }
+            ```
+            ## Forces
+            ```rust
+            pub trait Interaction<Pos, Vel, Force, Inf = ()> {
+
+              fn get_interaction_information(&self) -> Inf;
+
+              fn calculate_force_between(
+                  &self,
+                  own_pos: &Pos,
+                  own_vel: &Vel,
+                  ext_pos: &Pos,
+                  ext_vel: &Vel,
+                  ext_info: &Inf
+              ) -> Option<Result<Force, CalcError>>;
+            }
+            ```
+
+            ---
+
+            ## Cycle
+            ```rust
+            pub trait Cycle<Cell, Float = f64> {
+
+              fn update_cycle(
+                  rng: &mut ChaCha8Rng,
+                  dt: &Float,
+                  cell: &mut Cell
+              ) -> Option<CycleEvent>;
+
+              fn divide(
+                  rng: &mut ChaCha8Rng,
+                  cell: &mut Cell
+              ) -> Result<Cell, DivisionError>;
+            }
+            ```
+
+            ---
+
+            ## Techniques
+            - Domain decomposition
+              - Split simulation domain into multiple subdomains
+              - Execute upate steps in parallel
+            - Storage Manager
+              - Export parts or store complete simulation
+              - xml, json or sled (embedded) database
+
+            ---
+
+            ## Features
+            - Fine-grained control over parameters
+            - Combine building-blocks to new Agents
+            - Multiple backends possible
+            - Clear separatin between concepts and Implementation
+              - Defines "Language of ABMs"
+
+          </textarea>
+        </section>
+        <section>
+          <h2>Documentation</h2>
+          <iframe src="https://cellular-raza.com/docs/cellular_raza_concepts" style="width: 1200px; height: 1000px;"></iframe>
+        </section>
+        <section>
+          <h2>Cell Sorting</h2>
+          <div style="display: grid; grid-template-columns: 50% 50%;">
+            <img src="media/cell_sorting_start.png" style="display: inline; margin: 0; width: 100%;">
+            <img src="media/cell_sorting_end.png" style="display: inline; margin: 0; width: 100%;">
+            <h4>Start</h4>
+            <h4>End</h4>
+          </div>
+          <ul>
+            <li>Species-specific interaction</li>
+            <li>Only forces and mechanics</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Semi-Vertex Model</h2>
+          <h4>(Still in Testing phase)</h4>
+          <video src="media/semi-vertex-model.mp4" controls style="width: 60%;"></video>
+        </section>
+        <section>
+          <h2>Bacterial Branching</h2>
+          <video src="media/movie_diffusion_025.mp4" controls style="width: 60%;"></video>
+        </section>
+        <section>
+          <h2>Performance</h2>
+          <div style="display: grid; grid-template-columns: 50% 50%;">
+            <img src="media/scaling_1.png" style="display: inline; margin: 0; width: 100%;">
+            <img src="media/scaling_0.png" style="display: inline; margin: 0; width: 100%;">
+          </div>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Conclusion
+            - Established Workflow (Think like a cell)<!-- .element: class="fragment" -->
+            - Build simulation framework to support this workflow<!-- .element: class="fragment" -->
+            - First promising results<!-- .element: class="fragment" -->
+          </textarea>
+        </section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				width: 1600,
+				height: 1200,
+
+				navigationMode: "grid",
+
+				slideNumber: 'c/t',
+
+				katex: {
+					version: 'latest',
+					delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "\\(", right: "\\)", display: false},
+            {left: "\\begin{equation}", right: "\\end{equation}", display: true},
+            {left: "\\begin{align}", right: "\\end{align}", display: true},
+            {left: "\\begin{alignat}", right: "\\end{alignat}", display: true},
+            {left: "\\begin{gather}", right: "\\end{gather}", display: true},
+            {left: "\\begin{CD}", right: "\\end{CD}", display: true},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "$", right: "$", display: false},
+          ],
+					ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX ]
+			});
+		</script>
+	</body>
+</html>
