@@ -9,4 +9,4 @@ To cite `cellular_raza`, please use the following paper:
 
 ## 2024
 <!-- TODO insert presentation with link here -->
-- [Talk]() by Jonas Pleyer at the Group Seminar of Jens Timmer
+- [Talk](2024-02-05-think-like-a-cell) by Jonas Pleyer at the Group Seminar of Jens Timmer
