@@ -62,7 +62,8 @@
             <img src="media/cellular_raza_dark_mode.svg" style="height: 1.5em; display: inline; margin: 0;">
           </h3>
           <ul class="fragment">
-            <li>TODO</li>
+            <li>From theory to practice</li>
+            <li>Implementation details</li>
           </ul>
         </section>
         <section data-markdown>
@@ -74,6 +75,8 @@
             - Abstraction of cellular properties<!-- .element: class="fragment" -->
             - .. and physical domain<!-- .element: class="fragment" -->
             - Describe time evolution<!-- .element: class="fragment" -->
+            - Most relevant in multicellular systems<!-- .element: class="fragment" -->
+              - Self Organization & Patterning<!-- .element: class="fragment" -->
           </textarea>
         </section>
         <section data-markdown>
@@ -111,8 +114,8 @@
 
             ---
 
-            ## Bacterial Growth Model
-            Include metabolism in growth model
+            ## Example - Bacterial Growth Model
+            Include delay due to metabolism in typical growth model
 
             \\begin{alignat}{7}
               \dot{L} &= -&&\lambda R L\\\\
@@ -246,7 +249,7 @@
 
             ```rust
             // Rust example
-            fn update<T>(vec: &mut Vec<T>) {...}
+            fn update<T>(element: &mut T) {...}
             //                         ↑
             //         This is a generic argument
             ```
@@ -254,9 +257,9 @@
             ```cpp
             // C++ example
             template<class T>
-            void update(vector<T> &vec) {...}
-            //                      ↑
-            //        This is a template argument
+            void update(T &element) {...}
+            //          ↑
+            //         This is a template argument
             ```
 
             </div>
@@ -266,11 +269,11 @@
             ---
 
             ## Inherent Assumptions
-            - All interactions are local (finite range)
-              - Cells only interact with environment
-              - and next neighbours
-              - No global rules
-            - No explicit time-dependence in system
+            - All interactions are local (finite range)<!-- .element: class="fragment" -->
+              - Cells only interact with next neighbours<!-- .element: class="fragment" -->
+              - and environment<!-- .element: class="fragment" -->
+              - No global rules<!-- .element: class="fragment" -->
+            - No explicit time-dependence in system<!-- .element: class="fragment" -->
 
             ---
 
@@ -284,6 +287,16 @@
               fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError>;
             }
             ```
+
+            | Name | Dim | | | Equations |
+            | --- |:---:| ---:|:--- | --- |
+            | `Brownian` | 1, 2, 3 | $\dot{\vec{x}}$ | $=$ | $-\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)$ |
+            | `Langevin` | 1, 2, 3 | $M \ddot{\mathbf{X}}$ | $=$ | $- \mathbf{\nabla} U(\mathbf{X})$ <br> $- \gamma M\dot{\mathbf{X}} + \sqrt{2 M \gamma k_{\rm B} T}\mathbf{R}(t)$ |
+            | `NewtonDamped` | 1, 2, 3 | $m \ddot{\vec{x}}$ | $=$ | $\vec{F} - \lambda \dot{\vec{x}}$ |
+            | `VertexMechanics` | 2 | | | <p style="color: rgba(250, 250, 250, 0.5);" >(Too much space needed)</p> |
+
+            ---
+
             ## Forces
             ```rust
             pub trait Interaction<Pos, Vel, Force, Inf = ()> {
@@ -301,24 +314,156 @@
             }
             ```
 
+            | Name | Dim | Equations |
+            | --- |:---:|:---:|
+            | `BoundLennardJones` | 1, 2, 3 | $U(r) = 4\epsilon\left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^6\right]$ <br> $V(r)=\min(U(r), \beta)\theta(r-\xi)$ |
+            | `BacteriaReactions` | 2 | $\vec{z} = \vec{x_1} - \vec{x_2} \hspace{1cm} r = \|\|\vec{z}\|\|$ <br> $\sigma = \frac{r}{r_1+r_2} \hspace{1.375cm} q=0.2$ <br> $\vec{F} = \epsilon \frac{1+q}{q+\sigma} \theta(\sigma - 1) \frac{1}{r}\vec{z}$ |
+
+            ---
+
+            ## Cellular Reactions
+
+            ```rust
+            pub trait CellularReactions<CI, CE = CI> {
+              fn get_intracellular(&self) -> CI;
+
+              fn set_intracellular(&mut self, concentration_vector: CI);
+
+              fn calculate_intra_and_extracellular_reaction_increment(
+                  &self,
+                  internal_concentration_vector: &CI,
+                  external_concentration_vector: &CE
+              ) -> Result<(CI, CE), CalcError>;
+            }
+            ```
+
+            | Name | Equations |
+            | --- | --- |
+            | `BacteriaReactions` | $\dot{V_c} = \frac{u}{1+\nu_I [I]} \sigma [R]V_c$ <br> $\dot{[R]} = \sum\limits_c -\frac{u}{1+\nu_I [I]} \frac{V_c}{V_D} [R] \delta(x-x_c) + D_R\Delta [R]$ <br> $\dot{[I]} = \sum\limits_c b\frac{V_c}{V_D}\delta(x-x_c) + D_I\Delta [I]$ |
+            | `NoReactions` | |
+
             ---
 
             ## Cycle
-            ```rust
-            pub trait Cycle<Cell, Float = f64> {
 
-              fn update_cycle(
+            <div style="display: grid; grid-template-columns: 50% 50%;">
+
+              ```rust
+              pub trait Cycle<Cell, Float = f64> {
+
+                fn update_cycle(
+                    rng: &mut ChaCha8Rng,
+                    dt: &Float,
+                    cell: &mut Cell
+                ) -> Option<CycleEvent>;
+
+                fn divide(
+                    rng: &mut ChaCha8Rng,
+                    cell: &mut Cell
+                ) -> Result\<Cell, DivisionError>;
+              ```
+
+              ```rust
+                // Default method
+                // Can be overwritten
+                fn update_conditional_phased_death(
                   rng: &mut ChaCha8Rng,
                   dt: &Float,
                   cell: &mut Cell
-              ) -> Option<CycleEvent>;
+                ) -> Result<bool, DeathError> {
+                  Ok(true)
+                }
+              }
+              ```
 
-              fn divide(
-                  rng: &mut ChaCha8Rng,
-                  cell: &mut Cell
-              ) -> Result<Cell, DivisionError>;
-            }
-            ```
+            </div>
+
+            Usually implemented individually for every new Cell-Agent.
+            <div class="fragment">
+
+              ### Example
+              ```rust
+              impl Cycle<Cell> for Cell {
+                  fn update_cycle(rng: &mut ChaCha8Rng, dt: &f64, cell: &mut Cell) -> Option<CycleEvent> {
+                      // Increase the current age of the cell
+                      cell.current_age += dt;
+
+                      // If the cell is older than the current age, return a division event
+                      if cell.current_age > cell.maximum_age {
+                          return Some(CycleEvent::Division)
+                      }
+                      None
+                  }
+                  // ...
+              }
+              ```
+
+            </div>
+
+            ---
+
+            ## Physical Domain
+
+            <div style="display: grid; grid-template-columns: 50% 50%;">
+
+              #### Domain
+
+              #### Subdomain
+
+              ```rust
+              pub trait Domain<C, S> {
+                type SubDomainIndex;
+                type VoxelIndex;
+
+                fn get_all_voxel_indices(
+                  &self
+                ) -> Vec<Self::VoxelIndex>;
+              ```
+
+              ```rust
+              pub trait SubDomain<C> {
+                type VoxelIndex;
+
+                fn get_voxel_index_of(
+                    &self,
+                    cell: &C
+                ) -> Result<Self::VoxelIndex, BoundaryError>;
+              ```
+
+              ```rust
+                fn decompose(
+                  self,
+                  n_subdomains: NonZeroUsize,
+                  cells: Vec<C>
+                ) -> Result<
+                  DecomposedDomain<Self::SubDomainIndex, S, C>,
+                  DecomposeError
+                >
+                  where S: SubDomain<C>;
+              }
+              ```
+              ```rust
+                fn get_neighbor_voxel_indices(
+                  &self,
+                  voxel_index: &Self::VoxelIndex
+                ) -> Vec<Self::VoxelIndex>;
+
+                fn apply_boundary(
+                  &self,
+                  cell: &mut C
+                ) -> Result<(), BoundaryError>;
+
+                fn get_all_indices(
+                  &self
+                ) -> Vec<Self::VoxelIndex>;
+              }
+              ```
+
+            </div>
+
+            | Name | Dim | Description |
+            | --- |:---:| --- |
+            | `CartesianCuboid` | 1, 2, 3 | Cuboid $[a_0, b_0] \times \dots \times [a_d, b_d] \sub \mathbb{R}^d$ <br> with reflective boundary conditions. |
 
             ---
 
@@ -326,6 +471,7 @@
             - Domain decomposition
               - Split simulation domain into multiple subdomains
               - Execute upate steps in parallel
+              - Possible due to locality of interactions
             - Storage Manager
               - Export parts or store complete simulation
               - xml, json or sled (embedded) database
