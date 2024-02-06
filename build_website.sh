@@ -31,12 +31,39 @@ build_website() {
     cd ..
 }
 
+movie() {
+    # Generate the movie
+    gource \
+    -s .3 \
+    --default-user-image cellular_raza-homepage/static/JonasPleyer-circle.png \
+    -1280x720 \
+    --auto-skip-seconds .1 \
+    --multi-sampling \
+    --stop-at-end \
+    --key \
+    --highlight-users \
+    --date-format "%d/%m/%y" \
+    --hide mouse,filenames \
+    --file-idle-time 0 \
+    --max-files 0  \
+    --background-colour 000000 \
+    --font-size 25 \
+    --output-ppm-stream - \
+    --output-framerate 60 \
+    | ffmpeg -y -r 60 -f image2pipe -pix_fmt yuv420p -y -vcodec ppm -i - -b 65536K output.mp4
+    # Compress the movie
+    ffmpeg -i output.mp4 -vcodec libvpx -crf 20 -y cellular_raza-development-gource.webm
+    # Move it to the hompage folder
+    mv cellular_raza-development-gource.webm cellular_raza-homepage/content/internals/
+}
+
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo "Options:"
     echo " -h --help        Display this help message"
     echo " -d --doc         Generate rust documentation"
     echo " -w --website     Build website"
+    echo " -m --movie       Generate Movie of cellular_raza development"
     echo " -u --upload      Upload to server"
     echo " -a --all         Do a full build with upload. Same as -d -w -u"
 }
@@ -68,6 +95,10 @@ handle_options() {
                 ;;
             -u | --upload)
                 upload
+                exit 0
+                ;;
+            -m | --movie)
+                movie
                 exit 0
                 ;;
             -a | --all)
