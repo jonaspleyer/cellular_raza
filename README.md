@@ -8,8 +8,9 @@
 
 # cellular_raza
 [![License: GPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/license/gpl-2-0/)
-[![Test Nightly](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly.yml?label=Test%20Nightly&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
 [![Test Stable](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable.yml?label=Test%20Stable&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
+[![Test Beta](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta.yml?label=Test%20Beta&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
+[![Test Nightly](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly.yml?label=Test%20Nightly&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.36+-lightgray.svg?style=flat-square)](https://github.com/jonaspleyer/cellular_raza#rust-version-requirements)
 [![Crate](https://img.shields.io/crates/v/cellular_raza.svg?style=flat-square)](https://crates.io/crates/cellular_raza)
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
