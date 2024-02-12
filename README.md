@@ -7,7 +7,7 @@
 </div>
 
 # cellular_raza
-[![License: MPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/license/gpl-2-0/)
+[![License: GPL 2.0](https://img.shields.io/github/license/jonaspleyer/cellular_raza?style=flat-square)](https://opensource.org/license/gpl-2-0/)
 [![Test Nightly](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly.yml?label=Test%20Nightly&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
 [![Test Stable](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable.yml?label=Test%20Stable&style=flat-square)](https://github.com/jonaspleyer/cellular_raza/actions)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.36+-lightgray.svg?style=flat-square)](https://github.com/jonaspleyer/cellular_raza#rust-version-requirements)
