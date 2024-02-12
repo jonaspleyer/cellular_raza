@@ -10,17 +10,20 @@ name: Test-Suite Stable
 
 jobs:
   check:
+    strategy:
+      matrix:
+        toolchain: [stable, beta, nightly]
     name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
+      - name: Install ${{ matrix.toolchain }} toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.toolchain }}
           override: true
 
       - name: Run cargo check
@@ -29,17 +32,20 @@ jobs:
           command: check
 
   test:
+    strategy:
+      matrix:
+        toolchain: [stable, beta, nightly]
     name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
+      - name: Install ${{ matrix.toolchain }} toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.toolchain }}
           override: true
 
       - name: Run cargo test
@@ -48,17 +54,20 @@ jobs:
           command: test
 
   doctest:
+    strategy:
+      matrix:
+        toolchain: [stable, beta, nightly]
     name: DocTest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
+      - name: Install ${{ matrix.toolchain }} toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.toolchain }}
           override: true
 
       - name: Run cargo test
@@ -74,11 +83,11 @@ jobs:
 #       - name: Checkout sources
 #         uses: actions/checkout@v2
 # 
-#       - name: Install stable toolchain
+#       - name: Install ${{ matrix.toolchain }} toolchain
 #         uses: actions-rs/toolchain@v1
 #         with:
 #           profile: minimal
-#           toolchain: stable
+#           toolchain: ${{ matrix.toolchain }}
 #           override: true
 #           components: rustfmt, clippy
 # 
