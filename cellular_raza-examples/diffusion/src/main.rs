@@ -207,7 +207,7 @@ impl SubDomain {
         for i in 0..n_lattice_points_x {
             for j in 0..n_lattice_points_y {
                 let c = self.total_concentration[[i, j, 0]];
-                let color = BlackWhite::get_color_normalized(c, 0.0, 0.2);
+                let color = BlackWhite::get_color_normalized(c, 0.0, 0.5);
                 let rect = plotters::element::Rectangle::new(
                     [
                         (
