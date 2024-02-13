@@ -1,5 +1,5 @@
-pub mod config;
-pub mod domain_decomposition;
+mod config;
+mod domain_decomposition;
 /// Error types which can arise during the simulation.
 ///
 /// There is one main error type [SimulationError](errors::SimulationError) which should be derivable from errors
@@ -17,6 +17,14 @@ pub mod domain_decomposition;
 /// | BoundaryError | Solver Accuracy, Domain Implementaion bug, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
 /// | CalcError | Solver Accuracy, Bug by user implementation of corresponding function, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
 // TODO implement the handling of these errors!
-pub mod errors;
-pub mod prelude;
-pub mod supervisor;
+mod errors;
+mod supervisor;
+
+// Concepts for every simulation aspect
+pub use cellular_raza_concepts::*;
+
+// Implementation Details necessary
+pub use config::*;
+pub use domain_decomposition::*;
+pub use errors::*;
+pub use supervisor::*;

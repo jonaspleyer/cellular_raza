@@ -18,8 +18,8 @@ pub struct SimulationSetup<C, D> {
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Settings {
     pub n_threads: core::num::NonZeroUsize,
-    pub time: crate::backend::cpu_os_threads::config::TimeSetup,
-    pub storage: crate::backend::cpu_os_threads::config::StorageConfig,
+    pub time: crate::backend::cpu_os_threads::TimeSetup,
+    pub storage: crate::backend::cpu_os_threads::StorageConfig,
     pub show_progressbar: bool,
 }
 
