@@ -1167,7 +1167,10 @@ where
         Ok(())
     }
 
-    pub(crate) fn save_cells_to_database(&self, iteration: &u64) -> Result<(), crate::storage::StorageError>
+    pub(crate) fn save_cells_to_database(
+        &self,
+        iteration: &u64,
+    ) -> Result<(), crate::storage::StorageError>
     where
         Cel: 'static,
         CellAgentBox<Cel>: Clone,
@@ -1183,7 +1186,10 @@ where
         self.storage_cells.store_batch_elements(*iteration, &cells)
     }
 
-    pub(crate) fn save_voxels_to_database(&self, iteration: &u64) -> Result<(), crate::storage::StorageError>
+    pub(crate) fn save_voxels_to_database(
+        &self,
+        iteration: &u64,
+    ) -> Result<(), crate::storage::StorageError>
     where
         VoxelBox<
             Ind,
