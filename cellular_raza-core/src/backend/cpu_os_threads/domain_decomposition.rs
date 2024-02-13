@@ -473,23 +473,6 @@ where
     }
 }
 
-/* impl<I,V,C,Pos,For> Voxel<PlainIndex,Pos,For> for VoxelBox<I, V,C,For>
-where
-    Cel: Clone + Serialize + for<'a> Deserialize<'a> + Send + Sync,
-    Pos: Serialize + for<'a> Deserialize<'a> + Send + Sync,
-    For: Clone + Serialize + for<'a> Deserialize<'a> + Send + Sync,
-    Ind: Serialize + for<'a> Deserialize<'a> + Index,
-    V: Serialize + for<'a> Deserialize<'a> + Voxel<Ind,Pos,For>,
-{
-    fn custom_force_on_cell(&self, cell: &Pos) -> Option<Result<For, CalcError>> {
-        self.voxel.custom_force_on_cell(cell)
-    }
-
-    fn get_index(&self) -> PlainIndex {
-        self.plain_index
-    }
-}*/
-
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
 /// Subdomain which consists of multiple [Voxels](Voxel)
