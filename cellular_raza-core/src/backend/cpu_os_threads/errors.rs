@@ -40,24 +40,50 @@ macro_rules! impl_from_error {
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
+    /// Occurs during calculations of any mathematical update steps such as
+    /// [Interaction](cellular_raza_concepts::Interaction) between cells.
     CalcError(CalcError),
-    ControllerError(ControllerError),
-    RequestError(RequestError),
+    /// Related to time-stepping events. See [crate::time].
     TimeError(TimeError),
+    /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
+    /// trait.
+    ControllerError(ControllerError),
+    /// An error specific to cell-division events by the
+    ///
+    /// [Cycle](cellular_raza_concepts::Cycle) trait.
     DivisionError(DivisionError),
+    /// Related to the [PhasedDeath](cellular_raza_concepts::CycleEvent::PhasedDeath) event.
+    /// This error can only occurr during the
+    /// [update_conditional_phased_death](cellular_raza_concepts::Cycle::update_conditional_phased_death)
+    /// method.
     DeathError(DeathError),
+    /// Enforcing boundary conditions on cells can exhibhit this boundary error.
     BoundaryError(BoundaryError),
+    /// Plotting results. See also [cellular_raza_concepts::plotting].
     DrawingError(DrawingError),
-    RngError(RngError),
+    /// Mostly caused by trying to find a voxel by its index.
+    /// This error can also occurr when applying too large simulation-steps.
+    IndexError(IndexError),
 
     // Less likely but possible to be user errors
+    /// Sending information between threads fails
     SendError(String),
+    /// Receiving information from another thread fails
     ReceiveError(RecvError),
+    /// Storing results fails
     StorageError(StorageError),
 
     // Highly unlikely to be user errors
-    IndexError(IndexError),
+    /// When writing to output files or reading from them.
+    /// See [std::io::Error]
     IoError(std::io::Error),
+    /// Occurs when requested data could not be returned
+    RequestError(RequestError),
+    /// Errors related to [rand] and its functionalities
+    RngError(RngError),
+
+    // Highly unlikely to be user errors
+    /// Errors surrounding construction of [rayon::ThreadPool].
     ThreadingError(rayon::ThreadPoolBuildError),
 }
 
@@ -116,21 +142,4 @@ where
     fn from(drawing_error: plotters::drawing::DrawingAreaErrorKind<E>) -> SimulationError {
         SimulationError::DrawingError(DrawingError::from(drawing_error))
     }
-}
-
-/// Contains handling strategies for errors which can arise during the simulation process.
-///
-/// # Handling Strategies
-/// A handler has multiple options on how to approach a recovery in a simulation.
-///
-/// [RevertIncreaseAccuracy](HandlingStrategies::RevertChangeAccuracy)
-///
-/// One option is to revert to the last known full snapshot of the simulation, increase the
-/// accuracy of the solvers and try again from there. This requires that a working, deterministic
-/// and accurate serialization/deserialization of the whole simulation state is setup (see
-/// [storage](crate::storage) module for more details).
-// TODO implement more of this
-pub enum HandlingStrategies {
-    RevertChangeAccuracy,
-    AbortSimulation,
 }
