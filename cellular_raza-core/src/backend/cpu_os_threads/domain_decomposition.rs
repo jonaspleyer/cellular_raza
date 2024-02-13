@@ -17,6 +17,9 @@ use serde::{Deserialize, Serialize};
 
 use rand_chacha::ChaCha8Rng;
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct DomainBox<Dom> {
     pub domain_raw: Dom,
@@ -279,6 +282,7 @@ where
     Vel: Serialize + for<'a> Deserialize<'a>,
     Cel: Serialize + for<'a> Deserialize<'a>,
 {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn calculate_custom_force_on_cells(&mut self) -> Result<(), CalcError>
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
@@ -320,6 +324,7 @@ where
     ///     }
     /// }
     /// ```
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn calculate_force_between_cells_internally<Inf>(&mut self) -> Result<(), CalcError>
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
@@ -369,6 +374,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn calculate_force_between_cells_external<Inf>(
         &mut self,
         ext_pos: &Pos,
@@ -408,6 +414,7 @@ where
         Ok(force)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cell_cycle(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Cel: Cycle<Cel>,
@@ -625,6 +632,7 @@ where
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + Zero,
 {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_local_functions<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,
@@ -702,6 +710,7 @@ where
     }
 
     // TODO make sure that if no extracellular mechanics are in action updating is correct and the trait may be adjusted
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_reactions<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,
@@ -761,6 +770,7 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn sort_cell_in_voxel(
         &mut self,
         cell: CellAgentBox<Cel>,
@@ -781,6 +791,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_fluid_mechanics_step_1<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -825,6 +836,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_fluid_mechanics_step_2<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -865,6 +877,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_fluid_mechanics_step_3<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,
@@ -916,6 +929,7 @@ where
     }
 
     // TODO the trait bounds here are too harsh. We should not be required to have Pos: Position or Vel: Velocity here at all!
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
@@ -997,6 +1011,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_2(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
@@ -1024,6 +1039,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Pos: Position,
@@ -1099,6 +1115,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
@@ -1158,6 +1175,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError> {
         // Now receive new cells and insert them
         let mut new_cells = self.receiver_cell.try_iter().collect::<Vec<_>>();
@@ -1167,6 +1185,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn save_cells_to_database(
         &self,
         iteration: &u64,
@@ -1186,6 +1205,7 @@ where
         self.storage_cells.store_batch_elements(*iteration, &cells)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn save_voxels_to_database(
         &self,
         iteration: &u64,
@@ -1216,6 +1236,7 @@ where
 
     // TODO find better function signature to have multiple time-scales
     // or split into different functions
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn run_full_update<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,

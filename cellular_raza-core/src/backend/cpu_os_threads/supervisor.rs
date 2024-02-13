@@ -31,6 +31,9 @@ use plotters::{
     prelude::{BitMapBackend, Cartesian2d, DrawingArea},
 };
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct ControllerBox<Cont, Obs> {
     pub controller: Cont,
@@ -139,6 +142,7 @@ where
     Cont: 'static + Serialize + for<'a> Deserialize<'a> + Send + Sync,
     Obs: 'static + Send + Sync,
 {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn spawn_worker_threads_and_run_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -288,6 +292,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn run_full_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<
@@ -376,6 +381,7 @@ where
 
     // TODO do not clone these variables!
     // Find a way to deserialize the struct with only referencing the variables
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: Clone,
@@ -455,6 +461,7 @@ pub struct SimulationResult<
     pub plotting_config: PlottingConfig,
 }
 
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 fn construct_progress_bar(n_iterations: usize) -> Result<kdam::Bar, SimulationError> {
     let style = kdam::BarBuilder::default()
         .total(n_iterations as usize)
@@ -509,6 +516,7 @@ where
         ConcVecIntracellular,
     >: for<'a> Deserialize<'a> + Serialize,
 {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn plot_spatial_at_iteration_with_functions<Cpf, Vpf, Dpf>(
         &self,
         iteration: u64,
@@ -585,6 +593,7 @@ where
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration(&self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: CreatePlottingRoot,
@@ -603,6 +612,7 @@ where
         }
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_functions<Cpf, Vpf, Dpf>(
         &self,
         iteration: u64,
@@ -641,6 +651,7 @@ where
         )
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,
         iteration: u64,
@@ -671,6 +682,7 @@ where
         )
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>(
         &self,
         iteration: u64,
@@ -697,6 +709,7 @@ where
         }
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn build_thread_pool(&self) -> Result<rayon::ThreadPool, SimulationError> {
         // Build a thread pool
         let mut builder = rayon::ThreadPoolBuilder::new();
@@ -709,6 +722,7 @@ where
         Ok(builder.build()?)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn build_progress_bar(&self, n_iterations: u64) -> Result<Option<kdam::Bar>, SimulationError> {
         let mut progress_bar = None;
         if self.plotting_config.show_progressbar {
@@ -717,6 +731,7 @@ where
         Ok(progress_bar)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_all_iterations_with_functions<Cpf, Vpf, Dpf>(
         &self,
         cell_plotting_func: &Cpf,
@@ -787,6 +802,7 @@ where
         })
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,
         cell_plotting_func: Cpf,
