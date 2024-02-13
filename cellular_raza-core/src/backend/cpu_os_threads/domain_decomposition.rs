@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use rand_chacha::ChaCha8Rng;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct DomainBox<Dom> {
+pub(crate) struct DomainBox<Dom> {
     pub domain_raw: Dom,
 }
 
@@ -62,19 +62,19 @@ where
 /// This is a purely implementational detail and should not be of any concern to the end user.
 pub type PlainIndex = u64;
 
-pub struct IndexBoundaryInformation<Ind> {
+pub(crate) struct IndexBoundaryInformation<Ind> {
     pub index_original_sender: PlainIndex,
     pub index_original_sender_raw: Ind,
     pub index_original_receiver: PlainIndex,
 }
 
-pub struct ConcentrationBoundaryInformation<ConcVecExtracellular, Ind> {
+pub(crate) struct ConcentrationBoundaryInformation<ConcVecExtracellular, Ind> {
     pub index_original_sender: PlainIndex,
     pub concentration_boundary: BoundaryCondition<ConcVecExtracellular>,
     pub index_original_receiver_raw: Ind,
 }
 
-pub struct PosInformation<Pos, Vel, Inf> {
+pub(crate) struct PosInformation<Pos, Vel, Inf> {
     pub pos: Pos,
     pub vel: Vel,
     pub info: Inf,
@@ -83,18 +83,18 @@ pub struct PosInformation<Pos, Vel, Inf> {
     pub index_receiver: PlainIndex,
 }
 
-pub struct ForceInformation<For> {
+pub(crate) struct ForceInformation<For> {
     pub force: For,
     pub count: usize,
     pub index_sender: PlainIndex,
 }
 
-pub trait GetPlainIndex {
+pub(crate) trait GetPlainIndex {
     fn get_plain_index(&self) -> PlainIndex;
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct VoxelBox<
+pub(crate) struct VoxelBox<
     Ind,
     Pos,
     Vel,
@@ -149,7 +149,7 @@ impl<
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
+pub(crate) struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     force: For,
     intracellular_concentration_increment: ConcVecIntracellular,
     pub(crate) cycle_events: Vec<CycleEvent>,
@@ -213,7 +213,7 @@ where
     For: num::Zero,
     ConcVecIntracellular: Zero,
 {
-    pub fn new(
+    pub(crate) fn new(
         plain_index: PlainIndex,
         index: Ind,
         voxel: Vox,
@@ -506,7 +506,7 @@ pub struct MultiVoxelContainer<
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
-    pub voxels: BTreeMap<
+    pub(crate) voxels: BTreeMap<
         PlainIndex,
         VoxelBox<
             Ind,
@@ -530,42 +530,42 @@ pub struct MultiVoxelContainer<
     // And then automatically have the ability to change cell positions if the domain shrinks/grows for example
     // but then we might also want to change the number of voxels and redistribute cells accordingly
     // This needs much more though!
-    pub domain: DomainBox<Dom>,
-    pub index_to_plain_index: BTreeMap<Ind, PlainIndex>,
-    pub plain_index_to_thread: BTreeMap<PlainIndex, usize>,
-    pub index_to_thread: BTreeMap<Ind, usize>,
+    pub(crate) domain: DomainBox<Dom>,
+    pub(crate) index_to_plain_index: BTreeMap<Ind, PlainIndex>,
+    pub(crate) plain_index_to_thread: BTreeMap<PlainIndex, usize>,
+    pub(crate) index_to_thread: BTreeMap<Ind, usize>,
 
-    pub senders_cell: HashMap<
+    pub(crate) senders_cell: HashMap<
         usize,
         Sender<(
             CellAgentBox<Cel>,
             AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
         )>,
     >,
-    pub senders_pos: HashMap<usize, Sender<PosInformation<Pos, Vel, Inf>>>,
-    pub senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
+    pub(crate) senders_pos: HashMap<usize, Sender<PosInformation<Pos, Vel, Inf>>>,
+    pub(crate) senders_force: HashMap<usize, Sender<ForceInformation<For>>>,
 
-    pub senders_boundary_index: HashMap<usize, Sender<IndexBoundaryInformation<Ind>>>,
-    pub senders_boundary_concentrations:
+    pub(crate) senders_boundary_index: HashMap<usize, Sender<IndexBoundaryInformation<Ind>>>,
+    pub(crate) senders_boundary_concentrations:
         HashMap<usize, Sender<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>>,
 
     // Same for receiving
-    pub receiver_cell: Receiver<(
+    pub(crate) receiver_cell: Receiver<(
         CellAgentBox<Cel>,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     )>,
-    pub receiver_pos: Receiver<PosInformation<Pos, Vel, Inf>>,
-    pub receiver_force: Receiver<ForceInformation<For>>,
+    pub(crate) receiver_pos: Receiver<PosInformation<Pos, Vel, Inf>>,
+    pub(crate) receiver_force: Receiver<ForceInformation<For>>,
 
-    pub receiver_index: Receiver<IndexBoundaryInformation<Ind>>,
-    pub receiver_concentrations:
+    pub(crate) receiver_index: Receiver<IndexBoundaryInformation<Ind>>,
+    pub(crate) receiver_concentrations:
         Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>,
 
     // Global barrier to synchronize threads and make sure every information is sent before further processing
-    pub barrier: Barrier,
+    pub(crate) barrier: Barrier,
 
-    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
-    pub storage_voxels: StorageManager<
+    pub(crate) storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
+    pub(crate) storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
             Ind,
@@ -580,7 +580,7 @@ pub struct MultiVoxelContainer<
         >,
     >,
 
-    pub mvc_id: u32,
+    pub(crate) mvc_id: u32,
 }
 
 impl<
@@ -761,7 +761,7 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    pub fn sort_cell_in_voxel(
+    fn sort_cell_in_voxel(
         &mut self,
         cell: CellAgentBox<Cel>,
         aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
@@ -781,7 +781,7 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_1<ConcGradientExtracellular, ConcTotalExtracellular>(
+    fn update_fluid_mechanics_step_1<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -825,7 +825,7 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_2<ConcGradientExtracellular, ConcTotalExtracellular>(
+    fn update_fluid_mechanics_step_2<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -865,7 +865,7 @@ where
         Ok(())
     }
 
-    pub fn update_fluid_mechanics_step_3<ConcGradientExtracellular, ConcTotalExtracellular>(
+    fn update_fluid_mechanics_step_3<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
         dt: &f64,
     ) -> Result<(), SimulationError>
@@ -916,7 +916,7 @@ where
     }
 
     // TODO the trait bounds here are too harsh. We should not be required to have Pos: Position or Vel: Velocity here at all!
-    pub fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
+    fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -997,7 +997,7 @@ where
         Ok(())
     }
 
-    pub fn update_cellular_mechanics_step_2(&mut self) -> Result<(), SimulationError>
+    fn update_cellular_mechanics_step_2(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -1024,7 +1024,7 @@ where
         Ok(())
     }
 
-    pub fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
+    fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -1099,7 +1099,7 @@ where
         Ok(())
     }
 
-    pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
+    fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Pos: Position,
         Vel: Velocity,
@@ -1158,7 +1158,7 @@ where
         Ok(())
     }
 
-    pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError> {
+    fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError> {
         // Now receive new cells and insert them
         let mut new_cells = self.receiver_cell.try_iter().collect::<Vec<_>>();
         for (cell, aux_storage) in new_cells.drain(..) {
@@ -1167,7 +1167,7 @@ where
         Ok(())
     }
 
-    pub fn save_cells_to_database(&self, iteration: &u64) -> Result<(), StorageError>
+    pub(crate) fn save_cells_to_database(&self, iteration: &u64) -> Result<(), crate::storage::StorageError>
     where
         Cel: 'static,
         CellAgentBox<Cel>: Clone,
@@ -1183,7 +1183,7 @@ where
         self.storage_cells.store_batch_elements(*iteration, &cells)
     }
 
-    pub fn save_voxels_to_database(&self, iteration: &u64) -> Result<(), StorageError>
+    pub(crate) fn save_voxels_to_database(&self, iteration: &u64) -> Result<(), crate::storage::StorageError>
     where
         VoxelBox<
             Ind,
