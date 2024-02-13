@@ -59,7 +59,7 @@ pub enum SimulationError {
     DeathError(DeathError),
     /// Enforcing boundary conditions on cells can exhibhit this boundary error.
     BoundaryError(BoundaryError),
-    /// Plotting results. See also [cellular_raza_concepts::plotting].
+    /// Plotting results. See also [cellular_raza_concepts::PlotSelf] and [cellular_raza_concepts::CreatePlottingRoot].
     DrawingError(DrawingError),
     /// Mostly caused by trying to find a voxel by its index.
     /// This error can also occurr when applying too large simulation-steps.

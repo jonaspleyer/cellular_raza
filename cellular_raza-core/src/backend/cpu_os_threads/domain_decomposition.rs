@@ -96,6 +96,7 @@ pub(crate) trait GetPlainIndex {
     fn get_plain_index(&self) -> PlainIndex;
 }
 
+/// Wrapper for a [Voxel] struct that includes more information and cells.
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct VoxelBox<
     Ind,
@@ -491,6 +492,7 @@ where
 
 // This object has multiple voxels and runs on a single thread.
 // It can communicate with other containers via channels.
+/// Subdomain which consists of multiple [Voxels](Voxel)
 pub struct MultiVoxelContainer<
     Ind,
     Pos,
@@ -1236,6 +1238,10 @@ where
 
     // TODO find better function signature to have multiple time-scales
     // or split into different functions
+    /// Runs a full update step for all simulation aspects
+    ///
+    /// This function is supposed to be run iteratively multiple times in order to
+    /// completely run a full simulation.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn run_full_update<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,

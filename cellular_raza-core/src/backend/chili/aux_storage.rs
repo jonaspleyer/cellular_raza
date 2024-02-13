@@ -48,7 +48,7 @@ impl<C> cellular_raza_concepts::domain_new::Id for CellBox<C> {
 }
 
 impl<C> CellBox<C> {
-    /// Create a new [CellAgentBox] at a specific voxel with a voxel-unique number
+    /// Create a new [CellBox] at a specific voxel with a voxel-unique number
     /// of cells that has already been created at this position.
     pub fn new(
         voxel_index: VoxelPlainIndex,
@@ -191,7 +191,7 @@ pub trait UpdateCycle {
 
 /// Stores intermediate information about the cell cycle.
 ///
-/// This struct is used in the [build_aux_storage](crate::build_aux_storage) macro.
+/// This struct is used in the [build_aux_storage](crate::backend::chili::build_aux_storage) macro.
 /// It can in principle also be re-used on its own since it implements the [UpdateCycle] trait.
 ///
 /// ```

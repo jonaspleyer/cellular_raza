@@ -594,8 +594,8 @@ pub trait StorageInterface<Id, Element> {
         Ok(all_elements)
     }
 
-    /// Similarly to the [load_all_elements] function, but this function returns all elements
-    /// as their histories.
+    /// Similarly to the [load_all_elements](StorageInterface::load_all_elements) function,
+    /// but this function returns all elements as their histories.
     fn load_all_element_histories(&self) -> Result<HashMap<Id, HashMap<u64, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,

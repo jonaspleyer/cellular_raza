@@ -6,19 +6,19 @@
 //! ## Supported Simulation Aspects
 //! Not every backend does support all simulation aspects.
 //! We aim to provide one general-purpose backend ablet to solve any given simulation that adheres
-//! to the [cellular_raza_concepts] with the 🌶️ [chili](crate::backend::chili) backend.
+//! to the [cellular_raza_concepts] with the 🌶️ [chili] backend.
 //!
-//! | Aspect | 🐧 [cpu_os_threads](crate::backend::cpu_os_threads) | 🌶️ [chili](crate::backend::chili) |
+//! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] |
 //! | --- |:---:|:---:|
 //! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |
 //! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |
 //! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |
 //! | [Reactions](cellular_raza_concepts::CellularReactions) | ✅ | ❌ |
 //! | [Volume](cellular_raza_concepts::Volume) | ✅¹ | ❌ |
-//! | [Domain](cellular_raza_concepts::domain::Domain) | ✅ | ❌ |
+//! | [Domain](cellular_raza_concepts::Domain) | ✅ | ❌ |
 //! | [DomainNew](cellular_raza_concepts::domain_new::Domain) | ❌ | ✅ |
 //! | [Controller](cellular_raza_concepts::Controller) | ✅ | ❌ |
-//! | [Plotting](cellular_raza_concepts::plotting) | ✅ | ❌ |
+//! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |
 //!
 //! ¹Only supports `Float=f64`.
 
@@ -30,17 +30,13 @@
 /// and synchronization by [hurdles::Barrier](https://docs.rs/hurdles/latest/hurdles/).
 ///
 /// The user can manage the simulation flow by means of individual funtions or by creating a
-/// [SimulationSupervisor](cpu_os_threads::supervisor::SimulationSupervisor).
+/// [SimulationSupervisor](cpu_os_threads::SimulationSupervisor).
 pub mod cpu_os_threads;
 
 /// 🌶️ A modular, reusable, general purpose backend
 ///
 /// This backend delivers a modular approach to building a fully working simulation.
-/// Individual structs such as the [AuxStorage](aux_storage) to track properties of the cell
-/// and help in updating its values can be construced with similarly named
-/// [macros](crate::proc_macro).
-///
-/// In the future it will take over the role of the [cpu_os_threads](crate::backend::cpu_os_threads)
+/// In the future it will take over the role of the [cpu_os_threads]
 /// backend as the default backend.
 pub mod chili;
 

@@ -43,7 +43,7 @@ macro_rules! impl_from_error {
 /// Some errors are more likely to be occuring due to an incorrect usage by an end user
 /// while others are highly likely to be due to some internal implementation problem.
 /// Independent of the exact reason, why they are occuring, some can be handled explicitly
-/// while others force an abort of the simulation. See also [HandlingStrategies].
+/// while others force an abort of the simulation. See also [HandlingStrategy].
 ///
 /// | Variant | Concept Implementation | Engine-Fault | Time Increment |
 /// | --- |:---:|:---:|:---:|
@@ -58,7 +58,6 @@ macro_rules! impl_from_error {
 /// | [ReceiveError](SimulationError::ReceiveError) | 3/10 | 6/10 | 1/10 |
 /// | [StorageError](SimulationError::StorageError) | 3/10 | 7/10 | 0/10 |
 /// | [IoError](SimulationError::IoError) | 1/10 | 9/10 | 0/10 |
-/// | [ThreadingError](SimulationError::ThreadingError) | 1/10 | 8/10 | 1/10 |
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
@@ -81,7 +80,8 @@ pub enum SimulationError {
     DeathError(DeathError),
     /// Enforcing boundary conditions on cells can exhibhit this boundary error.
     BoundaryError(BoundaryError),
-    /// Plotting results. See also [cellular_raza_concepts::plotting].
+    /// Plotting results. See also [cellular_raza_concepts::PlotSelf]
+    /// and [cellular_raza_concepts::CreatePlottingRoot].
     DrawingError(DrawingError),
     /// Mostly caused by trying to find a voxel by its index.
     /// This error can also occurr when applying too large simulation-steps.
@@ -157,7 +157,7 @@ where
 /// # Handling Strategies
 /// A handler has multiple options on how to approach a recovery in a simulation.
 ///
-/// [RevertIncreaseAccuracy](HandlingStrategies::RevertChangeAccuracy)
+/// [RevertChangeAccuracy](HandlingStrategy::RevertChangeAccuracy)
 ///
 /// One option is to revert to the last known full snapshot of the simulation, increase the
 /// accuracy of the solvers and try again from there. This requires that a working, deterministic

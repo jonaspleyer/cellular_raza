@@ -308,7 +308,8 @@ pub trait FromMap<I>
 where
     Self: Sized,
 {
-    /// [SubDomains](super::concepts::SubDomain) can be neighboring each other via complicated graphs.
+    /// [SubDomains](cellular_raza_concepts::domain_new::SubDomain) can be neighboring each
+    /// other via complicated graphs.
     /// An easy way to represent this is by using a [HashMap]. We want to create Barriers which match
     /// the specified subdomain indices.
     fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>

@@ -80,10 +80,14 @@ where
 
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
+    /// Defines in which format and if results should be saved.
+    /// See [StorageConfig].
     pub storage: StorageConfig,
 
+    /// Physical [Domain] of the simulation.
     pub(crate) domain: DomainBox<Dom>,
 
+    /// Overall parameters of the simulation. See [SimulationConfig].
     pub config: SimulationConfig,
 
     pub(crate) meta_infos: StorageManager<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>,
@@ -292,6 +296,7 @@ where
         Ok(())
     }
 
+    /// Runs a full simulation and returns a [SimulationResult] after having completed
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn run_full_sim<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
@@ -381,6 +386,7 @@ where
 
     // TODO do not clone these variables!
     // Find a way to deserialize the struct with only referencing the variables
+    /// Saves the current [SimulationSetup] via the internal [StorageManager]
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
     where
@@ -408,6 +414,7 @@ where
 
 use super::domain_decomposition::PlainIndex;
 
+/// Returned after finishing a full simulation
 pub struct SimulationResult<
     Ind,
     Pos,
@@ -440,10 +447,13 @@ pub struct SimulationResult<
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
+    /// Configure how to store results of the simulation
     pub storage: StorageConfig,
 
     pub domain: DomainBox<Dom>,
+    /// [StorageManager] responsible for saving and loading cells
     pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
+    /// [StorageManager] responsible for saving and loading voxels
     pub storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
@@ -458,6 +468,7 @@ pub struct SimulationResult<
             ConcVecIntracellular,
         >,
     >,
+    /// Define properties of how to save results
     pub plotting_config: PlottingConfig,
 }
 
@@ -593,6 +604,7 @@ where
         Ok(())
     }
 
+    /// Plots a spatial image of the simulation result at given iteration.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration(&self, iteration: u64) -> Result<(), SimulationError>
     where
@@ -612,6 +624,7 @@ where
         }
     }
 
+    /// Plots a spatial image of the simulation result at given iteration with custom functions.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_functions<Cpf, Vpf, Dpf>(
         &self,
@@ -651,6 +664,8 @@ where
         )
     }
 
+    /// Plots a spatial image of the simulation result at given iteration
+    /// with custom functions for cells and voxels.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,
@@ -682,6 +697,8 @@ where
         )
     }
 
+    /// Plots a spatial image of the simulation result at given iteration
+    /// with custom functions for cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>(
         &self,
@@ -731,6 +748,7 @@ where
         Ok(progress_bar)
     }
 
+    /// Plots a spatial image of the simulation result for all iterations with custom functions
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_all_iterations_with_functions<Cpf, Vpf, Dpf>(
         &self,
@@ -802,6 +820,8 @@ where
         })
     }
 
+    /// Plots a spatial image of the simulation result for
+    /// all iterations with custom cell and voxel functions
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn plot_spatial_all_iterations_custom_cell_voxel_functions<Cpf, Vpf>(
         &self,

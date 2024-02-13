@@ -1,7 +1,7 @@
 pub use cellular_raza_core_proc_macro::run_test_for_aspects;
 
 /// Allows for the creation of a general AuxStorage struct which functions via the defined
-/// Update traits in [simulation_flow](crate::backend::chili::simulation_flow).
+/// Update traits in the [chili](crate::backend::chili) backend.
 ///
 /// This proc macros purpose is to support the [build_communicator!] macro.
 pub use cellular_raza_core_proc_macro::build_aux_storage;
@@ -12,8 +12,8 @@ pub use cellular_raza_core_proc_macro::build_aux_storage;
 /// ```
 pub use cellular_raza_core_proc_macro::FromMap;
 
-/// Derives the [UpdateCycle](cellular_raza_core::backend::chili::UpdateCycle) and
-/// [UpdateMechanics](cellular_raza_core::backend::chili::UpdateMechanics)
+/// Derives the [UpdateCycle](crate::backend::chili::UpdateCycle) and
+/// [UpdateMechanics](crate::backend::chili::UpdateMechanics)
 /// trait automatically for the containing struct.
 pub use cellular_raza_core_proc_macro::AuxStorage;
 
@@ -24,7 +24,7 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// struct with different types.
 ///
 /// It also automatically derives the
-/// [FromMap](cellular_raza_core::backend::chili::FromMap) trait such that a
+/// [FromMap](crate::backend::chili::FromMap) trait such that a
 /// collection of communicators can be constructed from a given map.
 /// ```
 /// use cellular_raza_core::backend::chili::build_communicator;

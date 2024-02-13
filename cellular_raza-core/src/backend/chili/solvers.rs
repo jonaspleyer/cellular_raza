@@ -143,7 +143,7 @@ where
 ///
 /// for both the position and velocity.
 /// In the beginning of the simulation, when not enough previous increment values are known,
-/// we resort to the [euler] solver.
+/// we resort to the [euler](mechanics_euler) solver.
 pub fn mechanics_adams_bashforth_2<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,
