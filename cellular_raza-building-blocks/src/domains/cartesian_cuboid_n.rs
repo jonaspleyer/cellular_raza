@@ -9,7 +9,7 @@ use core::cmp::{max, min};
 
 // Imports from other crates
 use itertools::Itertools;
-use nalgebra::SVector;
+use nalgebra::{DMatrix, DVector, SVector};
 
 use serde::{Deserialize, Serialize};
 
