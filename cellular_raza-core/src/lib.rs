@@ -30,8 +30,6 @@
 
 pub mod backend;
 
-/// Derive traits and generate code for different traits.
-pub mod proc_macro;
 
 /// Interface and methods to store and load simulation aspects.
 pub mod storage;
