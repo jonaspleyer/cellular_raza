@@ -161,6 +161,16 @@ fn main() -> Result<(), chili::SimulationError> {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
     let simulation_settings = SimulationSettings::default();
 
+    // Create subscriber
+    // Configure a custom event formatter
+    let format = tracing_subscriber::fmt::format()
+        .pretty()
+        .with_thread_ids(true); // include the thread ID of the current thread
+
+    // Create a `fmt` subscriber that uses our custom event format, and set it
+    // as the default.
+    tracing_subscriber::fmt().event_format(format).init();
+
     // Construct the corresponding AuxStorage
     let agent = Agent {
         mechanics: NewtonDamped2DF32 {
