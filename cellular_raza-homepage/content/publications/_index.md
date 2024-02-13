@@ -9,7 +9,9 @@ To cite `cellular_raza`, please use the following paper:
 
 ## 2024
 <!-- TODO insert presentation with link here -->
-- [Talk](2024-02-05-think-like-a-cell) by Jonas Pleyer at the Group Seminar of Jens Timmer
+13.02.2024<br>
+Short [overview](2024-02-13-iGEM-overview) for biologists at [iGEM Freiburg](https://igem.uni-freiburg.de/)
 
 ## 2023
-- [Poster](2023-10-15-bwhpc-symposium-2023/) at the bwHPC Symposium 2023
+15.10.2023<br>
+[Poster](2023-10-15-bwhpc-symposium-2023/) at the bwHPC Symposium 2023
