@@ -176,7 +176,6 @@ impl SubDomain {
             ((pos[0] - self.min[0]) / self.dx[0] as f64) as usize,
             ((pos[1] - self.min[1]) / self.dx[1] as f64) as usize,
         ];
-        println!("{:?}", index);
         Ok(index)
     }
 
