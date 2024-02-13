@@ -10,7 +10,6 @@ use super::domain_decomposition::{
 
 use super::config::{
     ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, TimeSetup,
-    PROGRESS_BAR_STYLE,
 };
 
 use super::config::StorageConfig;
@@ -464,7 +463,6 @@ fn construct_progress_bar(n_iterations: usize) -> Result<kdam::Bar, SimulationEr
     let style = kdam::BarBuilder::default()
         .total(n_iterations as usize)
         .bar_format("{desc}{percentage:3.0}%|{animation}| {count}/{total} [{elapsed}]");
-    //::with_template(PROGRESS_BAR_STYLE)?;
     Ok(style
         .build()
         .or_else(|string| Err(CalcError(format!("{string}"))))?)

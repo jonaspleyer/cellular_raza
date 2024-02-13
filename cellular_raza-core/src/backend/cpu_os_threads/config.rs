@@ -201,10 +201,6 @@ impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
     }
 }
 
-/// Style of the progress bar. To show a bar see [SimulationConfig] and [PlottingConfig].
-pub const PROGRESS_BAR_STYLE: &str =
-    "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}";
-
 /// Image type used for saving results to a file.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ImageType {
