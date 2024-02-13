@@ -1,6 +1,9 @@
 use cellular_raza_concepts::CalcError;
 use num::FromPrimitive;
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 /// Classical euler solver for the [Mechanics](cellular_raza_concepts::Mechanics) trait.
 ///
 /// The euler solver is the most simple solver and not stable for many problems.
@@ -14,6 +17,7 @@ use num::FromPrimitive;
 /// \\end{align}
 /// where $\Delta t$ is the step size and $dx/dt$ and $dv/dt$ are calculated by the
 /// [calculate_increment](cellular_raza_concepts::Mechanics::calculate_increment) method.
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,
@@ -62,6 +66,7 @@ where
 /// for both the position and velocity.
 /// In the beginning of the simulation, when not enough previous increment values are known,
 /// we resort to the [mechanics_adams_bashforth_2] and [mechanics_euler] solver.
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn mechanics_adams_bashforth_3<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,

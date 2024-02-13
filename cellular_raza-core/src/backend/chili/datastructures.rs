@@ -3,6 +3,9 @@ use cellular_raza_concepts::*;
 use num::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -45,6 +48,7 @@ pub struct Voxel<C, A> {
 }
 
 impl<C, A> Voxel<C, A> {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn calculate_force_between_cells_internally<
         Pos,
         Vel,
@@ -94,6 +98,7 @@ impl<C, A> Voxel<C, A> {
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn calculate_force_between_cells_external<
         Pos,
         Vel,
@@ -140,6 +145,7 @@ impl<C, A> Voxel<C, A> {
         Ok(force)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
@@ -214,6 +220,7 @@ where
 {
     // TODO this is not a BoundaryError
     ///
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn from(
         decomposed_domain: DecomposedDomain<I, S, C>,
     ) -> SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>> {
@@ -364,6 +371,7 @@ where
 
     /// Applies boundary conditions to cells. For the future, we hope to be using previous and current position
     /// of cells rather than the cell itself.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn apply_boundary(&mut self) -> Result<(), BoundaryError> {
         self.voxels
             .iter_mut()
@@ -375,6 +383,7 @@ where
 
     // TODO this is not a boundary error!
     /// Allows insertion of cells into the subdomain.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), BoundaryError>
     where
         S::VoxelIndex: Eq + Hash + Ord,
@@ -395,6 +404,7 @@ where
     }
 
     /// Advances the cycle of a cell by a small time increment `dt`.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_cycle<Float>(&mut self, dt: Float) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>,
@@ -422,6 +432,7 @@ where
     /// [Interaction](cellular_raza_concepts::Interaction) traits.
     /// Then, threads will exchange information in the [PosInformation] format
     /// to calculate the forces acting on the cells.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_mechanics_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -505,6 +516,7 @@ where
     /// Then, threads will use the previously exchanged [PosInformation] to calculate forces
     /// and send back information about the acting force in the [ForceInformation] format.
     /// In addition, this method also applies the inverse force to local cells.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_mechanics_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -572,6 +584,7 @@ where
     ///
     /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
     /// solver.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float>(
         &mut self,
         dt: &Float,
@@ -646,6 +659,7 @@ where
     ///
     /// If the cell is not in the correct voxel, we either directly insert this cell into the voxel
     /// or send it to the other [SubDomainBox] to take care of this.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn sort_cells_in_voxels_step_1<Pos, Vel, For, Float>(
         &mut self,
     ) -> Result<(), SimulationError>
@@ -714,6 +728,7 @@ where
     /// After having sent cells to the new [SubDomainBox] in the
     /// [SubDomainBox::sort_cells_in_voxels_step_1] method, we receive these new cells and insert
     /// them into their respective voxels.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
@@ -746,6 +761,7 @@ where
     /// Instead of running one big update function for all local rules, we have to treat this cell
     /// cycle differently since new cells could be generated and thus have consequences for other
     /// update steps as well.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
@@ -760,6 +776,7 @@ where
     }
 
     /// Save all voxels (containing all cells) with the given storage manager.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn save_voxels<F>(
         &self,
         storage_manager: &crate::storage::StorageManager<&VoxelPlainIndex, &Voxel<C, A>>,
@@ -777,6 +794,7 @@ where
     }
 
     /// Stores all cells of the subdomain via the given [storage_manager}(crate::storage)
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn save_cells<F>(
         &self,
         storage_manager: &crate::storage::StorageManager<&CellIdentifier, (&CellBox<C>, &A)>,
