@@ -267,8 +267,10 @@ impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
 
 fn main() {
     // Overall parameters
-    let n_lattice_points_x = 40;
-    let n_lattice_points_y = 40;
+    let n_lattice_points_x = 11;
+    let n_lattice_points_y = 11;
+    let min = [-5.0; 2];
+    let max = [5.0; 2];
     let n_components = 1;
 
     // Agent setup
@@ -290,18 +292,18 @@ fn main() {
     // Diffusion setup
     let total_concentration =
         ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components));
-    /* total_concentration
-        .slice_mut(ndarray::s![4, 3, ..])
-        .add_assign(15.0);*/
     let mut subdomain = SubDomain {
         total_concentration,
         helper: ndarray::Array3::zeros((n_lattice_points_x+2, n_lattice_points_y+2, n_components)),
         increment: ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components)),
         diffusion_constant: 1.0,
         index: [1, 1],
-        min: [-20.0; 2],
-        max: [20.0; 2],
-        dx: [40.0/n_lattice_points_x as f64, 40.0/n_lattice_points_y as f64],
+        min,
+        max,
+        dx: [
+            (max[0] - min[0]) / n_lattice_points_x as f64,
+            (max[1] - min[1]) / n_lattice_points_y as f64,
+        ],
     };
 
     let neighbours = vec![
