@@ -294,7 +294,11 @@ fn main() {
         ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components));
     let mut subdomain = SubDomain {
         total_concentration,
-        helper: ndarray::Array3::zeros((n_lattice_points_x+2, n_lattice_points_y+2, n_components)),
+        helper: ndarray::Array3::zeros((
+            n_lattice_points_x + 2,
+            n_lattice_points_y + 2,
+            n_components,
+        )),
         increment: ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components)),
         diffusion_constant: 1.0,
         index: [1, 1],
@@ -309,11 +313,20 @@ fn main() {
     let neighbours = vec![
         (
             [2, 1],
-            10.0*ndarray::Array3::<f64>::zeros([n_lattice_points_x, n_lattice_points_y, n_components]),
+            10.0 * ndarray::Array3::<f64>::zeros([
+                n_lattice_points_x,
+                n_lattice_points_y,
+                n_components,
+            ]),
         ),
         (
             [0, 1],
-            -10.0*ndarray::Array3::<f64>::zeros([n_lattice_points_x, n_lattice_points_y, n_components]),
+            -10.0
+                * ndarray::Array3::<f64>::zeros([
+                    n_lattice_points_x,
+                    n_lattice_points_y,
+                    n_components,
+                ]),
         ),
         (
             [1, 2],
