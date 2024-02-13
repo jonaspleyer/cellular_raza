@@ -123,7 +123,6 @@ fn wrap_pre_flags(
         #[allow(non_camel_case_types)]
         const _: () = {
             use #core_path ::backend::chili::{SimulationError,Communicator};
-            use #core_path ::proc_macro::Communicator;
 
             #stream
         };
@@ -269,9 +268,9 @@ impl ConstructInput {
         // In the following code, we assume that I
         // is the index as implemented above in the build_comm function
         quote!(
-            #[derive(#core_path ::proc_macro::Communicator)]
+            #[derive(#core_path ::backend::chili::Communicator)]
             #[CommunicatorCorePath(#core_path)]
-            #[derive(#core_path ::proc_macro::FromMap)]
+            #[derive(#core_path ::backend::chili::FromMap)]
             #[FromMapIndex(#index_type)]
             #[FromMapCorePath(#core_path)]
             #[allow(non_camel_case_types)]

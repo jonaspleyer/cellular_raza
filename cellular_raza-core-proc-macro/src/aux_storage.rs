@@ -656,7 +656,7 @@ impl Arguments {
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
             #[derive(Clone, Default, Deserialize, Serialize)]
-            #[derive(#core_path ::proc_macro::AuxStorage)]
+            #[derive(#core_path ::backend::chili::AuxStorage)]
             #[AuxStorageCorePath(#core_path)]
             pub struct #struct_name<#(#generics),*> {
                 #(#fields)*

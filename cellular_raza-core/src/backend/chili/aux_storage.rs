@@ -313,7 +313,7 @@ impl UpdateInteraction for AuxStorageInteraction {
 #[doc(hidden)]
 mod test_derive_aux_storage_compile {
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -325,7 +325,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_default() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -337,7 +337,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_visibility_1() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -350,7 +350,7 @@ mod test_derive_aux_storage_compile {
 
     /// ```
     /// mod some_module {
-    ///     use cellular_raza_core::proc_macro::AuxStorage;
+    ///     use cellular_raza_core::backend::chili::AuxStorage;
     ///     use cellular_raza_core::backend::chili::*;
     ///
     ///     #[derive(AuxStorage)]
@@ -371,7 +371,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_visibility_3() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -384,7 +384,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_more_struct_generics() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -397,7 +397,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_more_struct_const_generics() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -412,7 +412,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_where_clause() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -425,7 +425,7 @@ mod test_derive_aux_storage_compile {
     fn mechanics_other_attributes() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -438,7 +438,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_default() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -451,7 +451,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_visibility_1() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -464,7 +464,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_visibility_2() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -478,7 +478,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -492,7 +492,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_const_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -509,7 +509,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_where_clause() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     /// use cellular_raza_concepts::CycleEvent;
     ///
@@ -523,7 +523,7 @@ mod test_derive_aux_storage_compile {
     fn cycle_other_attributes() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -535,7 +535,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_default() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -547,7 +547,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_visibility_1() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -559,7 +559,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_visibility_2() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -572,7 +572,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -585,7 +585,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_const_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -601,7 +601,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_where_clause() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -614,7 +614,7 @@ mod test_derive_aux_storage_compile {
     fn reactions_other_attributes() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -626,7 +626,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_default() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -638,7 +638,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_visibility_1() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -650,7 +650,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_visibility_2() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -663,7 +663,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -676,7 +676,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_const_generic_param() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -692,7 +692,7 @@ mod test_derive_aux_storage_compile {
     fn interactions_where_clause() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::AuxStorage;
+    /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
@@ -1166,7 +1166,7 @@ mod test_build_aux_storage {
         aspects:[$($asp:ident),*]) => {
             /// ```
             /// use serde::{Deserialize, Serialize};
-            /// use cellular_raza_core::proc_macro::{build_aux_storage, AuxStorage};
+            /// use cellular_raza_core::backend::chili::{build_aux_storage, AuxStorage};
             /// build_aux_storage!(
             ///     name: __cr_AuxStorage,
             #[doc = concat!("aspects: [", $(stringify!($asp,),)* "],")]

@@ -712,7 +712,6 @@ pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
 #[allow(unused)]
 mod test_derive_communicator {
     /// ```
-    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// #[derive(Communicator)]
     /// #[CommunicatorCorePath(cellular_raza_core)]
@@ -724,7 +723,6 @@ mod test_derive_communicator {
     fn default() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// #[derive(Communicator)]
     /// #[CommunicatorCorePath(cellular_raza_core)]
@@ -738,7 +736,6 @@ mod test_derive_communicator {
     fn two_communicators_explicit() {}
 
     /// ```
-    /// use cellular_raza_core::proc_macro::Communicator;
     /// use cellular_raza_core::backend::chili::{SimulationError, ChannelComm, Communicator};
     /// struct Message<T>(T);
     /// #[derive(Communicator)]
@@ -758,7 +755,6 @@ mod test_derive_communicator {
 mod test_derive_from_map {
     /// ```
     /// use cellular_raza_core::{
-    ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::IndexError;
@@ -773,7 +769,6 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::IndexError;
@@ -788,7 +783,6 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::IndexError;
@@ -806,7 +800,6 @@ mod test_derive_from_map {
 
     /// ```
     /// use cellular_raza_core::{
-    ///     proc_macro::FromMap,
     ///     backend::chili::{ChannelComm, FromMap},
     /// };
     /// use cellular_raza_concepts::IndexError;
@@ -832,7 +825,7 @@ mod test_build_communicator {
             aspects:[$($asp:ident),*]
         ) => {
             /// ```
-            /// use cellular_raza_core::proc_macro::build_communicator;
+            /// use cellular_raza_core::backend::chili::build_communicator;
             /// build_communicator!(
             ///     name: __MyComm,
             ///     aspects: [

@@ -27,7 +27,7 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// [FromMap](cellular_raza_core::backend::chili::FromMap) trait such that a
 /// collection of communicators can be constructed from a given map.
 /// ```
-/// use cellular_raza_core::proc_macro::build_communicator;
+/// use cellular_raza_core::backend::chili::build_communicator;
 ///
 /// build_communicator!(
 ///     // Define the name of the generated struct
@@ -69,8 +69,7 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 /// trait.
 /// ```
 /// use cellular_raza_core::{
-///     backend::chili::ChannelComm,
-///     proc_macro::Communicator
+///     backend::chili::{ChannelComm, Communicator},
 /// };
 ///
 /// // Define a new struct from which we want
