@@ -323,7 +323,7 @@ where
                             "Index was not present in subdomain map".into(),
                         ))?;
                 let mut subdomain_box = SubDomainBox {
-                    index: index.clone(),
+                    _index: index.clone(),
                     subdomain,
                     voxels: voxels.collect(),
                     voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
@@ -346,7 +346,7 @@ pub struct SubDomainBox<I, S, C, A, Com, Sy = BarrierSync>
 where
     S: SubDomain<C>,
 {
-    pub(crate) index: I,
+    pub(crate) _index: I,
     pub(crate) subdomain: S,
     pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
     pub(crate) voxel_index_to_plain_index:
