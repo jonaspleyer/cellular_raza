@@ -98,7 +98,7 @@ pub(crate) trait GetPlainIndex {
 
 /// Wrapper for a [Voxel] struct that includes more information and cells.
 #[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct VoxelBox<
+pub struct VoxelBox<
     Ind,
     Pos,
     Vel,
@@ -109,19 +109,19 @@ pub(crate) struct VoxelBox<
     ConcBoundaryExtracellular,
     ConcVecIntracellular,
 > {
-    pub plain_index: PlainIndex,
-    pub index: Ind,
-    pub voxel: Vox,
-    pub neighbors: Vec<PlainIndex>,
-    pub cells: Vec<(
+    pub(crate) plain_index: PlainIndex,
+    pub(crate) index: Ind,
+    pub(crate) voxel: Vox,
+    pub(crate) neighbors: Vec<PlainIndex>,
+    pub(crate) cells: Vec<(
         CellAgentBox<Cel>,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     )>,
-    pub new_cells: Vec<(Cel, Option<CellularIdentifier>)>,
-    pub id_counter: u64,
-    pub rng: ChaCha8Rng,
-    pub extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
-    pub concentration_boundaries: Vec<(Ind, BoundaryCondition<ConcBoundaryExtracellular>)>,
+    pub(crate) new_cells: Vec<(Cel, Option<CellularIdentifier>)>,
+    pub(crate) id_counter: u64,
+    pub(crate) rng: ChaCha8Rng,
+    pub(crate) extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
+    pub(crate) concentration_boundaries: Vec<(Ind, BoundaryCondition<ConcBoundaryExtracellular>)>,
 }
 
 impl<

@@ -450,7 +450,7 @@ pub struct SimulationResult<
     /// Configure how to store results of the simulation
     pub storage: StorageConfig,
 
-    pub domain: DomainBox<Dom>,
+    pub(crate) domain: DomainBox<Dom>,
     /// [StorageManager] responsible for saving and loading cells
     pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
     /// [StorageManager] responsible for saving and loading voxels
