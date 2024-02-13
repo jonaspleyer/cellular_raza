@@ -29,9 +29,7 @@ version = "0.0.6"
 [features]
 default = ["gradients"]
 pyo3 = ["cellular_raza/pyo3"]
-
-# Simulation aspects
-gradients = []
+gradients = ["cellular_raza/gradients"]
 
 [[bench]]
 name = "cell_sorting"

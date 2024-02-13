@@ -51,9 +51,7 @@ version = "0.0.6"
 [features]
 default = ["gradients", "timestamp"]
 timestamp = ["dep:chrono"]
-
-# Simulation aspects
-gradients = []
+gradients = ["cellular_raza-concepts/gradients"]
 
 # [profile.release]
 # debug = 1

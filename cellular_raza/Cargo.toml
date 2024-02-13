@@ -34,9 +34,6 @@ version = "0.0.6"
 
 [features]
 default = ["gradients"]
-
-# Simulation aspects
-gradients = []
-
-# Dependencies
+timestamp = ["cellular_raza-core/timestamp"]
+gradients = ["cellular_raza-concepts/gradients", "cellular_raza-core/gradients", "cellular_raza-building-blocks/gradients"]
 pyo3 = ["cellular_raza-building-blocks/pyo3"]

@@ -38,6 +38,4 @@ version = "0.0.6"
 [features]
 default = ["gradients"]
 pyo3 = ["dep:pyo3"]
-
-# Simulation aspects
-gradients = []
+gradients = ["cellular_raza-concepts/gradients"]

@@ -30,6 +30,4 @@ version = "0.0.6"
 
 [features]
 default = ["gradients"]
-
-# Simulation aspects
 gradients = []
