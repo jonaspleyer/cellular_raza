@@ -1,6 +1,10 @@
 use std::ops::AddAssign;
 
-use cellular_raza::{building_blocks::cell_building_blocks::mechanics::NewtonDamped2D, concepts::{CalcError, Mechanics}, concepts_derive::CellAgent};
+use cellular_raza::{
+    building_blocks::cell_building_blocks::mechanics::NewtonDamped2D,
+    concepts::{CalcError, Mechanics},
+    concepts_derive::CellAgent,
+};
 
 #[derive(Clone, Debug)]
 pub struct SubDomain {
@@ -22,7 +26,12 @@ pub enum Boundary {
 trait FluidDynamics<Pos, Conc, Float> {
     type Boundary;
 
-    fn update_fluid_dynamics<'a, I, J>(&mut self, dt: Float, neighbours: &'a I, sources: &'a J) -> Result<(), CalcError>
+    fn update_fluid_dynamics<'a, I, J>(
+        &mut self,
+        dt: Float,
+        neighbours: &'a I,
+        sources: &'a J,
+    ) -> Result<(), CalcError>
     where
         Pos: 'static,
         Conc: 'static,
@@ -36,7 +45,12 @@ trait FluidDynamics<Pos, Conc, Float> {
 impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
     type Boundary = ([usize; 2], ndarray::Array3<f64>);
 
-    fn update_fluid_dynamics<'a, I, J>(&mut self, dt: f64, neighbours: &'a I, sources: &'a J) -> Result<(), CalcError>
+    fn update_fluid_dynamics<'a, I, J>(
+        &mut self,
+        dt: f64,
+        neighbours: &'a I,
+        sources: &'a J,
+    ) -> Result<(), CalcError>
     where
         &'a I: IntoIterator<Item = &'a Self::Boundary>,
         &'a J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
@@ -59,7 +73,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         // _ x x x x x _
         // _ x x x x x _
         // _ _ _ _ _ _ _
-        self.helper.slice_mut(s![1..-1,1..-1,..]).assign(&co);
+        self.helper.slice_mut(s![1..-1, 1..-1, ..]).assign(&co);
 
         // Fill outer parts depending on the type of boundary condition
         // _ x x x x x _
@@ -68,16 +82,28 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         // _ x x x x x _
         for (index, value) in neighbours.into_iter() {
             match (
-                self.index[0]==index[0]+1,
-                self.index[0]+1==index[0],
-                self.index[1]==index[1]+1,
-                self.index[1]+1==index[1]
+                self.index[0] == index[0] + 1,
+                self.index[0] + 1 == index[0],
+                self.index[1] == index[1] + 1,
+                self.index[1] + 1 == index[1],
             ) {
                 // Assign u_i+1 = b
-                (true, false, false, false) => {self.helper.slice_mut(s![0,1..-1,..]).assign(&value.slice(s![-1,..,..]))},
-                (false, true, false, false) => {self.helper.slice_mut(s![-1,1..-1,..]).assign(&value.slice(s![0,..,..]))},
-                (false, false, true, false) => {self.helper.slice_mut(s![1..-1,0,..]).assign(&value.slice(s![..,-1,..]))},
-                (false, false, false, true) => {self.helper.slice_mut(s![1..-1,-1,..]).assign(&value.slice(s![..,0,..]))},
+                (true, false, false, false) => self
+                    .helper
+                    .slice_mut(s![0, 1..-1, ..])
+                    .assign(&value.slice(s![-1, .., ..])),
+                (false, true, false, false) => self
+                    .helper
+                    .slice_mut(s![-1, 1..-1, ..])
+                    .assign(&value.slice(s![0, .., ..])),
+                (false, false, true, false) => self
+                    .helper
+                    .slice_mut(s![1..-1, 0, ..])
+                    .assign(&value.slice(s![.., -1, ..])),
+                (false, false, false, true) => self
+                    .helper
+                    .slice_mut(s![1..-1, -1, ..])
+                    .assign(&value.slice(s![.., 0, ..])),
                 // Assign u_i+1 = b * Δx² + u_i
                 /*(Boundary::Neumann, true, false, false, false) => {self.helper.slice_mut(s![0,1..-1,..]).assign(&(- dx * value + co.slice(s![1,..,..])))},
                 (Boundary::Neumann, false, true, false, false) => {self.helper.slice_mut(s![-1,1..-1,..]).assign(&(dx * value + co.slice(s![-2,..,..])))},
@@ -89,25 +115,38 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
 
         // Set increment to next time-step to 0.0 everywhere
         self.increment.fill(0.0);
-        self.increment.assign(&(-2.0 * dd2 * &self.helper.slice(s![1..-1,1..-1,..])));
-        self.increment.add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![2.., 1..-1, ..])));
-        self.increment.add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![0..-2, 1..-1, ..])));
-        self.increment.add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 2.., ..])));
-        self.increment.add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 0..-2, ..])));
+        self.increment
+            .assign(&(-2.0 * dd2 * &self.helper.slice(s![1..-1, 1..-1, ..])));
+        self.increment
+            .add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![2.., 1..-1, ..])));
+        self.increment
+            .add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![0..-2, 1..-1, ..])));
+        self.increment
+            .add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 2.., ..])));
+        self.increment
+            .add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 0..-2, ..])));
 
-        sources.into_iter().map(|(pos, source_increment)| {
-            let index = self.get_index_of_position(pos)?;
-            self.increment.slice_mut(s![index[0], index[1],..]).add_assign(source_increment);
-            Ok(())
-        }).collect::<Result<Vec<_>, CalcError>>()?;
+        sources
+            .into_iter()
+            .map(|(pos, source_increment)| {
+                let index = self.get_index_of_position(pos)?;
+                self.increment
+                    .slice_mut(s![index[0], index[1], ..])
+                    .add_assign(source_increment);
+                Ok(())
+            })
+            .collect::<Result<Vec<_>, CalcError>>()?;
 
-        self.total_concentration.add_assign(&(self.diffusion_constant * dt * &self.increment));
+        self.total_concentration
+            .add_assign(&(self.diffusion_constant * dt * &self.increment));
 
-        println!("{:6.3}", &self.total_concentration.slice(s![..,..,0]));
         Ok(())
     }
 
-    fn get_concentration_at_pos(&self, pos: &nalgebra::SVector<f64, 2>) -> Result<ndarray::Array1<f64>, CalcError> {
+    fn get_concentration_at_pos(
+        &self,
+        pos: &nalgebra::SVector<f64, 2>,
+    ) -> Result<ndarray::Array1<f64>, CalcError> {
         let index = self.get_index_of_position(pos)?;
         let s = self.total_concentration.shape();
         use ndarray::s;
@@ -119,9 +158,19 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
 }
 
 impl SubDomain {
-    pub fn get_index_of_position(&self, pos: &nalgebra::Vector2<f64>) -> Result<[usize; 2], CalcError> {
-        if pos[0] < self.min[0] || pos[0] > self.max[0] || pos[1] < self.min[1] || pos[1] > self.max[1] {
-            return Err(CalcError(format!("position {:?} is not contained in domain with boundaries {:?} {:?}", pos, self.min, self.max)));
+    pub fn get_index_of_position(
+        &self,
+        pos: &nalgebra::Vector2<f64>,
+    ) -> Result<[usize; 2], CalcError> {
+        if pos[0] < self.min[0]
+            || pos[0] > self.max[0]
+            || pos[1] < self.min[1]
+            || pos[1] > self.max[1]
+        {
+            return Err(CalcError(format!(
+                "position {:?} is not contained in domain with boundaries {:?} {:?}",
+                pos, self.min, self.max
+            )));
         }
         let index = [
             ((pos[0] - self.min[0]) / self.dx[0] as f64).round() as usize,
@@ -162,8 +211,14 @@ impl SubDomain {
                 let color = BlackWhite::get_color_normalized(c, 0.0, 0.2);
                 let rect = plotters::element::Rectangle::new(
                     [
-                        (self.min[0] + i as f64 * self.dx[0], self.min[1] + j as f64 * self.dx[1]),
-                        (self.min[0] + (i + 1) as f64 * self.dx[0], self.min[1] + (j + 1) as f64 * self.dx[1]),
+                        (
+                            self.min[0] + i as f64 * self.dx[0],
+                            self.min[1] + j as f64 * self.dx[1],
+                        ),
+                        (
+                            self.min[0] + (i + 1) as f64 * self.dx[0],
+                            self.min[1] + (j + 1) as f64 * self.dx[1],
+                        ),
                     ],
                     color.filled(),
                 );
@@ -198,13 +253,16 @@ impl Reactions<ndarray::Array1<f64>> for MyCell {
     }
 
     fn calculate_intracellular_increment(&self) -> Result<ndarray::Array1<f64>, CalcError> {
-        Ok(0.0*&self.intracellular)
+        Ok(0.0 * &self.intracellular)
     }
 }
 
 impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
-    fn calculate_combined_increment(&self, _extracellular: &ndarray::Array1<f64>) -> Result<(ndarray::Array1<f64>, ndarray::Array1<f64>), CalcError> {
-        Ok((-0.0*&self.intracellular, 1.0*&self.intracellular))
+    fn calculate_combined_increment(
+        &self,
+        _extracellular: &ndarray::Array1<f64>,
+    ) -> Result<(ndarray::Array1<f64>, ndarray::Array1<f64>), CalcError> {
+        Ok((-0.0 * &self.intracellular, 1.0 * &self.intracellular))
     }
 }
 
@@ -215,18 +273,20 @@ fn main() {
     let n_components = 1;
 
     // Agent setup
-    let mut agents = (0..1).map(|_| {
-        use num::Zero;
-        MyCell {
-            mechanics: NewtonDamped2D {
-                pos: nalgebra::Vector2::from([0.0; 2]),
-                vel: nalgebra::Vector2::zero(),
-                damping_constant: 0.1,
-                mass: 1.0,
-            },
-            intracellular: ndarray::Array1::ones(n_components)
-        }
-    }).collect::<Vec<_>>();
+    let mut agents = (0..1)
+        .map(|_| {
+            use num::Zero;
+            MyCell {
+                mechanics: NewtonDamped2D {
+                    pos: nalgebra::Vector2::from([0.0; 2]),
+                    vel: nalgebra::Vector2::zero(),
+                    damping_constant: 0.1,
+                    mass: 1.0,
+                },
+                intracellular: ndarray::Array1::ones(n_components),
+            }
+        })
+        .collect::<Vec<_>>();
 
     // Diffusion setup
     let total_concentration =
