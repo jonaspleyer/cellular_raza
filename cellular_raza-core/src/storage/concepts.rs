@@ -248,6 +248,10 @@ pub struct StorageManager<Id, Element> {
 }
 
 impl<Id, Element> StorageManager<Id, Element> {
+    /// Constructs the storage manager
+    ///
+    /// This creates the required file hierarchy and initializes any storage elements which
+    /// might be required.
     pub fn open_or_create_with_priority(
         location: &std::path::Path,
         storage_instance: u64,
