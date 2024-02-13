@@ -9,7 +9,8 @@ serde = { workspace = true }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
-cellular_raza = { path="../../cellular_raza", features=["default"] }
+cellular_raza = { path="../../cellular_raza", features=["tracing"] }
 num = { workspace = true }
 rayon = "1.8"
 kdam = { version="0.5", features = ["template"] }
+tracing-subscriber = { version = "0.3.18" }

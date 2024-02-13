@@ -34,6 +34,8 @@ quick-xml = { version="0.28", features=["serialize"]}
 serde_json = { version="1.0" }
 sled = { version="0.34" }
 chrono = { version = "0.4.31", optional = true }
+tracing = { version = "0.1.40", optional = true }
+tracing-subscriber = { version = "0.3.18", optional = true }
 
 # Implementation dependencies
 rand = { workspace = true }
@@ -50,6 +52,7 @@ version = "0.0.6"
 
 [features]
 default = ["gradients", "timestamp"]
+tracing = ["dep:tracing", "dep:tracing-subscriber"]
 timestamp = ["dep:chrono"]
 gradients = ["cellular_raza-concepts/gradients"]
 
