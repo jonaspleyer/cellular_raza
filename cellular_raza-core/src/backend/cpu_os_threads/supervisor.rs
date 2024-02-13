@@ -32,17 +32,13 @@ use plotters::{
 };
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ControllerBox<Cont, Obs> {
+pub(crate) struct ControllerBox<Cont, Obs> {
     pub controller: Cont,
     pub measurements: std::collections::BTreeMap<u32, Obs>,
 }
 
 impl<Cont, Obs> ControllerBox<Cont, Obs> {
-    pub fn measure<'a, I, Cel>(
-        &mut self,
-        thread_index: u32,
-        cells: I,
-    ) -> Result<(), SimulationError>
+    fn measure<'a, I, Cel>(&mut self, thread_index: u32, cells: I) -> Result<(), SimulationError>
     where
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
@@ -53,7 +49,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         Ok(())
     }
 
-    pub fn adjust<'a, Cel, J>(&mut self, cells: J) -> Result<(), ControllerError>
+    fn adjust<'a, Cel, J>(&mut self, cells: J) -> Result<(), ControllerError>
     where
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         J: Iterator<
