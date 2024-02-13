@@ -243,7 +243,7 @@ where
                     }
 
                     if show_progressbar && cont.mvc_id == 0 {
-                        bar.update(1);
+                        bar.update(1)?;
                     }
 
                     // if save_now_new.load(Ordering::Relaxed) {
@@ -597,10 +597,9 @@ where
         chart.present()?;
 
         match progress_bar {
-            Some(mut bar) => bar.update(1),
-            _ => Ok(true),
-        };
-
+            Some(mut bar) => {bar.update(1)?;},
+            None => (),
+        }
         Ok(())
     }
 
