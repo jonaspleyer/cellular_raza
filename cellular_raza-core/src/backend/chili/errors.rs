@@ -65,6 +65,7 @@ pub enum SimulationError {
     /// Occurs during calculations of any mathematical update steps such as
     /// [Interaction](cellular_raza_concepts::Interaction) between cells.
     CalcError(CalcError),
+    /// Related to time-stepping events. See [crate::time].
     TimeError(TimeError),
     /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
     /// trait.
