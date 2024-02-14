@@ -20,8 +20,10 @@ use rand_chacha::ChaCha8Rng;
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
+/// Wrapper around the user-defined simulation [Domain]
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct DomainBox<Dom> {
+pub struct DomainBox<Dom> {
+    /// Raw simulation [Domain]
     pub domain_raw: Dom,
 }
 
@@ -152,8 +154,9 @@ impl<
     }
 }
 
+/// Contains auxiliary information to update cellular properties
 #[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
+pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     force: For,
     intracellular_concentration_increment: ConcVecIntracellular,
     pub(crate) cycle_events: Vec<CycleEvent>,
