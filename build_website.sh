@@ -1,7 +1,6 @@
 generate_docs() {
     TARGETS=(
         cellular_raza
-        cellular_raza-benchmarks
         cellular_raza-building-blocks
         cellular_raza-concepts
         cellular_raza-core
