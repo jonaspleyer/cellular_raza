@@ -19,7 +19,7 @@
 A cellular Agent-Based modeling tool.
 
 ## Documentation
-Read the documentation at [cellular_raza.com](https://cellular_raza.com/).
+Read the documentation at [cellular-raza.com](https://cellular-raza.com/).
 Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of the package.
 Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentation of the code.
 
