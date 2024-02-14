@@ -17,6 +17,7 @@ license = "GPL-2.0"
 repository = "https://github.com/jonaspleyer/cellular_raza"
 keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
+homepage = "https://cellular-raza.com/"
 
 [workspace.dependencies]
 num = "0.4"

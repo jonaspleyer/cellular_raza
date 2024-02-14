@@ -10,7 +10,7 @@ license.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-autoexamples = false
+homepage.workspace =  true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

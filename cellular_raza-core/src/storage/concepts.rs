@@ -100,7 +100,7 @@ impl Error for StorageError {}
 // TODO implement this correctly
 /// Define how to store results of the simulation.
 ///
-/// We currently support saving results in a [sled] databas, as xml files
+/// We currently support saving results in a [sled] database, as xml files
 /// via [quick_xml] or as a json file by using [serde_json].
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum StorageOption {

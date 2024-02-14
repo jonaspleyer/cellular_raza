@@ -10,6 +10,7 @@ repository = "https://github.com/jonaspleyer/cellular_raza"
 keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
 autoexamples = false
+homepage.workspace =  true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
