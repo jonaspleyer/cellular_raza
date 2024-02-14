@@ -3,10 +3,9 @@
 //! This submodule heavily depends on the [pyo3]() crate.
 
 use cellular_raza_concepts::{
-    CalcError, CellularReactions, Cycle, CycleEvent, DeathError, DivisionError, Interaction,
-    InteractionExtracellularGradient, Mechanics, RngError, Volume,
+    CalcError, CellAgent, CellularReactions, Cycle, CycleEvent, DeathError, DivisionError,
+    Interaction, InteractionExtracellularGradient, Mechanics, RngError, Volume,
 };
-use cellular_raza_concepts_derive::CellAgent;
 
 use crate::cell_building_blocks::mechanics::NewtonDamped2D;
 

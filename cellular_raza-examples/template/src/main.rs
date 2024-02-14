@@ -3,8 +3,7 @@ use cellular_raza::building_blocks::{
     domains::cartesian_cuboid_n::CartesianCuboid2NewF32,
 };
 use cellular_raza::concepts::domain_new::Domain;
-use cellular_raza::concepts::{CalcError, Interaction, Mechanics, RngError, Volume};
-use cellular_raza::concepts_derive::CellAgent;
+use cellular_raza::concepts::{CalcError, Interaction, Mechanics, RngError, Volume, CellAgent};
 use cellular_raza::core::backend::chili::{build_aux_storage, build_communicator};
 
 use cellular_raza::core::backend::chili;

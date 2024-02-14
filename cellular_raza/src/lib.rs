@@ -11,8 +11,6 @@
 
 pub use cellular_raza_building_blocks as building_blocks;
 
-pub use cellular_raza_concepts_derive as concepts_derive;
-
 pub use cellular_raza_concepts as concepts;
 
 pub use cellular_raza_core as core;

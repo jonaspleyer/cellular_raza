@@ -14,13 +14,13 @@
 //!     interaction: BoundLennardJones,
 //! }
 //! ```
-//! Furthermore, we can derive desired concepts by using the [CellAgent](cellular_raza_concepts_derive::CellAgent)
+//! Furthermore, we can derive desired concepts by using the [CellAgent](cellular_raza_concepts::CellAgent)
 //! derive macro.
 //! ```rust
 //! # use cellular_raza_concepts::*;
 //! # use cellular_raza_building_blocks::prelude::*;
 //! # use nalgebra::Vector2;
-//! # use cellular_raza_concepts_derive::CellAgent;
+//! # use cellular_raza_concepts::CellAgent;
 //! #[derive(CellAgent)]
 //! struct MyAgent {
 //!     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]

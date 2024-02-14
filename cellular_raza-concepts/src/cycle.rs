@@ -55,8 +55,7 @@ pub trait Cycle<Cell, Float = f64> {
 #[doc(hidden)]
 mod test_derive {
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent> for MyCycle {
@@ -82,8 +81,7 @@ mod test_derive {
     fn derive_cycle_default() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent, f32> for MyCycle {
@@ -109,8 +107,7 @@ mod test_derive {
     fn derive_cycle_f32() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle<F> {
     ///     some_property: F,
     /// }
@@ -138,8 +135,7 @@ mod test_derive {
     fn derive_cycle_generic_float() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle<G> {
     ///     some_property: G,
     /// }
@@ -173,8 +169,7 @@ mod test_derive {
     fn derive_cycle_generic_float_where_clause() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent> for MyCycle {
@@ -200,8 +195,7 @@ mod test_derive {
     fn derive_cycle_unnamed() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle;
     ///
     /// impl Cycle<MyAgent, f32> for MyCycle {
@@ -227,8 +221,7 @@ mod test_derive {
     fn derive_cycle_f32_unnamed() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle<F> {
     ///     some_property: F,
     /// }
@@ -256,8 +249,7 @@ mod test_derive {
     fn derive_cycle_generic_float_unnamed() {}
 
     /// ```
-    /// use cellular_raza_concepts_derive::CellAgent;
-    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError};
+    /// use cellular_raza_concepts::{Cycle, CycleEvent, DeathError, DivisionError, CellAgent};
     /// struct MyCycle<G> {
     ///     some_property: G,
     /// }

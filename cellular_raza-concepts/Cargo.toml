@@ -21,10 +21,7 @@ serde = { workspace = true }
 rand_chacha = { workspace = true }
 plotters = { workspace = true }
 
-[dev-dependencies]
-rand = { workspace = true }
-
-[dev-dependencies.cellular_raza-concepts-derive]
+[dependencies.cellular_raza-concepts-derive]
 path = "../cellular_raza-concepts-derive"
 version = "0.0.6"
 

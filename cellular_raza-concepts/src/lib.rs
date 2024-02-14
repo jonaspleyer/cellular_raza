@@ -150,6 +150,7 @@ mod mechanics;
 mod plotting;
 
 pub use cell::*;
+pub use cellular_raza_concepts_derive::*;
 pub use cycle::*;
 pub use domain::*;
 pub use errors::*;

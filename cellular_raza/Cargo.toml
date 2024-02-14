@@ -28,10 +28,6 @@ version = "0.0.6"
 path = "../cellular_raza-concepts"
 version = "0.0.6"
 
-[dependencies.cellular_raza-concepts-derive]
-path = "../cellular_raza-concepts-derive"
-version = "0.0.6"
-
 [features]
 default = ["gradients"]
 tracing = ["cellular_raza-core/tracing"]
