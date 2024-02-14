@@ -39,8 +39,7 @@ pub struct DecomposedDomain<I, S, C> {
     /// number may be different to the one given to the [Domain::decompose] method.
     /// Such behaviour can result from not being able to construct as many subdomains as desired.
     /// Note that this function will attempt to construct more [SubDomains](SubDomain) than available CPUs
-    /// if given a larger number. Use the `decompose_auto_tune` function of the [super::config::SimulationSetup]
-    /// struct if desired otherwise.
+    /// if given a larger number.
     pub n_subdomains: usize,
     /// Vector containing properties of individual [SubDomains](SubDomain).
     /// Entries are [Domain::SubDomainIndex], [SubDomain], and a vector of cells.
@@ -55,10 +54,10 @@ pub struct DecomposedDomain<I, S, C> {
 
 /// Subdomains are produced by decomposing a [Domain] into multiple physical regions.
 pub trait SubDomain<C> {
-    /// Individual [Voxels](Voxel) inside each subdomain can be accessed by this index.
+    /// Individual Voxels inside each subdomain can be accessed by this index.
     type VoxelIndex;
 
-    /// If given a cell, we can sort this cell into the corresponding [Voxel].
+    /// If given a cell, we can sort this cell into the corresponding Voxel.
     /// This function is supposed to return the correct voxel index of the cell even if this index
     /// is inside another [SubDomain]. This restriction might be lifted in the future but is still
     /// required now.

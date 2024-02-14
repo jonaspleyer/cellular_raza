@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 // TODO this concept should probably be not necessary
 // Prefer a combination of many traits
-/// Encapsulates all concepts that can be specified for a [CellAgent]
+/// Encapsulates all concepts that can be specified for a [Agent]
 ///
 /// We hope to be deprecating this trait in the future and only rely on individual traits instead.
 /// While this trait could be manually implemented, it is often not necessary (see [cellular_raza-building-blocks](https://docs.rs/cellular_raza-building-blocks))
@@ -58,7 +58,7 @@ pub trait Id {
 
 /// A container struct containing meta-information of a given Cell
 /// Some variables such as id are not required and not desired to be
-/// initialized by the user. This CellAgentBox acts as a container around the cell
+/// initialized by the user. This [CellAgentBox] acts as a container around the cell
 /// to hold these variables.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellAgentBox<Cel> {
@@ -81,7 +81,7 @@ impl<Cel> CellAgentBox<Cel> {
     }
 }
 
-// Auto-implement traits for CellAgentBox which where also implemented for CellAgent
+// Auto-implement traits for CellAgentBox which where also implemented for Agent
 impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
 where
     A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,

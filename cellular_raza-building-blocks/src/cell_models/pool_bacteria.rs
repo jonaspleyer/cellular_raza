@@ -137,7 +137,7 @@ impl Bacteria {
                 .extract::<GradientSensing>(py)?,
         })
     }
-    /// We can have a look at this paper https://doi.org/10.1128/jb.148.1.58-63.1981
+    /// We can have a look at this paper <https://doi.org/10.1128/jb.148.1.58-63.1981>
     /// and see that the average density of E.Coli is between 1.080 and 1.100 g/ml
     /// This means we can safely set the density to 1.09
     pub fn volume_to_mass(&self, volume: f64) -> f64 {

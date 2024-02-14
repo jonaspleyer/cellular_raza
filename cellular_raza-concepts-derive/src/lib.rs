@@ -731,7 +731,7 @@ impl AgentImplementer {
     }
 }
 
-/// Derive [concepts](cellular_raza_concepts)
+/// Derive cellular concepts
 ///
 /// This macro allows to simply derive already implemented concepts
 /// from struct fields.

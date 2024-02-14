@@ -220,7 +220,7 @@ macro_rules! implement_brownian_mechanis(
         #[cfg(feature = "pyo3")]
         #[cfg_attr(feature = "pyo3", pymethods)]
         impl $struct_name {
-            /// Constructs a new [Brownian] mechanics model for the specified dimension.
+            /// Constructs a new [$name] mechanics model for the specified dimension.
             #[new]
             pub fn new(
                 pos: [f64; $d],

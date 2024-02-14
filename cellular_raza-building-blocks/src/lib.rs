@@ -69,7 +69,7 @@ pub mod cell_models;
 
 /// Physical domains which contain cells
 ///
-/// These domains can be used with blocks from [cell_building_blocks](crate::cell_building_blocks) and [cell_models](crate::cell_models).
+/// These domains can be used with blocks from [cell_building_blocks] and [cell_models].
 pub mod domains;
 
 /// Handy re-exports of every building block.
