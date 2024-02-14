@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use num::Zero;
 
-/// Superseeded by the [CellAgent](cellular_raza_concepts::CellAgent) derive macro.
+/// Superseeded by the [CellAgent] derive macro.
 ///
 /// This struct allows to combine different building blocks to create a new Agent.
 #[derive(Clone, Debug, Serialize, Deserialize)]

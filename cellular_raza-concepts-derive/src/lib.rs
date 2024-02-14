@@ -763,7 +763,7 @@ impl AgentImplementer {
 /// | `ExtracellularGradient`   | `(ConcGradientExtracellular)`                                         |
 /// | `Volume`                  | `(Float=f64)`                                                         |
 ///
-/// For a description of these type arguments see [cellular_raza_concepts].
+/// For a description of these type arguments see `cellular_raza_concepts` crate.
 #[proc_macro_derive(
     CellAgent,
     attributes(
