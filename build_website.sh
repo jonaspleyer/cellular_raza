@@ -14,17 +14,17 @@ generate_docs() {
         cargo +nightly-2024-01-01 rustdoc --all-features -- --cfg doc_cfg
         cd ..
     done
-}
 
-build_website() {
     # Copy generated code to website folder
     cp -r target/doc cellular_raza-homepage/cr_doc
 
     # Swap old for new folder
-        cd cellular_raza-homepage
-    rm -rf content/docs
-    mv cr_doc content/docs
+    rm -rf cellular_raza-homepage/content/docs
+    mv cellular_raza-homepage/cr_doc cellular_raza-homepage/content/docs
+}
 
+build_website() {
+    cd cellular_raza-homepage
     hugo -d public_html
     cd ..
 }
