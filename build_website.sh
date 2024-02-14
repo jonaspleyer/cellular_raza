@@ -4,9 +4,7 @@ generate_docs() {
         cellular_raza-benchmarks
         cellular_raza-building-blocks
         cellular_raza-concepts
-        cellular_raza-concepts-derive
         cellular_raza-core
-        cellular_raza-core-proc-macro
     )
 
     cargo clean --doc
