@@ -11,10 +11,9 @@ pub struct SubDomain {
     helper: ndarray::Array3<f64>,
     increment: ndarray::Array3<f64>,
     diffusion_constant: f64,
-    index: [usize; 2],
-    min: [f64; 2],
-    max: [f64; 2],
-    dx: [f64; 2],
+    min: nalgebra::SVector<f64, 2>,
+    max: nalgebra::SVector<f64, 2>,
+    dx: nalgebra::SVector<f64, 2>,
 }
 
 pub enum Boundary {
@@ -171,10 +170,7 @@ impl SubDomain {
                 pos, self.min, self.max
             )));
         }
-        let index = [
-            ((pos[0] - self.min[0]) / self.dx[0] as f64) as usize,
-            ((pos[1] - self.min[1]) / self.dx[1] as f64) as usize,
-        ];
+        let index = (pos - self.min).component_div(&self.dx).map(|i| i as usize);
         Ok(index)
     }
 
@@ -266,19 +262,25 @@ impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
 
 fn main() {
     // Overall parameters
-    let n_lattice_points_x = 11;
-    let n_lattice_points_y = 11;
-    let min = [-5.0; 2];
-    let max = [5.0; 2];
+    let n_lattice_points = nalgebra::SVector::<usize, 2>::from([10, 10]);
+    let min = nalgebra::SVector::<f64, 2>::from([-5.0; 2]);
+    let max = nalgebra::SVector::<f64, 2>::from([5.0; 2]);
     let n_components = 1;
 
     // Agent setup
-    let mut agents = (0..1)
-        .map(|_| {
+    let positions = vec![
+        nalgebra::Vector2::from([-2.5, -2.5]),
+        // nalgebra::Vector2::from([-2.5,  2.5]),
+        // nalgebra::Vector2::from([ 2.5,  2.5]),
+        // nalgebra::Vector2::from([ 2.5, -2.5]),
+    ];
+    let mut agents = positions
+        .into_iter()
+        .map(|pos| {
             use num::Zero;
             MyCell {
                 mechanics: NewtonDamped2D {
-                    pos: nalgebra::Vector2::from([0.0; 2]),
+                    pos,
                     vel: nalgebra::Vector2::zero(),
                     damping_constant: 0.1,
                     mass: 1.0,
@@ -290,23 +292,20 @@ fn main() {
 
     // Diffusion setup
     let total_concentration =
-        ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components));
+        ndarray::Array3::zeros((n_lattice_points[0], n_lattice_points[1], n_components));
     let mut subdomain = SubDomain {
         total_concentration,
         helper: ndarray::Array3::zeros((
-            n_lattice_points_x + 2,
-            n_lattice_points_y + 2,
+            n_lattice_points[0] + 2,
+            n_lattice_points[1] + 2,
             n_components,
         )),
-        increment: ndarray::Array3::zeros((n_lattice_points_x, n_lattice_points_y, n_components)),
+        increment: ndarray::Array3::zeros((n_lattice_points[0], n_lattice_points[1], n_components)),
         diffusion_constant: 1.0,
         index: [1, 1],
         min,
         max,
-        dx: [
-            (max[0] - min[0]) / n_lattice_points_x as f64,
-            (max[1] - min[1]) / n_lattice_points_y as f64,
-        ],
+        dx: (max - min).component_div(&n_lattice_points.cast()),
     };
 
     let neighbours = vec![
