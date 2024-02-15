@@ -362,14 +362,21 @@ fn main() {
         if n % 20 == 0{
             subdomain.plot_result(n);
         }
-        let sources = agents.iter_mut().map(|a| {
-            let pos = a.pos();
-            let extracellular = subdomain.get_concentration_at_pos(&pos).unwrap();
-            let (intra, extra) = a.calculate_combined_increment(&extracellular).unwrap();
-            a.increment_intracellular(&(dt * &intra));
-            (pos, extra)
-        }).collect::<Vec<_>>();
-        subdomain.update_fluid_dynamics(dt, &neighbours, &sources).unwrap();
+        let sources = agents
+            .iter_mut()
+            .map(|a| {
+                let pos = a.pos();
+                let extracellular = subdomain.get_concentration_at_pos(&pos)?;
+                let (intra, extra) = a.calculate_combined_increment(&extracellular)?;
+                a.increment_intracellular(&(dt * &intra));
+                Ok((pos, extra))
+            })
+            .collect::<Result<Vec<_>, CalcError>>()
+            .unwrap();
+
+        subdomain
+            .update_fluid_dynamics(dt, &neighbours, &sources)
+            .unwrap();
     }
 
     let duration = start.elapsed();
