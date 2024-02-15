@@ -22,36 +22,41 @@ pub enum Boundary {
 }
 
 trait FluidDynamics<Pos, Conc, Float> {
-    type Boundary;
+    type NeighborValues;
+    type BorderInfo;
 
     fn update_fluid_dynamics<'a, I, J>(
         &mut self,
         dt: Float,
-        neighbours: &'a I,
-        sources: &'a J,
+        neighbours: I,
+        sources: J,
     ) -> Result<(), CalcError>
     where
         Pos: 'static,
         Conc: 'static,
-        Self::Boundary: 'static,
-        &'a I: IntoIterator<Item = &'a Self::Boundary>,
-        &'a J: IntoIterator<Item = &'a (Pos, Conc)>;
+        Self::NeighborValues: 'static,
+        I: IntoIterator<Item = &'a Self::NeighborValues>,
+        J: IntoIterator<Item = &'a (Pos, Conc)>;
 
     fn get_concentration_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
+    fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues;
+}
+
 }
 
 impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
-    type Boundary = ([usize; 2], ndarray::Array3<f64>);
+    type NeighborValues = CartesianNeighbor;
+    type BorderInfo = CartesianBorder;
 
     fn update_fluid_dynamics<'a, I, J>(
         &mut self,
         dt: f64,
-        neighbours: &'a I,
-        sources: &'a J,
+        neighbours: I,
+        sources: J,
     ) -> Result<(), CalcError>
     where
-        &'a I: IntoIterator<Item = &'a Self::Boundary>,
-        &'a J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
+        I: IntoIterator<Item = &'a Self::NeighborValues>,
+        J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
     {
         use ndarray::s;
 
