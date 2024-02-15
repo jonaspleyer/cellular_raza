@@ -297,7 +297,7 @@ impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
         &self,
         _extracellular: &ndarray::Array1<f64>,
     ) -> Result<(ndarray::Array1<f64>, ndarray::Array1<f64>), CalcError> {
-        Ok((-0.0 * &self.intracellular, 1.0 * &self.intracellular))
+        Ok((-0.0 * &self.intracellular, -1.0 * &self.intracellular))
     }
 }
 
