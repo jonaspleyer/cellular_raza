@@ -343,7 +343,6 @@ fn main() {
         )),
         increment: ndarray::Array3::zeros((n_lattice_points[0], n_lattice_points[1], n_components)),
         diffusion_constant: 1.0,
-        index: [1, 1],
         min,
         max,
         dx: (max - min).component_div(&n_lattice_points.cast()),
