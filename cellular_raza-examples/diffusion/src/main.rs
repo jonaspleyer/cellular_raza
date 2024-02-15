@@ -42,6 +42,14 @@ trait FluidDynamics<Pos, Conc, Float> {
     fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues;
 }
 
+struct CartesianBorder {
+    min: nalgebra::SVector<f64, 2>,
+    max: nalgebra::SVector<f64, 2>,
+}
+
+struct CartesianNeighbor {
+    border: CartesianBorder,
+    concentrations: ndarray::Array3<f64>,
 }
 
 impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
@@ -83,37 +91,8 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         // x _ _ _ _ _ x
         // x _ _ _ _ _ x
         // _ x x x x x _
-        for (index, value) in neighbours.into_iter() {
-            match (
-                self.index[0] == index[0] + 1,
-                self.index[0] + 1 == index[0],
-                self.index[1] == index[1] + 1,
-                self.index[1] + 1 == index[1],
-            ) {
-                // Assign u_i+1 = b
-                (true, false, false, false) => self
-                    .helper
-                    .slice_mut(s![0, 1..-1, ..])
-                    .assign(&value.slice(s![-1, .., ..])),
-                (false, true, false, false) => self
-                    .helper
-                    .slice_mut(s![-1, 1..-1, ..])
-                    .assign(&value.slice(s![0, .., ..])),
-                (false, false, true, false) => self
-                    .helper
-                    .slice_mut(s![1..-1, 0, ..])
-                    .assign(&value.slice(s![.., -1, ..])),
-                (false, false, false, true) => self
-                    .helper
-                    .slice_mut(s![1..-1, -1, ..])
-                    .assign(&value.slice(s![.., 0, ..])),
-                // Assign u_i+1 = b * Δx² + u_i
-                /*(Boundary::Neumann, true, false, false, false) => {self.helper.slice_mut(s![0,1..-1,..]).assign(&(- dx * value + co.slice(s![1,..,..])))},
-                (Boundary::Neumann, false, true, false, false) => {self.helper.slice_mut(s![-1,1..-1,..]).assign(&(dx * value + co.slice(s![-2,..,..])))},
-                (Boundary::Neumann, false, false, true, false) => {self.helper.slice_mut(s![1..-1,0,..]).assign(&(- dy * value + co.slice(s![..,1,..])))},
-                (Boundary::Neumann, false, false, false, true) => {self.helper.slice_mut(s![1..-1,-1,..]).assign(&(dy * value + co.slice(s![..,-2,..])))},*/
-                _ => println!("Index  {index:?} is not a valid boundary index! Skipping ..."),
-            }
+        for neighbor in neighbours.into_iter() {
+            self.merge_values(neighbor)?;
         }
 
         // Set increment to next time-step to 0.0 everywhere
@@ -158,13 +137,70 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         r.slice_mut(s![..]).assign(&conc);
         Ok(r)
     }
+
+    fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues {
+        todo!()
+    }
 }
 
 impl SubDomain {
+    /// This code relies on the fact that discretization between Subdomains is exactly identical!
+    /// Thus we test this while running in debug mode.
+    /// Should an error occur at this point, the implementation needs to be reconsidered!
+    fn merge_values(&mut self, neighbor: &CartesianNeighbor) -> Result<(), CalcError> {
+        // First calculate the intersection of the rectangles
+        // TODO In the future we hope to use the component-wise functions
+        // https://github.com/dimforge/nalgebra/pull/665
+        let min = (self.min - self.dx).zip_map(&neighbor.border.min, |a, b| a.max(b));
+        let max = (self.max + self.dx).zip_map(&neighbor.border.max, |a, b| a.min(b));
+
+        // Check that the discretization is identical
+        #[cfg(debug_assertions)]
+        {
+            let s = neighbor.concentrations.shape();
+            let s = nalgebra::SVector::<f64, 2>::from([s[0] as f64, s[1] as f64]);
+            let dx_neighbor =
+                (neighbor.border.max - neighbor.border.min).zip_map(&s, |diff, si| diff / si);
+            assert_eq!(
+                dx_neighbor, self.dx,
+                "spatial discretization does not match! {:?} != {:?}",
+                dx_neighbor, self.dx
+            );
+        }
+
+        // Now calculate which indices we compare of our own domain
+        // end the neighbor domain
+        let ind_calculator = |upper: &nalgebra::SVector<f64, 2>,
+                              lower: &nalgebra::SVector<f64, 2>|
+         -> nalgebra::SVector<usize, 2> {
+            (upper - lower).component_div(&self.dx).map(|i| i as usize)
+        };
+        let ind_min_self = ind_calculator(&min, &(self.min - self.dx));
+        let ind_max_self = ind_calculator(&max, &(self.min - self.dx));
+        let ind_min_neighbor = ind_calculator(&min, &neighbor.border.min);
+        let ind_max_neighbor = ind_calculator(&max, &neighbor.border.min);
+
+        use ndarray::s;
+        let neighbor_slice = neighbor.concentrations.slice(s![
+            ind_min_neighbor[0]..ind_max_neighbor[0],
+            ind_min_neighbor[1]..ind_max_neighbor[1],
+            ..
+        ]);
+
+        self.helper
+            .slice_mut(s![
+                ind_min_self[0]..ind_max_self[0],
+                ind_min_self[1]..ind_max_self[1],
+                ..
+            ])
+            .assign(&neighbor_slice);
+        Ok(())
+    }
+
     pub fn get_index_of_position(
         &self,
         pos: &nalgebra::Vector2<f64>,
-    ) -> Result<[usize; 2], CalcError> {
+    ) -> Result<nalgebra::Vector2<usize>, CalcError> {
         if pos[0] < self.min[0]
             || pos[0] > self.max[0]
             || pos[1] < self.min[1]
@@ -313,33 +349,13 @@ fn main() {
         dx: (max - min).component_div(&n_lattice_points.cast()),
     };
 
-    let neighbours = vec![
-        (
-            [2, 1],
-            10.0 * ndarray::Array3::<f64>::zeros([
-                n_lattice_points_x,
-                n_lattice_points_y,
-                n_components,
-            ]),
-        ),
-        (
-            [0, 1],
-            -10.0
-                * ndarray::Array3::<f64>::zeros([
-                    n_lattice_points_x,
-                    n_lattice_points_y,
-                    n_components,
-                ]),
-        ),
-        (
-            [1, 2],
-            ndarray::Array3::<f64>::zeros([n_lattice_points_x, n_lattice_points_y, n_components]),
-        ),
-        (
-            [1, 0],
-            ndarray::Array3::<f64>::zeros([n_lattice_points_x, n_lattice_points_y, n_components]),
-        ),
-    ];
+    let neighbours = vec![CartesianNeighbor {
+        border: CartesianBorder {
+            min: [-10.0, -7.0].into(),
+            max: [-5.0, 9.0].into(),
+        },
+        concentrations: ndarray::Array3::ones([5, 16, n_components]),
+    }];
 
     let dt = 0.01;
     for n in 0..1_000 {
