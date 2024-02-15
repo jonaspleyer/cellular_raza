@@ -597,7 +597,9 @@ where
         chart.present()?;
 
         match progress_bar {
-            Some(mut bar) => {bar.update(1)?;},
+            Some(mut bar) => {
+                bar.update(1)?;
+            }
             None => (),
         }
         Ok(())

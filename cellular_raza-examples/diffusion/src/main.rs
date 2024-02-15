@@ -2,7 +2,7 @@ use std::ops::AddAssign;
 
 use cellular_raza::{
     building_blocks::cell_building_blocks::mechanics::NewtonDamped2D,
-    concepts::{CalcError, Mechanics, CellAgent},
+    concepts::{CalcError, CellAgent, Mechanics},
 };
 
 #[derive(Clone, Debug)]
@@ -265,7 +265,7 @@ impl SubDomain {
 }
 
 trait Reactions<I> {
-    fn increment_intracellular(&mut self, intrement: &I);
+    fn increment_intracellular(&mut self, increment: &I);
     fn calculate_intracellular_increment(&self) -> Result<I, CalcError>;
 }
 
@@ -283,8 +283,8 @@ struct MyCell {
 }
 
 impl Reactions<ndarray::Array1<f64>> for MyCell {
-    fn increment_intracellular(&mut self, intrement: &ndarray::Array1<f64>) {
-        self.intracellular += intrement;
+    fn increment_intracellular(&mut self, increment: &ndarray::Array1<f64>) {
+        self.intracellular += increment;
     }
 
     fn calculate_intracellular_increment(&self) -> Result<ndarray::Array1<f64>, CalcError> {

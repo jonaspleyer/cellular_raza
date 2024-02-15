@@ -15,7 +15,7 @@
 #[macro_export]
 #[doc(hidden)]
 macro_rules! run_simulation {
-    () => {}
+    () => {};
 }
 
 #[doc(inline)]
