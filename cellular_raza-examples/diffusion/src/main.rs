@@ -357,8 +357,8 @@ fn main() {
     }];
 
     let dt = 0.01;
+    let start = std::time::Instant::now();
     for n in 0..1_000 {
-        println!("{}", subdomain.total_concentration.sum() / n_lattice_points_x as f64 / n_lattice_points_y as f64);
         if n % 20 == 0{
             subdomain.plot_result(n);
         }
@@ -371,4 +371,7 @@ fn main() {
         }).collect::<Vec<_>>();
         subdomain.update_fluid_dynamics(dt, &neighbours, &sources).unwrap();
     }
+
+    let duration = start.elapsed();
+    println!("Time elapsed: {} ms", duration.as_millis());
 }
