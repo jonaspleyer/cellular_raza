@@ -10,7 +10,10 @@ generate_docs() {
 
     for target in ${TARGETS[@]}; do
         cd $target
-        cargo +nightly-2024-01-01 rustdoc --all-features -- --cfg doc_cfg
+        cargo +nightly-2024-01-01 rustdoc\
+            --all-features --\
+            --cfg doc_cfg\
+            --html-in-header cellular_raza-homepage/custom_navbar.html
         cd ..
     done
 

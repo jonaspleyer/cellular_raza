@@ -1,0 +1,56 @@
+<style>
+    .custom-topnav {
+        width: 100%;
+        padding-left: 24px;
+        border-bottom: 1px solid rgb(200, 200, 200);
+        padding-bottom: 0.5em;
+        padding-top: 0.5em;
+    }
+
+    .custom-topnav .menu_item {
+        display: inline-block;
+        font-weight: bold;
+        border: 1px solid var(--link-color);
+        margin-right: 1em;
+        padding: 0.5em;
+    }
+
+    .custom-topnav .menu_item:hover {
+        opacity: 75%;
+    }
+
+    .custom-topnav .logo-container {
+        width: calc(var(--desktop-sidebar-width) - 48px);
+        margin: 0;
+        display: inline-block;
+        margin-right: 64px;
+    }
+
+    .custom-topnav .logo-container a picture img {
+        height: 2em;
+        margin-bottom: calc(-0.5em - 1px);
+    }
+
+    .custom-topnav .logo-container a picture img:hover {
+        opacity: 75%;
+    }
+</style>
+<body class="">
+    <nav>
+    <div class="custom-topnav">
+        <div class="logo-container">
+            <a href="/">
+                <picture>
+                    <source media="(prefers-color-scheme: dark)" srcset="/logos/cellular_raza_dark_mode.svg">
+                    <source media="(prefers-color-scheme: light)" srcset="/logos/cellular_raza.svg">
+                    <img alt="The cellular_raza logo" src="doc/cellular_raza.svg">
+                </picture>
+            </a>
+        </div>
+        <a class="menu_item" href="/docs/cellular_raza">cellular_raza</a>
+        <a class="menu_item" href="/docs/cellular_raza_building_blocks">building_blocks</a>
+        <a class="menu_item" href="/docs/cellular_raza_concepts">concepts</a>
+        <a class="menu_item" href="/docs/cellular_raza_core">core</a>
+    </div>
+    </nav>
+    <div class="rustdoc mod crate">
