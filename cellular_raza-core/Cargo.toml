@@ -44,11 +44,11 @@ rand_chacha = { workspace = true }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.0.6"
+version = "0.0.8"
 
 [dependencies.cellular_raza-core-proc-macro]
 path = "../cellular_raza-core-proc-macro"
-version = "0.0.6"
+version = "0.0.8"
 
 [features]
 default = ["gradients", "timestamp"]
