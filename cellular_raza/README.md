@@ -13,7 +13,7 @@
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.36+-lightgray.svg?style=flat-square)](https://github.com/jonaspleyer/cellular_raza#rust-version-requirements)
 [![Crate](https://img.shields.io/crates/v/cellular_raza.svg?style=flat-square)](https://crates.io/crates/cellular_raza)
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
-[![dependency status](https://deps.rs/crate/cellular_raza/0.0.1/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
+[![dependency status](https://deps.rs/crate/cellular_raza/latest/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
 
 A cellular Agent-Based modeling tool.
 
