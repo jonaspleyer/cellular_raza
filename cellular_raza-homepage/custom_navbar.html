@@ -7,7 +7,7 @@
         padding-top: 0.5em;
     }
 
-    .custom-topnav .menu_item {
+    .custom-topnav .menu .menu_item {
         display: inline-block;
         font-weight: bold;
         border: 1px solid var(--link-color);
@@ -15,7 +15,17 @@
         padding: 0.5em;
     }
 
-    .custom-topnav .menu_item:hover {
+    .custom-topnav .menu {
+        display: none;
+    }
+
+    @media screen and (min-width: 701px) {
+        .custom-topnav .menu {
+            display: inline-block;
+        }
+    }
+
+    .custom-topnav .menu .menu_item:hover {
         opacity: 75%;
     }
 
@@ -47,10 +57,12 @@
                 </picture>
             </a>
         </div>
-        <a class="menu_item" href="/docs/cellular_raza">cellular_raza</a>
-        <a class="menu_item" href="/docs/cellular_raza_building_blocks">building_blocks</a>
-        <a class="menu_item" href="/docs/cellular_raza_concepts">concepts</a>
-        <a class="menu_item" href="/docs/cellular_raza_core">core</a>
+        <div class="menu">
+            <a class="menu_item" href="/docs/cellular_raza">cellular_raza</a>
+            <a class="menu_item" href="/docs/cellular_raza_building_blocks">building_blocks</a>
+            <a class="menu_item" href="/docs/cellular_raza_concepts">concepts</a>
+            <a class="menu_item" href="/docs/cellular_raza_core">core</a>
+        </div>
     </div>
     </nav>
     <div class="rustdoc mod crate">
