@@ -145,8 +145,14 @@ impl<C, A> Voxel<C, A> {
         Ok(force)
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub(crate) fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
+    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    pub(crate) fn update_cell_cycle_3<
+        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] Float,
+    >(
+        &mut self,
+        dt: &Float,
+    ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
             + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
@@ -404,8 +410,14 @@ where
     }
 
     /// Advances the cycle of a cell by a small time increment `dt`.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_cycle<Float>(&mut self, dt: Float) -> Result<(), CalcError>
+    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    pub fn update_cycle<
+        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] Float,
+    >(
+        &mut self,
+        dt: Float,
+    ) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>,
         A: UpdateCycle,
@@ -584,8 +596,15 @@ where
     ///
     /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
     /// solver.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_mechanics_step_3<Pos, Vel, For, Inf, Float>(
+    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    pub fn update_mechanics_step_3<
+        Pos,
+        Vel,
+        For,
+        Inf,
+        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] Float,
+    >(
         &mut self,
         dt: &Float,
     ) -> Result<(), SimulationError>
@@ -761,10 +780,16 @@ where
     /// Instead of running one big update function for all local rules, we have to treat this cell
     /// cycle differently since new cells could be generated and thus have consequences for other
     /// update steps as well.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_cell_cycle_3<Float>(&mut self, dt: &Float) -> Result<(), SimulationError>
+    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    pub fn update_cell_cycle_3<
+        #[cfg(feature = "tracing")] F: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] F,
+    >(
+        &mut self,
+        dt: &F,
+    ) -> Result<(), SimulationError>
     where
-        C: cellular_raza_concepts::Cycle<C, Float>
+        C: cellular_raza_concepts::Cycle<C, F>
             + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
@@ -776,8 +801,11 @@ where
     }
 
     /// Save all voxels (containing all cells) with the given storage manager.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn save_voxels<F>(
+    #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
+    pub fn save_voxels<
+        #[cfg(feature = "tracing")] F: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] F,
+    >(
         &self,
         storage_manager: &crate::storage::StorageManager<&VoxelPlainIndex, &Voxel<C, A>>,
         next_time_point: &crate::time::NextTimePoint<F>,
@@ -794,8 +822,11 @@ where
     }
 
     /// Stores all cells of the subdomain via the given [storage_manager}(crate::storage)
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn save_cells<F>(
+    #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
+    pub fn save_cells<
+        #[cfg(feature = "tracing")] F: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] F,
+    >(
         &self,
         storage_manager: &crate::storage::StorageManager<&CellIdentifier, (&CellBox<C>, &A)>,
         next_time_point: &crate::time::NextTimePoint<F>,

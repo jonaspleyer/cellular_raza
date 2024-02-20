@@ -18,6 +18,7 @@ pub enum TimeEvent {
 /// It is important to note that the absolute time value $t$ is not meant to be used
 /// in updating steps but rather for saving results and annotating them correctly.
 /// Library authors are advised to keep this in mind.
+#[derive(Clone, Debug)]
 pub struct NextTimePoint<F> {
     /// Time increment $dt$
     pub increment: F,
