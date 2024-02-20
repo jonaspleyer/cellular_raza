@@ -16,11 +16,6 @@ pub struct SubDomain {
     dx: nalgebra::SVector<f64, 2>,
 }
 
-pub enum Boundary {
-    Neumann,
-    Dirichlet,
-}
-
 trait FluidDynamics<Pos, Conc, Float> {
     type NeighborValues;
     type BorderInfo;
