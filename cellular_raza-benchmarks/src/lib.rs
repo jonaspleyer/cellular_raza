@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 //! Contains Benchmarks surrounding `cellular_raza`
 //!

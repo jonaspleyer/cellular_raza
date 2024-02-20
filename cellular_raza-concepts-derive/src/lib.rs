@@ -1,4 +1,4 @@
-// #![warn(missing_docs)]
+// #![deny(missing_docs)]
 // #![warn(clippy::missing_docs_in_private_items)]
 
 use proc_macro2::TokenStream;

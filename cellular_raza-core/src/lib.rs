@@ -1,5 +1,4 @@
-// TODO make this be deny instead of warning
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 //! This crate collects objects and methods needed to run a numerical simulation of
 //! given objects that satisfy the given [concepts].
