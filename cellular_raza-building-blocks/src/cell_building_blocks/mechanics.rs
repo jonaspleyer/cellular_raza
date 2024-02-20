@@ -148,27 +148,6 @@ implement_newton_damped_mechanics!(NewtonDamped1DF32, 1, f32);
 implement_newton_damped_mechanics!(NewtonDamped2DF32, 2, f32);
 implement_newton_damped_mechanics!(NewtonDamped3DF32, 3, f32);
 
-/// An empty struct to signalize that no velocity needs to be updated.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
-pub struct NoVelocity;
-
-impl core::ops::Add for NoVelocity {
-    type Output = Self;
-
-    fn add(self, _: Self) -> Self::Output {
-        NoVelocity
-    }
-}
-
-impl<F> core::ops::Mul<F> for NoVelocity {
-    type Output = Self;
-
-    fn mul(self, _: F) -> Self::Output {
-        NoVelocity
-    }
-}
-
 fn generate_random_vector<const D: usize>(
     rng: &mut rand_chacha::ChaCha8Rng,
     distribution_width: f64,
@@ -239,7 +218,6 @@ macro_rules! implement_brownian_mechanis(
             }
         }
 
-        // TODO use NoVelocity struct
         impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name {
             fn pos(&self) -> SVector<f64, $d> {
                 self.pos
