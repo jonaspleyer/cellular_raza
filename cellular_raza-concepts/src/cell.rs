@@ -1,46 +1,8 @@
-use crate::cycle::*;
 use crate::errors::{CalcError, RngError};
 use crate::interaction::*;
-use crate::mechanics::{Force, Mechanics, Position, Velocity};
-
-use std::marker::{Send, Sync};
+use crate::mechanics::Mechanics;
 
 use serde::{Deserialize, Serialize};
-
-// TODO this concept should probably be not necessary
-// Prefer a combination of many traits
-/// Encapsulates all concepts that can be specified for a [Agent]
-///
-/// We hope to be deprecating this trait in the future and only rely on individual traits instead.
-/// While this trait could be manually implemented, it is often not necessary (see [cellular_raza-building-blocks](https://docs.rs/cellular_raza-building-blocks))
-pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf, Float = f64>:
-    Cycle<Self, Float>
-    + Interaction<Pos, Vel, For, Inf>
-    + Mechanics<Pos, Vel, For, Float>
-    + Sized
-    + Send
-    + Sync
-    + Clone
-    + Serialize
-    + for<'a> serde::Deserialize<'a>
-{
-}
-impl<Pos, Vel, For, Inf, Float, A> Agent<Pos, Vel, For, Inf, Float> for A
-where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
-    A: Cycle<Self, Float>
-        + Interaction<Pos, Vel, For, Inf>
-        + Mechanics<Pos, Vel, For, Float>
-        + Sized
-        + Send
-        + Sync
-        + Clone
-        + Serialize
-        + for<'a> serde::Deserialize<'a>,
-{
-}
 
 /// This is a unique identifer which is deterministic even in multi-threading situations.
 /// Its components are
@@ -113,9 +75,6 @@ where
 
 impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A>
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
     A: Mechanics<Pos, Vel, For, Float> + Serialize + for<'a> Deserialize<'a>,
 {
     fn pos(&self) -> Pos {

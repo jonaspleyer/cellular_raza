@@ -1,4 +1,5 @@
 use cellular_raza_concepts::*;
+use super::{Agent, Position, Force, Velocity};
 
 use super::errors::*;
 use crate::storage::{StorageInterface, StorageManager};

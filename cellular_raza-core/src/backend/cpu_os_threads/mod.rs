@@ -19,6 +19,7 @@ mod domain_decomposition;
 // TODO implement the handling of these errors!
 mod errors;
 mod supervisor;
+mod trait_bounds;
 
 // Concepts for every simulation aspect
 pub use cellular_raza_concepts::*;
@@ -28,3 +29,4 @@ pub use config::*;
 pub use domain_decomposition::*;
 pub use errors::*;
 pub use supervisor::*;
+pub use trait_bounds::*;
