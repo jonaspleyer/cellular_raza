@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use std::{collections::HashMap, marker::PhantomData};
 
-use super::{errors::SimulationError, VoxelPlainIndex};
+use super::errors::SimulationError;
 
 ///
 /// This very simple implementation uses the [hurdles::Barrier] struct which should
@@ -656,58 +656,6 @@ where
         Ok(())
     }
 }
-
-/// Send about the position of cells between threads.
-///
-/// This type is used during the update steps for cellular mechanics
-/// [update_mechanics_step_1](super::datastructures::SubDomainBox::update_mechanics_step_1).
-/// The response to [PosInformation] is the [ForceInformation] type.
-/// Upon requesting the acting force, by providing the information stored in this struct,
-/// the requester obtains the needed information about acting forces.
-/// See also the [cellular_raza_concepts::Interaction] trait.
-pub struct PosInformation<Pos, Vel, Inf> {
-    /// Current position
-    pub pos: Pos,
-    /// Current velocity
-    pub vel: Vel,
-    /// Information shared between cells
-    pub info: Inf,
-    /// Index of cell in stored vector
-    ///
-    /// When returning information, this property is needed in order
-    /// to get the correct cell in the vector of cells and update its properties.
-    pub cell_index_in_vector: usize,
-    /// Voxel index of the sending cell.
-    /// Information should be returned to this voxel.
-    pub index_sender: VoxelPlainIndex,
-    /// Voxel index of the voxel from which information is requested.
-    /// This index is irrelevant after the initial query has been sent.
-    pub index_receiver: VoxelPlainIndex,
-}
-
-/// Return type to the requested [PosInformation].
-///
-/// This type is returned after performing all necessary force calculations in
-/// [update_mechanics_step_2](super::datastructures::SubDomainBox::update_mechanics_step_2).
-/// The received information is then used in combination with the already present information
-/// to update the position and velocity of cells in
-/// [update_mechanics_step_3](super::datastructures::SubDomainBox::update_mechanics_step_3).
-pub struct ForceInformation<For> {
-    /// Overall force acting on cell.
-    ///
-    /// This force is already combined in the sense that multiple forces may be added together.
-    pub force: For,
-    /// Index of cell in stored vector
-    ///
-    /// This property works in tandem with [Self::index_sender] in order to send
-    /// the calculated information to the correct cell and update its properties.
-    pub cell_index_in_vector: usize,
-    /// The voxel index where information is returned to
-    pub index_sender: VoxelPlainIndex,
-}
-
-/// Send cell and its AuxStorage between threads.
-pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
 
 #[doc(hidden)]
 #[allow(unused)]

@@ -26,6 +26,7 @@ mod run_sim;
 mod setup;
 mod simulation_flow;
 mod solvers;
+mod update_mechanics;
 
 pub use aux_storage::*;
 pub use datastructures::*;
@@ -35,3 +36,4 @@ pub use run_sim::*;
 pub use setup::*;
 pub use simulation_flow::*;
 pub use solvers::*;
+pub use update_mechanics::*;
