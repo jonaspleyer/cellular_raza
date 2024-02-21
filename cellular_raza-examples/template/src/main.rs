@@ -147,6 +147,8 @@ fn run_simulation(
                     None => (),
                 };
 
+                sbox.apply_boundary()?;
+
                 sbox.save_voxels(&storage_manager, &next_time_point)?;
             }
             Ok(())
