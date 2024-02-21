@@ -1,5 +1,5 @@
+use super::{Agent, Force, Position, Velocity};
 use cellular_raza_concepts::*;
-use super::{Agent, Position, Force, Velocity};
 use kdam::BarExt;
 
 use super::errors::*;

@@ -354,7 +354,7 @@ fn main() {
     let dt = 0.01;
     let start = std::time::Instant::now();
     for n in 0..1_000 {
-        if n % 20 == 0{
+        if n % 20 == 0 {
             subdomain.plot_result(n);
         }
         let sources = agents

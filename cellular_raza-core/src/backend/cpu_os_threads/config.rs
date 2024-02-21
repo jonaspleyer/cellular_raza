@@ -1,9 +1,7 @@
+use super::{Agent, Force, Position, Velocity};
 use crate::backend::cpu_os_threads::domain_decomposition::AuxiliaryCellPropertyStorage;
 use crate::storage::{StorageManager, StorageOption, UniqueVec};
-use cellular_raza_concepts::{
-    CellAgentBox, Domain, Index, Voxel,
-};
-use super::{Agent, Position, Force, Velocity};
+use cellular_raza_concepts::{CellAgentBox, Domain, Index, Voxel};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
