@@ -54,9 +54,6 @@ impl<Pos, Vel, For, Float, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
     Mec: Mechanics<Pos, Vel, For, Float>,
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
 {
     fn set_pos(&mut self, pos: &Pos) {
         self.mechanics.set_pos(pos)
@@ -90,8 +87,6 @@ where
 impl<Pos, Vel, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, Vel, For, Inf>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
-    Pos: Position,
-    For: Force,
     Int: Interaction<Pos, Vel, For, Inf>,
 {
     fn get_interaction_information(&self) -> Inf {
