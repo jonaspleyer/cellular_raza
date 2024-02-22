@@ -255,7 +255,7 @@ where
         Ok(())
     }
 
-    /// Stores all cells of the subdomain via the given [storage_manager}(crate::storage)
+    /// Stores all cells of the subdomain via the given [storage_manager](crate::storage)
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
     pub fn save_cells<
         #[cfg(feature = "tracing")] F: core::fmt::Debug,
