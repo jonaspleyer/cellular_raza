@@ -1,4 +1,4 @@
-use super::{Agent, Force, Position, Velocity};
+use super::{Agent, Force, InteractionInformation, Position, Velocity};
 use cellular_raza_concepts::*;
 use kdam::BarExt;
 
@@ -155,7 +155,7 @@ where
         Dom: Domain<Cel, Ind, Vox>,
         Pos: Position,
         For: Force,
-        Inf: cellular_raza_concepts::InteractionInformation,
+        Inf: InteractionInformation,
         Vel: Velocity,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,
@@ -320,7 +320,7 @@ where
         Dom: Domain<Cel, Ind, Vox>,
         Pos: Position,
         For: Force,
-        Inf: cellular_raza_concepts::InteractionInformation,
+        Inf: InteractionInformation,
         Vel: Velocity,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,

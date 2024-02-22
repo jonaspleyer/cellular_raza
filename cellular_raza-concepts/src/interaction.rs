@@ -1,13 +1,5 @@
 use crate::errors::CalcError;
 
-// TODO Define trait aliases for Position and Force
-
-// TODO use trait alias when available
-// pub trait InteractionInformation = Send + Sync + Clone + core::fmt::Debug;
-/// Trait implementations needed for the information generic parameter of [Interaction].
-pub trait InteractionInformation: Send + Sync + Clone + core::fmt::Debug {}
-impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::Debug {}
-
 /// Trait describing force-interactions between cellular agents.
 pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     /// Get additional information of cellular properties (ie. for cell-specific interactions).

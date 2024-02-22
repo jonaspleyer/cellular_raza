@@ -1,4 +1,4 @@
-use super::{Agent, Force, Position, Velocity};
+use super::{Agent, Force, InteractionInformation, Position, Velocity};
 use cellular_raza_concepts::*;
 
 use super::errors::*;
