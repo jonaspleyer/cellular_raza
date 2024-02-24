@@ -17,12 +17,9 @@ generate_docs() {
         cd ..
     done
 
-    # Copy generated code to website folder
-    cp -r target/doc cellular_raza-homepage/cr_doc
-
     # Swap old for new folder
-    rm -rf cellular_raza-homepage/content/docs
-    mv cellular_raza-homepage/cr_doc cellular_raza-homepage/content/docs
+    rm -rf cellular_raza-homepage/static/docs
+    cp -r target/doc cellular_raza-homepage/static/docs
 }
 
 build_website() {
