@@ -31,10 +31,10 @@ build_website() {
 movie() {
     # Generate the movie
     gource \
-    -s .3 \
+    -s .15 \
     --default-user-image cellular_raza-homepage/static/JonasPleyer-circle.png \
     -1280x720 \
-    --auto-skip-seconds .1 \
+    --auto-skip-seconds .05 \
     --multi-sampling \
     --stop-at-end \
     --key \
@@ -45,13 +45,20 @@ movie() {
     --max-files 0  \
     --background-colour 000000 \
     --font-size 25 \
-    --output-ppm-stream - \
     --output-framerate 60 \
+    --disable-auto-rotate \
+    --max-user-speed 30 \
+    --dir-name-depth 1 \
+    --highlight-dirs \
+    --dir-name-position 1.0 \
+    --file-filter "(cellular_raza-homepage|cellular_raza_book|cellular_raza-book)" \
+    --output-ppm-stream - \
     | ffmpeg -y -r 60 -f image2pipe -pix_fmt yuv420p -y -vcodec ppm -i - -b 65536K output.mp4
     # Compress the movie
     ffmpeg -i output.mp4 -vcodec libvpx -crf 20 -y cellular_raza-development-gource.webm
     # Move it to the hompage folder
-    mv cellular_raza-development-gource.webm cellular_raza-homepage/content/internals/
+    mkdir -p cellular_raza-homepage/static/internals/
+    mv cellular_raza-development-gource.webm cellular_raza-homepage/static/internals/
 }
 
 usage() {
