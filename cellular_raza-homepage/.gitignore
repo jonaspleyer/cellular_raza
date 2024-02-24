@@ -8,4 +8,5 @@ resources/
 .vscode/
 
 # Generated files by cargo doc
-content/docs
+static/docs
+static/internals/cellular_raza-development-gource.webm
