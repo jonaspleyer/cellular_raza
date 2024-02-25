@@ -48,13 +48,10 @@ macro_rules! implement_newton_damped_mechanics(
             pub mass: $float_type,
         }
 
-        #[cfg(feature = "pyo3")]
-        #[pymethods]
         impl $struct_name {
             #[doc = "Create a new "]
             #[doc = stringify!($struct_name)]
             /// from position, velocity, damping constant and mass
-            #[new]
             pub fn new(
                 pos: [$float_type; $d],
                 vel: [$float_type; $d],
@@ -69,43 +66,68 @@ macro_rules! implement_newton_damped_mechanics(
                 }
             }
 
+        }
+
+        #[cfg(feature = "pyo3")]
+        #[pymethods]
+        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
+        impl $struct_name {
+            #[new]
+            fn _new(
+                pos: [$float_type; $d],
+                vel: [$float_type; $d],
+                damping_constant: $float_type,
+                mass: $float_type,
+            ) -> Self {
+                Self::new(pos, vel, damping_constant, mass)
+            }
+
+
+            /// [pyo3] getter for `pos`
             #[getter]
-            fn get_pos(&self) -> [$float_type; $d] {
+            pub fn get_pos(&self) -> [$float_type; $d] {
                 self.pos.into()
             }
 
+            /// [pyo3] getter for `vel`
             #[getter]
-            fn get_vel(&self) -> [$float_type; $d] {
+            pub fn get_vel(&self) -> [$float_type; $d] {
                 self.vel.into()
             }
 
+            /// [pyo3] getter for `damping_constant`
             #[getter]
-            fn get_damping_constant(&self) -> $float_type {
+            pub fn get_damping_constant(&self) -> $float_type {
                 self.damping_constant
             }
 
+            /// [pyo3] getter for `mass`
             #[getter]
-            fn get_mass(&self) -> $float_type {
+            pub fn get_mass(&self) -> $float_type {
                 self.mass
             }
 
+            /// [pyo3] setter for `pos`
             #[setter]
-            fn set_pos(&mut self, pos: [$float_type; $d]) {
+            pub fn set_pos(&mut self, pos: [$float_type; $d]) {
                 self.pos = pos.into();
             }
 
+            /// [pyo3] setter for `vel`
             #[setter]
-            fn set_vel(&mut self, vel: [$float_type; $d]) {
+            pub fn set_vel(&mut self, vel: [$float_type; $d]) {
                 self.vel = vel.into();
             }
 
+            /// [pyo3] setter for `damping_constant`
             #[setter]
-            fn set_damping_constant(&mut self, damping_constant: $float_type) {
+            pub fn set_damping_constant(&mut self, damping_constant: $float_type) {
                 self.damping_constant = damping_constant;
             }
 
+            /// [pyo3] setter for `mass`
             #[setter]
-            fn set_mass(&mut self, mass: $float_type) {
+            pub fn set_mass(&mut self, mass: $float_type) {
                 self.mass = mass;
             }
         }
@@ -200,11 +222,10 @@ macro_rules! implement_brownian_mechanis(
             random_vector: SVector<f64, $d>,
         }
 
-        #[cfg(feature = "pyo3")]
-        #[cfg_attr(feature = "pyo3", pymethods)]
         impl $struct_name {
-            /// Constructs a new [$name] mechanics model for the specified dimension.
-            #[new]
+            /// Constructs a new
+            #[doc = concat!("[", stringify!($struct_name), "]")]
+            /// mechanics model for the specified dimension.
             pub fn new(
                 pos: [f64; $d],
                 diffusion_constant: f64,
@@ -219,6 +240,70 @@ macro_rules! implement_brownian_mechanis(
                     update_interval,
                     random_vector: SVector::<f64, $d>::zero(),
                 }
+            }
+        }
+
+        #[cfg(feature = "pyo3")]
+        #[pymethods]
+        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
+        impl $struct_name {
+            #[new]
+            fn _new(
+                pos: [f64; $d],
+                diffusion_constant: f64,
+                kb_temperature: f64,
+                update_interval: usize,
+            ) -> Self {
+                Self::new(pos, diffusion_constant, kb_temperature, update_interval)
+            }
+
+
+            /// [pyo3] setter for `pos`
+            #[setter]
+            pub fn set_pos(&mut self, pos: [f64; $d]) {
+                self.pos = pos.into();
+            }
+
+            /// [pyo3] setter for `diffusion_constant`
+            #[setter]
+            pub fn set_diffusion_constant(&mut self, diffusion_constant: f64) {
+                self.diffusion_constant = diffusion_constant;
+            }
+
+            /// [pyo3] setter for `kb_temperature`
+            #[setter]
+            pub fn set_kb_temperature(&mut self, kb_temperature: f64) {
+                self.kb_temperature = kb_temperature;
+            }
+
+            /// [pyo3] setter for `update_interval`
+            #[setter]
+            pub fn set_update_interval(&mut self, update_interval: usize) {
+                self.update_interval = update_interval;
+            }
+
+            /// [pyo3] getter for `pos`
+            #[getter]
+            pub fn get_pos(&self) -> [f64; $d] {
+                self.pos.into()
+            }
+
+            /// [pyo3] getter for `diffusion_constant`
+            #[getter]
+            pub fn get_diffusion_constant(&self) -> f64 {
+                self.diffusion_constant
+            }
+
+            /// [pyo3] getter for `kb_temperature`
+            #[getter]
+            pub fn get_kb_temperature(&self) -> f64 {
+                self.kb_temperature
+            }
+
+            /// [pyo3] getter for `update_interval`
+            #[getter]
+            pub fn get_update_interval(&self) -> usize {
+                self.update_interval
             }
         }
 
