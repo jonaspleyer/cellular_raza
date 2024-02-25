@@ -453,61 +453,61 @@ macro_rules! define_langevin_nd(
             }
 
             #[getter(pos)]
-            /// Get position of object
+            /// [pyo3] getter for `position`
             pub fn get_position(&self) -> [$float_type; $d] {
                 self.pos.into()
             }
 
             #[setter(pos)]
-            /// Set position of object
+            /// [pyo3] setter for `position`
             pub fn set_position(&mut self, pos: [$float_type; $d]) {
                 self.pos = pos.into();
             }
 
             #[getter(damping)]
-            /// Get damping constant of object
+            /// [pyo3] getter for `damping`
             pub fn get_damping(&self) -> $float_type {
                 self.damping
             }
 
             #[setter(damping)]
-            /// Set the damping constant of the object
+            /// [pyo3] setter for `damping`
             pub fn set_damping(&mut self, damping: $float_type) {
                 self.damping = damping;
             }
 
             #[getter(mass)]
-            /// Get mass of the object
+            /// [pyo3] getter for `mass`
             pub fn get_mass(&self) -> $float_type {
                 self.mass
             }
 
             #[setter(mass)]
-            /// Set mass of the object
+            /// [pyo3] setter for `mass`
             pub fn set_mass(&mut self, mass: $float_type) {
                 self.mass = mass;
             }
 
             #[getter(kb_temperature)]
-            /// Get the product of Boltzmann constant and temperature
+            /// [pyo3] getter for `kb_temperature`
             pub fn get_kb_temperature(&self) -> $float_type {
                 self.kb_temperature
             }
 
             #[setter(kb_temperature)]
-            /// Define product of Boltzmann constant and temperature
+            /// [pyo3] setter for `kb_temperature`
             pub fn set_kb_temperature(&mut self, kb_temperature: $float_type) {
                 self.kb_temperature = kb_temperature;
             }
 
             #[getter(update_interval)]
-            /// Get the update interval after which a new random vector is chosen
+            /// [pyo3] getter for `update_interval`
             pub fn get_update_interval(&self) -> usize {
                 self.update_interval
             }
 
             #[setter(update_interval)]
-            /// Sets the update interval
+            /// [pyo3] setter for `update_interval`
             pub fn set_update_interval(&mut self, update_interval: usize) {
                 self.update_interval = update_interval;
             }
