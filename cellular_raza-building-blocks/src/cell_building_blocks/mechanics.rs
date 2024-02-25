@@ -148,15 +148,19 @@ implement_newton_damped_mechanics!(NewtonDamped1DF32, 1, f32);
 implement_newton_damped_mechanics!(NewtonDamped2DF32, 2, f32);
 implement_newton_damped_mechanics!(NewtonDamped3DF32, 3, f32);
 
-fn generate_random_vector<const D: usize>(
+fn generate_random_vector<F: num::Float, const D: usize>(
     rng: &mut rand_chacha::ChaCha8Rng,
-    distribution_width: f64,
-) -> Result<SVector<f64, D>, RngError> {
-    let distr = match rand_distr::Normal::new(0.0, distribution_width) {
+    distribution_width: F,
+) -> Result<SVector<F, D>, RngError>
+where
+    F: nalgebra::Scalar,
+    rand_distr::StandardNormal: rand_distr::Distribution<F>,
+{
+    let distr = match rand_distr::Normal::new(F::zero(), distribution_width) {
         Ok(e) => Ok(e),
         Err(e) => Err(RngError(format!("{e}"))),
     }?;
-    let random_dir = SVector::<f64, D>::from_distribution(&distr, rng);
+    let random_dir = SVector::<F, D>::from_distribution(&distr, rng);
     Ok(random_dir)
 }
 
