@@ -1,5 +1,5 @@
-/// Similar to [cartesian_cuboid_n] but for vertex models.
-pub mod cartesian_cuboid_2_vertex;
+mod cartesian_cuboid_2_vertex;
+mod cartesian_cuboid_n;
 
-/// A simple cartesian domain which divides the simulation domain in lines/squares/rectangles
-pub mod cartesian_cuboid_n;
+pub use cartesian_cuboid_n::*;
+pub use cartesian_cuboid_2_vertex::*;

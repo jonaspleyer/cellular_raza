@@ -7,7 +7,7 @@ use cellular_raza_concepts::{
     Interaction, InteractionExtracellularGradient, Mechanics, RngError, Volume,
 };
 
-use crate::cell_building_blocks::mechanics::NewtonDamped2D;
+use crate::cell_building_blocks::NewtonDamped2D;
 
 use nalgebra::Vector2;
 use num::Zero;
@@ -24,7 +24,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct Bacteria {
-    /// See [NewtonDamped2D](crate::cell_building_blocks::mechanics::NewtonDamped2D) mechanics
+    /// See [NewtonDamped2D](crate::cell_building_blocks::NewtonDamped2D) mechanics
     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
     pub mechanics: NewtonDamped2D,
 
@@ -49,7 +49,7 @@ pub struct Bacteria {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaTemplate {
-    /// See [NewtonDamped2D](crate::cell_building_blocks::mechanics::NewtonDamped2D) mechanics
+    /// See [NewtonDamped2D](crate::cell_building_blocks::NewtonDamped2D) mechanics
     pub mechanics: pyo3::Py<NewtonDamped2D>,
 
     /// See [BacteriaCycle]

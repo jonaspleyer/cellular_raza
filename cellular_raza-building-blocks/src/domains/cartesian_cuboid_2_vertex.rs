@@ -2,7 +2,7 @@
 use cellular_raza_concepts::*;
 
 use super::cartesian_cuboid_n::get_decomp_res;
-use crate::cell_building_blocks::mechanics::VertexVector2;
+use crate::cell_building_blocks::VertexVector2;
 
 // Imports from std and core
 use core::cmp::{max, min};

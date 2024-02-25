@@ -61,16 +61,10 @@
 #![deny(missing_docs)]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 
-/// Construct cells from individual components
-pub mod cell_building_blocks;
+mod cell_building_blocks;
+mod cell_models;
+mod domains;
 
-/// Collection of complete cell models
-pub mod cell_models;
-
-/// Physical domains which contain cells
-///
-/// These domains can be used with blocks from [cell_building_blocks] and [cell_models].
-pub mod domains;
-
-/// Handy re-exports of every building block.
-pub mod prelude;
+pub use cell_building_blocks::*;
+pub use cell_models::*;
+pub use domains::*;

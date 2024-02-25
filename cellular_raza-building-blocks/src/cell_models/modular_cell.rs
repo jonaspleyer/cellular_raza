@@ -6,7 +6,10 @@ use num::Zero;
 
 /// Superseeded by the [CellAgent] derive macro.
 ///
-/// This struct allows to combine different building blocks to create a new Agent.
+/// The [ModularCell](modular_cell::ModularCell) is a struct with fields that implement the various
+/// [concepts](cellular_raza_concepts). The concepts are afterwards derived automatically for the
+/// [ModularCell](modular_cell::ModularCell) struct.
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ModularCell<Mec, Int, Cyc, React, IntExtracellular> {
     /// Physical mechanics of the cell
