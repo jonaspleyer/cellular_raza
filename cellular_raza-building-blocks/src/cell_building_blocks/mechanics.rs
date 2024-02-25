@@ -543,7 +543,7 @@ pub struct VertexMechanics2D<const D: usize> {
     spring_tensions: nalgebra::SVector<f64, D>,
     cell_area: f64,
     central_pressure: f64,
-    dampening_constant: f64,
+    damping_constant: f64,
 }
 
 /// Alias for the spatial representation of a cell
@@ -572,14 +572,14 @@ impl<const D: usize> VertexMechanics2D<D> {
     /// \\]
     /// From these points, their distance is calculated and passed as the individual boundary lengths.
     /// When randomization is turned on, these points will be slightly randomized in their radius and angle which might lead to non-equilibrium configurations.
-    /// Pressure, dampening and spring tensions are not impacted by randomization.
+    /// Pressure, damping and spring tensions are not impacted by randomization.
     pub fn new(
         middle: SVector<f64, 2>,
         cell_area: f64,
         rotation_angle: f64,
         spring_tensions: f64,
         central_pressure: f64,
-        dampening_constant: f64,
+        damping_constant: f64,
         randomize: Option<(f64, rand_chacha::ChaCha8Rng)>,
     ) -> Self {
         use rand::Rng;
@@ -629,7 +629,7 @@ impl<const D: usize> VertexMechanics2D<D> {
             spring_tensions: VertexConnections2::<D>::from_element(spring_tensions),
             cell_area,
             central_pressure,
-            dampening_constant,
+            damping_constant,
         }
     }
 
@@ -652,7 +652,7 @@ impl<const D: usize> VertexMechanics2D<D> {
                     0.0,
                     self.spring_tensions.sum() / self.spring_tensions.len() as f64,
                     self.central_pressure,
-                    self.dampening_constant,
+                    self.damping_constant,
                     None,
                 );
                 *self = new_interaction_parameters;
@@ -675,7 +675,7 @@ impl VertexMechanics2D<4> {
         cell_area: f64,
         spring_tensions: f64,
         central_pressure: f64,
-        dampening_constant: f64,
+        damping_constant: f64,
         rectangle: [SVector<f64, 2>; 2],
     ) -> Vec<Self> {
         let cell_side_length: f64 = cell_area.sqrt();
@@ -723,7 +723,7 @@ impl VertexMechanics2D<4> {
                     spring_tensions: VertexConnections2::<4>::from_element(spring_tensions),
                     cell_area,
                     central_pressure,
-                    dampening_constant,
+                    damping_constant,
                 }
             })
             .collect::<Vec<_>>();
@@ -796,7 +796,7 @@ impl<const D: usize> Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2
             force_2 += force1 + force2 + force3;
         }
         let dx = self.velocity.clone();
-        let dv = force + internal_force - self.dampening_constant * self.velocity.clone();
+        let dv = force + internal_force - self.damping_constant * self.velocity.clone();
         Ok((dx, dv))
     }
 }
