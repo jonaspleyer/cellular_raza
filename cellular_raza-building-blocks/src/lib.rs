@@ -8,7 +8,7 @@
 //! To create your own agent with physical mechanics and interactions, we need to include
 //! the building blocks for them as fields of our agent struct.
 //! ```rust
-//! # use cellular_raza_building_blocks::prelude::*;
+//! # use cellular_raza_building_blocks::*;
 //! struct MyAgent {
 //!     mechanics: NewtonDamped2D,
 //!     interaction: BoundLennardJones,
@@ -18,7 +18,7 @@
 //! derive macro.
 //! ```rust
 //! # use cellular_raza_concepts::*;
-//! # use cellular_raza_building_blocks::prelude::*;
+//! # use cellular_raza_building_blocks::*;
 //! # use nalgebra::Vector2;
 //! # use cellular_raza_concepts::CellAgent;
 //! #[derive(CellAgent)]

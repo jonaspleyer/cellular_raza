@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use cellular_raza::prelude::*;
+use cellular_raza::*;
 
 use nalgebra::Vector3;
 use num::Zero;
