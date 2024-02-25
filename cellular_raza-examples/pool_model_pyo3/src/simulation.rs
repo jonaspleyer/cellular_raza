@@ -1,7 +1,5 @@
 use cellular_raza::prelude::*;
 
-use nalgebra::Vector2;
-
 use num::Zero;
 
 use rand::{Rng, SeedableRng};
@@ -186,9 +184,6 @@ pub fn generate_cells(
             let x = rng.gen_range(0.0..domain.size);
             let y = rng.gen_range(0.0..domain.size);
 
-            // Set new position of bacteria
-            let pos = Vector2::from([x, y]);
-
             if n_cell >= n_bacteria_1 {
                 let mut reactions = new_bacteria
                     .cellular_reactions
@@ -197,7 +192,7 @@ pub fn generate_cells(
                 new_bacteria.cellular_reactions = Py::new(py, reactions)?;
             }
             let mut mechanics = new_bacteria.mechanics.extract::<NewtonDamped2D>(py)?;
-            mechanics.set_pos(&pos);
+            mechanics.set_pos([x, y]);
             new_bacteria.mechanics = Py::new(py, mechanics)?;
             Ok(new_bacteria)
         })
