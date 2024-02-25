@@ -13,6 +13,8 @@ generate_docs() {
             -p $target \
             --all-features --\
             --cfg doc_cfg\
+            --theme cellular_raza-homepage/static/hextra.css \
+            --default-theme hextra \
             --html-in-header cellular_raza-homepage/custom_navbar.html
     done
 
