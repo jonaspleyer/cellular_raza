@@ -1,6 +1,6 @@
 use cellular_raza::building_blocks::{
-    cell_building_blocks::{interaction::BoundLennardJonesF32, mechanics::NewtonDamped2DF32},
-    domains::cartesian_cuboid_n::CartesianCuboid2NewF32,
+    BoundLennardJonesF32, NewtonDamped2DF32,
+    CartesianCuboid2NewF32,
 };
 use cellular_raza::concepts::domain_new::Domain;
 use cellular_raza::concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError, Volume};

@@ -1,7 +1,7 @@
 use std::ops::AddAssign;
 
 use cellular_raza::{
-    building_blocks::cell_building_blocks::mechanics::NewtonDamped2D,
+    building_blocks::NewtonDamped2D,
     concepts::{CalcError, CellAgent, Mechanics},
 };
 
