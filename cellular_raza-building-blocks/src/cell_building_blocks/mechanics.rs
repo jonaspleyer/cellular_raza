@@ -350,7 +350,7 @@ implement_brownian_mechanis!(Brownian2D, 2);
 implement_brownian_mechanis!(Brownian3D, 3);
 
 macro_rules! define_langevin_nd(
-    ($struct_name:ident, $d:literal) => {
+    ($struct_name:ident, $d:literal, $float_type:ident) => {
         /// Langevin dynamics
         ///
         /// # Parameters
@@ -372,50 +372,50 @@ macro_rules! define_langevin_nd(
         #[derive(Clone, Debug, Deserialize, Serialize)]
         pub struct $struct_name {
             /// Current position
-            pub pos: SVector<f64, $d>,
+            pub pos: SVector<$float_type, $d>,
             /// Current velocity
-            pub vel: SVector<f64, $d>,
+            pub vel: SVector<$float_type, $d>,
             /// Mass of the object
-            pub mass: f64,
+            pub mass: $float_type,
             /// Damping constant
-            pub damping: f64,
+            pub damping: $float_type,
             /// Product of Boltzmann constant and temperature
-            pub kb_temperature: f64,
+            pub kb_temperature: $float_type,
             /// Number of steps to do before updating the internal random vector again
             pub update_interval: usize,
-            random_vector: SVector<f64, $d>,
+            random_vector: SVector<$float_type, $d>,
         }
 
-        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name {
-            fn pos(&self) -> SVector<f64, $d> {
+        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type> for $struct_name {
+            fn pos(&self) -> SVector<$float_type, $d> {
                 self.pos
             }
 
-            fn set_pos(&mut self, pos: &SVector<f64, $d>) {
+            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
                 self.pos = *pos;
             }
 
-            fn velocity(&self) -> SVector<f64, $d> {
+            fn velocity(&self) -> SVector<$float_type, $d> {
                 self.vel
             }
 
-            fn set_velocity(&mut self, velocity: &SVector<f64, $d>) {
+            fn set_velocity(&mut self, velocity: &SVector<$float_type, $d>) {
                 self.vel = *velocity;
             }
 
             fn set_random_variable(
                 &mut self,
                 rng: &mut rand_chacha::ChaCha8Rng,
-                dt: f64,
-            ) -> Result<Option<f64>, RngError> {
-                self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;// TODO * self.update_interval as f64 * dt)?;
-                Ok(Some(self.update_interval as f64 * dt))
+                dt: $float_type,
+            ) -> Result<Option<$float_type>, RngError> {
+                self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;// TODO * self.update_interval as $float_type * dt)?;
+                Ok(Some(self.update_interval as $float_type * dt))
             }
 
             fn calculate_increment(
                 &self,
-                force: SVector<f64, $d>,
-            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                force: SVector<$float_type, $d>,
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 let dx = self.vel;
                 let dv =
                     -self.damping / self.mass * self.vel + 1.0 / self.mass * (self.random_vector + force);
@@ -424,6 +424,7 @@ macro_rules! define_langevin_nd(
         }
 
         #[cfg(feature = "pyo3")]
+        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
         #[pymethods]
         impl $struct_name {
             /// Creates a new [
@@ -432,11 +433,11 @@ macro_rules! define_langevin_nd(
             /// kb_temperature and the update interval of the mechanics aspect.
             #[new]
             pub fn new(
-                pos: [f64; $d],
-                vel: [f64; $d],
-                mass: f64,
-                damping: f64,
-                kb_temperature: f64,
+                pos: [$float_type; $d],
+                vel: [$float_type; $d],
+                mass: $float_type,
+                damping: $float_type,
+                kb_temperature: $float_type,
                 update_interval: usize,
             ) -> Self {
                 Self {
@@ -452,49 +453,49 @@ macro_rules! define_langevin_nd(
 
             #[getter(pos)]
             /// Get position of object
-            pub fn get_position(&self) -> [f64; $d] {
+            pub fn get_position(&self) -> [$float_type; $d] {
                 self.pos.into()
             }
 
             #[setter(pos)]
             /// Set position of object
-            pub fn set_position(&mut self, pos: [f64; $d]) {
+            pub fn set_position(&mut self, pos: [$float_type; $d]) {
                 self.pos = pos.into();
             }
 
             #[getter(damping)]
             /// Get damping constant of object
-            pub fn get_damping(&self) -> f64 {
+            pub fn get_damping(&self) -> $float_type {
                 self.damping
             }
 
             #[setter(damping)]
             /// Set the damping constant of the object
-            pub fn set_damping(&mut self, damping: f64) {
+            pub fn set_damping(&mut self, damping: $float_type) {
                 self.damping = damping;
             }
 
             #[getter(mass)]
             /// Get mass of the object
-            pub fn get_mass(&self) -> f64 {
+            pub fn get_mass(&self) -> $float_type {
                 self.mass
             }
 
             #[setter(mass)]
             /// Set mass of the object
-            pub fn set_mass(&mut self, mass: f64) {
+            pub fn set_mass(&mut self, mass: $float_type) {
                 self.mass = mass;
             }
 
             #[getter(kb_temperature)]
             /// Get the product of Boltzmann constant and temperature
-            pub fn get_kb_temperature(&self) -> f64 {
+            pub fn get_kb_temperature(&self) -> $float_type {
                 self.kb_temperature
             }
 
             #[setter(kb_temperature)]
             /// Define product of Boltzmann constant and temperature
-            pub fn set_kb_temperature(&mut self, kb_temperature: f64) {
+            pub fn set_kb_temperature(&mut self, kb_temperature: $float_type) {
                 self.kb_temperature = kb_temperature;
             }
 
@@ -517,9 +518,13 @@ macro_rules! define_langevin_nd(
     }
 );
 
-define_langevin_nd!(Langevin1D, 1);
-define_langevin_nd!(Langevin2D, 2);
-define_langevin_nd!(Langevin3D, 3);
+define_langevin_nd!(Langevin1D, 1, f64);
+define_langevin_nd!(Langevin2D, 2, f64);
+define_langevin_nd!(Langevin3D, 3, f64);
+define_langevin_nd!(Langevin1DF32, 1, f32);
+define_langevin_nd!(Langevin2DF32, 2, f32);
+define_langevin_nd!(Langevin3DF32, 3, f32);
+
 
 /// Mechanics model which represents cells as vertices with edges between them.
 ///
