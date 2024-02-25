@@ -194,7 +194,7 @@ macro_rules! implement_brownian_mechanis(
         /// | Symbol | Parameter | Description |
         /// | --- | --- | --- |
         /// | $\vec{x}$ | `pos` | Position of the particle. |
-        /// | $D$ | `diffusion_constant` | Dampening constant of each particle. |
+        /// | $D$ | `diffusion_constant` | Damping constant of each particle. |
         /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
         /// | $\Delta t$ | `update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
         ///
@@ -354,10 +354,11 @@ macro_rules! define_langevin_nd(
         /// Langevin dynamics
         ///
         /// # Parameters
-        /// | Symbol | Parameter | Description |
+        /// | Symbol | Parameter/Variable | Description |
         /// | --- | --- | --- |
         /// | $\vec{X}$ | `pos` | Position of the particle. |
         /// | $\dot{\vec{X}}$ | `vel` | Velocity of the particle. |
+        /// | $R(t)$ | | Gaussian process (automatically generated) |
         /// | $M$ | `mass` | Mass of the particle. |
         /// | $\gamma$ | `damping` | Damping constant |
         /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
