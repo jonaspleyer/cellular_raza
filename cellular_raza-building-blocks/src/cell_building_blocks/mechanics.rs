@@ -526,7 +526,6 @@ define_langevin_nd!(Langevin1DF32, 1, f32);
 define_langevin_nd!(Langevin2DF32, 2, f32);
 define_langevin_nd!(Langevin3DF32, 3, f32);
 
-
 /// Mechanics model which represents cells as vertices with edges between them.
 ///
 /// The vertices are attached to each other with springs and a given length between each
