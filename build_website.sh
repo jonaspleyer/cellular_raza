@@ -9,13 +9,14 @@ generate_docs() {
     cargo clean --doc
 
     for target in ${TARGETS[@]}; do
-        cargo +nightly-2024-01-01 rustdoc\
+        cargo +nightly-2024-01-01 rustdoc \
             -p $target \
             --all-features --\
             --cfg doc_cfg\
             --theme cellular_raza-homepage/static/hextra.css \
             --default-theme hextra \
-            --html-in-header cellular_raza-homepage/custom_navbar.html
+            --html-in-header cellular_raza-homepage/custom_navbar.html \
+            --html-in-header .docs-header.html
     done
 
     # Swap old for new folder
