@@ -1,0 +1,31 @@
+# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
+#
+# While our "example" application has the platform-specific code,
+# for simplicity we are compiling and testing everything on the Ubuntu environment only.
+# For multi-OS testing see the `cross.yml` workflow.
+
+on: [push, pull_request]
+
+name: HTML Header Comparison
+
+jobs:
+  identical:
+    name: Identical
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Install diff util
+        run: |
+          sudo apt update
+          sudo apt install diffutils
+      - name: Check diffs
+        run: |
+          diff .docs-header.html cellular_raza-building-blocks/.docs-header.html
+          # This file does not exist at the moment
+          # run: diff .docs-header.html cellular_raza-concepts/.docs-header.html
+          diff .docs-header.html cellular_raza-core/.docs-header.html
+          diff .docs-header.html cellular_raza/.docs-header.html
+
