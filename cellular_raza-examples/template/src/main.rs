@@ -56,17 +56,6 @@ struct Agent {
     pub volume: Vol,
 }
 
-build_aux_storage!(
-    name: __cr_AuxStorage,
-    aspects: [Mechanics, Interaction],
-    core_path: cellular_raza::core
-);
-build_communicator!(
-    name: MyCommunicator,
-    aspects: [Mechanics, Interaction],
-    core_path: cellular_raza::core
-);
-
 macro_rules! gen_step_1(
     ($sbox:ident, Mechanics) => {$sbox.update_mechanics_step_1()?;};
     ($sbox:ident, $asp:ident) => {};
@@ -131,36 +120,95 @@ macro_rules! main_update(
     }
 );
 
+macro_rules! run_simulation(
+    (
+        domain: $domain:ident,
+        agents: $agents:ident,
+        time: $time_stepper:ident,
+        n_threads: $n_threads:expr,
+        syncer: $syncer:ty,
+        storage: $storage_builder:ident,
+        aspects: [$($asp:ident),*]
+    ) => {{
+        build_communicator!(
+            name: _CrCommunicator,
+            aspects: [$($asp),*],
+            core_path: cellular_raza::core
+        );
+        build_aux_storage!(
+            name: _CrAuxStorage,
+            aspects: [$($asp),*],
+            core_path: cellular_raza::core
+        );
+
+        // TODO this is not final and can not stay like this
+        let decomposed_domain = $domain
+            .decompose($n_threads.try_into().unwrap(), $agents).unwrap();
+
+        let mut runner: chili::SimulationRunner<
+            _,
+            chili::SubDomainBox<
+                _,
+                _,
+                _,
+                _CrAuxStorage<_, _, _, _, 2>,
+                _CrCommunicator<_, _, _, _, _, _, _>,
+                chili::BarrierSync,
+            >,
+        > = decomposed_domain.into();
+
+        use rayon::prelude::*;
+        runner
+            .subdomain_boxes
+            .par_iter_mut()
+            .map(|(key, sbox)| {
+                let mut time_stepper = $time_stepper.clone();
+                use cellular_raza::prelude::time::TimeStepper;
+                let mut pb = match key {
+                    0 => Some(time_stepper.initialize_bar()?),
+                    _ => None,
+                };
+
+                // Initialize the storage manager
+                let storage_manager = cellular_raza::prelude::StorageManager::construct(&$storage_builder, *key as u64)?;
+                while let Some(next_time_point) = time_stepper.advance()? {
+                    main_update!(
+                        subdomain: sbox,
+                        storage_manager: storage_manager,
+                        next_time_point: next_time_point,
+                        progress_bar: pb,
+                        time_stepper: time_stepper,
+                        aspects: [Mechanics]
+                    );
+                    // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
+                }
+                Ok(())
+            })
+            .collect::<Result<Vec<_>, chili::SimulationError>>()?;
+        Result::<(), chili::SimulationError>::Ok(())
+    }}
+);
+
 fn run_simulation(
     simulation_settings: SimulationSettings,
     agents: Vec<Agent>,
 ) -> Result<(), chili::SimulationError> {
+    // Domain Setup
     let domain = CartesianCuboid2NewF32::from_boundaries_and_n_voxels(
         [0.0; 2],
         [simulation_settings.domain_size; 2],
         [simulation_settings.n_voxels; 2],
     )?;
-    let decomposed_domain = domain
-        .decompose(simulation_settings.n_threads.try_into().unwrap(), agents)
-        .unwrap();
 
-    let mut runner: chili::SimulationRunner<
-        _,
-        chili::SubDomainBox<
-            _,
-            _,
-            _,
-            __cr_AuxStorage<_, _, _, _, 2>,
-            MyCommunicator<_, _, _, _, _, _, _>,
-            chili::BarrierSync,
-        >,
-    > = decomposed_domain.into();
-
+    // Storage Setup
     let location = std::path::Path::new("./out");
     let mut storage_priority = cellular_raza::prelude::UniqueVec::new();
     storage_priority.push(cellular_raza::prelude::StorageOption::SerdeJson);
+    let storage_builder = cellular_raza::prelude::StorageBuilder::new()
+        .priority(storage_priority)
+        .location(location);
 
-    use rayon::prelude::*;
+    // Time Setup
     let t0: f32 = 0.0;
     let dt = simulation_settings.dt;
     let save_points = vec![5.0, 10.0, 15.0, 20.0];
@@ -169,39 +217,17 @@ fn run_simulation(
         dt,
         save_points.clone(),
     )?;
-    runner
-        .subdomain_boxes
-        .par_iter_mut()
-        .map(|(key, sbox)| {
-            let mut time_stepper = time_stepper.clone();
-            use cellular_raza::prelude::time::TimeStepper;
-            let mut pb = match key {
-                0 => Some(time_stepper.initialize_bar()?),
-                _ => None,
-            };
 
-            // Initialize the storage manager
-            let storage_manager =
-            cellular_raza::prelude::StorageManager::open_or_create_with_priority(
-                location,
-                *key as u64,
-                &storage_priority,
-            )?;
-
-            while let Some(next_time_point) = time_stepper.advance()? {
-                main_update!(
-                    subdomain: sbox,
-                    storage_manager: storage_manager,
-                    next_time_point: next_time_point,
-                    progress_bar: pb,
-                    time_stepper: time_stepper,
-                    aspects: [Mechanics]
-                );
-                // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
-            }
-            Ok(())
-        })
-        .collect::<Result<Vec<_>, cellular_raza::core::backend::chili::SimulationError>>()?;
+    run_simulation!(
+        domain: domain,
+        agents: agents,
+        time: time_stepper,
+        n_threads: simulation_settings.n_threads,
+        // TODO make this optional
+        syncer: chili::BarrierSync,
+        storage: storage_builder,
+        aspects: [Mechanics, Interaction, Cycle]
+    )?;
     Ok(())
 }
 
