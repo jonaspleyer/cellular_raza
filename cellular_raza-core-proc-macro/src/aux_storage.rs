@@ -405,12 +405,9 @@ impl AuxStorageImplementer {
             let struct_name = &self.name;
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
-            let (cycle_path, backend_path) = match &self.core_path {
-                Some(p) => (
-                    quote!(::cellular_raza_concepts::),
-                    quote!(#p ::backend::chili::),
-                ),
-                None => (quote!(), quote!()),
+            let backend_path = match &self.core_path {
+                Some(p) => quote!(#p ::backend::chili::),
+                None => quote!(),
             };
 
             let field_name = &update_cycle.field_name;
@@ -418,19 +415,19 @@ impl AuxStorageImplementer {
 
             let new_stream = wrap_pre_flags(quote!(
                 impl #impl_generics #backend_path UpdateCycle for #struct_name #ty_generics #where_clause {
-                    fn set_cycle_events(&mut self, events: Vec<#cycle_path CycleEvent>) {
+                    fn set_cycle_events(&mut self, events: Vec<#backend_path CycleEvent>) {
                         <#field_type as #backend_path UpdateCycle>::set_cycle_events(&mut self.#field_name, events)
                     }
 
-                    fn get_cycle_events(&self) -> &Vec<#cycle_path CycleEvent> {
+                    fn get_cycle_events(&self) -> &Vec<#backend_path CycleEvent> {
                         <#field_type as #backend_path UpdateCycle>::get_cycle_events(&self.#field_name)
                     }
 
-                    fn drain_cycle_events(&mut self) -> std::vec::Drain<#cycle_path CycleEvent> {
+                    fn drain_cycle_events(&mut self) -> std::vec::Drain<#backend_path CycleEvent> {
                         <#field_type as #backend_path UpdateCycle>::drain_cycle_events(&mut self.#field_name)
                     }
 
-                    fn add_cycle_event(&mut self, event: #cycle_path CycleEvent) {
+                    fn add_cycle_event(&mut self, event: #backend_path CycleEvent) {
                         <#field_type as #backend_path UpdateCycle>::add_cycle_event(&mut self.#field_name, event)
                     }
                 }

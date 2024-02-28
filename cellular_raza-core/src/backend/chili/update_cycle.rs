@@ -1,6 +1,8 @@
 use super::{CellBox, CellIdentifier, SimulationError, SubDomainBox, UpdateCycle, Voxel};
 use cellular_raza_concepts::{domain_new::SubDomain, CalcError};
 
+pub use cellular_raza_concepts::CycleEvent;
+
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
@@ -18,7 +20,6 @@ impl<C, A> Voxel<C, A> {
             + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
-        use cellular_raza_concepts::CycleEvent;
         // Update the cell individual cells
         self.cells
             .iter_mut()
