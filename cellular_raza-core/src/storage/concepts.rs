@@ -247,7 +247,71 @@ pub struct StorageManager<Id, Element> {
     xml_storage: Option<XmlStorageInterface<Id, Element>>,
 }
 
+/// Used to construct a [StorageManager]
+///
+/// ```
+/// use cellular_raza_core::storage::{StorageBuilder, StorageOption};
+///
+/// let storage_priority = StorageOption::default_priority();
+/// let storage_builder = StorageBuilder::new()
+///     .priority(storage_priority)
+///     .location(std::path::Path::new("./"));
+/// ```
+pub struct StorageBuilder {
+    location: std::path::PathBuf,
+    priority: UniqueVec<StorageOption>,
+}
+
+impl StorageBuilder {
+    /// Constructs a new [StorageBuilder] with default settings.
+    ///
+    /// ```
+    /// use cellular_raza_core::storage::StorageBuilder;
+    /// let storage_builder = StorageBuilder::new();
+    /// ```
+    pub fn new() -> Self {
+        Self {
+            location: "./".into(),
+            priority: UniqueVec::new(),
+        }
+    }
+
+    /// Define the priority of [StorageOptions]. See [StorageOption::default_priority].
+    pub fn priority(self, priority: UniqueVec<StorageOption>) -> Self {
+        Self { priority, ..self }
+    }
+
+    /// Define a folder where to store results
+    pub fn location(self, location: &std::path::Path) -> Self {
+        Self {
+            location: location.into(),
+            ..self
+        }
+    }
+}
+
 impl<Id, Element> StorageManager<Id, Element> {
+    /// Constructs the [StorageManager] from the instance identifier
+    /// and the settings given by the [StorageBuilder].
+    ///
+    /// ```
+    /// use cellular_raza_core::storage::*;
+    /// let builder = StorageBuilder::new()
+    ///     .location(std::path::Path::new("/tmp"));
+    ///
+    /// let manager = StorageManager::<usize, f64>::construct(&builder, 0).unwrap();
+    /// ```
+    pub fn construct(
+        storage_builder: &StorageBuilder,
+        instance: u64,
+    ) -> Result<Self, StorageError> {
+        Self::open_or_create_with_priority(
+            &storage_builder.location,
+            instance,
+            &storage_builder.priority,
+        )
+    }
+
     /// Constructs the storage manager
     ///
     /// This creates the required file hierarchy and initializes any storage elements which
