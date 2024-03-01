@@ -1,6 +1,6 @@
 pub use crate::storage::StorageError;
-pub use cellular_raza_concepts::IndexError;
 use cellular_raza_concepts::*;
+pub use cellular_raza_concepts::{DecomposeError, IndexError};
 use core::any::type_name;
 use core::fmt::{Debug, Display};
 
@@ -48,6 +48,7 @@ macro_rules! impl_from_error {
 /// | Variant | Concept Implementation | Engine-Fault | Time Increment |
 /// | --- |:---:|:---:|:---:|
 /// | [CalcError](SimulationError::CalcError) | 8/10 | 2/10 | 0/10 |
+/// | [DecomposeError](SimulationError::DecomposeError) | 7/10 | 3/10 | 0/10 |
 /// | [ControllerError](SimulationError::ControllerError) | 8/10 | 1/10 | 1/10 |
 /// | [DivisionError](SimulationError::DivisionError) | 8/10 | 1/10 | 1/10 |
 /// | [DeathError](SimulationError::DeathError) | 8/10 | 1/10 | 1/10 |
@@ -64,6 +65,9 @@ pub enum SimulationError {
     /// Occurs during calculations of any mathematical update steps such as
     /// [Interaction](cellular_raza_concepts::Interaction) between cells.
     CalcError(CalcError),
+    /// Error associated to splitting up the simulation domain into chunks
+    /// in order to effectively process it in parallel.
+    DecomposeError(DecomposeError),
     /// Related to time-stepping events. See [crate::time].
     TimeError(TimeError),
     /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
@@ -104,6 +108,7 @@ pub enum SimulationError {
 impl_from_error! {SimulationError,
     (ReceiveError, RecvError),
     (CalcError, CalcError),
+    (DecomposeError, DecomposeError),
     (TimeError, TimeError),
     (ControllerError, ControllerError),
     (DivisionError, DivisionError),
@@ -119,6 +124,7 @@ impl_error_variant! {SimulationError,
     SendError,
     ReceiveError,
     CalcError,
+    DecomposeError,
     TimeError,
     ControllerError,
     DivisionError,
