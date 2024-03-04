@@ -623,7 +623,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             pub ind: [i64; $d],
         }
 
-        impl<C> cellular_raza_concepts::domain_new::Domain<C, $subdomain_name> for $domain_name
+        impl<C, I: IntoIterator<Item=C>> cellular_raza_concepts::domain_new::Domain<C, $subdomain_name, I> for $domain_name
         where
             C: cellular_raza_concepts::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
         {
@@ -649,7 +649,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             fn decompose(
                 self,
                 n_subdomains: core::num::NonZeroUsize,
-                cells: Vec<C>,
+                cells: I,
             ) -> Result<cellular_raza_concepts::domain_new::DecomposedDomain<Self::SubDomainIndex, $subdomain_name, C>, DecomposeError> {
                 let mut indices = <Self as cellular_raza_concepts::domain_new::Domain<C, $subdomain_name>>::get_all_voxel_indices(&self);
 

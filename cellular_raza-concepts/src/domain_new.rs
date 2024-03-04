@@ -8,7 +8,7 @@ use crate::errors::{BoundaryError, DecomposeError};
 /// algorithms to split up the computational workload over multiple physical regions.
 /// That's why the domain itself is mostly responsible for being deconstructed into smaller [SubDomains](SubDomain)
 /// which can then be used to numerically solve our system.
-pub trait Domain<C, S> {
+pub trait Domain<C, S, I = Vec<C>> {
     /// Subdomains can be identified by their unique [SubDomainIndex](Domain::SubDomainIndex).
     /// The backend uses this property to construct a mapping (graph) between subdomains.
     type SubDomainIndex;
@@ -26,7 +26,7 @@ pub trait Domain<C, S> {
     fn decompose(
         self,
         n_subdomains: core::num::NonZeroUsize,
-        cells: Vec<C>,
+        cells: I,
     ) -> Result<DecomposedDomain<Self::SubDomainIndex, S, C>, DecomposeError>
     where
         S: SubDomain<C>;
