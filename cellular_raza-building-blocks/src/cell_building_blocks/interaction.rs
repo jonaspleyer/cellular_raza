@@ -140,7 +140,7 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
             * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        return Some(Ok(dir * q * max.min(val)));
+        Some(Ok(dir * q * max.min(val)))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -178,7 +178,7 @@ impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, 
             * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        return Some(Ok(dir * q * max.min(val)));
+        Some(Ok(dir * q * max.min(val)))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -286,7 +286,7 @@ fn ray_intersects_line_segment(
 
     // In order to be on the line-segment, we require that u is between 0.0 and 1.0
     // Additionally for p to be on the ray, we require t >= 0.0
-    return 0.0 <= u && u < 1.0 && 0.0 <= t;
+    0.0 <= u && u < 1.0 && 0.0 <= t
 }
 
 impl<A, R, I1, I2, const D: usize>
