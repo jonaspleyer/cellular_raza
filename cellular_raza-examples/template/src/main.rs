@@ -143,7 +143,7 @@ macro_rules! run_simulation(
 
         // TODO this is not final and can not stay like this
         let decomposed_domain = $domain
-            .decompose($n_threads.try_into().unwrap(), $agents).unwrap();
+            .decompose($n_threads.try_into().unwrap(), $agents)?;
 
         let mut runner: chili::SimulationRunner<
             _,
