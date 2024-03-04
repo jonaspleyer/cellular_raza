@@ -242,29 +242,37 @@ impl SimulationAspect {
     }
 }
 
+fn generics_and_fields(
+    simulation_aspects: &SimulationAspects,
+    core_path: &syn::Path,
+) -> (Vec<syn::Type>, Vec<proc_macro2::TokenStream>) {
+    let index_type = index_type();
+    let generics_fields: Vec<_> = simulation_aspects
+        .items
+        .iter()
+        .map(|aspect| aspect.build_comm(&core_path))
+        .collect();
+
+    let mut generics = vec![index_type];
+    let mut fields = vec![];
+
+    generics_fields.into_iter().for_each(|(g, f)| {
+        g.into_iter().for_each(|gi| {
+            if !generics.contains(&gi) {
+                generics.push(gi);
+            }
+        });
+        fields.extend(f);
+    });
+    (generics, fields)
+}
+
 impl ConstructInput {
     fn build_communicator(self) -> proc_macro2::TokenStream {
         let struct_name = self.name_def.struct_name;
         let index_type = index_type();
         let core_path = &self.core_path.path;
-        let generics_fields: Vec<_> = self
-            .aspects
-            .items
-            .into_iter()
-            .map(|aspect| aspect.build_comm(&self.core_path.path))
-            .collect();
-
-        let mut generics = vec![index_type.clone()];
-        let mut fields = vec![];
-
-        generics_fields.into_iter().for_each(|(g, f)| {
-            g.into_iter().for_each(|gi| {
-                if !generics.contains(&gi) {
-                    generics.push(gi);
-                }
-            });
-            fields.extend(f);
-        });
+        let (generics, fields) = generics_and_fields(&self.aspects, &core_path);
         // In the following code, we assume that I
         // is the index as implemented above in the build_comm function
         quote!(
