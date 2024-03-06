@@ -1,0 +1,3 @@
+[submodule "cellular_raza-examples/cellular_raza-template"]
+	path = cellular_raza-examples/cellular_raza-template
+	url = git@github.com:jonaspleyer/cellular_raza-template
