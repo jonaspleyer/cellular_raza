@@ -46,22 +46,21 @@ pub struct Voxel<C, A> {
     pub rng: rand_chacha::ChaCha8Rng,
 }
 
-impl<I, S, C, A, Com, Sy> From<DecomposedDomain<I, S, C>>
-    for SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>>
+impl<I, S, C, A, Com, Sy> SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>>
 where
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
-    I: Eq + PartialEq + core::hash::Hash + Clone + Ord,
-    A: Default,
-    Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
-    Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
     // TODO this is not a BoundaryError
-    ///
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    fn from(
-        decomposed_domain: DecomposedDomain<I, S, C>,
-    ) -> SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>> {
+    /// Construct a new [SimulationRunner] from a given auxiliary storage and communicator object
+    #[allow(unused)]
+    pub fn construct(decomposed_domain: DecomposedDomain<I, S, C>, aux_storage: &A) -> Self
+    where
+        I: Eq + PartialEq + core::hash::Hash + Clone + Ord,
+        A: Default,
+        Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
+        Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
+    {
         // TODO do not unwrap
         if !validate_map(&decomposed_domain.neighbor_map) {
             panic!("Map not valid!");
