@@ -198,7 +198,8 @@ impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain<C>,
 {
-    /// Allows to sync between threads. In the most simplest case of [BarrierSync] syncing is done by a global barrier.
+    /// Allows to sync between threads. In the most simplest
+    /// case of [BarrierSync] syncing is done by a global barrier.
     pub fn sync(&mut self)
     where
         Sy: SyncSubDomains,

@@ -5,7 +5,6 @@ use super::errors::*;
 use crate::storage::{StorageInterface, StorageManager};
 
 use std::collections::{BTreeMap, HashMap};
-use std::marker::{Send, Sync};
 
 use std::ops::AddAssign;
 use std::ops::{Add, Mul};

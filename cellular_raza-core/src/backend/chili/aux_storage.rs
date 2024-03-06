@@ -1182,7 +1182,8 @@ mod test_build_aux_storage {
             ///             let last_positions = aux_storage.previous_positions().map(|f| *f).collect::<Vec<f32>>();
             ///             assert_eq!(last_positions, vec![1_f32, 3_f32]);
             ///             aux_storage.set_last_velocity(10_f32);
-            ///             let last_velocities: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 4> = aux_storage.previous_velocities();
+            ///             let last_velocities: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 4>
+            ///                 = aux_storage.previous_velocities();
             ///             let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
             ///             assert_eq!(last_velocities, vec![10_f32]);
             ///             aux_storage.add_force(22_f32);
