@@ -56,142 +56,9 @@ struct Agent {
     pub volume: Vol,
 }
 
-macro_rules! gen_step_1(
-    ($sbox:ident, Mechanics) => {$sbox.update_mechanics_step_1()?;};
-    ($sbox:ident, $asp:ident) => {};
-    ($sbox:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_1!($sbox, $asp1);
-        gen_step_1!($sbox, $($asp),*);
-    };
-);
-
-macro_rules! gen_step_2(
-    ($sbox:ident, Mechanics) => {$sbox.update_mechanics_step_2()?;};
-    ($sbox:ident, $asp:ident) => {};
-    ($sbox:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_2!($sbox, $asp1);
-        gen_step_2!($sbox, $($asp),*);
-    };
-);
-
-macro_rules! gen_step_3(
-    ($sbox:ident, $next_time_point:ident, Mechanics) => {$sbox.update_mechanics_step_3(&$next_time_point.increment)?;};
-    ($sbox:ident, $next_time_point:ident, $asp:ident) => {};
-    ($sbox:ident, $next_time_point:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_3!($sbox, $next_time_point, $asp1);
-        gen_step_3!($sbox, $next_time_point, $($asp),*);
-    };
-);
-
-macro_rules! gen_step_4(
-    ($sbox:ident, $storage_manager:ident, $next_time_point:ident, $pb:ident, $time_stepper:ident, Mechanics) => {
-        $sbox.sort_cells_in_voxels_step_2()?;
-           match &mut $pb {
-               Some(bar) => $time_stepper.update_bar(bar)?,
-               None => (),
-           };
-           // TODO
-           // $sbox.apply_boundary()?;
-           $sbox.save_voxels(&$storage_manager, &$next_time_point)?;
-    };
-    ($sbox:ident, $storage_manager:ident, $next_time_point:ident, $pb:ident, $time_stepper:ident, $asp:ident) => {};
-    ($sbox:ident, $storage_manager:ident, $next_time_point:ident, $pb:ident, $time_stepper:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $asp1);
-        gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
-    };
-);
-
-macro_rules! main_update(
-    (
-        subdomain: $sbox:ident,
-        storage_manager: $storage_manager:ident,
-        next_time_point: $next_time_point:ident,
-        progress_bar: $pb:ident,
-        time_stepper: $time_stepper:ident,
-        aspects: [$($asp:ident),*]
-    ) => {
-            gen_step_1!($sbox, $($asp),*);
-            $sbox.sync();
-            gen_step_2!($sbox, $($asp),*);
-            $sbox.sync();
-            gen_step_3!($sbox, $next_time_point, $($asp),*);
-            $sbox.sync();
-            gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
-    }
-);
-
-macro_rules! run_simulation(
-    (
-        domain: $domain:ident,
-        agents: $agents:ident,
-        time: $time_stepper:ident,
-        n_threads: $n_threads:expr,
-        syncer: $syncer:ty,
-        storage: $storage_builder:ident,
-        aspects: [$($asp:ident),*]
-    ) => {{
-        build_communicator!(
-            name: _CrCommunicator,
-            aspects: [$($asp),*],
-            core_path: cellular_raza::core
-        );
-        build_aux_storage!(
-            name: _CrAuxStorage,
-            aspects: [$($asp),*],
-            core_path: cellular_raza::core
-        );
-
-        // TODO this is not final and can not stay like this
-        let decomposed_domain = $domain
-            .decompose($n_threads.try_into().unwrap(), $agents)?;
-
-        let mut runner: chili::SimulationRunner<
-            _,
-            chili::SubDomainBox<
-                _,
-                _,
-                _,
-                _CrAuxStorage<_, _, _, _, 2>,
-                _CrCommunicator<_, _, _, _, _, _, _>,
-                chili::BarrierSync,
-            >,
-        > = decomposed_domain.into();
-
-        use rayon::prelude::*;
-        runner
-            .subdomain_boxes
-            .par_iter_mut()
-            .map(|(key, sbox)| {
-                let mut time_stepper = $time_stepper.clone();
-                use cellular_raza::prelude::time::TimeStepper;
-                let mut pb = match key {
-                    0 => Some(time_stepper.initialize_bar()?),
-                    _ => None,
-                };
-
-                // Initialize the storage manager
-                let storage_manager = cellular_raza::prelude::StorageManager::construct(&$storage_builder, *key as u64)?;
-                while let Some(next_time_point) = time_stepper.advance()? {
-                    main_update!(
-                        subdomain: sbox,
-                        storage_manager: storage_manager,
-                        next_time_point: next_time_point,
-                        progress_bar: pb,
-                        time_stepper: time_stepper,
-                        aspects: [Mechanics]
-                    );
-                    // update_subdomain!(name: sbox, aspects: [Mechanics, Interaction]);
-                }
-                Ok(())
-            })
-            .collect::<Result<Vec<_>, chili::SimulationError>>()?;
-        Result::<(), chili::SimulationError>::Ok(())
-    }}
-);
-
 fn run_simulation(
     simulation_settings: SimulationSettings,
-    agents: Vec<Agent>,
+    agents: impl IntoIterator<Item = Agent>,
 ) -> Result<(), chili::SimulationError> {
     // Domain Setup
     let domain = CartesianCuboid2NewF32::from_boundaries_and_n_voxels(
@@ -218,15 +85,16 @@ fn run_simulation(
         save_points.clone(),
     )?;
 
-    run_simulation!(
+    // let builder = SimBuilder::new(time_stepper);
+
+    chili::run_simulation!(
         domain: domain,
         agents: agents,
         time: time_stepper,
         n_threads: simulation_settings.n_threads,
-        // TODO make this optional
-        syncer: chili::BarrierSync,
         storage: storage_builder,
-        aspects: [Mechanics, Interaction, Cycle]
+        aspects: [Mechanics, Interaction],
+        core_path: cellular_raza::core,
     )?;
     Ok(())
 }
