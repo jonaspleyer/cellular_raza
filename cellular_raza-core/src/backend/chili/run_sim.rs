@@ -8,8 +8,8 @@ macro_rules! gen_step_1(
     // TODO this macro call variant should be removed in the future
     ($sbox:ident, $asp:ident) => {};
     ($sbox:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_1!($sbox, $asp1);
-        gen_step_1!($sbox, $($asp),*);
+        $crate::gen_step_1!($sbox, $asp1);
+        $crate::gen_step_1!($sbox, $($asp),*);
     };
 );
 
@@ -23,8 +23,8 @@ macro_rules! gen_step_2(
     // TODO this macro call variant should be removed in the future
     ($sbox:ident, $asp:ident) => {};
     ($sbox:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_2!($sbox, $asp1);
-        gen_step_2!($sbox, $($asp),*);
+        $crate::gen_step_2!($sbox, $asp1);
+        $crate::gen_step_2!($sbox, $($asp),*);
     };
 );
 
@@ -38,8 +38,8 @@ macro_rules! gen_step_3(
     // TODO this macro call variant should be removed in the future
     ($sbox:ident, $next_time_point:ident, $asp:ident) => {};
     ($sbox:ident, $next_time_point:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_3!($sbox, $next_time_point, $asp1);
-        gen_step_3!($sbox, $next_time_point, $($asp),*);
+        $crate::gen_step_3!($sbox, $next_time_point, $asp1);
+        $crate::gen_step_3!($sbox, $next_time_point, $($asp),*);
     };
 );
 
@@ -57,8 +57,8 @@ macro_rules! gen_step_4(
     // TODO this macro call variant should be removed in the future
     ($sbox:ident, $storage_manager:ident, $next_time_point:ident, $pb:ident, $time_stepper:ident, $asp:ident) => {};
     ($sbox:ident, $storage_manager:ident, $next_time_point:ident, $pb:ident, $time_stepper:ident, $asp1:ident, $($asp:ident),*) => {
-        gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $asp1);
-        gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
+        $crate::gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $asp1);
+        $crate::gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
     };
 );
 
@@ -78,13 +78,13 @@ macro_rules! main_update(
         core_path: $core_path:path
     ) => {
         use $core_path as _core_path;
-        _core_path::backend::chili::gen_step_1!($sbox, $($asp),*);
+        $crate::gen_step_1!($sbox, $($asp),*);
         $sbox.sync();
-        _core_path::backend::chili::gen_step_2!($sbox, $($asp),*);
+        $crate::gen_step_2!($sbox, $($asp),*);
         $sbox.sync();
-        _core_path::backend::chili::gen_step_3!($sbox, $next_time_point, $($asp),*);
+        $crate::gen_step_3!($sbox, $next_time_point, $($asp),*);
         $sbox.sync();
-        _core_path::backend::chili::gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
+        $crate::gen_step_4!($sbox, $storage_manager, $next_time_point, $pb, $time_stepper, $($asp),*);
 
         // Update progress bar
         match &mut $pb {
