@@ -110,10 +110,12 @@ macro_rules! run_simulation(
         agents: $agents:ident,
         time: $time_stepper:ident,
         n_threads: $n_threads:expr,
-        // TODO actually use this type
-        $(syncer: $syncer:ty,)?
         storage: $storage_builder:ident,
         aspects: [$($asp:ident),*],
+        // TODO implement the external controller
+        $(external_controller: $ext_controller:ty,)?
+        // TODO actually use this type
+        $(syncer: $syncer:ty,)?
         $(core_path: $core_path:path,)?
         $(parallelization: $parallel:ident,)?
     ) => {{
