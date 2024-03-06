@@ -130,16 +130,15 @@ fn main() -> Result<(), chili::SimulationError> {
         },
         volume: Vol(1.0),
     };
-    let agents = (0..simulation_settings.n_agents)
-        .map(|_| {
-            let mut new_agent = agent.clone();
-            new_agent.set_pos(&Vector2::from([
-                rng.gen_range(0.0..simulation_settings.domain_size),
-                rng.gen_range(0.0..simulation_settings.domain_size),
-            ]));
-            new_agent
-        })
-        .collect();
+    let domain_size = simulation_settings.domain_size;
+    let agents = (0..simulation_settings.n_agents).map(|_| {
+        let mut new_agent = agent.clone();
+        new_agent.set_pos(&Vector2::from([
+            rng.gen_range(0.0..domain_size),
+            rng.gen_range(0.0..domain_size),
+        ]));
+        new_agent
+    });
 
     run_simulation(simulation_settings, agents)?;
     Ok(())
