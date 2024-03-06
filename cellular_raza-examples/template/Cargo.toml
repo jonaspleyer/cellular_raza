@@ -13,4 +13,3 @@ cellular_raza = { path="../../cellular_raza", features=["tracing"] }
 num = { workspace = true }
 rayon = "1.8"
 kdam = { version="0.5", features = ["template"] }
-tracing-subscriber = { version = "0.3.18" }

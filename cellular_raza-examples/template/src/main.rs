@@ -56,10 +56,38 @@ struct Agent {
     pub volume: Vol,
 }
 
-fn run_simulation(
-    simulation_settings: SimulationSettings,
-    agents: impl IntoIterator<Item = Agent>,
-) -> Result<(), chili::SimulationError> {
+fn main() -> Result<(), chili::SimulationError> {
+    use rand::Rng;
+    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
+    let simulation_settings = SimulationSettings::default();
+
+    // Agents setup
+    let agent = Agent {
+        mechanics: NewtonDamped2DF32 {
+            pos: Vector2::from([0.0, 0.0]),
+            vel: Vector2::from([0.0, 0.0]),
+            damping_constant: 1.0,
+            mass: 1.0,
+        },
+        interaction: BoundLennardJonesF32 {
+            epsilon: 0.01,
+            sigma: 1.0,
+            bound: 0.1,
+            cutoff: 1.0,
+        },
+        volume: Vol(1.0),
+    };
+
+    let domain_size = simulation_settings.domain_size;
+    let agents = (0..simulation_settings.n_agents).map(|_| {
+        let mut new_agent = agent.clone();
+        new_agent.set_pos(&Vector2::from([
+            rng.gen_range(0.0..domain_size),
+            rng.gen_range(0.0..domain_size),
+        ]));
+        new_agent
+    });
+
     // Domain Setup
     let domain = CartesianCuboid2NewF32::from_boundaries_and_n_voxels(
         [0.0; 2],
@@ -85,61 +113,14 @@ fn run_simulation(
         save_points.clone(),
     )?;
 
-    // let builder = SimBuilder::new(time_stepper);
-
     chili::run_simulation!(
         domain: domain,
         agents: agents,
         time: time_stepper,
         n_threads: simulation_settings.n_threads,
         storage: storage_builder,
-        aspects: [Mechanics, Interaction],
+        aspects: [Mechanics, Interaction],// TODO add cycle next
         core_path: cellular_raza::core,
     )?;
-    Ok(())
-}
-
-fn main() -> Result<(), chili::SimulationError> {
-    use rand::Rng;
-    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
-    let simulation_settings = SimulationSettings::default();
-
-    // Create subscriber
-    // Configure a custom event formatter
-    let format = tracing_subscriber::fmt::format()
-        .pretty()
-        .with_thread_ids(true); // include the thread ID of the current thread
-
-    // Create a `fmt` subscriber that uses our custom event format, and set it
-    // as the default.
-    tracing_subscriber::fmt().event_format(format).init();
-
-    // Construct the corresponding AuxStorage
-    let agent = Agent {
-        mechanics: NewtonDamped2DF32 {
-            pos: Vector2::from([0.0, 0.0]),
-            vel: Vector2::from([0.0, 0.0]),
-            damping_constant: 1.0,
-            mass: 1.0,
-        },
-        interaction: BoundLennardJonesF32 {
-            epsilon: 0.01,
-            sigma: 1.0,
-            bound: 0.1,
-            cutoff: 1.0,
-        },
-        volume: Vol(1.0),
-    };
-    let domain_size = simulation_settings.domain_size;
-    let agents = (0..simulation_settings.n_agents).map(|_| {
-        let mut new_agent = agent.clone();
-        new_agent.set_pos(&Vector2::from([
-            rng.gen_range(0.0..domain_size),
-            rng.gen_range(0.0..domain_size),
-        ]));
-        new_agent
-    });
-
-    run_simulation(simulation_settings, agents)?;
     Ok(())
 }
