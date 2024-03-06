@@ -89,3 +89,8 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 /// Note that when importing from the `cellular_raza` crate, every `cellular_raza_core`
 /// needs to be replaced by `cellular_raza::core`.
 pub use cellular_raza_core_proc_macro::Communicator;
+
+/// TODO
+/// ```
+/// ```
+pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;

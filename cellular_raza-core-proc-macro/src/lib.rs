@@ -48,6 +48,14 @@ pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 }
 
 #[allow(missing_docs)]
+#[proc_macro]
+pub fn communicator_generics_placeholders(
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    communicator::communicator_generics_placeholders(input)
+}
+
+#[allow(missing_docs)]
 #[proc_macro_derive(FromMap, attributes(FromMapCorePath, FromMapIndex))]
 pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     from_map::derive_from_map(input)

@@ -295,3 +295,46 @@ pub fn construct_communicator(input: proc_macro::TokenStream) -> proc_macro::Tok
     let stream = constr.build_communicator();
     proc_macro::TokenStream::from(stream)
 }
+
+struct GenericsArguments {
+    name_def: NameDefinition,
+    _comma: syn::Token![,],
+    aspects: SimulationAspects,
+}
+
+impl syn::parse::Parse for GenericsArguments {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            name_def: input.parse()?,
+            _comma: input.parse()?,
+            aspects: input.parse()?,
+        })
+    }
+}
+
+fn impl_generics(aspects: &SimulationAspects) -> Vec<proc_macro2::TokenStream> {
+    if aspects.items.len() == 0 {
+        return vec![];
+    }
+    let core_path: syn::Path = syn::parse2(quote!(cellular_raza::core)).expect(&format!(
+        "{} {}",
+        "Using dummy path in proc macro 'generics_and_fields' failed.",
+        "This is an engine panic and should be reported!"
+    ));
+    let index_type = quote!(#(index_type()));
+    let (generics, _) = generics_and_fields(&aspects, &core_path);
+    let mut results = vec![];
+    generics.into_iter().for_each(|_| results.push(quote!(_)));
+    results
+}
+
+pub fn communicator_generics_placeholders(
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let arguments = syn::parse_macro_input!(input as GenericsArguments);
+    let placeholders = impl_generics(&arguments.aspects)
+        .into_iter()
+        .map(|_| quote!(_));
+    let name = arguments.name_def.struct_name;
+    quote!(#name <#(#placeholders),*>).into()
+}
