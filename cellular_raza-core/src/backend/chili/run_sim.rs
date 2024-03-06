@@ -120,12 +120,12 @@ macro_rules! run_simulation(
         $(parallelization: $parallel:ident,)?
     ) => {{
         $crate::run_simulation!(@if_else {$(use $core_path as _core_path;)?}, {use cellular_raza::core as _core_path;});
-        build_communicator!(
+        $crate::backend::chili::build_communicator!(
             name: _CrCommunicator,
             aspects: [$($asp),*],
             core_path: _core_path
         );
-        build_aux_storage!(
+        $crate::backend::chili::build_aux_storage!(
             name: _CrAuxStorage,
             aspects: [$($asp),*],
             core_path: _core_path
