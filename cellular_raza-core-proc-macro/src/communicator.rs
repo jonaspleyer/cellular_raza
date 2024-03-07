@@ -321,7 +321,6 @@ fn impl_generics(aspects: &SimulationAspects) -> Vec<proc_macro2::TokenStream> {
         "Using dummy path in proc macro 'generics_and_fields' failed.",
         "This is an engine panic and should be reported!"
     ));
-    let index_type = quote!(#(index_type()));
     let (generics, _) = generics_and_fields(&aspects, &core_path);
     let mut results = vec![];
     generics.into_iter().for_each(|_| results.push(quote!(_)));
