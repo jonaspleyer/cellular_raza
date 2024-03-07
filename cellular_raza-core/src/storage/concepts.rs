@@ -283,7 +283,10 @@ impl StorageBuilder {
     }
 
     /// Define a folder where to store results
-    pub fn location(self, location: &std::path::Path) -> Self {
+    pub fn location<'a, P>(self, location: &'a P) -> Self
+    where
+        std::path::PathBuf: From<&'a P>,
+    {
         Self {
             location: location.into(),
             ..self
