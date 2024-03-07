@@ -1,9 +1,7 @@
 use cellular_raza::building_blocks::{
     BoundLennardJonesF32, CartesianCuboid2NewF32, NewtonDamped2DF32,
 };
-use cellular_raza::concepts::domain_new::Domain;
 use cellular_raza::concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError, Volume};
-use cellular_raza::core::backend::chili::{build_aux_storage, build_communicator};
 
 use cellular_raza::core::backend::chili;
 
@@ -46,14 +44,6 @@ struct Agent {
     pub mechanics: NewtonDamped2DF32,
     #[Interaction(Vector2<f32>, Vector2<f32>, Vector2<f32>)]
     pub interaction: BoundLennardJonesF32,
-    // #[Cycle]
-    // pub cycle: NoCycle,
-    // #[CellularReactions(Nothing, Nothing)]
-    // pub reactions: NoCellularReactions,
-    // #[ExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>)]
-    // pub gradients: NoExtracellularGradientSensing,
-    #[Volume]
-    pub volume: Vol,
 }
 
 fn main() -> Result<(), chili::SimulationError> {
@@ -75,7 +65,6 @@ fn main() -> Result<(), chili::SimulationError> {
             bound: 0.1,
             cutoff: 1.0,
         },
-        volume: Vol(1.0),
     };
 
     let domain_size = simulation_settings.domain_size;
