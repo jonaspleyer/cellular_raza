@@ -257,6 +257,7 @@ pub struct StorageManager<Id, Element> {
 ///     .priority(storage_priority)
 ///     .location(std::path::Path::new("./"));
 /// ```
+#[derive(Clone, Deserialize, Serialize)]
 pub struct StorageBuilder {
     location: std::path::PathBuf,
     priority: UniqueVec<StorageOption>,
