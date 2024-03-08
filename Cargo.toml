@@ -5,7 +5,21 @@ members = [
     "cellular_raza-core",
     "cellular_raza-core-proc-macro",
     "cellular_raza-building-blocks",
-    "cellular_raza-examples/*",
+
+    # Examples
+    # "cellular_raza-examples/*",
+    "cellular_raza-examples/bacteria_population",
+    # "cellular_raza-examples/cell_sorting",
+    "cellular_raza-examples/cellular_raza-template",
+    "cellular_raza-examples/cellular_raza-template-pyo3",
+    "cellular_raza-examples/diffusion",
+    "cellular_raza-examples/immersed_boundary",
+    "cellular_raza-examples/kidney_organoid_model",
+    "cellular_raza-examples/organoid_turing_growth",
+    "cellular_raza-examples/pool_model_pyo3",
+    "cellular_raza-examples/README.md",
+    "cellular_raza-examples/template",
+    "cellular_raza-examples/ureter_signalling",
 ]
 resolver = "2"
 
