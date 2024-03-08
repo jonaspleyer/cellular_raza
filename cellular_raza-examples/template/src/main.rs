@@ -101,14 +101,18 @@ fn main() -> Result<(), chili::SimulationError> {
         save_points.clone(),
     )?;
 
+    let settings = chili::Settings {
+        n_threads: simulation_settings.n_threads.try_into().unwrap(),
+        time: time_stepper,
+        storage: storage_builder,
+        show_progressbar: true,
+    };
+
     chili::run_simulation!(
         domain: domain,
         agents: agents,
-        time: time_stepper,
-        n_threads: simulation_settings.n_threads,
-        storage: storage_builder,
-        aspects: [Mechanics, Interaction],// TODO add cycle next
-        core_path: cellular_raza::core,
+        settings: settings,
+        aspects: [Mechanics, Interaction],
     )?;
     Ok(())
 }
