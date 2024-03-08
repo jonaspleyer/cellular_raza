@@ -104,13 +104,12 @@ macro_rules! run_simulation(
     (@if_else {}                 , {$($default_value:tt)*}) => {$($default_value)*};
     (@if_else {$($opt_value:tt)*}, {$($default_value:tt)*}) => {$($opt_value)*};
     (
-        // TODO can we combine all these values into some type of setup or similar?
         domain: $domain:ident,
         agents: $agents:ident,
-        time: $time_stepper:ident,
-        n_threads: $n_threads:expr,
-        storage: $storage_builder:ident,
-        aspects: [$($asp:ident),*],
+        settings: $settings:expr,
+        aspects: [$($asp:ident),*]$(,)?
+        // TODO add option to specify solvers
+        $(mechanics_solver: $mechanics_solver:ident,)?
         // TODO implement the external controller
         $(external_controller: $ext_controller:ty,)?
         // TODO actually use this type
@@ -129,8 +128,8 @@ macro_rules! run_simulation(
             core_path: $crate
         );
 
-        let decomposed_domain = $domain
-            .decompose($n_threads.try_into().unwrap(), $agents)?;
+        // Define syncer type
+        $crate::run_simulation!(@if_else {$(type Syncer = $syncer;)?}, {type Syncer = $crate::backend::chili::BarrierSync;});
 
         let _aux_storage = _CrAuxStorage::default();
         let mut runner = $crate::backend::chili::construct_simulation_runner::<
@@ -142,20 +141,23 @@ macro_rules! run_simulation(
                 name: _CrCommunicator,
                 aspects: [$($asp),*]
             ),
-        >>::construct(
-            decomposed_domain,
+            Syncer,
+            _
+        >(
+            $domain,
+            $agents,
+            $settings.n_threads,
             &_aux_storage,
-        );
+        )?;
 
         // TODO this should probably be replaced by os threads
         // or we simply make this an option in the macro signature
-        use rayon::prelude::*;
         runner
             .subdomain_boxes
-            .par_iter_mut()
-            .map(|(key, sbox)| {
+            .iter_mut()
+            .map(|(&key, sbox)| {
                 // Set up the time stepper
-                let mut _time_stepper = $time_stepper.clone();
+                let mut _time_stepper = $settings.time.clone();
                 use $crate::time::TimeStepper;
 
                 // Initialize the progress bar
@@ -167,10 +169,10 @@ macro_rules! run_simulation(
 
                 // Initialize the storage manager
                 #[allow(unused)]
-                        &$storage_builder,
-                        *key as u64
                 let storage_manager: $crate::storage::StorageManager<_, _> =
                     $crate::storage::StorageManager::construct(
+                        &$settings.storage,
+                        key as u64
                     )?;
 
                 // Calls the main update macro which constructs the main update step
