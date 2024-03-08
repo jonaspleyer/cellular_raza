@@ -101,7 +101,7 @@ pub use crate::run_simulation;
 #[doc(hidden)]
 #[macro_export]
 macro_rules! run_simulation(
-    (@if_else                  , {$($default_value:tt)*}) => {$($default_value)*};
+    (@if_else {}                 , {$($default_value:tt)*}) => {$($default_value)*};
     (@if_else {$($opt_value:tt)*}, {$($default_value:tt)*}) => {$($opt_value)*};
     (
         // TODO can we combine all these values into some type of setup or similar?
