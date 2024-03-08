@@ -255,7 +255,7 @@ pub struct StorageManager<Id, Element> {
 /// let storage_priority = StorageOption::default_priority();
 /// let storage_builder = StorageBuilder::new()
 ///     .priority(storage_priority)
-///     .location(std::path::Path::new("./"));
+///     .location("./");
 /// ```
 #[derive(Clone, Deserialize, Serialize)]
 pub struct StorageBuilder {
@@ -283,9 +283,9 @@ impl StorageBuilder {
     }
 
     /// Define a folder where to store results
-    pub fn location<'a, P>(self, location: &'a P) -> Self
+    pub fn location<P>(self, location: P) -> Self
     where
-        std::path::PathBuf: From<&'a P>,
+        std::path::PathBuf: From<P>,
     {
         Self {
             location: location.into(),
@@ -301,7 +301,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     /// ```
     /// use cellular_raza_core::storage::*;
     /// let builder = StorageBuilder::new()
-    ///     .location(std::path::Path::new("/tmp"));
+    ///     .location("/tmp");
     ///
     /// let manager = StorageManager::<usize, f64>::construct(&builder, 0).unwrap();
     /// ```
