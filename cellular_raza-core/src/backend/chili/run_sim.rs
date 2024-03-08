@@ -77,7 +77,6 @@ macro_rules! main_update(
         aspects: [$($asp:ident),*],
         core_path: $core_path:path
     ) => {
-        use $core_path as _core_path;
         $crate::gen_step_1!($sbox, $($asp),*);
         $sbox.sync();
         $crate::gen_step_2!($sbox, $($asp),*);
@@ -116,31 +115,30 @@ macro_rules! run_simulation(
         $(external_controller: $ext_controller:ty,)?
         // TODO actually use this type
         $(syncer: $syncer:ty,)?
-        $(core_path: $core_path:path,)?
         $(parallelization: $parallel:ident,)?
     ) => {{
-        $crate::run_simulation!(@if_else {$(use $core_path as _core_path;)?}, {use cellular_raza::core as _core_path;});
+        use $crate::backend::chili::{AuxStorage, Communicator};
         $crate::backend::chili::build_communicator!(
             name: _CrCommunicator,
             aspects: [$($asp),*],
-            core_path: _core_path
+            core_path: $crate
         );
         $crate::backend::chili::build_aux_storage!(
             name: _CrAuxStorage,
             aspects: [$($asp),*],
-            core_path: _core_path
+            core_path: $crate
         );
 
         let decomposed_domain = $domain
             .decompose($n_threads.try_into().unwrap(), $agents)?;
 
         let _aux_storage = _CrAuxStorage::default();
-        let mut runner = chili::SimulationRunner::<_, chili::SubDomainBox<
+        let mut runner = $crate::backend::chili::construct_simulation_runner::<
             _,
             _,
             _,
             _,
-            chili::communicator_generics_placeholders!(
+            $crate::backend::chili::communicator_generics_placeholders!(
                 name: _CrCommunicator,
                 aspects: [$($asp),*]
             ),
@@ -158,7 +156,7 @@ macro_rules! run_simulation(
             .map(|(key, sbox)| {
                 // Set up the time stepper
                 let mut _time_stepper = $time_stepper.clone();
-                use cellular_raza::prelude::time::TimeStepper;
+                use $crate::time::TimeStepper;
 
                 // Initialize the progress bar
                 #[allow(unused)]
@@ -169,29 +167,29 @@ macro_rules! run_simulation(
 
                 // Initialize the storage manager
                 #[allow(unused)]
-                let storage_manager: cellular_raza::prelude::StorageManager<_, _> =
-                    cellular_raza::prelude::StorageManager::construct(
                         &$storage_builder,
                         *key as u64
+                let storage_manager: $crate::storage::StorageManager<_, _> =
+                    $crate::storage::StorageManager::construct(
                     )?;
 
                 // Calls the main update macro which constructs the main update step
                 #[allow(unused)]
                 while let Some(next_time_point) = _time_stepper.advance()? {
-                    _core_path::backend::chili::main_update!(
+                    $crate::backend::chili::main_update!(
                         subdomain: sbox,
                         storage_manager: storage_manager,
                         next_time_point: next_time_point,
                         progress_bar: pb,
                         time_stepper: _time_stepper,
                         aspects: [$($asp),*],
-                        core_path: _core_path
+                        core_path: $crate
                     );
                 }
                 Ok(())
             })
-            .collect::<Result<Vec<_>, chili::SimulationError>>()?;
-        Result::<(), chili::SimulationError>::Ok(())
+            .collect::<Result<Vec<_>, $crate::backend::chili::SimulationError>>()?;
+        Result::<(), $crate::backend::chili::SimulationError>::Ok(())
     }};
 );
 
