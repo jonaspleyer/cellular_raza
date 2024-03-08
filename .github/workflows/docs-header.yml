@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          submoduels: 'true'
+          submodules: 'true'
       - name: Install diff util
         run: |
           sudo apt update

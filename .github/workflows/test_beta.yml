@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          submoduels: 'true'
+          submodules: 'true'
 
       - name: Install beta toolchain
         uses: actions-rs/toolchain@v1
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          submoduels: 'true'
+          submodules: 'true'
 
       - name: Install beta toolchain
         uses: actions-rs/toolchain@v1
@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          submoduels: 'true'
+          submodules: 'true'
 
       - name: Install beta toolchain
         uses: actions-rs/toolchain@v1
@@ -84,7 +84,7 @@ jobs:
 #         uses: actions/checkout@v2
 #         with:
 #           fetch-depth: 1
-          submoduels: 'true'
+          submodules: 'true'
 # 
 #       - name: Install beta toolchain
 #         uses: actions-rs/toolchain@v1
