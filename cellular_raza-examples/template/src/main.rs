@@ -85,12 +85,11 @@ fn main() -> Result<(), chili::SimulationError> {
     )?;
 
     // Storage Setup
-    let location = std::path::Path::new("./out");
     let mut storage_priority = cellular_raza::prelude::UniqueVec::new();
     storage_priority.push(cellular_raza::prelude::StorageOption::SerdeJson);
     let storage_builder = cellular_raza::prelude::StorageBuilder::new()
         .priority(storage_priority)
-        .location(location);
+        .location("./out");
 
     // Time Setup
     let t0: f32 = 0.0;
