@@ -272,7 +272,7 @@ impl StorageBuilder {
     /// ```
     pub fn new() -> Self {
         Self {
-            location: "./".into(),
+            location: "./out".into(),
             priority: UniqueVec::new(),
         }
     }
