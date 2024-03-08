@@ -1,4 +1,8 @@
-use cellular_raza::prelude::*;
+use cellular_raza::core::backend::chili::*;
+use cellular_raza::prelude::{
+    CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, NewtonDamped3D, RngError,
+    StorageBuilder,
+};
 
 use nalgebra::Vector3;
 use num::Zero;
@@ -16,8 +20,8 @@ pub const CELL_MECHANICS_RELATIVE_INTERACTION_RANGE: f64 = 1.5;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 2.0;
 
 pub const DT: f64 = 0.25;
-pub const N_TIMES: usize = 3_000;
-pub const SAVE_INTERVAL: usize = 10;
+pub const N_TIMES: u64 = 3_000;
+pub const SAVE_INTERVAL: u64 = 10;
 
 pub const N_THREADS: usize = 4;
 
@@ -86,9 +90,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
         if *species == self.species {
-            return Some(Ok(repelling_force + attracting_force));
+            Some(Ok(repelling_force + attracting_force))
         } else {
-            return Some(Ok(repelling_force));
+            Some(Ok(repelling_force))
         }
     }
 
@@ -97,7 +101,15 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     }
 }
 
-fn main() {
+#[derive(CellAgent, Clone, Deserialize, Serialize)]
+struct Cell {
+    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
+    interaction: CellSpecificInteraction,
+    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
+    mechanics: NewtonDamped3D,
+}
+
+fn main() -> Result<(), SimulationError> {
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
@@ -108,7 +120,7 @@ fn main() {
                 rng.gen_range(0.0..DOMAIN_SIZE),
                 rng.gen_range(0.0..DOMAIN_SIZE),
             ]);
-            ModularCell {
+            Cell {
                 mechanics: NewtonDamped3D {
                     pos,
                     vel: Vector3::zero(),
@@ -124,38 +136,37 @@ fn main() {
                     relative_interaction_range: CELL_MECHANICS_RELATIVE_INTERACTION_RANGE,
                     cell_radius: CELL_RADIUS,
                 },
-                cycle: NoCycle {},
-                interaction_extracellular: NoExtracellularGradientSensing,
-                cellular_reactions: NoCellularReactions,
-                volume: 4.0 / 3.0 * std::f64::consts::PI * CELL_RADIUS.powf(3.0),
             }
         })
         .collect::<Vec<_>>();
 
-    let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid3New::from_boundaries_and_interaction_ranges(
         [0.0; 3],
         [DOMAIN_SIZE; 3],
         [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_RADIUS * 2.0; 3],
     )
     .unwrap();
 
-    let time = TimeSetup {
-        t_start: 0.0,
-        t_eval: (0..N_TIMES)
-            .map(|n| (n as f64 * DT, n % SAVE_INTERVAL == 0))
-            .collect(),
+    let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
+        0.0,
+        DT,
+        N_TIMES,
+        SAVE_INTERVAL,
+    )?;
+    let storage_builder = StorageBuilder::new().location("out/cell_sorting");
+
+    let settings = cellular_raza::core::backend::chili::Settings {
+        n_threads: N_THREADS.try_into().unwrap(),
+        time,
+        storage: storage_builder,
+        show_progressbar: true,
     };
 
-    let meta_params = SimulationMetaParams {
-        n_threads: N_THREADS,
-        ..Default::default()
-    };
-
-    let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
-
-    let simulation_setup = SimulationSetup::new(domain, cells, time, meta_params, storage, ());
-
-    let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
-
-    supervisor.run_full_sim().unwrap();
+    run_simulation!(
+        domain: domain,
+        agents: cells,
+        settings: settings,
+        aspects: [Mechanics, Interaction]
+    )?;
+    Ok(())
 }
