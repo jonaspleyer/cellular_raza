@@ -1,4 +1,4 @@
-use cellular_raza_concepts::domain_new::{DecomposedDomain, SubDomain};
+use cellular_raza_concepts::domain_new::SubDomain;
 use cellular_raza_concepts::*;
 use serde::{Deserialize, Serialize};
 
@@ -7,12 +7,14 @@ use tracing::instrument;
 
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::num::NonZeroUsize;
 
 use rand::SeedableRng;
 
 use super::aux_storage::*;
 use super::errors::*;
 use super::simulation_flow::*;
+use super::SimulationError;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 
@@ -46,136 +48,142 @@ pub struct Voxel<C, A> {
     pub rng: rand_chacha::ChaCha8Rng,
 }
 
-impl<I, S, C, A, Com, Sy> SimulationRunner<I, SubDomainBox<I, S, C, A, Com, Sy>>
+/// Construct a new [SimulationRunner] from a given auxiliary storage and communicator object
+#[allow(unused)]
+pub fn construct_simulation_runner<D, S, C, A, Com, Sy, Ci>(
+    domain: D,
+    agents: Ci,
+    n_subdomains: NonZeroUsize,
+    aux_storage: &A,
+) -> Result<
+    SimulationRunner<D::SubDomainIndex, SubDomainBox<D::SubDomainIndex, S, C, A, Com, Sy>>,
+    SimulationError,
+>
 where
+    Ci: IntoIterator<Item = C>,
+    D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
+    D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     S: SubDomain<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
+    A: Default,
+    Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
+    Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
-    // TODO this is not a BoundaryError
-    /// Construct a new [SimulationRunner] from a given auxiliary storage and communicator object
-    #[allow(unused)]
-    pub fn construct(decomposed_domain: DecomposedDomain<I, S, C>, aux_storage: &A) -> Self
-    where
-        I: Eq + PartialEq + core::hash::Hash + Clone + Ord,
-        A: Default,
-        Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
-        Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
-    {
-        // TODO do not unwrap
-        if !validate_map(&decomposed_domain.neighbor_map) {
-            panic!("Map not valid!");
-        }
-        let subdomain_index_to_subdomain_plain_index = decomposed_domain
-            .index_subdomain_cells
-            .iter()
-            .enumerate()
-            .map(|(i, (subdomain_index, _, _))| (subdomain_index.clone(), SubDomainPlainIndex(i)))
-            .collect::<HashMap<_, _>>();
-        let neighbor_map = decomposed_domain
-            .neighbor_map
-            .into_iter()
-            .map(|(index, neighbors)| {
-                (
-                    subdomain_index_to_subdomain_plain_index[&index],
-                    neighbors
-                        .into_iter()
-                        .map(|index| subdomain_index_to_subdomain_plain_index[&index])
-                        .collect::<Vec<_>>(),
-                )
-            })
-            .collect::<HashMap<_, _>>();
-        let mut syncers = Sy::from_map(&neighbor_map).unwrap();
-        let mut communicators = Com::from_map(&neighbor_map).unwrap();
-        let voxel_index_to_plain_index = decomposed_domain
-            .index_subdomain_cells
-            .iter()
-            .map(|(_, subdomain, _)| subdomain.get_all_indices().into_iter())
-            .flatten()
-            .enumerate()
-            .map(|(i, x)| (x, VoxelPlainIndex(i)))
-            .collect::<HashMap<S::VoxelIndex, VoxelPlainIndex>>();
-        let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
-            .index_subdomain_cells
-            .iter()
-            .enumerate()
-            .map(|(subdomain_index, (_, subdomain, _))| {
-                subdomain
-                    .get_all_indices()
-                    .into_iter()
-                    .map(move |index| (subdomain_index, index))
-            })
-            .flatten()
-            .map(|(subdomain_index, voxel_index)| {
-                (
-                    voxel_index_to_plain_index[&voxel_index],
-                    SubDomainPlainIndex(subdomain_index),
-                )
-            })
-            .collect();
-
-        let subdomain_boxes = decomposed_domain
-            .index_subdomain_cells
-            .into_iter()
-            .map(|(index, subdomain, cells)| {
-                let subdomain_plain_index = subdomain_index_to_subdomain_plain_index[&index];
-                let mut cells = cells.into_iter().map(|c| (c, None)).collect();
-                let mut voxel_index_to_neighbor_plain_indices: HashMap<_, _> = subdomain
-                    .get_all_indices()
-                    .into_iter()
-                    .map(|voxel_index| {
-                        (
-                            voxel_index.clone(),
-                            subdomain
-                                .get_neighbor_voxel_indices(&voxel_index)
-                                .into_iter()
-                                .map(|neighbor_index| voxel_index_to_plain_index[&neighbor_index])
-                                .collect::<Vec<_>>(),
-                        )
-                    })
-                    .collect();
-                let voxels = subdomain.get_all_indices().into_iter().map(|voxel_index| {
-                    let plain_index = voxel_index_to_plain_index[&voxel_index];
-                    let neighbors = voxel_index_to_neighbor_plain_indices
-                        .remove(&voxel_index)
-                        .unwrap();
-                    (
-                        plain_index,
-                        Voxel {
-                            plain_index,
-                            neighbors,
-                            cells: Vec::new(),
-                            new_cells: Vec::new(),
-                            id_counter: 0,
-                            rng: rand_chacha::ChaCha8Rng::seed_from_u64(decomposed_domain.rng_seed),
-                        },
-                    )
-                });
-                let syncer = syncers.remove(&subdomain_plain_index).ok_or(BoundaryError(
-                    "Index was not present in subdomain map".into(),
-                ))?;
-                let communicator =
-                    communicators
-                        .remove(&subdomain_plain_index)
-                        .ok_or(BoundaryError(
-                            "Index was not present in subdomain map".into(),
-                        ))?;
-                let mut subdomain_box = SubDomainBox {
-                    _index: index.clone(),
-                    subdomain,
-                    voxels: voxels.collect(),
-                    voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
-                    plain_index_to_subdomain: plain_index_to_subdomain.clone(),
-                    communicator,
-                    syncer,
-                };
-                subdomain_box.insert_cells(&mut cells)?;
-                Ok((index, subdomain_box))
-            })
-            .collect::<Result<HashMap<_, _>, BoundaryError>>()
-            .unwrap();
-        let simulatino_runner = SimulationRunner { subdomain_boxes };
-        simulatino_runner
+    let decomposed_domain = domain.decompose(n_subdomains, agents)?;
+    // TODO do not unwrap
+    if !validate_map(&decomposed_domain.neighbor_map) {
+        panic!("Map not valid!");
     }
+    let subdomain_index_to_subdomain_plain_index = decomposed_domain
+        .index_subdomain_cells
+        .iter()
+        .enumerate()
+        .map(|(i, (subdomain_index, _, _))| (subdomain_index.clone(), SubDomainPlainIndex(i)))
+        .collect::<HashMap<_, _>>();
+    let neighbor_map = decomposed_domain
+        .neighbor_map
+        .into_iter()
+        .map(|(index, neighbors)| {
+            (
+                subdomain_index_to_subdomain_plain_index[&index],
+                neighbors
+                    .into_iter()
+                    .map(|index| subdomain_index_to_subdomain_plain_index[&index])
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let mut syncers = Sy::from_map(&neighbor_map).unwrap();
+    let mut communicators = Com::from_map(&neighbor_map).unwrap();
+    let voxel_index_to_plain_index = decomposed_domain
+        .index_subdomain_cells
+        .iter()
+        .map(|(_, subdomain, _)| subdomain.get_all_indices().into_iter())
+        .flatten()
+        .enumerate()
+        .map(|(i, x)| (x, VoxelPlainIndex(i)))
+        .collect::<HashMap<S::VoxelIndex, VoxelPlainIndex>>();
+    let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
+        .index_subdomain_cells
+        .iter()
+        .enumerate()
+        .map(|(subdomain_index, (_, subdomain, _))| {
+            subdomain
+                .get_all_indices()
+                .into_iter()
+                .map(move |index| (subdomain_index, index))
+        })
+        .flatten()
+        .map(|(subdomain_index, voxel_index)| {
+            (
+                voxel_index_to_plain_index[&voxel_index],
+                SubDomainPlainIndex(subdomain_index),
+            )
+        })
+        .collect();
+
+    let subdomain_boxes = decomposed_domain
+        .index_subdomain_cells
+        .into_iter()
+        .map(|(index, subdomain, cells)| {
+            let subdomain_plain_index = subdomain_index_to_subdomain_plain_index[&index];
+            let mut cells = cells.into_iter().map(|c| (c, None)).collect();
+            let mut voxel_index_to_neighbor_plain_indices: HashMap<_, _> = subdomain
+                .get_all_indices()
+                .into_iter()
+                .map(|voxel_index| {
+                    (
+                        voxel_index.clone(),
+                        subdomain
+                            .get_neighbor_voxel_indices(&voxel_index)
+                            .into_iter()
+                            .map(|neighbor_index| voxel_index_to_plain_index[&neighbor_index])
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect();
+            let voxels = subdomain.get_all_indices().into_iter().map(|voxel_index| {
+                let plain_index = voxel_index_to_plain_index[&voxel_index];
+                let neighbors = voxel_index_to_neighbor_plain_indices
+                    .remove(&voxel_index)
+                    .unwrap();
+                (
+                    plain_index,
+                    Voxel {
+                        plain_index,
+                        neighbors,
+                        cells: Vec::new(),
+                        new_cells: Vec::new(),
+                        id_counter: 0,
+                        rng: rand_chacha::ChaCha8Rng::seed_from_u64(decomposed_domain.rng_seed),
+                    },
+                )
+            });
+            let syncer = syncers.remove(&subdomain_plain_index).ok_or(BoundaryError(
+                "Index was not present in subdomain map".into(),
+            ))?;
+            let communicator =
+                communicators
+                    .remove(&subdomain_plain_index)
+                    .ok_or(BoundaryError(
+                        "Index was not present in subdomain map".into(),
+                    ))?;
+            let mut subdomain_box = SubDomainBox {
+                _index: index.clone(),
+                subdomain,
+                voxels: voxels.collect(),
+                voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
+                plain_index_to_subdomain: plain_index_to_subdomain.clone(),
+                communicator,
+                syncer,
+            };
+            subdomain_box.insert_cells(&mut cells)?;
+            Ok((index, subdomain_box))
+        })
+        .collect::<Result<HashMap<_, _>, BoundaryError>>()
+        .unwrap();
+    let simulation_runner = SimulationRunner { subdomain_boxes };
+    Ok(simulation_runner)
 }
 
 /// Encapsulates a subdomain with cells and other simulation aspects.
