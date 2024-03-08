@@ -77,8 +77,43 @@ pub struct FixedStepsize<F> {
 
 impl<F> FixedStepsize<F>
 where
-    F: num::Float + num::ToPrimitive,
+    F: num::Float + num::ToPrimitive + num::FromPrimitive,
 {
+    /// Construct the stepper from initial time, increment,
+    /// number of steps and save interval
+    pub fn from_partial_save_steps(
+        t0: F,
+        dt: F,
+        n_steps: u64,
+        save_interval: u64,
+    ) -> Result<Self, TimeError> {
+        let max_save_points = n_steps.div_ceil(save_interval);
+        let save_interval_float = F::from_u64(save_interval).ok_or(TimeError(format!(
+            "Could not convert save_interval={save_interval} to type: {}",
+            std::any::type_name::<F>()
+        )))?;
+        let partial_save_points = (0..max_save_points)
+            .map(|_| t0 + save_interval_float * dt)
+            .collect();
+        Self::from_partial_save_points(t0, dt, partial_save_points)
+    }
+
+    ///
+    pub fn from_partial_save_interval(
+        t0: F,
+        dt: F,
+        t_max: F,
+        save_interval: F,
+    ) -> Result<Self, TimeError> {
+        let mut partial_save_points = vec![];
+        let mut t = t0;
+        while t < t_max {
+            partial_save_points.push(t);
+            t = t + save_interval;
+        }
+        Self::from_partial_save_points(t0, dt, partial_save_points)
+    }
+
     /// Simple function to construct the stepper from an initial time point, the time increment and
     /// the time points at which the simulation should be saved. Notice that these saves do not cover
     /// [FullSaves](TimeEvent::FullSave) but only [PartialSaves](TimeEvent::PartialSave).
@@ -213,7 +248,7 @@ pub mod test_time_stepper {
 
     fn generate_new_fixed_stepper<F>(rng_seed: u64) -> FixedStepsize<F>
     where
-        F: num::Float + From<f32>,
+        F: num::Float + From<f32> + num::FromPrimitive,
     {
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(rng_seed);
         let t0 = <F as From<_>>::from(rng.gen_range(0.0..1.0));
