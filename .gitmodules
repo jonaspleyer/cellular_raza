@@ -1,0 +1,6 @@
+[submodule "cellular_raza-examples/cellular_raza-template"]
+	path = cellular_raza-examples/cellular_raza-template
+	url = git@github.com:jonaspleyer/cellular_raza-template
+[submodule "cellular_raza-examples/cellular_raza-template-pyo3"]
+	path = cellular_raza-examples/cellular_raza-template-pyo3
+	url = git@github.com:jonaspleyer/cellular_raza-template-pyo3
