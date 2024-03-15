@@ -250,7 +250,7 @@ fn generics_and_fields(
     let generics_fields: Vec<_> = simulation_aspects
         .items
         .iter()
-        .map(|aspect| aspect.build_comm(&core_path))
+        .map(|parsed_aspect| parsed_aspect.aspect.build_comm(&core_path))
         .collect();
 
     let mut generics = vec![index_type];

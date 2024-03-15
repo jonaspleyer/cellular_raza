@@ -648,7 +648,7 @@ impl Arguments {
         let mut generics = vec![];
         let mut fields = vec![];
         for item in self.simulation_aspects.items.into_iter() {
-            let (item_generics, item_field) = item.build_aux(&backend_path);
+            let (item_generics, item_field) = item.aspect.build_aux(&backend_path);
             generics.extend(item_generics);
             fields.extend(item_field);
         }

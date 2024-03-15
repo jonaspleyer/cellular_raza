@@ -106,7 +106,7 @@ impl SimulationAspects {
     pub fn to_aspect_list(&self) -> Vec<SimulationAspect> {
         self.items
             .iter()
-            .map(|aspect| aspect.clone())
+            .map(|parsed_aspect| parsed_aspect.aspect.clone())
             .collect::<Vec<_>>()
     }
 }
