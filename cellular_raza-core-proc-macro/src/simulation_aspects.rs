@@ -22,7 +22,7 @@ impl syn::parse::Parse for AspectsToken {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SimulationAspect {
     // TODO add generic aspect which should always be present
     // None,
@@ -32,12 +32,20 @@ pub enum SimulationAspect {
     Reactions,
 }
 
-impl syn::parse::Parse for SimulationAspect {
+pub struct ParsedSimulationAspect {
+    pub aspect: SimulationAspect,
+    pub ident: syn::Ident,
+}
+
+impl syn::parse::Parse for ParsedSimulationAspect {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
         for aspect in SimulationAspect::get_aspects() {
             if ident == format!("{:?}", aspect) {
-                return Ok(aspect);
+                return Ok(Self {
+                    aspect,
+                    ident,
+                });
             }
         }
         Err(syn::Error::new(
@@ -70,21 +78,26 @@ pub struct SimulationAspects {
     pub aspects_token: AspectsToken,
     #[allow(unused)]
     double_colon_2: syn::Token![:],
-    pub items: syn::punctuated::Punctuated<SimulationAspect, syn::token::Comma>,
+    pub items: syn::punctuated::Punctuated<ParsedSimulationAspect, syn::token::Comma>,
 }
 
+// TODO this macro does not give the correct error message
+// at the correct place yet. Eg. when specifying aspects: [Mechanics, Mechanics]
 impl syn::parse::Parse for SimulationAspects {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let aspects_token = input.parse()?;
+        let aspects_token: AspectsToken = input.parse()?;
         let double_colon_2 = input.parse()?;
         let content;
         syn::bracketed!(content in input);
+        let items = syn::punctuated::Punctuated::<ParsedSimulationAspect, syn::token::Comma>::parse_terminated(&content)?;
+        use itertools::*;
+        for duplicate in items.iter().duplicates_by(|pa| &pa.aspect).into_iter() {
+            return Err(syn::Error::new(duplicate.ident.span(), format!("Found duplicate simulation aspect: {:?}", duplicate.aspect)));
+        }
         Ok(Self {
             aspects_token,
             double_colon_2,
-            items: syn::punctuated::Punctuated::<SimulationAspect, syn::token::Comma>::parse_terminated(
-                &content,
-            )?,
+            items,
         })
     }
 }
