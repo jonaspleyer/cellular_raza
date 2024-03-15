@@ -95,12 +95,15 @@ macro_rules! main_update(
 );
 
 #[doc(inline)]
-pub use crate::run_simulation;
+pub use cellular_raza_core_proc_macro::run_simulation;
+
+#[doc(inline)]
+pub use crate::hidden_run_simulation;
 
 ///
 #[doc(hidden)]
 #[macro_export]
-macro_rules! run_simulation(
+macro_rules! hidden_run_simulation(
     (@if_else {}                 , {$($default_value:tt)*}) => {$($default_value)*};
     (@if_else {$($opt_value:tt)*}, {$($default_value:tt)*}) => {$($opt_value)*};
     (
