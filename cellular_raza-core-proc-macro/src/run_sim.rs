@@ -98,7 +98,7 @@ impl RunSimInputs {
 
     ///
     fn run_main(&self) -> proc_macro2::TokenStream {
-        quote::quote!({Result::<usize, chili::SimulationError>::Ok(1_usize)})
+        quote::quote!({ Result::<usize, chili::SimulationError>::Ok(1_usize) })
     }
 }
 

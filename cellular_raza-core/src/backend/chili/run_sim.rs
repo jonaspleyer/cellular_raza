@@ -197,4 +197,3 @@ macro_rules! hidden_run_simulation(
         Result::<(), $crate::backend::chili::SimulationError>::Ok(())
     }};
 );
-

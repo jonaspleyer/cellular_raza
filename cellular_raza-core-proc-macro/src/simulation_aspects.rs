@@ -48,10 +48,7 @@ impl syn::parse::Parse for ParsedSimulationAspect {
         let ident: syn::Ident = input.parse()?;
         for aspect in SimulationAspect::get_aspects() {
             if ident == format!("{:?}", aspect) {
-                return Ok(Self {
-                    aspect,
-                    ident,
-                });
+                return Ok(Self { aspect, ident });
             }
         }
         Err(syn::Error::new(
@@ -98,7 +95,10 @@ impl syn::parse::Parse for SimulationAspects {
         let items = syn::punctuated::Punctuated::<ParsedSimulationAspect, syn::token::Comma>::parse_terminated(&content)?;
         use itertools::*;
         for duplicate in items.iter().duplicates_by(|pa| &pa.aspect).into_iter() {
-            return Err(syn::Error::new(duplicate.ident.span(), format!("Found duplicate simulation aspect: {:?}", duplicate.aspect)));
+            return Err(syn::Error::new(
+                duplicate.ident.span(),
+                format!("Found duplicate simulation aspect: {:?}", duplicate.aspect),
+            ));
         }
         Ok(Self {
             aspects_token,
