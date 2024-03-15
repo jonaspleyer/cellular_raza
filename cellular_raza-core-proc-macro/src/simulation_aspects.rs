@@ -32,6 +32,12 @@ pub enum SimulationAspect {
     Reactions,
 }
 
+// TODO add option to specify type parameters for individual aspects
+// ie. do
+// aspects: [Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>), ...]
+// instead of
+// aspects: [Mechanics, ... ]
+// and use the specified types afterwards.
 pub struct ParsedSimulationAspect {
     pub aspect: SimulationAspect,
     pub ident: syn::Ident,
