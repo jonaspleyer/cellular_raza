@@ -11,6 +11,7 @@
 mod aux_storage;
 mod communicator;
 mod from_map;
+mod run_sim;
 mod simulation_aspects;
 mod testing;
 
@@ -153,4 +154,10 @@ pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// ```
 pub fn run_test_for_aspects(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     testing::run_test_for_aspects(input)
+}
+
+/// TODO
+#[proc_macro]
+pub fn run_simulation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    run_sim::run_simulation(input)
 }
