@@ -48,6 +48,7 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Custom (adaptive) time steppers
 - [ ] Proper error handling with strategies
 - [ ] Export Formats other then 1:1 storage through (de)serialization (such as vtk files for paraview)
+- [ ] Julia Bindings
 
 ## Possible Directions
 - [ ] Purely GPU powered Backend (probably restricted generics)
