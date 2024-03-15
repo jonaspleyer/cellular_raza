@@ -4,8 +4,8 @@ impl syn::parse::Parse for NameToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
         match ident == "name" {
-            true => return Ok(Self),
-            _ => return Err(syn::Error::new(ident.span(), "Expected \"name\" token")),
+            true => Ok(Self),
+            _ => Err(syn::Error::new(ident.span(), "Expected \"name\" token")),
         }
     }
 }
@@ -16,8 +16,8 @@ impl syn::parse::Parse for AspectsToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
         match ident == "aspects" {
-            true => return Ok(Self),
-            _ => return Err(syn::Error::new(ident.span(), "Expected \"aspects\" token")),
+            true => Ok(Self),
+            _ => Err(syn::Error::new(ident.span(), "Expected \"aspects\" token")),
         }
     }
 }
