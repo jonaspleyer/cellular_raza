@@ -10,13 +10,14 @@ impl syn::parse::Parse for NameToken {
     }
 }
 
-pub struct AspectsToken;
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AspectsToken(syn::Ident);
 
 impl syn::parse::Parse for AspectsToken {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
         match ident == "aspects" {
-            true => Ok(Self),
+            true => Ok(Self(ident)),
             _ => Err(syn::Error::new(ident.span(), "Expected \"aspects\" token")),
         }
     }
@@ -38,6 +39,7 @@ pub enum SimulationAspect {
 // instead of
 // aspects: [Mechanics, ... ]
 // and use the specified types afterwards.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParsedSimulationAspect {
     pub aspect: SimulationAspect,
     pub ident: syn::Ident,
@@ -76,11 +78,12 @@ impl syn::parse::Parse for NameDefinition {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SimulationAspects {
     #[allow(unused)]
     pub aspects_token: AspectsToken,
     #[allow(unused)]
-    double_colon_2: syn::Token![:],
+    double_colon: syn::Token![:],
     pub items: syn::punctuated::Punctuated<ParsedSimulationAspect, syn::token::Comma>,
 }
 
@@ -89,7 +92,23 @@ pub struct SimulationAspects {
 impl syn::parse::Parse for SimulationAspects {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let aspects_token: AspectsToken = input.parse()?;
-        let double_colon_2 = input.parse()?;
+        Self::parse_give_initial_token(aspects_token.0, input)
+    }
+}
+
+impl SimulationAspects {
+    pub fn to_aspect_list(&self) -> Vec<SimulationAspect> {
+        self.items
+            .iter()
+            .map(|parsed_aspect| parsed_aspect.aspect.clone())
+            .collect::<Vec<_>>()
+    }
+
+    pub fn parse_give_initial_token(
+        aspects_token: syn::Ident,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let double_colon = input.parse()?;
         let content;
         syn::bracketed!(content in input);
         let items = syn::punctuated::Punctuated::<ParsedSimulationAspect, syn::token::Comma>::parse_terminated(&content)?;
@@ -101,19 +120,10 @@ impl syn::parse::Parse for SimulationAspects {
             ));
         }
         Ok(Self {
-            aspects_token,
-            double_colon_2,
+            aspects_token: AspectsToken(aspects_token),
+            double_colon,
             items,
         })
-    }
-}
-
-impl SimulationAspects {
-    pub fn to_aspect_list(&self) -> Vec<SimulationAspect> {
-        self.items
-            .iter()
-            .map(|parsed_aspect| parsed_aspect.aspect.clone())
-            .collect::<Vec<_>>()
     }
 }
 
