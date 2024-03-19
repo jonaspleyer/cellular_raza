@@ -267,11 +267,17 @@ fn generics_and_fields(
     (generics, fields)
 }
 
-impl ConstructInput {
-    fn build_communicator(self) -> proc_macro2::TokenStream {
-        let struct_name = self.name_def.struct_name;
+pub struct CommunicatorBuilder {
+    pub struct_name: syn::Ident,
+    pub core_path: syn::Path,
+    pub aspects: SimulationAspects,
+}
+
+impl CommunicatorBuilder {
+    pub fn build_communicator(self) -> proc_macro2::TokenStream {
+        let struct_name = self.struct_name;
         let index_type = index_type();
-        let core_path = &self.core_path.path;
+        let core_path = &self.core_path;
         let (generics, fields) = generics_and_fields(&self.aspects, &core_path);
         // In the following code, we assume that I
         // is the index as implemented above in the build_comm function
@@ -290,9 +296,20 @@ impl ConstructInput {
     }
 }
 
+impl From<ConstructInput> for CommunicatorBuilder {
+    fn from(input: ConstructInput) -> Self {
+        Self {
+            struct_name: input.name_def.struct_name,
+            core_path: input.core_path.path,
+            aspects: input.aspects,
+        }
+    }
+}
+
 pub fn construct_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let constr = syn::parse_macro_input!(input as ConstructInput);
-    let stream = constr.build_communicator();
+    let builder = CommunicatorBuilder::from(constr);
+    let stream = builder.build_communicator();
     proc_macro::TokenStream::from(stream)
 }
 
