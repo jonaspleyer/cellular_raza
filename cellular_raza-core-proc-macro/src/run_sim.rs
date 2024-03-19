@@ -1,4 +1,6 @@
-use crate::simulation_aspects::SimulationAspects;
+use itertools::Itertools;
+
+use crate::simulation_aspects::{SimulationAspect, SimulationAspects};
 
 #[derive(Clone, PartialEq, Debug)]
 enum Kwarg {
@@ -260,8 +262,14 @@ impl SimBuilder {
         };
 
         let mut output = aux_storage_builder.build_aux_storage();
+
         // Build Communicator
-        output.extend(quote::quote!());
+        let communicator_builder = super::communicator::CommunicatorBuilder {
+            struct_name: syn::Ident::new("_CrCommunicator", proc_macro2::Span::call_site()),
+            core_path: self.core_path.clone(),
+            aspects: self.aspects.clone(),
+        };
+        output.extend(communicator_builder.build_communicator());
 
         output
     }
