@@ -3,6 +3,17 @@ title: Getting Started
 weight: 10
 ---
 
+## From a Template
+We provide two slightly different templates to quickly get started with running your first simulation.
+The first template is purely written in Rust while the second provides bindings to Python.
+Their usage is slightly different.
+We advise users who quickly want to develop new models to opt for the first alternative.
+If you are interested in integrating an existing setup into your Python code, choose the second alternative.
+
+### Standalone Binary
+
+## From Scratch
+
 To create a new project from scratch, initialize an empty project with cargo and change to this directory.
 ```bash
 cargo init my-new-project
