@@ -104,6 +104,17 @@ impl SimulationAspects {
             .collect::<Vec<_>>()
     }
 
+    pub fn contains(&self, aspect: &SimulationAspect) -> bool {
+        self.to_aspect_list().contains(aspect)
+    }
+
+    pub fn contains_multiple<'a>(&self, aspects: impl IntoIterator<Item=&'a SimulationAspect>) -> bool {
+        for aspect in aspects.into_iter() {
+            if !self.contains(aspect) {return false;}
+        }
+        true
+    }
+
     pub fn parse_give_initial_token(
         aspects_token: syn::Ident,
         input: syn::parse::ParseStream,
