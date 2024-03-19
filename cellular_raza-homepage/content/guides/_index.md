@@ -16,3 +16,4 @@ Although beneficial, we do not expect the reader of these guides to be familiar 
 | [Predefined Cell Models](predefined-cell-models) | Use complete cell-models to run a simulation |
 | [Building Blocks](building-blocks) | Use predefined building blocks to combine them into a fully working simulation. |
 | [Physical Domain](physical-domain) | How does the [domain](/internals/concepts/domain) in which the cells live work? You will learn what responsibilities are taken over by the domain. |
+| [Python Bindings](python-bindings) | Learn how to easily generate Python bindings for your `cellular_raza` simulation. |
