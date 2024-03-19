@@ -1,7 +1,7 @@
 ---
 title: ☕ Coding Guidelines
 type: docs
-weight: 100
+weight: 120
 ---
 
 ## Style Guide
