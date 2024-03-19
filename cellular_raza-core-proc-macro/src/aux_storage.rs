@@ -572,12 +572,12 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
 }
 
 // #################################### CONSTRUCT ####################################
-struct Arguments {
-    name_def: NameDefinition,
+pub struct Arguments {
+    pub name_def: NameDefinition,
     _comma: syn::Token![,],
-    simulation_aspects: SimulationAspects,
+    pub simulation_aspects: SimulationAspects,
     _comma_2: syn::Token![,],
-    core_path: CorePath,
+    pub core_path: CorePath,
 }
 
 impl syn::parse::Parse for Arguments {
@@ -640,14 +640,30 @@ impl SimulationAspect {
     }
 }
 
-impl Arguments {
-    fn build_aux_storage(self) -> proc_macro2::TokenStream {
-        let struct_name = self.name_def.struct_name;
-        let p = self.core_path.path;
+pub struct Builder {
+    pub struct_name: syn::Ident,
+    pub core_path: syn::Path,
+    pub aspects: SimulationAspects,
+}
+
+impl From<Arguments> for Builder {
+    fn from(arguments: Arguments) -> Self {
+        Self {
+            struct_name: arguments.name_def.struct_name,
+            core_path: arguments.core_path.path,
+            aspects: arguments.simulation_aspects,
+        }
+    }
+}
+
+impl Builder {
+    pub fn build_aux_storage(self) -> proc_macro2::TokenStream {
+        let struct_name = self.struct_name;
+        let p = self.core_path;
         let (core_path, backend_path) = (quote!(#p), quote!(#p ::backend::chili::));
         let mut generics = vec![];
         let mut fields = vec![];
-        for item in self.simulation_aspects.items.into_iter() {
+        for item in self.aspects.items.into_iter() {
             let (item_generics, item_field) = item.aspect.build_aux(&backend_path);
             generics.extend(item_generics);
             fields.extend(item_field);
@@ -668,6 +684,6 @@ impl Arguments {
 
 /// Define a AuxStorage struct that
 pub fn construct_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let builder = syn::parse_macro_input!(input as Arguments);
+    let builder: Builder = syn::parse_macro_input!(input as Arguments).into();
     proc_macro::TokenStream::from(builder.build_aux_storage())
 }
