@@ -6,7 +6,7 @@ cascade:
 
 All user Guides assume a basic knowledge of the Rust programming language.
 To get started with writing Rust please follow the guidance on the [official website](https://www.rust-lang.org).
-For an introduction to agent-based modeling, please refer to [wikipedia](https://en.wikipedia.org/wiki/Agent-based_model) and our [review](https://doi.org/10.3389/fphy.2022.968409).
+For an introduction to cellular agent-based modeling, please refer to [wikipedia](https://en.wikipedia.org/wiki/Cell-based_models) and our [review](https://doi.org/10.3389/fphy.2022.968409).
 Although beneficial, we do not expect the reader of these guides to be familiar with any computational methods.
 
 ## Overview
