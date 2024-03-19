@@ -218,26 +218,55 @@ struct SimBuilder {
     agents: syn::Ident,
     settings: syn::Ident,
     aspects: SimulationAspects,
-    core_path: Option<syn::Path>,
+    core_path: syn::Path,
 }
 
 impl SimBuilder {
     fn initialize(kwargs: Kwargs) -> Self {
+        let core_path = match kwargs.core_path {
+            Some(p) => p,
+            None => {
+                let mut segments = syn::punctuated::Punctuated::new();
+                segments.push(syn::PathSegment::from(syn::Ident::new(
+                    "cellular_raza",
+                    proc_macro2::Span::call_site(),
+                )));
+                segments.push(syn::PathSegment::from(syn::Ident::new(
+                    "core",
+                    proc_macro2::Span::call_site(),
+                )));
+                syn::Path {
+                    leading_colon: None,
+                    segments,
+                }
+            }
+        };
         Self {
             domain: kwargs.domain,
             agents: kwargs.agents,
             settings: kwargs.settings,
             aspects: kwargs.aspects,
-            core_path: kwargs.core_path,
+            core_path,
         }
     }
 
     /// Defines all types which will be used in the simulation
     fn prepare_types(&self) -> proc_macro2::TokenStream {
-        proc_macro2::TokenStream::new()
+        // Build AuxStorage
+        let aux_storage_builder = super::aux_storage::Builder {
+            struct_name: syn::Ident::new("_CrAuxStorage", proc_macro2::Span::call_site()),
+            core_path: self.core_path.clone(),
+            aspects: self.aspects.clone(),
+        };
+
+        let mut output = aux_storage_builder.build_aux_storage();
+        // Build Communicator
+        output.extend(quote::quote!());
+
+        output
     }
 
-    /// Generate Zero-overhead functions that thest compatibility between
+    /// Generate Zero-overhead functions that test compatibility between
     /// concepts before running the simulation, possibly reducing boilerplate
     /// in compiler errors
     fn test_compatibility(&self) -> proc_macro2::TokenStream {

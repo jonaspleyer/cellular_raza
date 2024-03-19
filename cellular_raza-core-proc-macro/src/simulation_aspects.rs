@@ -65,7 +65,7 @@ pub struct NameDefinition {
     name_token: NameToken,
     #[allow(unused)]
     double_colon_1: syn::Token![:],
-    pub struct_name: syn::Ident,
+    pub(crate) struct_name: syn::Ident,
 }
 
 impl syn::parse::Parse for NameDefinition {
