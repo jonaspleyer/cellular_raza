@@ -26,6 +26,18 @@ toc: false
   {{< hextra/feature-card
     link="internals"
     title="Internals"
+    icon="cog"
+  >}}
+
+  {{< hextra/feature-card
+    link="docs/cellular_raza"
+    title="Docs"
     icon="book-open"
   >}}
+  {{< hextra/feature-card
+    link="publications"
+    title="Publications"
+    icon="newspaper"
+  >}}
+
 {{< /cards >}}
