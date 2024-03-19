@@ -68,6 +68,7 @@ mod errors;
 mod interaction;
 mod mechanics;
 mod plotting;
+mod test_derive_cell_agent;
 
 pub use cell::*;
 pub use cellular_raza_concepts_derive::*;
