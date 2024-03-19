@@ -3,7 +3,7 @@ toc: false
 ---
 
 `cellular_raza` is a cellular
-[agent-based modeling](https://en.wikipedia.org/wiki/Agent-based_model) framework which focusses on mechanistically-driven modeling.
+[agent-based modeling](https://en.wikipedia.org/wiki/Agent-based_model) framework which focuses on mechanistically-driven modeling.
 
 ## Explore
 
