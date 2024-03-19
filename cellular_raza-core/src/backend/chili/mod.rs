@@ -19,6 +19,8 @@ pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
 mod aux_storage;
+#[doc(hidden)]
+pub mod compatibility_tests;
 mod datastructures;
 mod errors;
 mod proc_macro;
