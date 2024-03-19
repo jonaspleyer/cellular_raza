@@ -1,5 +1,3 @@
-use syn::spanned::Spanned;
-
 use crate::simulation_aspects::SimulationAspects;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -78,6 +76,7 @@ impl quote::ToTokens for Kwarg {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         use quote::TokenStreamExt;
         match self {
+            #[allow(unused)]
             Kwarg::DomainInput {
                 domain_kw,
                 double_colon,
@@ -87,6 +86,7 @@ impl quote::ToTokens for Kwarg {
                 // tokens.append(double_colon.clone());
                 tokens.append(domain.clone());
             }
+            #[allow(unused)]
             Kwarg::AgentsInput {
                 agents_kw,
                 double_colon,
@@ -96,6 +96,7 @@ impl quote::ToTokens for Kwarg {
                 // tokens.append(double_colon.clone());
                 tokens.append(agents.clone());
             }
+            #[allow(unused)]
             Kwarg::SettingsInput {
                 settings_kw,
                 double_colon,
