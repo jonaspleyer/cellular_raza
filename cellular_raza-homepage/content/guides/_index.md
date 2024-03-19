@@ -16,4 +16,3 @@ Although beneficial, we do not expect the reader of these guides to be familiar 
 | [Predefined Cell Models](predefined-cell-models) | Use complete cell-models to run a simulation |
 | [Building Blocks](building-blocks) | Use predefined building blocks to combine them into a fully working simulation. |
 | [Physical Domain](physical-domain) | How does the [domain](/internals/concepts/domain) in which the cells live work? You will learn what responsibilities are taken over by the domain. |
-| [Load a previous Simulation](load-previous-simulation) | Learn how to load data from a previous simulation snapshot and continue to run the simulation. This can be useful when doing complex parameter screening in high-dimensional spaces. |
