@@ -282,7 +282,7 @@ impl SimBuilder {
         let domain = self.domain.clone();
         let agents = self.agents.clone();
         let mut output = quote::quote!(
-            #core_path ::backend::chili::compatibility_tests::comp_domain_agents(
+            #core_path::backend::chili::compatibility_tests::comp_domain_agents(
                 &#domain,
                 &#agents
             );
@@ -293,7 +293,7 @@ impl SimBuilder {
             &SimulationAspect::Interaction,
         ]) {
             output.extend(quote::quote!(
-                #core_path ::backend::chili::compatibility_tests::comp_mechanics_interaction(
+                #core_path::backend::chili::compatibility_tests::comp_mechanics_interaction(
                     &#agents
                 );
             ));

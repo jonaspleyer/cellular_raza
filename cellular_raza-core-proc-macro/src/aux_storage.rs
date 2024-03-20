@@ -75,10 +75,10 @@ impl AspectFields {
                     .collect::<Result<Vec<_>, syn::Error>>()?,
             })
         } else {
-            return Err(syn::Error::new(
+            Err(syn::Error::new(
                 proc_macro2::Span::call_site(),
                 "Could not parse struct. Use named fields for struct definition syntax!",
-            ));
+            ))
         }
     }
 }
