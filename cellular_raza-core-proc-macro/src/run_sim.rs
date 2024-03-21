@@ -270,42 +270,41 @@ macro_rules! define_kwargs(
     }
 );
 
-struct SimBuilder {
+define_kwargs!(
+    KwargsSim,
+    KwargsSimParsed,
     domain: syn::Ident,
     agents: syn::Ident,
     settings: syn::Ident,
     aspects: SimulationAspects,
-    core_path: syn::Path,
-}
+    @optionals
+    core_path: syn::Path | convert_core_path(None),
+    parallelizer: Parallelizer | Parallelizer::OsThreads
+);
 
-impl SimBuilder {
-    fn initialize(kwargs: Kwargs) -> Self {
-        let core_path = match kwargs.core_path {
-            Some(p) => p,
-            None => {
-                let mut segments = syn::punctuated::Punctuated::new();
-                segments.push(syn::PathSegment::from(syn::Ident::new(
-                    "cellular_raza",
-                    proc_macro2::Span::call_site(),
-                )));
-                segments.push(syn::PathSegment::from(syn::Ident::new(
-                    "core",
-                    proc_macro2::Span::call_site(),
-                )));
-                syn::Path {
-                    leading_colon: None,
-                    segments,
-                }
+define_kwargs!(
+    KwargsCompatibility,
+    KwargsCompatibilityParsed,
+    domain: syn::Ident,
+    agents: syn::Ident,
+    settings: syn::Ident,
+    aspects: SimulationAspects,
+    @optionals
+    core_path: syn::Path | convert_core_path(None)
+);
+
+define_kwargs!(
+    KwargsPrepareTypes,
+    KwargsPrepareTypesParsed,
+    aspects: SimulationAspects,
+    @optionals
+    core_path: syn::Path | convert_core_path(None)
+);
+
             }
-        };
-        Self {
-            domain: kwargs.domain,
-            agents: kwargs.agents,
-            settings: kwargs.settings,
-            aspects: kwargs.aspects,
-            core_path,
         }
     }
+}
 
     /// Defines all types which will be used in the simulation
     fn prepare_types(&self) -> proc_macro2::TokenStream {
@@ -356,6 +355,17 @@ impl SimBuilder {
 
         output
     }
+
+define_kwargs!(
+    KwargsMain,
+    KwargsMainParsed,
+    aspects: SimulationAspects,
+    domain: syn::Ident,
+    agents: syn::Ident,
+    settings: syn::Ident,
+    @optionals
+    core_path: syn::Path | convert_core_path(None)
+);
 
     ///
     fn run_main(&self) -> proc_macro2::TokenStream {
