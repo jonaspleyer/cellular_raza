@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use crate::simulation_aspects::{SimulationAspect, SimulationAspects};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -132,7 +130,7 @@ impl syn::parse::Parse for Kwarg {
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
-                format!("{keyword} is not a vaild keyword for this macro"),
+                format!("{keyword} is not a valid keyword for this macro"),
             )),
         }
     }

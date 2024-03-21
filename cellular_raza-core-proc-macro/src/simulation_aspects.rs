@@ -108,9 +108,14 @@ impl SimulationAspects {
         self.to_aspect_list().contains(aspect)
     }
 
-    pub fn contains_multiple<'a>(&self, aspects: impl IntoIterator<Item=&'a SimulationAspect>) -> bool {
+    pub fn contains_multiple<'a>(
+        &self,
+        aspects: impl IntoIterator<Item = &'a SimulationAspect>,
+    ) -> bool {
         for aspect in aspects.into_iter() {
-            if !self.contains(aspect) {return false;}
+            if !self.contains(aspect) {
+                return false;
+            }
         }
         true
     }
