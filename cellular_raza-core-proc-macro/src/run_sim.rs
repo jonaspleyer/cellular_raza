@@ -2,6 +2,38 @@ use itertools::Itertools;
 
 use crate::simulation_aspects::{SimulationAspect, SimulationAspects};
 
+#[derive(Clone, Eq, PartialEq, Debug)]
+enum Parallelizer {
+    OsThreads,
+    Rayon,
+}
+
+impl syn::parse::Parse for Parallelizer {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        match ident.clone().to_string().as_str() {
+            "OsThreads" => Ok(Self::OsThreads),
+            "Rayon" => Ok(Self::Rayon),
+            _ => Err(syn::Error::new(ident.span(), "Not a valid parallelizer")),
+        }
+    }
+}
+
+impl Parallelizer {
+    fn parallelize_execution(
+        &self,
+        runner: syn::Ident,
+        code: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match self {
+            Self::OsThreads => (),
+            Self::Rayon => (),
+        }
+        quote::quote!()
+    }
+}
+
+/// # Important
 #[derive(Clone, PartialEq, Debug)]
 enum Kwarg {
     DomainInput {
@@ -36,6 +68,13 @@ enum Kwarg {
         double_colong: syn::Token![:],
         core_path: syn::Path,
     },
+    parallelizer {
+        #[allow(unused)]
+        parallelizer_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        parallelizer: Parallelizer,
+    },
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -65,6 +104,11 @@ impl syn::parse::Parse for Kwarg {
                 settings_kw: keyword,
                 double_colong: input.parse()?,
                 core_path: input.parse()?,
+            }),
+            "parallelizer" => Ok(Kwarg::parallelizer {
+                parallelizer_kw: keyword,
+                double_colon: input.parse()?,
+                parallelizer: input.parse()?,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
