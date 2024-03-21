@@ -12,4 +12,12 @@ where
     Ci: IntoIterator<Item = C>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
-{}
+{
+}
+
+#[allow(unused)]
+pub fn comp_aux_storage_default<A>(aux_storage: &A)
+where
+    A: Default,
+{
+}
