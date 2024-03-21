@@ -33,7 +33,26 @@ impl Parallelizer {
     }
 }
 
+/// Contains all possible keyword arguments for preparing,
+/// testing and running a complete simulation.
+///
 /// # Important
+/// The name of the variants of this enum are exactly identical
+/// to the name of their fields which are of interest ultimately.
+///
+/// # Future
+/// For the future, we plan on extending and changing this enum
+/// to also include plain arguments. This means, that the following
+/// to versions should both be accepted.
+/// ```ignore
+/// call_macro!(
+///     aspects: aspects,
+///     agents: agents,
+/// );
+/// call_macro!(
+///     aspects,
+///     agents,
+/// );
 #[derive(Clone, PartialEq, Debug)]
 #[allow(non_camel_case_types)]
 enum Kwarg {
