@@ -40,9 +40,9 @@ macro_rules! impl_from_error {
 /// The errors are listed from very likely to be a user error from almost certainly an internal error.
 ///
 /// # Categorization of errors
-/// Some errors are more likely to be occuring due to an incorrect usage by an end user
+/// Some errors are more likely to be occurring due to an incorrect usage by an end user
 /// while others are highly likely to be due to some internal implementation problem.
-/// Independent of the exact reason, why they are occuring, some can be handled explicitly
+/// Independent of the exact reason, why they are occurring, some can be handled explicitly
 /// while others force an abort of the simulation. See also [HandlingStrategy].
 ///
 /// | Variant | Concept Implementation | Engine-Fault | Time Increment |
@@ -78,7 +78,7 @@ pub enum SimulationError {
     /// [Cycle](cellular_raza_concepts::Cycle) trait.
     DivisionError(DivisionError),
     /// Related to the [PhasedDeath](cellular_raza_concepts::CycleEvent::PhasedDeath) event.
-    /// This error can only occurr during the
+    /// This error can only occcurr during the
     /// [update_conditional_phased_death](cellular_raza_concepts::Cycle::update_conditional_phased_death)
     /// method.
     DeathError(DeathError),
@@ -88,7 +88,7 @@ pub enum SimulationError {
     /// and [cellular_raza_concepts::CreatePlottingRoot].
     DrawingError(DrawingError),
     /// Mostly caused by trying to find a voxel by its index.
-    /// This error can also occurr when applying too large simulation-steps.
+    /// This error can also occcurr when applying too large simulation-steps.
     IndexError(IndexError),
 
     // Less likely but possible to be user errors
