@@ -301,6 +301,25 @@ define_kwargs!(
     core_path: syn::Path | convert_core_path(None)
 );
 
+/// This function converts an `Option<syn::Path>` to a `syn::Path`
+/// containing either the specified or default value
+/// `cellular_raza::core` for the frequently used `core_path` argument.
+pub fn convert_core_path(core_path: Option<syn::Path>) -> syn::Path {
+    match core_path {
+        Some(p) => p,
+        None => {
+            let mut segments = syn::punctuated::Punctuated::new();
+            segments.push(syn::PathSegment::from(syn::Ident::new(
+                "cellular_raza",
+                proc_macro2::Span::call_site(),
+            )));
+            segments.push(syn::PathSegment::from(syn::Ident::new(
+                "core",
+                proc_macro2::Span::call_site(),
+            )));
+            syn::Path {
+                leading_colon: None,
+                segments,
             }
         }
     }
