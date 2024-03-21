@@ -509,5 +509,6 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
     //     Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
     // })
     // .into()
-    quote::quote!()
+    let core_path = &kwargs.core_path;
+    quote::quote!(Result::<(), #core_path::backend::chili::SimulationError>::Ok(()))
 }
