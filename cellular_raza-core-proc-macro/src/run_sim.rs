@@ -216,80 +216,59 @@ macro_rules! parse_single_kwarg(
     }};
 );
 
-        // TODO do not unwrap! Rather construct nice error message
-        let domain = kwargs
-            .iter()
-            .filter_map(|k| match k {
-                #[allow(unused)]
-                Kwarg::DomainInput {
-                    domain_kw,
-                    double_colon,
-                    domain,
-                } => Some(domain.clone()),
-                _ => None,
-            })
-            .next()
-            .ok_or(syn::Error::new(
-                span,
-                "macro is missing required information: domain",
-            ))?;
+macro_rules! define_kwargs(
+    (
+        $kwargs_name:ident,
+        $kwargs_name_parsed:ident,
+        $($kwarg:ident: $type:ty,)*
+        @optionals
+        $($kwarg_opt:ident: $type_opt:ty | $default:expr),*
+    ) => {
+        #[derive(Clone)]
+        pub struct $kwargs_name_parsed {
+            $($kwarg: $type,)*
+            $($kwarg_opt: Option<$type_opt>,)*
+        }
 
-        let agents = kwargs
-            .iter()
-            .filter_map(|k| match k {
-                #[allow(unused)]
-                Kwarg::AgentsInput {
-                    agents_kw,
-                    double_colon,
-                    agents,
-                } => Some(agents.clone()),
-                _ => None,
-            })
-            .next()
-            .ok_or(syn::Error::new(
-                span,
-                "macro is missing required information: agents",
-            ))?;
+        #[derive(Clone)]
+        pub struct $kwargs_name {
+            $($kwarg: $type,)*
+            $($kwarg_opt: $type_opt,)*
+        }
 
-        let settings = kwargs
-            .iter()
-            .filter_map(|k| match k {
-                #[allow(unused)]
-                Kwarg::SettingsInput {
-                    settings_kw,
-                    double_colon,
-                    settings,
-                } => Some(settings.clone()),
-                _ => None,
-            })
-            .next()
-            .ok_or(syn::Error::new(
-                span,
-                "macro is missing required information: settings",
-            ))?;
+        impl From<$kwargs_name_parsed> for $kwargs_name {
+            fn from(value: $kwargs_name_parsed) -> Self {
+                Self {
+                    $($kwarg: value.$kwarg,)*
+                    $($kwarg_opt: match value.$kwarg_opt {
+                        Some(v) => v,
+                        None => {$default},
+                    },)*
+                }
+            }
+        }
 
-        let aspects = kwargs
-            .iter()
-            .filter_map(|k| match k {
-                #[allow(unused)]
-                Kwarg::AspectsInput { aspects } => Some(aspects.clone()),
-                _ => None,
-            })
-            .next()
-            .ok_or(syn::Error::new(
-                span,
-                "macro is missing required information: aspects",
-            ))?;
+        impl syn::parse::Parse for $kwargs_name_parsed {
+            fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+                let kwargs: syn::punctuated::Punctuated<Kwarg, syn::Token![,]> =
+                    syn::punctuated::Punctuated::parse_terminated(input)?;
+                let span = input.span();
 
-        Ok(Self {
-            domain,
-            agents,
-            settings,
-            aspects,
-            core_path,
-        })
+                $(
+                    let $kwarg = parse_single_kwarg!(@with_error, span, kwargs, $kwarg)?;
+                )*
+                $(
+                    let $kwarg_opt = parse_single_kwarg!(@optional, span, kwargs, $kwarg_opt);
+                )*
+
+                Ok(Self {
+                    $($kwarg,)*
+                    $($kwarg_opt,)*
+                })
+            }
+        }
     }
-}
+);
 
 struct SimBuilder {
     domain: syn::Ident,
