@@ -113,6 +113,6 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: agents,
         settings: settings,
         aspects: [Mechanics, Interaction],
-    );
+    )?;
     Ok(())
 }
