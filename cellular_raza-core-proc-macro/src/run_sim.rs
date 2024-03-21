@@ -325,55 +325,71 @@ pub fn convert_core_path(core_path: Option<syn::Path>) -> syn::Path {
     }
 }
 
-    /// Defines all types which will be used in the simulation
-    fn prepare_types(&self) -> proc_macro2::TokenStream {
-        // Build AuxStorage
-        let aux_storage_builder = super::aux_storage::Builder {
-            struct_name: syn::Ident::new("_CrAuxStorage", proc_macro2::Span::call_site()),
-            core_path: self.core_path.clone(),
-            aspects: self.aspects.clone(),
-        };
+// TODO complete this function
+pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
+    use quote::quote;
+    use SimulationAspect::*;
 
-        let mut output = aux_storage_builder.build_aux_storage();
+    let mut step_1 = proc_macro2::TokenStream::new();
+    let mut step_2 = proc_macro2::TokenStream::new();
+    let mut step_3 = proc_macro2::TokenStream::new();
+    let mut step_4 = proc_macro2::TokenStream::new();
 
-        // Build Communicator
-        let communicator_builder = super::communicator::CommunicatorBuilder {
-            struct_name: syn::Ident::new("_CrCommunicator", proc_macro2::Span::call_site()),
-            core_path: self.core_path.clone(),
-            aspects: self.aspects.clone(),
-        };
-        output.extend(communicator_builder.build_communicator());
-
-        output
+    if kwargs
+        .aspects
+        .contains_multiple(vec![&Mechanics, &Interaction])
+    {
+        step_1.extend(quote!(sbox.update_mechanics_step_1()?;));
+        step_2.extend(quote!(sbox.update_mechanics_step_2()?;));
+        step_3.extend(quote!(sbox.update_mechanics_step_3(&next_time_point.increment)?;));
     }
 
-    /// Generate Zero-overhead functions that test compatibility between
-    /// concepts before running the simulation, possibly reducing boilerplate
-    /// in compiler errors
-    fn test_compatibility(&self) -> proc_macro2::TokenStream {
-        let core_path = self.core_path.clone();
-        let domain = self.domain.clone();
-        let agents = self.agents.clone();
-        let mut output = quote::quote!(
-            #core_path::backend::chili::compatibility_tests::comp_domain_agents(
-                &#domain,
-                &#agents
-            );
-        );
+    if kwargs.aspects.contains(&Cycle) {
+        step_3.extend(quote!(sbox.update_cell_cycle()?;));
+    }
 
-        if self.aspects.contains_multiple(vec![
-            &SimulationAspect::Mechanics,
-            &SimulationAspect::Interaction,
-        ]) {
-            output.extend(quote::quote!(
-                #core_path::backend::chili::compatibility_tests::comp_mechanics_interaction(
-                    &#agents
-                );
-            ));
+    if kwargs.aspects.contains(&Mechanics) {
+        step_3.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
+        step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
+    }
+
+    let core_path = &kwargs.core_path;
+    let settings = &kwargs.settings;
+
+    quote!(
+        #[allow(unused)]
+        let _storage_manager: #core_path::storage::StorageManager<_, _> =
+           #core_path::storage::StorageManager::construct(&#settings.storage, key as u64)?;
+
+        // Set up the time stepper
+        let mut _time_stepper = #settings.time.clone();
+        use #core_path::time::TimeStepper;
+
+        // Initialize the progress bar
+        #[allow(unused)]
+        let mut pb = match key {
+            0 => Some(_time_stepper.initialize_bar()?),
+            _ => None,
+        };
+
+        while let Some(next_time_point) = _time_stepper.advance()? {
+            #step_1
+            sbox.sync();
+            #step_2
+            sbox.sync();
+            #step_3
+            sbox.sync();
+            #step_4
+
+            match &mut pb {
+                Some(bar) => _time_stepper.update_bar(bar)?,
+                None => (),
+            };
+            sbox.save_voxels(&_storage_manager, &next_time_point)?;
         }
-
-        output
-    }
+        Ok(())
+    )
+}
 
 define_kwargs!(
     KwargsMain,
@@ -386,18 +402,112 @@ define_kwargs!(
     core_path: syn::Path | convert_core_path(None)
 );
 
-    ///
-    fn run_main(&self) -> proc_macro2::TokenStream {
-        quote::quote!(Result::<usize, chili::SimulationError>::Ok(1_usize))
-    }
+///
+pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
+    let asp = &kwargs
+        .aspects
+        .items
+        .iter()
+        .map(|asp| asp.ident.clone())
+        .collect::<Vec<_>>();
+    let domain = &kwargs.domain;
+    let agents = &kwargs.agents;
+    let settings = &kwargs.settings;
+    let core_path = &kwargs.core_path;
+
+    let update_func = run_main_update(kwargs.clone());
+
+    quote::quote!({
+        type _Syncer = #core_path::backend::chili::BarrierSync;
+        let _aux_storage = _CrAuxStorage::default();
+        let mut runner = #core_path::backend::chili::construct_simulation_runner::<
+            _,
+            _,
+            _,
+            _,
+            #core_path::backend::chili::communicator_generics_placeholders!(
+                name: _CrCommunicator,
+                aspects: [#(#asp),*]
+            ),
+            _Syncer,
+            _
+        >(
+            #domain,
+            #agents,
+            #settings.n_threads,
+            &_aux_storage,
+        )?;
+
+        runner.subdomain_boxes.iter_mut().map(|(&key, sbox)| {
+            #update_func
+        }).collect::<Result<Vec<_>, #core_path::backend::chili::SimulationError>>()?;
+    })
 }
 
-pub fn run_simulation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let kwargs = syn::parse_macro_input!(input as Kwargs);
-    let mut output = proc_macro2::TokenStream::new();
-    let sim_builder = SimBuilder::initialize(kwargs);
-    output.extend(sim_builder.prepare_types());
-    output.extend(sim_builder.test_compatibility());
-    output.extend(sim_builder.run_main());
-    quote::quote!({#output}).into()
+pub fn prepare_types(kwargs_parsed: KwargsPrepareTypes) -> proc_macro2::TokenStream {
+    // Build AuxStorage
+    let kwargs: KwargsPrepareTypes = kwargs_parsed.into();
+    let aux_storage_builder = super::aux_storage::Builder {
+        struct_name: syn::Ident::new("_CrAuxStorage", proc_macro2::Span::call_site()),
+        core_path: kwargs.core_path.clone(),
+        aspects: kwargs.aspects.clone(),
+    };
+
+    let mut output = aux_storage_builder.build_aux_storage();
+
+    // Build Communicator
+    let communicator_builder = super::communicator::CommunicatorBuilder {
+        struct_name: syn::Ident::new("_CrCommunicator", proc_macro2::Span::call_site()),
+        core_path: kwargs.core_path.clone(),
+        aspects: kwargs.aspects.clone(),
+    };
+    output.extend(communicator_builder.build_communicator());
+
+    output
+}
+
+/// Generate Zero-overhead functions that test compatibility between
+/// concepts before running the simulation, possibly reducing boilerplate
+/// in compiler errors
+pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStream {
+    let core_path = &kwargs.core_path;
+    let domain = &kwargs.domain;
+    let agents = &kwargs.agents;
+    let mut output = quote::quote!(
+        #core_path::backend::chili::compatibility_tests::comp_domain_agents(
+            &#domain,
+            &#agents
+        );
+    );
+
+    if kwargs.aspects.contains_multiple(vec![
+        &SimulationAspect::Mechanics,
+        &SimulationAspect::Interaction,
+    ]) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::comp_mechanics_interaction(
+                &#agents
+            );
+        ));
+    }
+
+    output
+}
+
+pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
+    let types = prepare_types(KwargsPrepareTypes {
+        aspects: kwargs.aspects.clone(),
+        core_path: kwargs.core_path.clone(),
+    });
+    // let test_compat = kwargs.test_compatibility();
+    // let run_main = kwargs.run_main();
+    // let core_path = &kwargs.core_path;
+    // quote::quote!({
+    //     #types
+    //     #test_compat
+    //     #run_main
+    //     Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
+    // })
+    // .into()
+    quote::quote!()
 }
