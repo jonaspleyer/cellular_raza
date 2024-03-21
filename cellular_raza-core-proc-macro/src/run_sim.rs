@@ -35,15 +35,16 @@ impl Parallelizer {
 
 /// # Important
 #[derive(Clone, PartialEq, Debug)]
+#[allow(non_camel_case_types)]
 enum Kwarg {
-    DomainInput {
+    domain {
         #[allow(unused)]
         domain_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
         domain: syn::Ident,
     },
-    AgentsInput {
+    agents {
         #[allow(unused)]
         agents_kw: syn::Ident,
         #[allow(unused)]
@@ -51,21 +52,21 @@ enum Kwarg {
         #[allow(unused)]
         agents: syn::Ident,
     },
-    SettingsInput {
+    settings {
         #[allow(unused)]
         settings_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
         settings: syn::Ident,
     },
-    AspectsInput {
+    aspects {
         aspects: SimulationAspects,
     },
-    CorePath {
+    core_path {
         #[allow(unused)]
-        settings_kw: syn::Ident,
+        core_path_kw: syn::Ident,
         #[allow(unused)]
-        double_colong: syn::Token![:],
+        double_colon: syn::Token![:],
         core_path: syn::Path,
     },
     parallelizer {
@@ -82,27 +83,27 @@ impl syn::parse::Parse for Kwarg {
         let keyword: syn::Ident = input.parse()?;
         let keyword_string = keyword.clone().to_string();
         match keyword_string.as_str() {
-            "domain" => Ok(Kwarg::DomainInput {
+            "domain" => Ok(Kwarg::domain {
                 domain_kw: keyword,
                 double_colon: input.parse()?,
                 domain: input.parse()?,
             }),
-            "agents" => Ok(Kwarg::AgentsInput {
+            "agents" => Ok(Kwarg::agents {
                 agents_kw: keyword,
                 double_colon: input.parse()?,
                 agents: input.parse()?,
             }),
-            "settings" => Ok(Kwarg::SettingsInput {
+            "settings" => Ok(Kwarg::settings {
                 settings_kw: keyword,
                 double_colon: input.parse()?,
                 settings: input.parse()?,
             }),
-            "aspects" => Ok(Kwarg::AspectsInput {
+            "aspects" => Ok(Kwarg::aspects {
                 aspects: SimulationAspects::parse_give_initial_token(keyword, input)?,
             }),
-            "core_path" => Ok(Kwarg::CorePath {
-                settings_kw: keyword,
-                double_colong: input.parse()?,
+            "core_path" => Ok(Kwarg::core_path {
+                core_path_kw: keyword,
+                double_colon: input.parse()?,
                 core_path: input.parse()?,
             }),
             "parallelizer" => Ok(Kwarg::parallelizer {
@@ -123,7 +124,7 @@ impl quote::ToTokens for Kwarg {
         use quote::TokenStreamExt;
         match self {
             #[allow(unused)]
-            Kwarg::DomainInput {
+            Kwarg::domain {
                 domain_kw,
                 double_colon,
                 domain,
@@ -133,7 +134,7 @@ impl quote::ToTokens for Kwarg {
                 tokens.append(domain.clone());
             }
             #[allow(unused)]
-            Kwarg::AgentsInput {
+            Kwarg::agents {
                 agents_kw,
                 double_colon,
                 agents,
@@ -143,7 +144,7 @@ impl quote::ToTokens for Kwarg {
                 tokens.append(agents.clone());
             }
             #[allow(unused)]
-            Kwarg::SettingsInput {
+            Kwarg::settings {
                 settings_kw,
                 double_colon,
                 settings,
