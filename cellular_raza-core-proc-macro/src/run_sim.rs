@@ -175,32 +175,46 @@ impl quote::ToTokens for Kwarg {
     }
 }
 
-#[derive(Clone)]
-struct Kwargs {
-    domain: syn::Ident,
-    agents: syn::Ident,
-    settings: syn::Ident,
-    aspects: SimulationAspects,
-    core_path: Option<syn::Path>,
-}
-
-impl syn::parse::Parse for Kwargs {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kwargs: syn::punctuated::Punctuated<Kwarg, syn::Token![,]> =
-            syn::punctuated::Punctuated::parse_terminated(input)?;
-        let span = input.span();
-        let core_path = kwargs
+macro_rules! parse_single_kwarg(
+    (@base, $span:ident, $kwargs:ident, $field:ident) => {{
+        let results = $kwargs
             .iter()
             .filter_map(|k| match k {
                 #[allow(unused)]
-                Kwarg::CorePath {
-                    settings_kw,
-                    double_colong,
-                    core_path,
-                } => Some(core_path.clone()),
+                Kwarg::$field { $field, .. }
+                => Some($field.clone()),
                 _ => None,
             })
-            .next();
+            .collect::<Vec<_>>();
+        if results.len() > 1 {
+            Err(syn::Error::new(
+                $span,
+                format!("multile entries for argument: {}", stringify!($field))
+            ))
+        } else {
+            Ok(results)
+        }
+    }};
+    (@with_error, $span:ident, $kwargs:ident, $field:ident) => {{
+        let results = parse_single_kwarg!(@base, $span, $kwargs, $field)?;
+        if results.len() != 1 {
+            Err(syn::Error::new(
+                $span,
+                format!("macro is missing required argument: {}", stringify!($field))
+            ))
+        } else {
+            Ok(results[0].clone())
+        }
+    }};
+    (@optional, $span:ident, $kwargs:ident, $field:ident) => {{
+        let results = parse_single_kwarg!(@base, $span, $kwargs, $field)?;
+        if results.len() == 1 {
+            Some(results[0].clone())
+        } else {
+            None
+        }
+    }};
+);
 
         // TODO do not unwrap! Rather construct nice error message
         let domain = kwargs
