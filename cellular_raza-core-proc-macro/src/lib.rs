@@ -156,8 +156,47 @@ pub fn run_test_for_aspects(input: proc_macro::TokenStream) -> proc_macro::Token
     testing::run_test_for_aspects(input)
 }
 
+/// Construct, test and run a full simulation.
+///
+/// # Arguments
 /// TODO
+///
+/// # Internals
+/// This macro is the same as running
+/// ```ignore
+/// {
+///     prepare_types!(..);
+///     test_compatibility!(..);
+///     run_main(..);
+/// }
+///```
 #[proc_macro]
 pub fn run_simulation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    run_sim::run_simulation(input)
+    let kwargs = syn::parse_macro_input!(input as run_sim::KwargsSimParsed);
+    let kwargs = run_sim::KwargsSim::from(kwargs);
+    run_sim::run_simulation(kwargs).into()
+}
+
+/// TODO
+#[proc_macro]
+pub fn prepare_types(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let kwargs = syn::parse_macro_input!(input as run_sim::KwargsPrepareTypesParsed);
+    let kwargs = run_sim::KwargsPrepareTypes::from(kwargs);
+    run_sim::prepare_types(kwargs).into()
+}
+
+/// TODO
+#[proc_macro]
+pub fn test_compatibility(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let kwargs = syn::parse_macro_input!(input as run_sim::KwargsCompatibilityParsed);
+    let kwargs = run_sim::KwargsCompatibility::from(kwargs);
+    run_sim::test_compatibility(kwargs).into()
+}
+
+/// TODO
+#[proc_macro]
+pub fn run_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let kwargs = syn::parse_macro_input!(input as run_sim::KwargsMainParsed);
+    let kwargs = run_sim::KwargsMain::from(kwargs);
+    run_sim::run_main(kwargs).into()
 }
