@@ -585,6 +585,33 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
                 &#settings.time,
                 &#agents,
             );
+            #core_path::backend::chili::compatibility_tests::mechanics_implemented(
+                &#agents,
+            );
+        ));
+    }
+
+    if kwargs.aspects.contains(&Interaction) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::interaction_implemented(
+                &#agents,
+            );
+        ));
+    }
+
+    if kwargs.aspects.contains(&Cycle) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::cycle_implemented(
+                &#agents,
+            );
+        ));
+    }
+
+    if kwargs.aspects.contains(&Reactions) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::reactions_implemented(
+                &#agents,
+            );
         ));
     }
     output

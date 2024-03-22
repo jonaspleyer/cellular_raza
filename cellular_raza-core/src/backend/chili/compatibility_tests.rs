@@ -37,3 +37,42 @@ where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
 {
 }
+
+#[allow(unused)]
+pub fn mechanics_implemented<Pos, Vel, For, Float, C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+{
+}
+
+#[allow(unused)]
+pub fn interaction_implemented<Pos, Vel, For, Inf, C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+{
+}
+
+#[allow(unused)]
+pub fn cycle_implemented<C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::Cycle<C>,
+{
+}
+
+#[allow(unused)]
+pub fn reactions_implemented<C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    // TODO
+{
+}
+
+#[allow(unused)]
+pub fn reactions_volume<C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+{
+}
