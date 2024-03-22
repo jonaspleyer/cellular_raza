@@ -284,7 +284,7 @@ where
                     }
                     iteration += 1;
                 }
-                return Ok(cont);
+                Ok(cont)
             })?;
             handles.push(handle);
         }

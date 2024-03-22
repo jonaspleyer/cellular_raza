@@ -499,10 +499,9 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let core_path = &kwargs.core_path;
 
     let update_func = run_main_update(kwargs.clone());
-    let parallelized_update_func = kwargs.parallelizer.parallelize_execution(
-        &update_func,
-        &core_path
-    );
+    let parallelized_update_func = kwargs
+        .parallelizer
+        .parallelize_execution(&update_func, &core_path);
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
