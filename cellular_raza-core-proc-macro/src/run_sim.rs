@@ -567,10 +567,12 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
         );
     );
 
-    if kwargs.aspects.contains_multiple(vec![
-        &SimulationAspect::Mechanics,
-        &SimulationAspect::Interaction,
-    ]) {
+    use SimulationAspect::*;
+
+    if kwargs
+        .aspects
+        .contains_multiple(vec![&Mechanics, &Interaction])
+    {
         output.extend(quote::quote!(
             #core_path::backend::chili::compatibility_tests::comp_mechanics_interaction(
                 &#agents
@@ -578,7 +580,7 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
         ));
     }
 
-    if kwargs.aspects.contains(&SimulationAspect::Mechanics) {
+    if kwargs.aspects.contains(&Mechanics) {
         output.extend(quote::quote!(
             #core_path::backend::chili::compatibility_tests::comp_time_stepper_mechanics(
                 &#settings.time,
