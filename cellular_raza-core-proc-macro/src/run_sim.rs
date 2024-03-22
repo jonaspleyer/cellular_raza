@@ -390,6 +390,7 @@ define_kwargs!(
     aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | convert_core_path(None),
+    parallelizer: Parallelizer | Parallelizer::OsThreads,
     @from
     KwargsSim
 );
