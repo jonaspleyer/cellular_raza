@@ -560,7 +560,7 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
     let agents = &kwargs.agents;
     let settings = &kwargs.settings;
     let mut output = quote::quote!(
-        #core_path::backend::chili::compatibility_tests::comp_domain_agents(
+        #core_path::backend::chili::compatibility_tests::domain_agents(
             &#domain,
             &#agents
         );
@@ -573,7 +573,7 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
         .contains_multiple(vec![&Mechanics, &Interaction])
     {
         output.extend(quote::quote!(
-            #core_path::backend::chili::compatibility_tests::comp_mechanics_interaction(
+            #core_path::backend::chili::compatibility_tests::mechanics_interaction(
                 &#agents
             );
         ));
@@ -581,7 +581,7 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
 
     if kwargs.aspects.contains(&Mechanics) {
         output.extend(quote::quote!(
-            #core_path::backend::chili::compatibility_tests::comp_time_stepper_mechanics(
+            #core_path::backend::chili::compatibility_tests::time_stepper_mechanics(
                 &#settings.time,
                 &#agents,
             );
