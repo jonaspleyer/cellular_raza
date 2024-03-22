@@ -20,14 +20,33 @@ impl syn::parse::Parse for Parallelizer {
 impl Parallelizer {
     fn parallelize_execution(
         &self,
-        runner: syn::Ident,
-        code: proc_macro2::TokenStream,
+        code: &proc_macro2::TokenStream,
+        core_path: &syn::Path,
     ) -> proc_macro2::TokenStream {
-        match self {
-            Self::OsThreads => (),
-            Self::Rayon => (),
+        let core_path = &core_path;
+        match &self {
+            Self::OsThreads => quote::quote!(
+                let mut handles = vec![];
+                for (key, mut sbox) in runner
+                    .subdomain_boxes
+                    .into_iter()
+                {
+                    let settings = settings.clone();
+                    let handle = std::thread::Builder::new()
+                        .name(format!("cellular_raza-worker_thread-{:03.0}", key))
+                        .spawn(move ||
+                            -> Result<_, #core_path::backend::chili::SimulationError> {#code})?;
+                    handles.push(handle);
+                }
+                for handle in handles {
+                    // TODO decide if we need to catch this error in the future
+                    handle
+                        .join()
+                        .expect("Could not join threads after simulation has finished")?;
+                }
+            ),
+            Self::Rayon => unimplemented!(),
         }
-        quote::quote!()
     }
 }
 
