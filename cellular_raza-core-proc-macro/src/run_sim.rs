@@ -499,6 +499,10 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let core_path = &kwargs.core_path;
 
     let update_func = run_main_update(kwargs.clone());
+    let parallelized_update_func = kwargs.parallelizer.parallelize_execution(
+        &update_func,
+        &core_path
+    );
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
@@ -521,9 +525,8 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             &_aux_storage,
         )?;
 
-        runner.subdomain_boxes.iter_mut().map(|(&key, sbox)| {
-            #update_func
-        }).collect::<Result<Vec<_>, #core_path::backend::chili::SimulationError>>()?;
+        #parallelized_update_func
+        Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
     })
 }
 
