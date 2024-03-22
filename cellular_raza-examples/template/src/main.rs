@@ -46,6 +46,10 @@ struct Agent {
     pub interaction: BoundLennardJonesF32,
 }
 
+chili::prepare_types!(
+    aspects: [Mechanics, Interaction]
+);
+
 fn main() -> Result<(), chili::SimulationError> {
     use rand::Rng;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
@@ -108,11 +112,18 @@ fn main() -> Result<(), chili::SimulationError> {
         show_progressbar: true,
     };
 
-    chili::run_simulation!(
+    chili::test_compatibility!(
+        domain: domain,
+        agents: agents,
+        settings: settings,
+        aspects: [Mechanics, Interaction],
+    );
+    chili::run_main!(
         domain: domain,
         agents: agents,
         settings: settings,
         aspects: [Mechanics, Interaction],
     )?;
+
     Ok(())
 }
