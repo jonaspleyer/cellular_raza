@@ -222,8 +222,50 @@ macro_rules! define_kwargs(
         $kwargs_name_parsed:ident,
         $($kwarg:ident: $type:ty,)*
         @optionals
-        $($kwarg_opt:ident: $type_opt:ty | $default:expr),*
+        $($kwarg_opt:ident: $type_opt:ty | $default:expr,)*
+        @from
+        $kwargs_from:ident$(,)?
     ) => {
+        define_kwargs!($kwargs_name, $kwargs_name_parsed, $($kwarg: $type,)* @optionals $($kwarg_opt: $type_opt | $default,)*);
+
+        impl From<$kwargs_from> for $kwargs_name {
+            fn from(parent: $kwargs_from) -> Self {
+                Self {
+                    $($kwarg: parent.$kwarg,)*
+                    $($kwarg_opt: parent.$kwarg_opt,)*
+                }
+            }
+        }
+    };
+    (
+        $kwargs_name:ident,
+        $kwargs_name_parsed:ident,
+        $($kwarg:ident: $type:ty,)*
+        @optionals
+        $($kwarg_opt:ident: $type_opt:ty | $default:expr,)*
+        @from
+        $kwargs_from:ident,
+        $($kwargs_from_more:ident),*
+    ) => {
+        define_kwargs!($kwargs_name, $kwargs_name_parsed, $($kwarg: $type,)* @optionals $($kwarg_opt: $type_opt | $default,)* @from $($kwargs_from_more),*);
+
+        impl From<$kwargs_from> for $kwargs_name {
+            fn from(parent: $kwargs_from) -> Self {
+                Self {
+                    $($kwarg: parent.$kwarg,)*
+                    $($kwarg_opt: parent.$kwarg_opt,)*
+                }
+            }
+        }
+    };
+    (
+        $kwargs_name:ident,
+        $kwargs_name_parsed:ident,
+        $($kwarg:ident: $type:ty,)*
+        @optionals
+        $($kwarg_opt:ident: $type_opt:ty | $default:expr,)*
+    ) => {
+
         #[derive(Clone)]
         pub struct $kwargs_name_parsed {
             $($kwarg: $type,)*
@@ -290,7 +332,9 @@ define_kwargs!(
     settings: syn::Ident,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None)
+    core_path: syn::Path | convert_core_path(None),
+    @from
+    KwargsSim
 );
 
 define_kwargs!(
@@ -298,7 +342,23 @@ define_kwargs!(
     KwargsPrepareTypesParsed,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None)
+    core_path: syn::Path | convert_core_path(None),
+    @from
+    KwargsSim,
+    KwargsCompatibility
+);
+
+define_kwargs!(
+    KwargsMain,
+    KwargsMainParsed,
+    aspects: SimulationAspects,
+    domain: syn::Ident,
+    agents: syn::Ident,
+    settings: syn::Ident,
+    @optionals
+    core_path: syn::Path | convert_core_path(None),
+    @from
+    KwargsSim
 );
 
 /// This function converts an `Option<syn::Path>` to a `syn::Path`
@@ -390,17 +450,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         Ok(())
     )
 }
-
-define_kwargs!(
-    KwargsMain,
-    KwargsMainParsed,
-    aspects: SimulationAspects,
-    domain: syn::Ident,
-    agents: syn::Ident,
-    settings: syn::Ident,
-    @optionals
-    core_path: syn::Path | convert_core_path(None)
-);
 
 ///
 pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
