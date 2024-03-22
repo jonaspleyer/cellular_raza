@@ -245,7 +245,13 @@ macro_rules! define_kwargs(
         @from
         $kwargs_from:ident$(,)?
     ) => {
-        define_kwargs!($kwargs_name, $kwargs_name_parsed, $($kwarg: $type,)* @optionals $($kwarg_opt: $type_opt | $default,)*);
+        define_kwargs!(
+            $kwargs_name,
+            $kwargs_name_parsed,
+            $($kwarg: $type,)*
+            @optionals
+            $($kwarg_opt: $type_opt | $default,)*
+        );
 
         impl From<$kwargs_from> for $kwargs_name {
             fn from(parent: $kwargs_from) -> Self {
@@ -266,7 +272,15 @@ macro_rules! define_kwargs(
         $kwargs_from:ident,
         $($kwargs_from_more:ident),*
     ) => {
-        define_kwargs!($kwargs_name, $kwargs_name_parsed, $($kwarg: $type,)* @optionals $($kwarg_opt: $type_opt | $default,)* @from $($kwargs_from_more),*);
+        define_kwargs!(
+            $kwargs_name,
+            $kwargs_name_parsed,
+            $($kwarg: $type,)*
+            @optionals
+            $($kwarg_opt: $type_opt | $default,)*
+            @from
+            $($kwargs_from_more),*
+        );
 
         impl From<$kwargs_from> for $kwargs_name {
             fn from(parent: $kwargs_from) -> Self {
@@ -370,10 +384,10 @@ define_kwargs!(
 define_kwargs!(
     KwargsMain,
     KwargsMainParsed,
-    aspects: SimulationAspects,
     domain: syn::Ident,
     agents: syn::Ident,
     settings: syn::Ident,
+    aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | convert_core_path(None),
     @from
