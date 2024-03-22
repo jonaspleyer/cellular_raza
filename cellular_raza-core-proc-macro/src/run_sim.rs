@@ -548,16 +548,16 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
         aspects: kwargs.aspects.clone(),
         core_path: kwargs.core_path.clone(),
     });
-    // let test_compat = kwargs.test_compatibility();
-    // let run_main = kwargs.run_main();
-    // let core_path = &kwargs.core_path;
-    // quote::quote!({
-    //     #types
-    //     #test_compat
-    //     #run_main
-    //     Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
-    // })
-    // .into()
+    let kwargs_compat = KwargsCompatibility::from(kwargs.clone());
+    let test_compat = test_compatibility(kwargs_compat);
+    let kwargs_main = KwargsMain::from(kwargs.clone());
+    let run_main = run_main(kwargs_main);
     let core_path = &kwargs.core_path;
-    quote::quote!(Result::<(), #core_path::backend::chili::SimulationError>::Ok(()))
+    quote::quote!({
+        #types
+        #test_compat
+        #run_main
+        Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
+    })
+    .into()
 }
