@@ -1,3 +1,10 @@
+//! This module serves to test for compatibility between types and implementations before running a
+//! simulation.
+//!
+//! The rationale behind this approach is to circumvent terse
+//! generic error messages which are hard to read.
+//! Eventually, we might opt to also implement custom error messages.
+
 #[allow(unused)]
 pub fn comp_domain_agents<D, C, S, Ci>(domain: &D, agents: &Ci)
 where
