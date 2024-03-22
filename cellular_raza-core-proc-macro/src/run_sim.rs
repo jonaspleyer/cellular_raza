@@ -559,6 +559,7 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
     let core_path = &kwargs.core_path;
     let domain = &kwargs.domain;
     let agents = &kwargs.agents;
+    let settings = &kwargs.settings;
     let mut output = quote::quote!(
         #core_path::backend::chili::compatibility_tests::comp_domain_agents(
             &#domain,
@@ -577,6 +578,14 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
         ));
     }
 
+    if kwargs.aspects.contains(&SimulationAspect::Mechanics) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::comp_time_stepper_mechanics(
+                &#settings.time,
+                &#agents,
+            );
+        ));
+    }
     output
 }
 

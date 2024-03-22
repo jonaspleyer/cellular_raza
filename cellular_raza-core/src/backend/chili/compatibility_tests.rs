@@ -21,3 +21,12 @@ where
     A: Default,
 {
 }
+
+#[allow(unused)]
+pub fn comp_time_stepper_mechanics<Pos, Vel, For, T, C, Ci, Float>(time_stepper: &T, agents: &Ci)
+where
+    T: crate::time::TimeStepper<Float>,
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+{
+}
