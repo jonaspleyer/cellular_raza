@@ -1,8 +1,7 @@
 //! # cellular_raza - Building Blocks
 //!
 //! Building blocks allow users to quickly construct complex cellular agents.
-//! The simplest approach is to use fully-defined cell models which are
-//! contained in [cell_models] with fitting [domains].
+//! The simplest approach is to use fully-defined cell models.
 //! However, users can also build their own complex models by combining existing ones.
 //!
 //! To create your own agent with physical mechanics and interactions, we need to include
