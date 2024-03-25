@@ -832,6 +832,14 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 }
 
 implement_cartesian_cuboid_domain_new!(
+    1,
+    CartesianCuboid1New,
+    CartesianSubDomain1,
+    CartesianVoxel1,
+    f64,
+    0
+);
+implement_cartesian_cuboid_domain_new!(
     2,
     CartesianCuboid2New,
     CartesianSubDomain2,
@@ -840,7 +848,25 @@ implement_cartesian_cuboid_domain_new!(
     0,
     1
 );
+implement_cartesian_cuboid_domain_new!(
+    3,
+    CartesianCuboid3New,
+    CartesianSubDomain3,
+    CartesianVoxel3,
+    f64,
+    0,
+    1,
+    2
+);
 
+implement_cartesian_cuboid_domain_new!(
+    1,
+    CartesianCuboid1NewF32,
+    CartesianSubDomain1F32,
+    CartesianVoxel1F32,
+    f32,
+    0
+);
 implement_cartesian_cuboid_domain_new!(
     2,
     CartesianCuboid2NewF32,
@@ -849,6 +875,16 @@ implement_cartesian_cuboid_domain_new!(
     f32,
     0,
     1
+);
+implement_cartesian_cuboid_domain_new!(
+    3,
+    CartesianCuboid3NewF32,
+    CartesianSubDomain3F32,
+    CartesianVoxel3F32,
+    f32,
+    0,
+    1,
+    2
 );
 
 // TODO make them only visible if correspoding feature (eg. fluid_mechanics or gradients) is active
