@@ -301,14 +301,14 @@ macro_rules! define_kwargs(
 
         #[derive(Clone)]
         pub struct $kwargs_name_parsed {
-            $($kwarg: $type,)*
-            $($kwarg_opt: Option<$type_opt>,)*
+            pub $($kwarg: $type,)*
+            pub $($kwarg_opt: Option<$type_opt>,)*
         }
 
         #[derive(Clone)]
         pub struct $kwargs_name {
-            $($kwarg: $type,)*
-            $($kwarg_opt: $type_opt,)*
+            pub $($kwarg: $type,)*
+            pub $($kwarg_opt: $type_opt,)*
         }
 
         impl From<$kwargs_name_parsed> for $kwargs_name {
