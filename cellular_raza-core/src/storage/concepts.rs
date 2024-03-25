@@ -142,12 +142,12 @@ impl<T> UniqueVec<T> {
     /// assert_eq!(*unique_vec, vec![1, 33, 2, 0, 4, 56]);
     /// assert_eq!(rest, vec![33, 2]);
     /// ```
-    pub fn from_vec(vec: Vec<T>) -> (Self, Vec<T>)
+    pub fn from_iter(iter: impl IntoIterator<Item = T>) -> (Self, Vec<T>)
     where
         T: PartialEq,
     {
         let mut new_inner = Vec::new();
-        let rest = vec
+        let rest = iter
             .into_iter()
             .filter_map(|element| {
                 if new_inner.contains(&element) {
@@ -207,7 +207,16 @@ where
     T: PartialEq,
 {
     fn from(value: Vec<T>) -> Self {
-        Self::from_vec(value).0
+        Self::from_iter(value).0
+    }
+}
+
+impl<T> IntoIterator for UniqueVec<T> {
+    type Item = T;
+    type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -278,7 +287,8 @@ impl StorageBuilder {
     }
 
     /// Define the priority of [StorageOption]. See [StorageOption::default_priority].
-    pub fn priority(self, priority: UniqueVec<StorageOption>) -> Self {
+    pub fn priority(self, priority: impl IntoIterator<Item = StorageOption>) -> Self {
+        let (priority, _) = UniqueVec::from_iter(priority);
         Self { priority, ..self }
     }
 
