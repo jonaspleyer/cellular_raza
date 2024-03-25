@@ -138,7 +138,7 @@ impl<T> UniqueVec<T> {
     /// ```
     /// # use cellular_raza_core::storage::UniqueVec;
     /// let input = vec![1, 33, 2, 0, 33, 4, 56, 2];
-    /// let (unique_vec, rest) = UniqueVec::from_vec(input);
+    /// let (unique_vec, rest) = UniqueVec::from_iter(input);
     /// assert_eq!(*unique_vec, vec![1, 33, 2, 0, 4, 56]);
     /// assert_eq!(rest, vec![33, 2]);
     /// ```
