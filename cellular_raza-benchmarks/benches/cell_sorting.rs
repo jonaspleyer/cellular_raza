@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use cellular_raza::*;
+use cellular_raza::core::backend::chili;
+use cellular_raza::{core::time::FixedStepsize, prelude::*};
 
 use nalgebra::Vector3;
 use num::Zero;
@@ -85,69 +86,66 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 fn run_simulation(
     n_cells_1: usize,
     n_cells_2: usize,
-    n_threads: usize,
+    n_threads: std::num::NonZeroUsize,
     domain_size: f64,
-    n_times: usize,
+    n_steps: usize,
     dt: f64,
-) -> Result<(), SimulationError> {
+) -> Result<(), chili::SimulationError> {
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
-    let cells = (0..n_cells_1 + n_cells_2)
-        .map(|n| {
-            let pos = Vector3::from([
-                rng.gen_range(0.0..domain_size),
-                rng.gen_range(0.0..domain_size),
-                rng.gen_range(0.0..domain_size),
-            ]);
-            ModularCell {
-                mechanics: NewtonDamped3D {
-                    pos,
-                    vel: Vector3::zero(),
-                    damping_constant: 2.0,
-                    mass: 1.0,
+    let cells = (0..n_cells_1 + n_cells_2).map(|n| {
+        let pos = Vector3::from([
+            rng.gen_range(0.0..domain_size),
+            rng.gen_range(0.0..domain_size),
+            rng.gen_range(0.0..domain_size),
+        ]);
+        ModularCell {
+            mechanics: NewtonDamped3D {
+                pos,
+                vel: Vector3::zero(),
+                damping_constant: 2.0,
+                mass: 1.0,
+            },
+            interaction: CellSpecificInteraction {
+                species: match n <= n_cells_1 {
+                    true => Species::BlueCell,
+                    false => Species::RedCell,
                 },
-                interaction: CellSpecificInteraction {
-                    species: match n <= n_cells_1 {
-                        true => Species::BlueCell,
-                        false => Species::RedCell,
-                    },
-                    potential_strength: 2.0,
-                    relative_interaction_range: 1.5,
-                    cell_radius: 6.0,
-                },
-                cycle: NoCycle {},
-                interaction_extracellular: NoExtracellularGradientSensing,
-                cellular_reactions: NoCellularReactions,
-                volume: 0.0,
-            }
-        })
-        .collect::<Vec<_>>();
+                potential_strength: 2.0,
+                relative_interaction_range: 1.5,
+                cell_radius: 6.0,
+            },
+            cycle: NoCycle {},
+            interaction_extracellular: NoExtracellularGradientSensing,
+            cellular_reactions: NoCellularReactions,
+            volume: 0.0,
+        }
+    });
 
-    let domain = CartesianCuboid3::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid3New::from_boundaries_and_interaction_ranges(
         [0.0; 3],
         [domain_size; 3],
         [1.5 * 6.0 * 2.0; 3],
     )?;
 
-    let time = TimeSetup {
-        t_start: 0.0,
-        t_eval: (0..n_times).map(|n| (n as f64 * dt, false)).collect(),
-    };
+    let time = FixedStepsize::from_partial_save_steps(0.0, dt, n_steps as u64, n_steps as u64 + 1)?;
 
-    let meta_params = SimulationMetaParams {
+    let storage = StorageBuilder::new().location("out/cell_sorting");
+
+    let settings = chili::Settings {
         n_threads,
-        ..Default::default()
+        time,
+        storage,
+        show_progressbar: false,
     };
 
-    let storage = StorageConfig::from_path(std::path::Path::new("out/cell_sorting"));
-
-    let simulation_setup = SimulationSetup::new(domain, cells, time, meta_params, storage, ());
-
-    let mut supervisor = SimulationSupervisor::initialize_from_setup(simulation_setup);
-    supervisor.config.show_progressbar = false;
-
-    supervisor.run_full_sim()?;
+    chili::run_simulation!(
+        agents: cells,
+        domain: domain,
+        settings: settings,
+        aspects: [Mechanics, Interaction],
+    )?;
     Ok(())
 }
 
@@ -163,7 +161,18 @@ fn cell_scaling(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("n_cells-domain_size", n_cells),
             &n_cells,
-            |b, &n_cells| b.iter(|| run_simulation(n_cells, n_cells, 1, domain_size, 10, 0.25)),
+            |b, &n_cells| {
+                b.iter(|| {
+                    run_simulation(
+                        n_cells,
+                        n_cells,
+                        1.try_into().unwrap(),
+                        domain_size,
+                        10,
+                        0.25,
+                    )
+                })
+            },
         );
     }
     group.finish();
@@ -179,7 +188,16 @@ fn thread_scaling(c: &mut Criterion) {
             BenchmarkId::new("n_threads", n_threads),
             &n_threads,
             |b, &n_threads| {
-                b.iter(|| run_simulation(10_000, 10_000, n_threads as usize, 210.0, 5, 0.25))
+                b.iter(|| {
+                    run_simulation(
+                        10_000,
+                        10_000,
+                        n_threads.try_into().unwrap(),
+                        210.0,
+                        5,
+                        0.25,
+                    )
+                })
             },
         );
     }
