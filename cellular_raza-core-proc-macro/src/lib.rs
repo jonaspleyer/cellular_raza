@@ -159,17 +159,14 @@ pub fn run_test_for_aspects(input: proc_macro::TokenStream) -> proc_macro::Token
 /// Construct, test and run a full simulation.
 ///
 /// # Arguments
-/// TODO
+// TODO use link when compiler error is fixed: https://github.com/rust-lang/rust/issues/123019
+/// The `KwargsSim` struct contains all required and optional
+/// arguments for this macro.
 ///
 /// # Internals
-/// This macro is the same as running
-/// ```ignore
-/// {
-///     prepare_types!(..);
-///     test_compatibility!(..);
-///     run_main(..);
-/// }
-///```
+/// This macro calls [prepare_types!], [test_compatibility!] and [run_main!] one after
+/// another with identical arguments (where possible) and thus yields results for a full
+/// simulation.
 #[proc_macro]
 pub fn run_simulation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let kwargs = syn::parse_macro_input!(input as run_sim::KwargsSimParsed);
