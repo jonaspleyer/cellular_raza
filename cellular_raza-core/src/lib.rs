@@ -1,14 +1,14 @@
 #![deny(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 //! This crate collects objects and methods needed to run a numerical simulation of
-//! given objects that satisfy the given [concepts].
+//! given objects that satisfy the given [concepts](cellular_raza_concepts).
 //!
 //! ## Backends
 //! This crate supports multiple types of backends.
 //! Currently, the [backend::cpu_os_threads] backend is the general-purpose solver which
-//! can deal with (almost) all simulation [concepts].
+//! can deal with (almost) all simulation [concepts](cellular_raza_concepts).
 //! In the future, the [backend::chili] backend will be replacing it, delivering
-//! better performance, modularity while also updating [concepts].
+//! better performance, modularity while also updating [concepts](cellular_raza_concepts).
 //!
 //! ## Storage
 //! We distinguish between a full (de-)serialization of the simulation

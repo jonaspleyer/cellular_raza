@@ -91,6 +91,4 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 pub use cellular_raza_core_proc_macro::Communicator;
 
 /// TODO
-/// ```
-/// ```
 pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;

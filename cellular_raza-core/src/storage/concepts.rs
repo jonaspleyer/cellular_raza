@@ -277,7 +277,7 @@ impl StorageBuilder {
         }
     }
 
-    /// Define the priority of [StorageOptions]. See [StorageOption::default_priority].
+    /// Define the priority of [StorageOption]. See [StorageOption::default_priority].
     pub fn priority(self, priority: UniqueVec<StorageOption>) -> Self {
         Self { priority, ..self }
     }
