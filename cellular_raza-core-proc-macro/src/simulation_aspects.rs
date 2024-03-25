@@ -222,36 +222,6 @@ impl<'a> From<&'a SimulationAspect> for String {
     }
 }
 
-pub struct SimFlowPathToken;
-
-impl syn::parse::Parse for SimFlowPathToken {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _path_token: syn::Ident = input.parse()?;
-        if _path_token == "simulation_flow_path" {
-            Ok(Self)
-        } else {
-            Err(syn::Error::new(_path_token.span(), "Expected \"path\""))
-        }
-    }
-}
-
-#[allow(unused)]
-pub struct SimFlowPath {
-    pub path_token: SimFlowPathToken,
-    pub double_colon: syn::Token![:],
-    pub path: syn::Path,
-}
-
-impl syn::parse::Parse for SimFlowPath {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            path_token: input.parse()?,
-            double_colon: input.parse()?,
-            path: input.parse()?,
-        })
-    }
-}
-
 pub struct CorePathtoken;
 
 impl syn::parse::Parse for CorePathtoken {
