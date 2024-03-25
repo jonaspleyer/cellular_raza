@@ -461,8 +461,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
         // Initialize the progress bar
         #[allow(unused)]
-        let mut pb = match key {
-            0 => Some(_time_stepper.initialize_bar()?),
+        let mut pb = match (key, settings.show_progressbar) {
+            (0, true) => Some(_time_stepper.initialize_bar()?),
             _ => None,
         };
 
@@ -475,9 +475,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             sbox.sync();
             #step_4
 
-            match &mut pb {
-                Some(bar) => _time_stepper.update_bar(bar)?,
-                None => (),
+            match (&mut pb, settings.show_progressbar) {
+                (Some(bar), true) => _time_stepper.update_bar(bar)?,
+                _ => (),
             };
             sbox.save_voxels(&_storage_manager, &next_time_point)?;
         }
