@@ -55,12 +55,12 @@ movie() {
     --dir-name-position 1.0 \
     --file-filter "(cellular_raza-homepage|cellular_raza_book|cellular_raza-book)" \
     --output-ppm-stream - \
-    | ffmpeg -y -r 60 -f image2pipe -pix_fmt yuv420p -y -vcodec ppm -i - -b 65536K output.mp4
+    | ffmpeg -y -r 60 -f image2pipe -pix_fmt yuv420p -c:v libx264 -y -vcodec ppm -i - -b 65536K output.mp4
     # Compress the movie
-    ffmpeg -i output.mp4 -vcodec libvpx -crf 20 -y cellular_raza-development-gource.webm
+    ffmpeg -i output.mp4 -pix_fmt yuv420p -y cellular_raza-development-gource.mp4
     # Move it to the hompage folder
     mkdir -p cellular_raza-homepage/static/internals/
-    mv cellular_raza-development-gource.webm cellular_raza-homepage/static/internals/
+    mv cellular_raza-development-gource.mp4 cellular_raza-homepage/static/internals/
 }
 
 usage() {
