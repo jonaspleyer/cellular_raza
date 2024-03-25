@@ -630,7 +630,7 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
     quote::quote!({
         #types
         #test_compat
-        #run_main
+        {#run_main}?;
         Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
     })
     .into()
