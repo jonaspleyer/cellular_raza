@@ -182,13 +182,15 @@ pub enum HandlingStrategy {
 #[cfg(feature = "pyo3")]
 impl From<SimulationError> for pyo3::PyErr {
     fn from(value: SimulationError) -> Self {
-        use SimulationError::*;
         use pyo3::exceptions::*;
+        use SimulationError::*;
         match value {
             CalcError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             DecomposeError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             TimeError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
-            ControllerError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            ControllerError(e) => {
+                pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}"))
+            }
             DivisionError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             DeathError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             BoundaryError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),

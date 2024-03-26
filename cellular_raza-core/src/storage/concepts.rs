@@ -270,7 +270,7 @@ pub struct StorageManager<Id, Element> {
 pub struct StorageBuilder {
     location: std::path::PathBuf,
     priority: UniqueVec<StorageOption>,
-    #[cfg(feature ="timestamp")]
+    #[cfg(feature = "timestamp")]
     add_date: bool,
 }
 
@@ -285,7 +285,7 @@ impl StorageBuilder {
         Self {
             location: "./out".into(),
             priority: UniqueVec::new(),
-            #[cfg(feature ="timestamp")]
+            #[cfg(feature = "timestamp")]
             add_date: true,
         }
     }
@@ -308,12 +308,9 @@ impl StorageBuilder {
     }
 
     /// Store results by their current date inside the specified folder path
-    #[cfg(feature ="timestamp")]
+    #[cfg(feature = "timestamp")]
     pub fn add_date(self, add_date: bool) -> Self {
-        Self {
-            add_date,
-            ..self
-        }
+        Self { add_date, ..self }
     }
 }
 
@@ -333,16 +330,12 @@ impl<Id, Element> StorageManager<Id, Element> {
         instance: u64,
     ) -> Result<Self, StorageError> {
         let mut location = storage_builder.location.clone();
-        #[cfg(feature ="timestamp")]
+        #[cfg(feature = "timestamp")]
         if storage_builder.add_date {
             let date = format!("{}", chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S"));
             location.push(date);
         }
-        Self::open_or_create_with_priority(
-            &location,
-            instance,
-            &storage_builder.priority,
-        )
+        Self::open_or_create_with_priority(&location, instance, &storage_builder.priority)
     }
 
     /// Constructs the storage manager
