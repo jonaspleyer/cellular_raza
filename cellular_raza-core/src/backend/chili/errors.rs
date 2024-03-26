@@ -178,3 +178,26 @@ pub enum HandlingStrategy {
     /// This represents a non-recoverable state.
     AbortSimulation,
 }
+
+#[cfg(feature = "pyo3")]
+impl From<SimulationError> for pyo3::PyErr {
+    fn from(value: SimulationError) -> Self {
+        use SimulationError::*;
+        use pyo3::exceptions::*;
+        match value {
+            CalcError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            DecomposeError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            TimeError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            ControllerError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            DivisionError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            DeathError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            BoundaryError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            DrawingError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            IndexError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            SendError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            ReceiveError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            StorageError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            IoError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+        }
+    }
+}
