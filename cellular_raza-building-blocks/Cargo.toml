@@ -26,7 +26,7 @@ nalgebra = { version="0.32", features=["serde-serialize", "rand"]}
 serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
-pyo3 = { version = "0.20", optional=true, features=["serde"] }
+pyo3 = { version = "0.21", optional=true, features=["serde"] }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
