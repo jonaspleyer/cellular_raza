@@ -264,7 +264,8 @@ trait Reactions<I> {
     fn calculate_intracellular_increment(&self) -> Result<I, CalcError>;
 }
 
-trait ReactionsExtra<I, E>: Reactions<I> {
+trait ReactionsExtra<I, E> {
+    fn increment_intracellular(&mut self, increment: &I);
     fn calculate_combined_increment(&self, extracellular: &E) -> Result<(I, E), CalcError>;
 }
 
@@ -277,17 +278,21 @@ struct MyCell {
     intracellular: ndarray::Array1<f64>,
 }
 
-impl Reactions<ndarray::Array1<f64>> for MyCell {
+// impl Reactions<ndarray::Array1<f64>> for MyCell {
+//     fn increment_intracellular(&mut self, increment: &ndarray::Array1<f64>) {
+//         self.intracellular += increment;
+//     }
+//
+//     fn calculate_intracellular_increment(&self) -> Result<ndarray::Array1<f64>, CalcError> {
+//         Ok(0.0 * &self.intracellular)
+//     }
+// }
+
+impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
     fn increment_intracellular(&mut self, increment: &ndarray::Array1<f64>) {
         self.intracellular += increment;
     }
 
-    fn calculate_intracellular_increment(&self) -> Result<ndarray::Array1<f64>, CalcError> {
-        Ok(0.0 * &self.intracellular)
-    }
-}
-
-impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
     fn calculate_combined_increment(
         &self,
         _extracellular: &ndarray::Array1<f64>,
