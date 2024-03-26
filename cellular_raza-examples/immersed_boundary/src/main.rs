@@ -1,3 +1,5 @@
+use cellular_raza::concepts::CalcError;
+use rand_chacha::ChaCha8Rng;
 use std::ops::AddAssign;
 
 #[derive(Clone, Debug)]
@@ -16,10 +18,39 @@ pub enum Boundary {
     Dirichlet,
 }
 
-trait FluidDynamics<Float> {
-    fn do_update<'a, J>(&mut self, dt: Float, boundaries: &'a J)
+trait FluidDynamics<Pos, Conc, Float> {
+    type NeighborValues;
+    type BorderInfo;
+
+    fn update_fluid_dynamics<'a, I, J>(
+        &mut self,
+        dt: Float,
+        neighbours: I,
+        sources: J,
+    ) -> Result<(), CalcError>
     where
-        &'a J: IntoIterator<Item = &'a Boundary>;
+        Pos: 'static,
+        Conc: 'static,
+        Self::NeighborValues: 'static,
+        I: IntoIterator<Item = &'a Self::NeighborValues>,
+        J: IntoIterator<Item = &'a (Pos, Conc)>;
+
+    fn get_concentration_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
+    fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues;
+}
+
+trait Reactions<I> {
+    fn increment_intracellular(&mut self, increment: &I);
+    fn calculate_intracellular_increment(&self, rng: &mut ChaCha8Rng) -> Result<I, CalcError>;
+}
+
+trait ReactionsExtra<I, E> {
+    fn increment_intracellular(&mut self, increment: &I);
+    fn calculate_combined_increment(
+        &self,
+        extracellular: &E,
+        rng: &mut ChaCha8Rng,
+    ) -> Result<(I, E), CalcError>;
 }
 
 impl SubDomain {
