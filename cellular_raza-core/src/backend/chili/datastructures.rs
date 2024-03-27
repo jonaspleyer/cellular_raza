@@ -14,7 +14,6 @@ use rand::SeedableRng;
 use super::aux_storage::*;
 use super::errors::*;
 use super::simulation_flow::*;
-use super::SimulationError;
 
 use super::{CellIdentifier, SubDomainPlainIndex, VoxelPlainIndex};
 

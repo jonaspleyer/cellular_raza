@@ -1,9 +1,6 @@
 use crate::cell::CellAgentBox;
 use crate::errors::*;
 
-use std::marker::{Send, Sync};
-
-use core::cmp::Eq;
 use core::hash::Hash;
 use std::ops::{Add, Mul};
 

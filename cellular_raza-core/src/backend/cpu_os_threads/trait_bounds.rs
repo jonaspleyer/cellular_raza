@@ -3,7 +3,6 @@ use cellular_raza_concepts::*;
 use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 use num::Zero;
-use std::marker::{Send, Sync};
 
 // TODO use trait alias when available
 /* pub trait Position = Sized
