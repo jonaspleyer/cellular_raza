@@ -560,7 +560,7 @@ impl AgentImplementer {
                         ext_pos: &#position,
                         ext_vel: &#velocity,
                         ext_info: &#information,
-                    ) -> Option<Result<#force, CalcError>> {
+                    ) -> Result<#force, CalcError> {
                         <#field_type as Interaction<
                             #position,
                             #velocity,

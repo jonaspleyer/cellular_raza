@@ -15,7 +15,7 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_info: &Inf,
-    ) -> Option<Result<Force, CalcError>>;
+    ) -> Result<Force, CalcError>;
 
     /// Checks if the other cell represented by position and information is a neighbor to the current one or not.
     #[allow(unused)]

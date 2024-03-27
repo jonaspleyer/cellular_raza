@@ -45,7 +45,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         _ext_info: &InteractionInformation,
-    ) -> Option<Result<Vector2<f64>, CalcError>> {
+    ) -> Result<Vector2<f64>, CalcError> {
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
         let r = z.norm();
@@ -60,7 +60,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
 
         // Calculate only attracting and repelling forces
         let force = -dir * strength * spatial_cutoff;
-        Some(Ok(force))
+        Ok(force)
     }
 
     fn get_interaction_information(&self) -> InteractionInformation {}
@@ -76,12 +76,12 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         _ext_info: &InteractionInformation,
-    ) -> Option<Result<Vector2<f64>, CalcError>> {
+    ) -> Result<Vector2<f64>, CalcError> {
         // Calculate direction between own and other point
         let z = ext_pos - own_pos;
         let dir = z.normalize();
 
-        Some(Ok(self.potential_strength * dir))
+        Ok(self.potential_strength * dir)
     }
 
     fn get_interaction_information(&self) -> InteractionInformation {}

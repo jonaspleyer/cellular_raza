@@ -11,7 +11,10 @@ use pyo3::prelude::*;
 #[cfg_attr(feature = "pyo3", pyclass)]
 pub struct NoInteraction;
 
-impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
+impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction
+where
+    For: num::Zero,
+{
     fn calculate_force_between(
         &self,
         _: &Pos,
@@ -19,8 +22,8 @@ impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction {
         _: &Pos,
         _: &Vel,
         _ext_information: &(),
-    ) -> Option<Result<For, CalcError>> {
-        return None;
+    ) -> Result<For, CalcError> {
+        Ok(For::zero())
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -132,7 +135,7 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
         ext_pos: &SVector<f64, D>,
         _ext_vel: &SVector<f64, D>,
         _ext_information: &(),
-    ) -> Option<Result<SVector<f64, D>, CalcError>> {
+    ) -> Result<SVector<f64, D>, CalcError> {
         let z = own_pos - ext_pos;
         let r = z.norm();
         let dir = z / r;
@@ -140,7 +143,7 @@ impl<const D: usize> Interaction<SVector<f64, D>, SVector<f64, D>, SVector<f64, 
             * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        Some(Ok(dir * q * max.min(val)))
+        Ok(dir * q * max.min(val))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -170,7 +173,7 @@ impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, 
         ext_pos: &SVector<f32, D>,
         _ext_vel: &SVector<f32, D>,
         _ext_information: &(),
-    ) -> Option<Result<SVector<f32, D>, CalcError>> {
+    ) -> Result<SVector<f32, D>, CalcError> {
         let z = own_pos - ext_pos;
         let r = z.norm();
         let dir = z / r;
@@ -178,7 +181,7 @@ impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, 
             * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
         let max = self.bound / r;
         let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-        Some(Ok(dir * q * max.min(val)))
+        Ok(dir * q * max.min(val))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -313,7 +316,7 @@ where
         ext_pos: &super::mechanics::VertexVector2<D>,
         ext_vel: &super::mechanics::VertexVector2<D>,
         ext_information: &(I1, I2),
-    ) -> Option<Result<super::mechanics::VertexVector2<D>, CalcError>> {
+    ) -> Result<super::mechanics::VertexVector2<D>, CalcError> {
         // TODO Reformulate this code:
         // Do not calculate interactions between vertices but rather between
         // edges of polygons.
@@ -407,38 +410,33 @@ where
                 }
             };
 
-            let calc;
             if external_point_is_in_polygon {
                 // Calculate the force inside the cell
-                calc = self.inside_interaction.calculate_force_between(
+                let calc = self.inside_interaction.calculate_force_between(
                     &middle_own,
                     &average_vel_own,
                     &middle_ext,
                     &average_vel_ext,
                     &inf2,
-                );
+                )?;
+                force += calc.transpose();
             } else {
                 // Calculate the force outside
-                let (_, nearest_point) =
-                    match nearest_point_from_point_to_multiple_lines(&point, &own_polygon_lines) {
-                        Some(point) => point,
-                        None => return None,
-                    };
-                calc = self.outside_interaction.calculate_force_between(
-                    &nearest_point,
-                    &average_vel_own,
-                    &point,
-                    &average_vel_ext,
-                    &inf1,
-                );
-            }
-            match calc {
-                Some(Ok(calculated_force)) => force += calculated_force.transpose(),
-                Some(Err(error)) => return Some(Err(error)),
-                None => (),
-            }
+                if let Some((_, nearest_point)) =
+                    nearest_point_from_point_to_multiple_lines(&point, &own_polygon_lines)
+                {
+                    let calc = self.outside_interaction.calculate_force_between(
+                        &nearest_point,
+                        &average_vel_own,
+                        &point,
+                        &average_vel_ext,
+                        &inf1,
+                    )?;
+                    force += calc.transpose();
+                }
+            };
         }
-        Some(Ok(total_force))
+        Ok(total_force)
     }
 }
 

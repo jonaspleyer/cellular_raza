@@ -29,7 +29,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         ext_radius: &f64,
-    ) -> Option<Result<Vector2<f64>, CalcError>> {
+    ) -> Result<Vector2<f64>, CalcError> {
         let min_relative_distance_to_center = 0.3162277660168379;
         let (r, dir) =
             match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
@@ -41,7 +41,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
                 true => {
                     let dir = match own_pos == ext_pos {
                         true => {
-                            return None;
+                            return Ok([0.0; 2].into());
                         }
                         false => (own_pos - ext_pos).normalize(),
                     };
@@ -66,7 +66,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecific
         let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
         let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
-        Some(Ok(repelling_force + attracting_force))
+        Ok(repelling_force + attracting_force)
     }
 }
 

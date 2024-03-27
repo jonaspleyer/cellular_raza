@@ -59,7 +59,7 @@ where
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_information: &Inf,
-    ) -> Option<Result<For, CalcError>> {
+    ) -> Result<For, CalcError> {
         self.cell
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_information)
     }

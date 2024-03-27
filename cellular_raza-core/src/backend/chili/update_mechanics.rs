@@ -94,17 +94,13 @@ impl<C, A> Voxel<C, A> {
                 let v2 = c2.velocity();
                 let i2 = c2.get_interaction_information();
 
-                if let Some(force_result) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2) {
-                    let force = force_result?;
-                    aux1.add_force(-force.clone() * one_half);
-                    aux2.add_force(force * one_half);
-                }
+                let force = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
+                aux1.add_force(-force.clone() * one_half);
+                aux2.add_force(force * one_half);
 
-                if let Some(force_result) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1) {
-                    let force = force_result?;
-                    aux1.add_force(force.clone() * one_half);
-                    aux2.add_force(-force * one_half);
-                }
+                let force = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
+                aux1.add_force(force.clone() * one_half);
+                aux2.add_force(-force * one_half);
             }
         }
         Ok(())
@@ -139,20 +135,15 @@ impl<C, A> Voxel<C, A> {
         let one_half = F::one() / (F::one() + F::one());
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
-            match cell.calculate_force_between(
+            let f = cell.calculate_force_between(
                 &cell.pos(),
                 &cell.velocity(),
                 &ext_pos,
                 &ext_vel,
                 &ext_inf,
-            ) {
-                Some(Ok(f)) => {
-                    aux_storage.add_force(-f.clone() * one_half);
-                    force += f * one_half;
-                }
-                Some(Err(e)) => return Err(e),
-                None => (),
-            };
+            )?;
+            aux_storage.add_force(-f.clone() * one_half);
+            force += f * one_half;
         }
         Ok(force)
     }
