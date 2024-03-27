@@ -33,14 +33,16 @@ where
 ///
 /// The pure Lennard-Jones potential has many numerical downsides as it is very unstable to use
 /// and thus typically only recommended with extremely small integration steps.
-/// Here, we artificially limit the repelling part of the potential thus increasing numerical usability.
+/// Here, we artificially limit the repelling part of the potential thus increasing numerical
+/// usability.
 /// However, it also has in principle infinite range.
 /// This is directly contrary to one of the fundamental assumptions of `cellular_raza`.
 /// We resolve the latter problem by simply assigning the value `0` if $r>=\zeta$ although this
-/// behavior is not continous anymore.
+/// behavior is not continuous anymore.
 /// The potential of the interaction is given by
 /// \\begin{align}
-///     U(r) &= 4\epsilon\left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^6\right]\\\\
+///     U(r) &= 4\epsilon\left[ \left(\frac{\sigma}{r}\right)^{12} -
+///         \left(\frac{\sigma}{r}\right)^6\right]\\\\
 ///     V(r) &= \min(U(r), \beta)\theta(r-\zeta)
 /// \\end{align}
 /// where $\epsilon$ determines the overall interaction strength of the potential
@@ -363,7 +365,7 @@ where
         // Store the total calculated force here
         let mut total_force = ext_pos.clone() * 0.0;
 
-        // Match the obtained interaction informations
+        // Match the obtained interaction information
         let (inf1, inf2) = ext_information;
 
         // Pick one point from the external positions
@@ -396,7 +398,8 @@ where
             let external_point_is_in_polygon = match point_is_out_of_bounding_box {
                 true => false,
                 false => {
-                    // If the bounding box was not successful, we use the ray-casting algorithm to check.
+                    // If the bounding box was not successful,
+                    // we use the ray-casting algorithm to check.
                     let n_intersections: usize = own_polygon_lines
                         .iter()
                         .map(|line| {
@@ -405,7 +408,8 @@ where
                         })
                         .sum();
 
-                    // An even number means that the point was outside while odd numbers mean that the point was inside.
+                    // An even number means that the point was outside
+                    // while odd numbers mean that the point was inside.
                     n_intersections % 2 == 1
                 }
             };
@@ -447,7 +451,8 @@ mod test {
         let p1 = nalgebra::Vector2::from([0.0, 0.0]);
         let p2 = nalgebra::Vector2::from([2.0, 0.0]);
 
-        // Create a vector of tuples which have (input_point, expected_nearest_point, expected_distance)
+        // Create a vector of tuples which have (input_point,
+        // expected_nearest_point, expected_distance)
         let mut test_points = Vec::new();
 
         // Define the points we will be testing

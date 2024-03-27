@@ -934,7 +934,7 @@ where
         //
         // for each cell in this MultiVoxelContainer
         //      update pos and velocity with all forces obtained
-        //      Simultanously
+        //      Simultaneously
 
         // Calculate forces between cells of own voxel
         self.voxels

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use num::Zero;
 
-/// Superseeded by the [CellAgent] derive macro.
+/// Superseded by the [CellAgent] derive macro.
 ///
 /// The [ModularCell] is a struct with fields that implement the various
 /// [concepts](cellular_raza_concepts). The concepts are afterwards derived automatically for the

@@ -4,7 +4,7 @@ use crate::mechanics::Mechanics;
 
 use serde::{Deserialize, Serialize};
 
-/// This is a unique identifer which is deterministic even in multi-threading situations.
+/// This is a unique identifier which is deterministic even in multi-threading situations.
 /// Its components are
 /// 1. PlainIndex of Voxel where it was created
 /// 2. Count the number of cells that have already been created in this voxel since simulation begin.

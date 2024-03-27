@@ -189,7 +189,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
     }
 }
 
-/// Imlementation of the [cellular_raza_concepts::Cycle] trait for the [Bacteria] struct
+/// Implementation of the [cellular_raza_concepts::Cycle] trait for the [Bacteria] struct
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[pyclass(get_all, set_all)]
 pub struct BacteriaCycle {
@@ -310,7 +310,7 @@ pub struct BacteriaReactions {
     pub potential_strength: f64,
     /// Conversion of the consumed food to cellular volume. In units $\frac{\text{volume}}{\text{food}}$.
     pub food_to_volume_conversion: f64,
-    /// flag if the cell is stil in lag phase
+    /// flag if the cell is still in lag phase
     pub lag_phase_active: bool,
     /// Species of the cell. This determines if a cell will secrete inhibitor or be
     /// affected by it.

@@ -567,7 +567,6 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
     );
 
     use SimulationAspect::*;
-
     if kwargs
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])

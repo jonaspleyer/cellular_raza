@@ -23,7 +23,8 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
         Ok(false)
     }
 
-    /// Reacts to the results gathered by the [Interaction::is_neighbour] method and changes the state of the cell.
+    /// Reacts to the results gathered by the [Interaction::is_neighbour]
+    /// method and changes the state of the cell.
     #[allow(unused)]
     fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
         Ok(())
@@ -43,15 +44,48 @@ pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
 }
 
 /// Specify how cellular reactions are taking place.
+///
+/// This trait can also be derived with the [CellAgent](crate::CellAgent) derive macro.
+/// ```
+/// use cellular_raza_concepts::{CellularReactions, CellAgent, CalcError};
+/// struct MyReactions {
+///     intracellular: f64,
+///     half_time: f64,
+/// }
+///
+/// impl CellularReactions<f64> for MyReactions {
+///     fn get_intracellular(&self) -> f64 {
+///         self.intracellular
+///     }
+///
+///     fn set_intracellular(&mut self, intracellular: f64) {
+///         self.intracellular = intracellular;
+///     }
+///
+///     fn calculate_intra_and_extracellular_reaction_increment(
+///         &self,
+///         internal_concentration_vector: &f64,
+///         external_concentration_vector: &f64,
+///     ) -> Result<(f64, f64), CalcError> {
+///         Ok((-self.half_time * self.intracellular, self.half_time * self.intracellular))
+///     }
+/// }
+///
+/// #[derive(CellAgent)]
+/// struct MyAgent {
+///     #[Reactions(f64)]
+///     reactions: MyReactions,
+/// }
+/// ```
 pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVecIntracellular> {
-    /// Retrives the current intracellular concentration.
+    /// Retrieves the current intracellular concentration.
     fn get_intracellular(&self) -> ConcVecIntracellular;
 
     /// Sets the intracellular concentration. This is used by the backend after values have been updated.
     fn set_intracellular(&mut self, concentration_vector: ConcVecIntracellular);
 
     /// Calculate the time-related change of the intracellular and extracellular concentrations.
-    /// This is not the increment itself (thus no parameter `dt` was specified) but rather the time-derivativ.
+    /// This is not the increment itself (thus no parameter `dt` was specified) but rather the time-derivative.
     /// Such an approach can be useful when designing addaptive solvers.
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
