@@ -45,7 +45,7 @@ use cell_agent::*;
         Cycle,
         Mechanics,
         Interaction,
-        CellularReactions,
+        Reactions,
         ExtracellularGradient,
         Volume,
     )

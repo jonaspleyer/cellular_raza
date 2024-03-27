@@ -260,7 +260,7 @@ impl Aspect {
             return Ok(Some(Aspect::Interaction(parsed)));
         }
 
-        if cmp("CellularReactions") {
+        if cmp("Reactions") {
             let parsed: ReactionsParser = syn::parse(stream)?;
             return Ok(Some(Aspect::Reactions(parsed)));
         }

@@ -34,7 +34,7 @@ pub struct Bacteria {
 
     /// See [BacteriaReactions]
     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
-    #[CellularReactions(f64, ReactionVector)]
+    #[Reactions(f64, ReactionVector)]
     pub cellular_reactions: BacteriaReactions,
 
     /// See [GradientSensing]
