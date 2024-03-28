@@ -184,34 +184,8 @@ mod test {
         }
     }
 
-    impl SubDomain<f64> for TestSubDomain {
+    impl SubDomain for TestSubDomain {
         type VoxelIndex = usize;
-
-        fn apply_boundary(
-            &self,
-            cell: &mut f64,
-        ) -> Result<(), cellular_raza_concepts::BoundaryError> {
-            if self.reflect_at_boundary.0 && *cell < self.min {
-                *cell = self.min;
-            } else if self.reflect_at_boundary.1 && *cell > self.max {
-                *cell = self.max;
-            }
-            Ok(())
-        }
-
-        fn get_voxel_index_of(
-            &self,
-            cell: &f64,
-        ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
-            for (index, voxel) in self.voxels.iter() {
-                if cell >= &voxel[0] && cell <= &voxel[1] {
-                    return Ok(*index);
-                }
-            }
-            Err(cellular_raza_concepts::BoundaryError(
-                "Could not find voxel which contains cell".into(),
-            ))
-        }
 
         fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
             self.voxels.iter().map(|(&i, _)| i).collect()
@@ -229,6 +203,37 @@ mod test {
                 neighbors.push(voxel_index + 1);
             }
             neighbors
+        }
+    }
+
+    impl cellular_raza_concepts::domain_new::SubDomainSortCells<f64> for TestSubDomain {
+        fn get_voxel_index_of(
+            &self,
+            cell: &f64,
+        ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
+            for (index, voxel) in self.voxels.iter() {
+                if cell >= &voxel[0] && cell <= &voxel[1] {
+                    return Ok(*index);
+                }
+            }
+            Err(cellular_raza_concepts::BoundaryError(
+                "Could not find voxel which contains cell".into(),
+            ))
+        }
+    }
+
+    impl cellular_raza_concepts::domain_new::SubDomainMechanics<f64, f64> for TestSubDomain {
+        fn apply_boundary(
+            &self,
+            pos: &mut f64,
+            vel: &mut f64,
+        ) -> Result<(), cellular_raza_concepts::BoundaryError> {
+            if self.reflect_at_boundary.0 && *pos < self.min {
+                *pos = self.min;
+            } else if self.reflect_at_boundary.1 && *pos > self.max {
+                *pos = self.max;
+            }
+            Ok(())
         }
     }
 
@@ -278,12 +283,14 @@ mod test {
         let decomposed_domain = config.decompose(n_subdomains).unwrap();
         let mut cell_outside = -10.0;
         for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
-            for mut cell in cells.into_iter() {
-                let cell_prev = cell.clone();
-                subdomain.apply_boundary(&mut cell).unwrap();
+            for cell in cells.into_iter() {
+                let mut cell_prev = cell.clone();
+                let mut _nothing = cell.clone();
+                subdomain.apply_boundary(&mut cell_prev, &mut _nothing).unwrap();
                 assert_eq!(cell_prev, cell);
             }
-            subdomain.apply_boundary(&mut cell_outside).unwrap();
+            let mut _nothing = cell_outside.clone();
+            subdomain.apply_boundary(&mut cell_outside, &mut _nothing).unwrap();
             assert!(cell_outside >= min);
             assert!(cell_outside <= max);
         }
