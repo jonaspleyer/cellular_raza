@@ -104,17 +104,20 @@ impl CellAspectField {
         Ok(Self { aspects, field })
     }
 
-    fn from_fields(span: proc_macro2::Span, fields: syn::Fields) -> syn::Result<Vec<AspectField>> {
+    fn from_fields(
+        span: proc_macro2::Span,
+        fields: syn::Fields,
+    ) -> syn::Result<Vec<CellAspectField>> {
         match fields {
             syn::Fields::Named(fields_named) => Ok(fields_named
                 .named
                 .into_iter()
-                .map(|field|CellAspectField::from_field(field))
+                .map(|field| CellAspectField::from_field(field))
                 .collect::<syn::Result<Vec<_>>>()?),
             syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
                 .unnamed
                 .into_iter()
-                .map(|field|CellAspectField::from_field(field))
+                .map(|field| CellAspectField::from_field(field))
                 .collect::<syn::Result<Vec<_>>>()?),
             syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
         }
@@ -191,13 +194,18 @@ pub fn wrap(input: TokenStream) -> TokenStream {
     quote! {
         #[allow(non_upper_case_globals)]
         const _: () = {
-            // TODO consider adding specific import of cellular_raza or cellular_raza_concepts crate
-            // extern crate cellular_raza as _cr;
+            // TODO consider adding specific import of cellular_raza or
+            // cellular_raza_concepts
+            //
+            // ```
+            // crate extern crate cellular_raza as _cr;
             // or
             // extern crate cellular_raza_concepts as _cr;
+            // ```
             //
             // Also put a _cr::prelude::TRAIT in front of every implemented trait
-            // This is currently not possible to do at compile time without any hacks (to my knowledge)
+            // This is currently not possible to do at compile time without
+            // any hacks (to my knowledge)
             #input
         };
     }
@@ -206,8 +214,7 @@ pub fn wrap(input: TokenStream) -> TokenStream {
 impl AgentImplementer {
     pub fn implement_cycle(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.cycle {
             let field_type = &field_info.field_type;
@@ -242,7 +249,10 @@ impl AgentImplementer {
                         <#field_type as Cycle<#tokens>>::update_cycle(rng, dt, cell)
                     }
 
-                    fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Self) -> Result<Self, DivisionError> {
+                    fn divide(
+                        rng: &mut rand_chacha::ChaCha8Rng,
+                        cell: &mut Self
+                    ) -> Result<Self, DivisionError> {
                         <#field_type as Cycle<#tokens>>::divide(rng, cell)
                     }
 
@@ -251,7 +261,11 @@ impl AgentImplementer {
                         dt: &#float_type,
                         cell: &mut Self,
                     ) -> Result<bool, DeathError> {
-                        <#field_type as Cycle<#tokens>>::update_conditional_phased_death(rng, dt, cell)
+                        <#field_type as Cycle<#tokens>>::update_conditional_phased_death(
+                            rng,
+                            dt,
+                            cell
+                        )
                     }
                 }
             );
@@ -262,8 +276,7 @@ impl AgentImplementer {
 
     pub fn implement_mechanics(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.mechanics {
             new_ident!(position, "__cr_private_Pos");
@@ -308,16 +321,27 @@ impl AgentImplementer {
                         <#field_type as Mechanics<#tokens>>::set_pos(&mut self.#field_name, pos)
                     }
                     fn set_velocity(&mut self, velocity: &#velocity) {
-                        <#field_type as Mechanics<#tokens>>::set_velocity(&mut self.#field_name, velocity)
+                        <#field_type as Mechanics<#tokens>>::set_velocity(
+                            &mut self.#field_name,
+                            velocity
+                        )
                     }
-                    fn calculate_increment(&self, force: #force) -> Result<(#position, #velocity), CalcError> {
-                        <#field_type as Mechanics<#tokens>>::calculate_increment(&self.#field_name, force)
+                    fn calculate_increment(&self, force: #force)
+                        -> Result<(#position, #velocity), CalcError> {
+                        <#field_type as Mechanics<#tokens>>::calculate_increment(
+                            &self.#field_name,
+                            force
+                        )
                     }
                     fn set_random_variable(&mut self,
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: #float_type,
                     ) -> Result<Option<#float_type>, RngError> {
-                        <#field_type as Mechanics<#tokens>>::set_random_variable(&mut self.#field_name, rng, dt)
+                        <#field_type as Mechanics<#tokens>>::set_random_variable(
+                            &mut self.#field_name,
+                            rng,
+                            dt
+                        )
                     }
                 }
             };
@@ -328,8 +352,7 @@ impl AgentImplementer {
 
     pub fn implement_interaction(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.interaction {
             let field_name = &field_info.field_name;
@@ -374,12 +397,7 @@ impl AgentImplementer {
                         ext_vel: &#velocity,
                         ext_info: &#information,
                     ) -> Result<#force, CalcError> {
-                        <#field_type as Interaction<
-                            #position,
-                            #velocity,
-                            #force,
-                            #information
-                        >>::calculate_force_between(
+                        <#field_type as Interaction<#tokens>>::calculate_force_between(
                             &self.#field_name,
                             own_pos,
                             own_vel,
@@ -395,12 +413,7 @@ impl AgentImplementer {
                         ext_pos: &#position,
                         ext_inf: &#information
                     ) -> Result<bool, CalcError> {
-                        <#field_type as Interaction<
-                            #position,
-                            #velocity,
-                            #force,
-                            #information
-                        >>::is_neighbour(
+                        <#field_type as Interaction<#tokens>>::is_neighbour(
                             &self.#field_name,
                             own_pos,
                             ext_pos,
@@ -412,12 +425,7 @@ impl AgentImplementer {
                         &mut self,
                         neighbours: usize
                     ) -> Result<(), CalcError> {
-                        <#field_type as Interaction<
-                            #position,
-                            #velocity,
-                            #force,
-                            #information
-                        >>::react_to_neighbours(
+                        <#field_type as Interaction<#tokens>>::react_to_neighbours(
                             &mut self.#field_name,
                             neighbours
                         )
@@ -431,8 +439,7 @@ impl AgentImplementer {
 
     pub fn implement_reactions(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.cellular_reactions {
             let field_name = &field_info.field_name;
@@ -503,8 +510,7 @@ impl AgentImplementer {
 
     pub fn implement_extracellular_gradient(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.extracellular_gradient {
             let field_type = &field_info.field_type;
@@ -543,8 +549,7 @@ impl AgentImplementer {
 
     pub fn implement_volume(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) =
-            &self.generics.split_for_impl();
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
         if let Some(volume_implementer) = &self.volume {
             let field_type = &volume_implementer.field_type;
