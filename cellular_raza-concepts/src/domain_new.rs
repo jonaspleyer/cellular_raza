@@ -106,3 +106,6 @@ pub trait Id {
     /// Returns a reference to the id of the object.
     fn ref_id(&self) -> &Self::Identifier;
 }
+
+#[doc(inline)]
+pub use cellular_raza_concepts_derive::SubDomain;
