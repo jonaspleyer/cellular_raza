@@ -43,7 +43,7 @@ impl<C, D> SimulationSetup<C, D> {
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: cellular_raza_concepts::domain_new::Domain<C, S>,
-        S: SubDomain<C>,
+        S: SubDomain,
     {
         self.domain.decompose(n_subdomains, self.cells)
     }
@@ -58,7 +58,7 @@ impl<C, D> SimulationSetup<C, D> {
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
         D: cellular_raza_concepts::domain_new::Domain<C, S>,
-        S: SubDomain<C>,
+        S: SubDomain,
     {
         todo!();
         // let max_n_threads = std::thread::available_parallelism()?;

@@ -5,7 +5,10 @@ use super::{
     CellBox, Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateMechanics,
     Voxel, VoxelPlainIndex,
 };
-use cellular_raza_concepts::{domain_new::SubDomain, BoundaryError, CalcError};
+use cellular_raza_concepts::{
+    domain_new::{SubDomain, SubDomainMechanics},
+    BoundaryError, CalcError,
+};
 
 /// Send about the position of cells between threads.
 ///
@@ -151,7 +154,7 @@ impl<C, A> Voxel<C, A> {
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
-    S: SubDomain<C>,
+    S: SubDomain,
 {
     /// Update cells position and velocity
     ///
@@ -177,7 +180,8 @@ where
             + core::ops::Neg<Output = For>
             + num::Zero,
         Float: num::Float,
-        <S as SubDomain<C>>::VoxelIndex: Ord,
+        <S as SubDomain>::VoxelIndex: Ord,
+        S: SubDomainMechanics<Pos, Vel>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
     {
         self.voxels
@@ -388,7 +392,11 @@ where
     /// Applies boundary conditions to cells. For the future, we hope to be using previous and current position
     /// of cells rather than the cell itself.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn apply_boundary(&mut self) -> Result<(), BoundaryError> {
+    pub fn apply_boundary<Pos, Vel, For, Float>(&mut self) -> Result<(), BoundaryError>
+    where
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        S: SubDomainMechanics<Pos, Vel>,
+    {
         self.voxels
             .iter_mut()
             .map(|(_, voxel)| voxel.cells.iter_mut())
@@ -407,13 +415,10 @@ where
     /// If the cell is not in the correct voxel, we either directly insert this cell into the voxel
     /// or send it to the other [SubDomainBox] to take care of this.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn sort_cells_in_voxels_step_1<Pos, Vel, For, Float>(
-        &mut self,
-    ) -> Result<(), SimulationError>
+    pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
-        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        S: cellular_raza_concepts::domain_new::SubDomain<C>,
+        S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
         S::VoxelIndex: Eq + core::hash::Hash,
     {
         // Store all cells which need to find a new home in this variable
@@ -480,6 +485,7 @@ where
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         S::VoxelIndex: Eq + core::hash::Hash,
+        S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
     {
         // Now receive new cells and insert them
         for sent_cell in

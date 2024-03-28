@@ -78,7 +78,7 @@ impl<C, A> Voxel<C, A> {
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
-    S: SubDomain<C>,
+    S: SubDomain,
 {
     /// Advances the cycle of a cell by a small time increment `dt`.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]

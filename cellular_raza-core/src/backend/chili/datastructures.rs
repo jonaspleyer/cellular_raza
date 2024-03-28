@@ -62,7 +62,7 @@ where
     Ci: IntoIterator<Item = C>,
     D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
-    S: SubDomain<C>,
+    S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
     A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
@@ -188,7 +188,7 @@ where
 /// Encapsulates a subdomain with cells and other simulation aspects.
 pub struct SubDomainBox<I, S, C, A, Com, Sy = BarrierSync>
 where
-    S: SubDomain<C>,
+    S: SubDomain,
 {
     pub(crate) _index: I,
     pub(crate) subdomain: S,
@@ -203,7 +203,7 @@ where
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
-    S: SubDomain<C>,
+    S: SubDomain,
 {
     /// Allows to sync between threads. In the most simplest
     /// case of [BarrierSync] syncing is done by a global barrier.
@@ -221,6 +221,7 @@ where
     where
         S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
+        S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
     {
         for (cell, aux_storage) in new_cells.drain(..) {
             let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
@@ -239,7 +240,7 @@ where
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
-    S: SubDomain<C>,
+    S: SubDomain,
 {
     /// Save all voxels (containing all cells) with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
