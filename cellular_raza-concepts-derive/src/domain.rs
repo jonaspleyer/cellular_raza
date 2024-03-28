@@ -43,7 +43,19 @@ impl DomainAspect {
         span: proc_macro2::Span,
         fields: syn::Fields,
     ) -> syn::Result<Vec<DomainAspectField>> {
-        todo!()
+        match fields {
+            syn::Fields::Named(fields_named) => Ok(fields_named
+                .named
+                .into_iter()
+                .map(|field| DomainAspectField::from_field(field))
+                .collect::<Vec<_>>()),
+            syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
+                .unnamed
+                .into_iter()
+                .map(|field| DomainAspectField::from_field(field))
+                .collect::<Vec<_>>()),
+            syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
+        }
     }
 }
 
