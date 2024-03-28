@@ -273,7 +273,7 @@ use cellular_raza::prelude::RngError;
 
 #[derive(CellAgent)]
 struct MyCell {
-    #[Mechanics(nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vector2<f64>)]
+    #[Mechanics]
     mechanics: NewtonDamped2D,
     intracellular: ndarray::Array1<f64>,
 }

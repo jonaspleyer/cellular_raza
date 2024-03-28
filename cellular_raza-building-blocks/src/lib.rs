@@ -22,9 +22,9 @@
 //! # use cellular_raza_concepts::CellAgent;
 //! #[derive(CellAgent)]
 //! struct MyAgent {
-//!     #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
+//!     #[Mechanics]
 //!     mechanics: NewtonDamped2D,
-//!     #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
+//!     #[Interaction]
 //!     interaction: BoundLennardJones,
 //! }
 //! # let mut agent = MyAgent {

@@ -25,7 +25,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 #[pyclass(get_all, set_all)]
 pub struct Bacteria {
     /// See [NewtonDamped2D](crate::cell_building_blocks::NewtonDamped2D) mechanics
-    #[Mechanics(Vector2<f64>, Vector2<f64>, Vector2<f64>)]
+    #[Mechanics]
     pub mechanics: NewtonDamped2D,
 
     /// See [BacteriaCycle]
@@ -33,12 +33,12 @@ pub struct Bacteria {
     pub cycle: BacteriaCycle,
 
     /// See [BacteriaReactions]
-    #[Interaction(Vector2<f64>, Vector2<f64>, Vector2<f64>, f64)]
-    #[Reactions(f64, ReactionVector)]
+    #[Interaction]
+    #[Reactions]
     pub cellular_reactions: BacteriaReactions,
 
     /// See [GradientSensing]
-    #[ExtracellularGradient(nalgebra::SVector<Vector2<f64>, 2>)]
+    #[ExtracellularGradient]
     pub interactionextracellulargradient: GradientSensing,
 }
 

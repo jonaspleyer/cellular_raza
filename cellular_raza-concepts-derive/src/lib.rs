@@ -20,7 +20,7 @@ mod domain;
 /// Some attributes also require to specify types as well.
 /// ```ignore
 /// struct MyCell {
-///     #[Mechanics([f64; 3], [f64; 3], [f64; 3])]
+///     #[Mechanics]
 ///     interaction: MyMechanics,
 ///     ...
 /// }

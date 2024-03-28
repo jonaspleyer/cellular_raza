@@ -184,7 +184,7 @@ mod test_derive {
     ///
     /// #[derive(CellAgent)]
     /// struct MyAgent {
-    ///     #[Cycle(f32)]
+    ///     #[Cycle]
     ///     cycle: MyCycle
     /// }
     /// ```
@@ -212,7 +212,7 @@ mod test_derive {
     ///
     /// #[derive(CellAgent)]
     /// struct MyAgent<F> {
-    ///     #[Cycle(F)]
+    ///     #[Cycle]
     ///     cycle: MyCycle<F>
     /// }
     /// ```
@@ -298,7 +298,7 @@ mod test_derive {
     ///
     /// #[derive(CellAgent)]
     /// struct MyAgent(
-    ///     #[Cycle(f32)]
+    ///     #[Cycle]
     ///     MyCycle
     /// );
     /// ```
@@ -326,7 +326,7 @@ mod test_derive {
     ///
     /// #[derive(CellAgent)]
     /// struct MyAgent<F>(
-    ///     #[Cycle(F)]
+    ///     #[Cycle]
     ///     MyCycle<F>
     /// );
     /// ```

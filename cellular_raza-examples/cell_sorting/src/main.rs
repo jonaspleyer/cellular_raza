@@ -103,9 +103,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 
 #[derive(CellAgent, Clone, Deserialize, Serialize)]
 struct Cell {
-    #[Interaction(Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species))]
+    #[Interaction]
     interaction: CellSpecificInteraction,
-    #[Mechanics(Vector3<f64>, Vector3<f64>, Vector3<f64>)]
+    #[Mechanics]
     mechanics: NewtonDamped3D,
 }
 

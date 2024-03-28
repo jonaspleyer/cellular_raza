@@ -51,15 +51,9 @@ fn derive_cycle() {}
 /// }
 /// #[derive(CellAgent)]
 /// struct NewAgent1 {
-///     #[Mechanics(f32, f32, f32, f32)]
+///     #[Mechanics]
 ///     mechanics: MechanicsModel
 /// }
-/// // TODO this does currently not work
-/// // #[derive(CellAgent)]
-/// // struct NewAgent2(
-/// //     #[Mechanics(f32, f32, f32, f32)]
-/// //     MechanicsModel
-/// // );
 // ```
 #[doc(hidden)]
 #[allow(unused)]

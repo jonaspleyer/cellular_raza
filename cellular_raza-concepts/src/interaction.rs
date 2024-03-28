@@ -73,7 +73,7 @@ pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
 ///
 /// #[derive(CellAgent)]
 /// struct MyAgent {
-///     #[Reactions(f64)]
+///     #[Reactions]
 ///     reactions: MyReactions,
 /// }
 /// ```
