@@ -61,22 +61,22 @@ enum CellAspect {
 }
 
 impl CellAspect {
-    fn from_attribute(attr: &syn::Attribute) -> syn::Result<Option<Self>> {
+    fn from_attribute(attr: &syn::Attribute) -> Option<Self> {
         let path = attr.meta.path().get_ident();
 
         if let Some(p) = path {
             let path_str = p.to_string();
             match path_str.as_str() {
-                "Mechanics" => Ok(Some(CellAspect::Mechanics)),
-                "Cycle" => Ok(Some(CellAspect::Cycle)),
-                "Interaction" => Ok(Some(CellAspect::Interaction)),
-                "Reactions" => Ok(Some(CellAspect::Reactions)),
-                "ExtracellularGradient" => Ok(Some(CellAspect::ExtracellularGradient)),
-                "Volume" => Ok(Some(CellAspect::Volume)),
-                _ => Ok(None),
+                "Mechanics" => Some(CellAspect::Mechanics),
+                "Cycle" => Some(CellAspect::Cycle),
+                "Interaction" => Some(CellAspect::Interaction),
+                "Reactions" => Some(CellAspect::Reactions),
+                "ExtracellularGradient" => Some(CellAspect::ExtracellularGradient),
+                "Volume" => Some(CellAspect::Volume),
+                _ => None,
             }
         } else {
-            Ok(None)
+            None
         }
     }
 }
@@ -89,19 +89,14 @@ struct CellAspectField {
 }
 
 impl CellAspectField {
-    fn from_field(field: syn::Field) -> syn::Result<Self> {
-        let mut errors = vec![];
+    fn from_field(field: syn::Field) -> Self {
         let aspects = field
             .attrs
             .iter()
             .map(CellAspect::from_attribute)
-            .filter_map(|r| r.map_err(|e| errors.push(e)).ok())
             .filter_map(|s| s)
             .collect::<Vec<_>>();
-        for e in errors.into_iter() {
-            return Err(e);
-        }
-        Ok(Self { aspects, field })
+        Self { aspects, field }
     }
 
     fn from_fields(
@@ -113,12 +108,12 @@ impl CellAspectField {
                 .named
                 .into_iter()
                 .map(|field| CellAspectField::from_field(field))
-                .collect::<syn::Result<Vec<_>>>()?),
+                .collect::<Vec<_>>()),
             syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
                 .unnamed
                 .into_iter()
                 .map(|field| CellAspectField::from_field(field))
-                .collect::<syn::Result<Vec<_>>>()?),
+                .collect::<Vec<_>>()),
             syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
         }
     }
