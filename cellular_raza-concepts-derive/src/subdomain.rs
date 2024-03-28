@@ -10,7 +10,7 @@ impl DomainAspect {
         if let Some(p) = path {
             let p_string = p.to_string();
             match p_string.as_str() {
-                "Domain" => Some(DomainAspect::Base),
+                "Base" => Some(DomainAspect::Base),
                 "Mechanics" => Some(DomainAspect::Mechanics),
                 "Reactions" => Some(DomainAspect::Reactions),
                 _ => None,
@@ -134,11 +134,36 @@ impl From<DomainParser> for DomainImplementer {
 impl DomainImplementer {
     fn implement_base(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.name;
-        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+        let (impl_generics, struct_ty_generics, where_clause) = &self.generics.split_for_impl();
 
         if let Some(field_info) = &self.base {
             let field_type = &field_info.field_type;
             let field_name = &field_info.field_name;
+
+            quote::quote!(
+                impl #impl_generics SubDomain for #struct_name #struct_ty_generics #where_clause {
+                    type VoxelIndex = <#field_type as SubDomain>::VoxelIndex;
+
+                    fn get_neighbor_voxel_indices(
+                        &self,
+                        voxel_index: &Self::VoxelIndex
+                    ) -> Vec<Self::VoxelIndex> {
+                        <#field_type as SubDomain>::get_neighbor_voxel_indices(
+                            &self.#field_name,
+                            voxel_index,
+                        )
+                    }
+
+                    fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
+                        <#field_type as SubDomain>::get_all_indices(&self.#field_name)
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
+    }
+
             new_ident!(cell, "__cr_private_Cell");
             new_ident!(subdomain, "__cr_private_SubDomain");
             new_ident!(cell_iterator, "__cr_private_CellIterator");
