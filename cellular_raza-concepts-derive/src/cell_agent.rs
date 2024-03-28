@@ -206,21 +206,34 @@ pub fn wrap(input: TokenStream) -> TokenStream {
 impl AgentImplementer {
     pub fn implement_cycle(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
-        if let Some(cycle_implementer) = &self.cycle {
-            let float_type = match &cycle_implementer.float_type {
-                Some(ty) => quote!(#ty),
-                None => quote!(f64),
-            };
-            let field_type = &cycle_implementer.field_type;
+        if let Some(field_info) = &self.cycle {
+            let field_type = &field_info.field_type;
+            new_ident!(float_type, "__cr_private_Float");
 
             let tokens = quote!(#struct_name #struct_ty_generics, #float_type);
 
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: Cycle<#tokens>,
+                ),
+                None => quote!(
+                    where
+                    #field_type: Cycle<#tokens>,
+                ),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, float_type);
+            let impl_generics = generics.split_for_impl().0;
+
             let new_stream = quote!(
                 #[automatically_derived]
-                impl #struct_impl_generics Cycle<#tokens> for #struct_name #struct_ty_generics #struct_where_clause {
+                impl #impl_generics Cycle<#tokens>
+                for #struct_name #struct_ty_generics #where_clause {
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: &#float_type,
@@ -249,25 +262,41 @@ impl AgentImplementer {
 
     pub fn implement_mechanics(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
-        if let Some(mechanics_implementer) = &self.mechanics {
-            let position = &mechanics_implementer.position;
-            let velocity = &mechanics_implementer.velocity;
-            let force = &mechanics_implementer.force;
-            let float_type = match &mechanics_implementer.float_type {
-                Some(ty) => quote!(#ty),
-                None => quote!(f64),
-            };
+        if let Some(field_info) = &self.mechanics {
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(velocity, "__cr_private_Vel");
+            new_ident!(force, "__cr_private_For");
+            new_ident!(float_type, "__cr_private_Float");
 
             let tokens = quote!(#position, #velocity, #force, #float_type);
-            let field_type = &mechanics_implementer.field_type;
-            let field_name = &mechanics_implementer.field_name;
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: Mechanics<#tokens>,
+                ),
+                None => quote!(
+                    where
+                    #field_type: Mechanics<#tokens>,
+                ),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            push_ident!(generics, velocity);
+            push_ident!(generics, force);
+            push_ident!(generics, float_type);
+            let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_impl_generics Mechanics<#tokens> for #struct_name #struct_ty_generics #struct_where_clause
+                impl #impl_generics Mechanics<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
                 {
                     fn pos(&self) -> #position {
                         <#field_type as Mechanics<#tokens>>::pos(&self.#field_name)
@@ -299,31 +328,39 @@ impl AgentImplementer {
 
     pub fn implement_interaction(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
-        if let Some(interaction_implementer) = &self.interaction {
-            let field_name = &interaction_implementer.field_name;
-            let field_type = &interaction_implementer.field_type;
-            let position = &interaction_implementer.position;
-            let velocity = &interaction_implementer.velocity;
-            let force = &interaction_implementer.force;
-            let information = &interaction_implementer.information;
+        if let Some(field_info) = &self.interaction {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(velocity, "__cr_private_Vel");
+            new_ident!(force, "__cr_private_For");
+            new_ident!(information, "__cr_private_Inf");
+            let tokens = quote!(#position, #velocity, #force, #information);
+
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: Interaction<#tokens>,
+                ),
+                None => quote!(where #field_type: Interaction<#tokens>),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            push_ident!(generics, velocity);
+            push_ident!(generics, force);
+            push_ident!(generics, information);
+            let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_impl_generics Interaction<
-                    #position,
-                    #velocity,
-                    #force,
-                    #information
-                > for #struct_name #struct_ty_generics #struct_where_clause {
+                impl #impl_generics Interaction<#tokens>
+                    for #struct_name #struct_ty_generics #where_clause {
                     fn get_interaction_information(&self) -> #information {
-                        <#field_type as Interaction<
-                            #position,
-                            #velocity,
-                            #force,
-                            #information
+                        <#field_type as Interaction<#tokens
                         >>::get_interaction_information(
                             &self.#field_name
                         )
@@ -394,35 +431,49 @@ impl AgentImplementer {
 
     pub fn implement_reactions(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
-        if let Some(cellular_reactions_implementer) = &self.cellular_reactions {
-            let field_name = &cellular_reactions_implementer.field_name;
-            let field_type = &cellular_reactions_implementer.field_type;
-            let concvecintracellular = &cellular_reactions_implementer.concvecintracellular;
-            let concvecextracellular = &cellular_reactions_implementer.concvecextracellular;
+        if let Some(field_info) = &self.cellular_reactions {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(cvec_intra, "__cr_private_CVecIntra");
+            new_ident!(cvec_extra, "__cr_private_CVecExtra");
+            let tokens = quote!(#cvec_intra, #cvec_extra);
+
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: CellularReactions<#tokens>,
+                ),
+                None => quote!(where #field_type: CellularReactions<#tokens>),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, cvec_intra);
+            push_ident!(generics, cvec_extra);
+            let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_impl_generics CellularReactions<
-                    #concvecintracellular,
-                    #concvecextracellular
-                > for #struct_name #struct_ty_generics #struct_where_clause {
-                    fn get_intracellular(&self) -> #concvecintracellular {
+                impl #impl_generics CellularReactions<
+                    #cvec_intra,
+                    #cvec_extra
+                > for #struct_name #struct_ty_generics #where_clause {
+                    fn get_intracellular(&self) -> #cvec_intra {
                         <#field_type as CellularReactions<
-                            #concvecintracellular,
-                            #concvecextracellular
+                            #cvec_intra,
+                            #cvec_extra
                         >>::get_intracellular(&self.#field_name)
                     }
 
                     fn set_intracellular(
                         &mut self,
-                        concentration_vector: #concvecintracellular
+                        concentration_vector: #cvec_intra
                     ) {
                         <#field_type as CellularReactions<
-                            #concvecintracellular,
-                            #concvecextracellular
+                            #cvec_intra,
+                            #cvec_extra
                         >>::set_intracellular(
                             &mut self.#field_name,
                             concentration_vector
@@ -431,12 +482,12 @@ impl AgentImplementer {
 
                     fn calculate_intra_and_extracellular_reaction_increment(
                         &self,
-                        internal_concentration_vector: &#concvecintracellular,
-                        external_concentration_vector: &#concvecextracellular,
-                    ) -> Result<(#concvecintracellular, #concvecextracellular), CalcError> {
+                        internal_concentration_vector: &#cvec_intra,
+                        external_concentration_vector: &#cvec_extra,
+                    ) -> Result<(#cvec_intra, #cvec_extra), CalcError> {
                         <#field_type as CellularReactions<
-                            #concvecintracellular,
-                            #concvecextracellular
+                            #cvec_intra,
+                            #cvec_extra
                         >>::calculate_intra_and_extracellular_reaction_increment(
                             &self.#field_name,
                             internal_concentration_vector,
@@ -452,27 +503,36 @@ impl AgentImplementer {
 
     pub fn implement_extracellular_gradient(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
-        if let Some(extracellular_gradient_implementer) = &self.extracellular_gradient {
-            let field_type = &extracellular_gradient_implementer.field_type;
+        if let Some(field_info) = &self.extracellular_gradient {
+            let field_type = &field_info.field_type;
+            new_ident!(extra_gradient, "__cr_private_ExtraGradient");
+            let tokens = quote!(#struct_name #struct_ty_generics, #extra_gradient);
 
-            let extracellular_gradient = &extracellular_gradient_implementer.extracellular_gradient;
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: InteractionExtracellularGradient<#tokens>,
+                ),
+                None => quote!(where #field_type: InteractionExtracellularGradient<#tokens>),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, extra_gradient);
+            let impl_generics = generics.split_for_impl().0;
+
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_impl_generics InteractionExtracellularGradient<
-                    #struct_name #struct_ty_generics,
-                    #extracellular_gradient
-                > for #struct_name #struct_ty_generics #struct_where_clause {
+                impl #impl_generics InteractionExtracellularGradient<#tokens>
+                    for #struct_name #struct_ty_generics #where_clause {
                     fn sense_gradient(
                         cell: &mut #struct_name #struct_ty_generics,
-                        gradient: &#extracellular_gradient,
+                        gradient: &#extra_gradient,
                     ) -> Result<(), CalcError> {
-                        <#field_type as InteractionExtracellularGradient<
-                            #struct_name #struct_ty_generics,
-                            #extracellular_gradient
-                        >>::sense_gradient(cell, gradient)
+                        <#field_type as InteractionExtracellularGradient<#tokens>>
+                            ::sense_gradient(cell, gradient)
                     }
                 }
             };
@@ -483,17 +543,31 @@ impl AgentImplementer {
 
     pub fn implement_volume(&self) -> TokenStream {
         let struct_name = &self.name;
-        let (struct_impl_generics, struct_ty_generics, struct_where_clause) =
+        let (_, struct_ty_generics, struct_where_clause) =
             &self.generics.split_for_impl();
 
         if let Some(volume_implementer) = &self.volume {
             let field_type = &volume_implementer.field_type;
             let field_name = &volume_implementer.field_name;
-            let float_type = &volume_implementer.float_type;
+            new_ident!(float_type, "__cr_private_Float");
+
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote!(
+                    #clause,
+                    #field_type: Volume<#float_type>,
+                ),
+                None => quote!(where #field_type: Volume<#float_type>),
+            };
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, float_type);
+            let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #struct_impl_generics Volume<#float_type> for #struct_name #struct_ty_generics #struct_where_clause {
+                impl #impl_generics Volume<#float_type> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
                     fn get_volume(&self) -> #float_type {
                         <#field_type as Volume<#float_type>>::get_volume(
                             &self.#field_name
