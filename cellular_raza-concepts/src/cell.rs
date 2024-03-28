@@ -123,3 +123,6 @@ impl<Cel> CellAgentBox<Cel> {
         }
     }
 }
+
+#[doc(inline)]
+pub use cellular_raza_concepts_derive::CellAgent;
