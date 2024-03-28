@@ -245,7 +245,7 @@ impl DomainImplementer {
     }
 }
 
-pub fn derive_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let domain_parser = syn::parse_macro_input!(input as DomainParser);
     let domain_implementer: DomainImplementer = domain_parser.into();
 
