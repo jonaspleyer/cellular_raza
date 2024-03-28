@@ -201,7 +201,43 @@ impl DomainImplementer {
     }
 
     fn implement_mechanics(&self) -> proc_macro2::TokenStream {
-        todo!()
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.mechanics {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(velocity, "__cr_private_Vel");
+            let tokens = quote::quote!(#position, #velocity);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, SubDomainMechanics, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            push_ident!(generics, velocity);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics SubDomainMechanics<#position, #velocity>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn apply_boundary(
+                        &self,
+                        pos: &mut #position,
+                        vel: &mut #velocity,
+                    ) -> Result<(), BoundaryError> {
+                        <#field_type as SubDomainMechanics<#position, #velocity>>::apply_boundary(
+                            &self.#field_name,
+                            pos,
+                            vel,
+                        )
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 
     fn implement_reactions(&self) -> proc_macro2::TokenStream {
