@@ -46,6 +46,8 @@ where
 {
 }
 
+// TODO solve problem where const D: usize from building blocks for interaction
+// can not be determined. For now we simply skip this function.
 #[allow(unused)]
 pub fn interaction_implemented<Pos, Vel, For, Inf, C, Ci>(agents: &Ci)
 where
