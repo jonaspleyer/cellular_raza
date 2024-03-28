@@ -82,7 +82,7 @@ pub trait SubDomainSortCells<C>: SubDomain {
 }
 
 ///
-pub trait SubDomainMechanics<Pos, Vel>: SubDomain {
+pub trait SubDomainMechanics<Pos, Vel> {
     /// If the subdomain has boundary conditions, this function will enforce them onto the cells.
     /// For the future, we plan to replace this function to additionally obtain information
     /// about the previous and current location of the cell.
