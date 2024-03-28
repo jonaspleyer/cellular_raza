@@ -25,7 +25,7 @@ pub struct AgentParser {
     struct_token: syn::Token![struct],
     name: syn::Ident,
     generics: syn::Generics,
-    aspects: Vec<AspectField>,
+    aspects: Vec<CellAspectField>,
 }
 
 impl syn::parse::Parse for AgentParser {
@@ -36,7 +36,7 @@ impl syn::parse::Parse for AgentParser {
         let struct_token = item_struct.struct_token;
         let name = item_struct.ident;
         let generics = item_struct.generics;
-        let aspects = AspectField::from_fields(name.span(), item_struct.fields)?;
+        let aspects = CellAspectField::from_fields(name.span(), item_struct.fields)?;
 
         let res = Self {
             attrs,
@@ -60,6 +60,14 @@ struct MechanicsParser {
     force: syn::Type,
     _comma_3: Option<syn::Token![,]>,
     float_type: Option<syn::Type>,
+}
+enum CellAspect {
+    Mechanics,
+    Cycle,
+    Interaction,
+    Reactions,
+    ExtracellularGradient,
+    Volume,
 }
 
 impl syn::parse::Parse for MechanicsParser {
@@ -244,7 +252,7 @@ impl syn::parse::Parse for CycleParser {
 }
 
 #[derive(Clone)]
-enum Aspect {
+enumCellAspect {
     Mechanics(MechanicsParser),
     Cycle(CycleParser),
     Interaction(InteractionParser),
@@ -253,7 +261,7 @@ enum Aspect {
     Volume(VolumeParser),
 }
 
-impl Aspect {
+impl CellAspect {
     fn from_attribute(attr: &syn::Attribute) -> syn::Result<Option<Self>> {
         let path = attr.meta.path().get_ident();
         let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
@@ -297,18 +305,18 @@ impl Aspect {
 
 // ------------------------------------- ASPECTS -------------------------------------
 #[derive(Clone)]
-struct AspectField {
-    aspects: Vec<Aspect>,
+struct CellAspectField {
+    aspects: Vec<CellAspect>,
     field: syn::Field,
 }
 
-impl AspectField {
+impl CellAspectField {
     fn from_field(field: syn::Field) -> syn::Result<Self> {
         let mut errors = vec![];
         let aspects = field
             .attrs
             .iter()
-            .map(Aspect::from_attribute)
+            .map(CellAspect::from_attribute)
             .filter_map(|r| r.map_err(|e| errors.push(e)).ok())
             .filter_map(|s| s)
             .collect::<Vec<_>>();
@@ -323,12 +331,12 @@ impl AspectField {
             syn::Fields::Named(fields_named) => Ok(fields_named
                 .named
                 .into_iter()
-                .map(|field| AspectField::from_field(field))
+                .map(|field|CellAspectField::from_field(field))
                 .collect::<syn::Result<Vec<_>>>()?),
             syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
                 .unnamed
                 .into_iter()
-                .map(|field| AspectField::from_field(field))
+                .map(|field|CellAspectField::from_field(field))
                 .collect::<syn::Result<Vec<_>>>()?),
             syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
         }
@@ -361,13 +369,13 @@ impl From<AgentParser> for AgentImplementer {
                 .aspects
                 .into_iter()
                 .for_each(|aspect| match aspect {
-                    Aspect::Cycle(p) => {
+                   CellAspect::Cycle(p) => {
                         cycle = Some(CycleImplementer {
                             float_type: p.float_type,
                             field_type: aspect_field.field.ty.clone(),
                         })
                     }
-                    Aspect::Mechanics(p) => {
+                   CellAspect::Mechanics(p) => {
                         mechanics = Some(MechanicsImplementer {
                             position: p.position,
                             velocity: p.velocity,
@@ -377,7 +385,7 @@ impl From<AgentParser> for AgentImplementer {
                             field_name: aspect_field.field.ident.clone(),
                         })
                     }
-                    Aspect::Interaction(p) => {
+                   CellAspect::Interaction(p) => {
                         interaction = Some(InteractionImplementer {
                             position: p.position,
                             velocity: p.velocity,
@@ -387,7 +395,7 @@ impl From<AgentParser> for AgentImplementer {
                             field_name: aspect_field.field.ident.clone(),
                         })
                     }
-                    Aspect::Reactions(p) => {
+                   CellAspect::Reactions(p) => {
                         cellular_reactions = Some(ReactionsImplementer {
                             concvecintracellular: p.concvecintracellular,
                             concvecextracellular: p.concvecextracellular,
@@ -395,13 +403,13 @@ impl From<AgentParser> for AgentImplementer {
                             field_name: aspect_field.field.ident.clone(),
                         })
                     }
-                    Aspect::ExtracellularGradient(p) => {
+                   CellAspect::ExtracellularGradient(p) => {
                         extracellular_gradient = Some(ExtracellularGradientImplementer {
                             extracellular_gradient: p.extracellular_gradient,
                             field_type: aspect_field.field.ty.clone(),
                         })
                     }
-                    Aspect::Volume(p) => {
+                   CellAspect::Volume(p) => {
                         volume = Some(VolumeImplementer {
                             float_type: p.float_type,
                             field_type: aspect_field.field.ty.clone(),
