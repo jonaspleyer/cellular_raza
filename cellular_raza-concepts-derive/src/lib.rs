@@ -3,7 +3,7 @@
 
 #[macro_use]
 mod cell_agent;
-mod domain;
+mod subdomain;
 
 /// Derive cellular concepts
 ///
