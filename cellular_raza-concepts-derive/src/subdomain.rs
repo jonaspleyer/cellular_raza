@@ -252,6 +252,5 @@ pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let mut res = proc_macro2::TokenStream::new();
     res.extend(domain_implementer.implement_base());
     res.extend(domain_implementer.implement_mechanics());
-    res.extend(domain_implementer.implement_reactions());
     super::cell_agent::wrap(res).into()
 }
