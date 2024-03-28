@@ -114,9 +114,8 @@ impl<C, A> Voxel<C, A> {
         Pos,
         Vel,
         For,
-        Float,
         Inf,
-        F,
+        Float,
         const N: usize,
     >(
         &mut self,
@@ -128,14 +127,14 @@ impl<C, A> Voxel<C, A> {
         For: Clone
             + core::ops::AddAssign
             + num::Zero
-            + core::ops::Mul<F, Output = For>
+            + core::ops::Mul<Float, Output = For>
             + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-        A: UpdateMechanics<Pos, Vel, For, F, N>,
-        F: num::Float,
+        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        Float: num::Float,
     {
-        let one_half = F::one() / (F::one() + F::one());
+        let one_half = Float::one() / (Float::one() + Float::one());
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
             let f = cell.calculate_force_between(
