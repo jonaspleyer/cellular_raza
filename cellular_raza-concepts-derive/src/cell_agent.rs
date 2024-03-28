@@ -1,6 +1,22 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
+macro_rules! new_ident(
+    ($name:ident, $ident:literal) => {
+        let $name = proc_macro2::Ident::new($ident, proc_macro2::Span::call_site());
+    }
+);
+
+macro_rules! push_ident(
+    ($generics:ident, $ident:ident) => {
+        if !$generics.params.empty_or_trailing() {
+            let punct = syn::Token![,](proc_macro2::Span::call_site());
+            $generics.params.push_punct(punct);
+        }
+        $generics.params.push_value(syn::TypeParam::from($ident.clone()).into());
+    }
+);
+
 // ##################################### PARSING #####################################
 #[allow(unused)]
 pub struct AgentParser {
