@@ -35,6 +35,28 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
 // TODO we should not use the option here
 
 /// Defines how the cell uses the extracellular gradient.
+///
+/// This trait can also be derived with the [CellAgent](crate::CellAgent) derive macro.
+/// ```
+/// use cellular_raza_concepts::{InteractionExtracellularGradient, CalcError, CellAgent};
+///
+/// struct DoNothingGradient;
+///
+/// impl<C, G> InteractionExtracellularGradient<C, G> for DoNothingGradient {
+///     fn sense_gradient(
+///         cell: &mut C,
+///         gradient: &G,
+///     ) -> Result<(), CalcError> {
+///         Ok(())
+///     }
+/// }
+///
+/// #[derive(CellAgent)]
+/// struct MyAgent {
+///     #[ExtracellularGradient]
+///     gradient: DoNothingGradient,
+/// }
+/// ```
 pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
     /// The cell-agent senses the gradient and changes the behaviour of the cell.
     fn sense_gradient(
