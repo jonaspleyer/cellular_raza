@@ -286,11 +286,15 @@ mod test {
             for cell in cells.into_iter() {
                 let mut cell_prev = cell.clone();
                 let mut _nothing = cell.clone();
-                subdomain.apply_boundary(&mut cell_prev, &mut _nothing).unwrap();
+                subdomain
+                    .apply_boundary(&mut cell_prev, &mut _nothing)
+                    .unwrap();
                 assert_eq!(cell_prev, cell);
             }
             let mut _nothing = cell_outside.clone();
-            subdomain.apply_boundary(&mut cell_outside, &mut _nothing).unwrap();
+            subdomain
+                .apply_boundary(&mut cell_outside, &mut _nothing)
+                .unwrap();
             assert!(cell_outside >= min);
             assert!(cell_outside <= max);
         }

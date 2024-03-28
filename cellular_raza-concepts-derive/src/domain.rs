@@ -144,12 +144,8 @@ impl DomainImplementer {
             new_ident!(cell_iterator, "__cr_private_CellIterator");
             let tokens = quote::quote!(#cell, #subdomain, #cell_iterator);
 
-            let where_clause = append_where_clause!(
-                struct_where_clause,
-                field_type,
-                Domain,
-                tokens
-            );
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Domain, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
