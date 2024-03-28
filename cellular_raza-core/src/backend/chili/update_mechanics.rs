@@ -189,6 +189,7 @@ where
 
         // Calculate forces for all cells from neighbors
         // TODO can we do this without memory allocation?
+        // or simply allocate when creating the subdomain
         let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
 
         for voxel_index in key_iterator {
