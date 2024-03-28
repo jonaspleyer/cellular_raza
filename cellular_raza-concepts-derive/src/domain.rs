@@ -1,57 +1,23 @@
 pub enum DomainAspect {
-    Base(DomainBaseParser),
-    Mechanics(DomainMechanicsParser),
-    Reactions(DomainReactionsParser),
-}
-
-struct DomainBaseParser {}
-
-impl syn::parse::Parse for DomainBaseParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        todo!()
-    }
-}
-
-struct DomainMechanicsParser {}
-
-impl syn::parse::Parse for DomainMechanicsParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        todo!()
-    }
-}
-
-struct DomainReactionsParser {}
-
-impl syn::parse::Parse for DomainReactionsParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        todo!()
-    }
+    Base,
+    Mechanics,
+    Reactions,
 }
 
 impl DomainAspect {
-    fn from_attribute(attr: &syn::Attribute) -> syn::Result<Option<Self>> {
+    fn from_attribute(attr: &syn::Attribute) -> Option<Self> {
         let path = attr.meta.path().get_ident();
-        let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
-
-        let s = &attr.meta;
-        let stream: proc_macro::TokenStream = quote::quote!(#s).into();
-
-        if cmp("Domain") {
-            let parsed: DomainBaseParser = syn::parse(stream)?;
-            return Ok(Some(DomainAspect::Base(parsed)));
+        if let Some(p) = path {
+            let p_string = p.to_string();
+            match p_string.as_str() {
+                "Domain" => Some(DomainAspect::Base),
+                "Mechanics" => Some(DomainAspect::Mechanics),
+                "Reactions" => Some(DomainAspect::Reactions),
+                _ => None,
+            }
+        } else {
+            None
         }
-
-        if cmp("Mechanics") {
-            let parsed: DomainMechanicsParser = syn::parse(stream)?;
-            return Ok(Some(DomainAspect::Mechanics(parsed)));
-        }
-
-        if cmp("Reactions") {
-            let parsed: DomainReactionsParser = syn::parse(stream)?;
-            return Ok(Some(DomainAspect::Reactions(parsed)));
-        }
-
-        Ok(None)
     }
 }
 
@@ -61,19 +27,14 @@ pub struct DomainAspectField {
 }
 
 impl DomainAspectField {
-    pub fn from_field(field: syn::Field) -> syn::Result<Self> {
-        let mut errors = vec![];
+    pub fn from_field(field: syn::Field) -> Self {
         let aspects = field
             .attrs
             .iter()
             .map(DomainAspect::from_attribute)
-            .filter_map(|r| r.map_err(|e| errors.push(e)).ok())
             .filter_map(|s| s)
             .collect::<Vec<_>>();
-        for e in errors.into_iter() {
-            return Err(e);
-        }
-        Ok(Self { aspects, field })
+        Self { aspects, field }
     }
 }
 
