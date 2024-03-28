@@ -50,17 +50,7 @@ impl syn::parse::Parse for AgentParser {
     }
 }
 
-// ------------------------------------ MECHANICS ------------------------------------
 #[derive(Clone)]
-struct MechanicsParser {
-    position: syn::Type,
-    _comma_1: syn::Token![,],
-    velocity: syn::Type,
-    _comma_2: syn::Token![,],
-    force: syn::Type,
-    _comma_3: Option<syn::Token![,]>,
-    float_type: Option<syn::Type>,
-}
 enum CellAspect {
     Mechanics,
     Cycle,
@@ -70,236 +60,24 @@ enum CellAspect {
     Volume,
 }
 
-impl syn::parse::Parse for MechanicsParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _mechanics: syn::Ident = input.parse()?;
-        let content;
-        syn::parenthesized!(content in input);
-        Ok(Self {
-            position: content.parse()?,
-            _comma_1: content.parse()?,
-            velocity: content.parse()?,
-            _comma_2: content.parse()?,
-            force: content.parse()?,
-            _comma_3: content.parse()?,
-            float_type: if content.is_empty() {
-                None
-            } else {
-                Some(content.parse()?)
-            },
-        })
-    }
-}
-
-struct MechanicsImplementer {
-    position: syn::Type,
-    velocity: syn::Type,
-    force: syn::Type,
-    float_type: Option<syn::Type>,
-    field_type: syn::Type,
-    field_name: Option<syn::Ident>,
-}
-
-// ----------------------------------- INTERACTION -----------------------------------
-#[derive(Clone)]
-struct InteractionParser {
-    position: syn::Type,
-    _comma_1: syn::Token![,],
-    velocity: syn::Type,
-    _comma_2: syn::Token![,],
-    force: syn::Type,
-    _comma_3: Option<syn::Token![,]>,
-    information: syn::Type,
-}
-
-impl syn::parse::Parse for InteractionParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _interaction: syn::Ident = input.parse()?;
-        let content;
-        syn::parenthesized!(content in input);
-        Ok(Self {
-            position: content.parse()?,
-            _comma_1: content.parse()?,
-            velocity: content.parse()?,
-            _comma_2: content.parse()?,
-            force: content.parse()?,
-            _comma_3: content.parse().ok(),
-            information: if content.is_empty() {
-                syn::parse_quote!(())
-            } else {
-                content.parse()?
-            },
-        })
-    }
-}
-
-struct InteractionImplementer {
-    position: syn::Type,
-    velocity: syn::Type,
-    force: syn::Type,
-    information: syn::Type,
-    field_type: syn::Type,
-    field_name: Option<syn::Ident>,
-}
-
-// ------------------------------- CELLULAR-REACTIONS --------------------------------
-#[derive(Clone)]
-struct ReactionsParser {
-    concvecintracellular: syn::Type,
-    _comma: Option<syn::Token![,]>,
-    concvecextracellular: syn::Type,
-}
-
-impl syn::parse::Parse for ReactionsParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _cellular_reactions: syn::Ident = input.parse()?;
-        let content;
-        syn::parenthesized!(content in input);
-        let concvecintracellular: syn::Type = content.parse()?;
-        let _comma = content.parse()?;
-        let concvecextracellular = if content.is_empty() {
-            concvecintracellular.clone()
-        } else {
-            content.parse()?
-        };
-        Ok(Self {
-            concvecintracellular,
-            _comma,
-            concvecextracellular,
-        })
-    }
-}
-
-struct ReactionsImplementer {
-    concvecintracellular: syn::Type,
-    concvecextracellular: syn::Type,
-    field_type: syn::Type,
-    field_name: Option<syn::Ident>,
-}
-
-// ------------------------------ EXTRACELLULAR-GRADIENT -----------------------------
-#[derive(Clone)]
-struct ExtracellularGradientParser {
-    extracellular_gradient: syn::Type,
-}
-
-impl syn::parse::Parse for ExtracellularGradientParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _extracellular_gradients: syn::Ident = input.parse()?;
-        let content;
-        syn::parenthesized!(content in input);
-        Ok(Self {
-            extracellular_gradient: content.parse()?,
-        })
-    }
-}
-
-struct ExtracellularGradientImplementer {
-    extracellular_gradient: syn::Type,
-    field_type: syn::Type,
-}
-
-// ------------------------------------- VOLUME --------------------------------------
-#[derive(Clone)]
-struct VolumeParser {
-    float_type: syn::Type,
-}
-
-impl syn::parse::Parse for VolumeParser {
-    #[allow(unused)]
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _volume: syn::Ident = input.parse()?;
-        let float_type = if input.is_empty() {
-            syn::parse_quote!(f64)
-        } else {
-            let content;
-            syn::parenthesized!(content in input);
-            content.parse()?
-        };
-        Ok(Self { float_type })
-    }
-}
-
-struct VolumeImplementer {
-    float_type: syn::Type,
-    field_type: syn::Type,
-    field_name: Option<syn::Ident>,
-}
-
-// -------------------------------------- CYCLE --------------------------------------
-#[derive(Clone)]
-struct CycleParser {
-    float_type: Option<syn::Type>,
-}
-
-struct CycleImplementer {
-    float_type: Option<syn::Type>,
-    field_type: syn::Type,
-}
-
-impl syn::parse::Parse for CycleParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _cycle: syn::Ident = input.parse()?;
-        let float_type = if input.is_empty() {
-            None
-        } else {
-            let content;
-            syn::parenthesized!(content in input);
-            Some(content.parse()?)
-        };
-        Ok(Self { float_type })
-    }
-}
-
-#[derive(Clone)]
-enumCellAspect {
-    Mechanics(MechanicsParser),
-    Cycle(CycleParser),
-    Interaction(InteractionParser),
-    Reactions(ReactionsParser),
-    ExtracellularGradient(ExtracellularGradientParser),
-    Volume(VolumeParser),
-}
-
 impl CellAspect {
     fn from_attribute(attr: &syn::Attribute) -> syn::Result<Option<Self>> {
         let path = attr.meta.path().get_ident();
-        let cmp = |c: &str| path.is_some_and(|p| p.to_string() == c);
 
-        let s = &attr.meta;
-        let stream: proc_macro::TokenStream = quote!(#s).into();
-
-        if cmp("Mechanics") {
-            let parsed: MechanicsParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::Mechanics(parsed)));
+        if let Some(p) = path {
+            let path_str = p.to_string();
+            match path_str.as_str() {
+                "Mechanics" => Ok(Some(CellAspect::Mechanics)),
+                "Cycle" => Ok(Some(CellAspect::Cycle)),
+                "Interaction" => Ok(Some(CellAspect::Interaction)),
+                "Reactions" => Ok(Some(CellAspect::Reactions)),
+                "ExtracellularGradient" => Ok(Some(CellAspect::ExtracellularGradient)),
+                "Volume" => Ok(Some(CellAspect::Volume)),
+                _ => Ok(None),
+            }
+        } else {
+            Ok(None)
         }
-
-        if cmp("Cycle") {
-            let parsed: CycleParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::Cycle(parsed)));
-        }
-
-        if cmp("Interaction") {
-            let parsed: InteractionParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::Interaction(parsed)));
-        }
-
-        if cmp("Reactions") {
-            let parsed: ReactionsParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::Reactions(parsed)));
-        }
-
-        if cmp("ExtracellularGradient") {
-            let parsed: ExtracellularGradientParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::ExtracellularGradient(parsed)));
-        }
-
-        if cmp("Volume") {
-            let parsed: VolumeParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::Volume(parsed)));
-        }
-
-        Ok(None)
     }
 }
 
@@ -343,16 +121,21 @@ impl CellAspectField {
     }
 }
 
+struct FieldInfo {
+    field_type: syn::Type,
+    field_name: Option<syn::Ident>,
+}
+
 // ################################### IMPLEMENTING ##################################
 pub struct AgentImplementer {
     name: syn::Ident,
     generics: syn::Generics,
-    cycle: Option<CycleImplementer>,
-    mechanics: Option<MechanicsImplementer>,
-    interaction: Option<InteractionImplementer>,
-    cellular_reactions: Option<ReactionsImplementer>,
-    extracellular_gradient: Option<ExtracellularGradientImplementer>,
-    volume: Option<VolumeImplementer>,
+    cycle: Option<FieldInfo>,
+    mechanics: Option<FieldInfo>,
+    interaction: Option<FieldInfo>,
+    cellular_reactions: Option<FieldInfo>,
+    extracellular_gradient: Option<FieldInfo>,
+    volume: Option<FieldInfo>,
 }
 
 impl From<AgentParser> for AgentImplementer {
@@ -365,58 +148,30 @@ impl From<AgentParser> for AgentImplementer {
         let mut volume = None;
 
         value.aspects.into_iter().for_each(|aspect_field| {
-            aspect_field
-                .aspects
-                .into_iter()
-                .for_each(|aspect| match aspect {
-                   CellAspect::Cycle(p) => {
-                        cycle = Some(CycleImplementer {
-                            float_type: p.float_type,
-                            field_type: aspect_field.field.ty.clone(),
-                        })
+            aspect_field.aspects.into_iter().for_each(|aspect| {
+                let field_info = FieldInfo {
+                    field_type: aspect_field.field.ty.clone(),
+                    field_name: aspect_field.field.ident.clone(),
+                };
+                match aspect {
+                    CellAspect::Cycle => {
+                        cycle = Some(field_info);
                     }
-                   CellAspect::Mechanics(p) => {
-                        mechanics = Some(MechanicsImplementer {
-                            position: p.position,
-                            velocity: p.velocity,
-                            force: p.force,
-                            float_type: p.float_type,
-                            field_type: aspect_field.field.ty.clone(),
-                            field_name: aspect_field.field.ident.clone(),
-                        })
+                    CellAspect::Mechanics => mechanics = Some(field_info),
+                    CellAspect::Interaction => {
+                        interaction = Some(field_info);
                     }
-                   CellAspect::Interaction(p) => {
-                        interaction = Some(InteractionImplementer {
-                            position: p.position,
-                            velocity: p.velocity,
-                            force: p.force,
-                            information: p.information,
-                            field_type: aspect_field.field.ty.clone(),
-                            field_name: aspect_field.field.ident.clone(),
-                        })
+                    CellAspect::Reactions => {
+                        cellular_reactions = Some(field_info);
                     }
-                   CellAspect::Reactions(p) => {
-                        cellular_reactions = Some(ReactionsImplementer {
-                            concvecintracellular: p.concvecintracellular,
-                            concvecextracellular: p.concvecextracellular,
-                            field_type: aspect_field.field.ty.clone(),
-                            field_name: aspect_field.field.ident.clone(),
-                        })
+                    CellAspect::ExtracellularGradient => {
+                        extracellular_gradient = Some(field_info);
                     }
-                   CellAspect::ExtracellularGradient(p) => {
-                        extracellular_gradient = Some(ExtracellularGradientImplementer {
-                            extracellular_gradient: p.extracellular_gradient,
-                            field_type: aspect_field.field.ty.clone(),
-                        })
+                    CellAspect::Volume => {
+                        volume = Some(field_info);
                     }
-                   CellAspect::Volume(p) => {
-                        volume = Some(VolumeImplementer {
-                            float_type: p.float_type,
-                            field_type: aspect_field.field.ty.clone(),
-                            field_name: aspect_field.field.ident.clone(),
-                        })
-                    }
-                })
+                }
+            })
         });
 
         Self {
