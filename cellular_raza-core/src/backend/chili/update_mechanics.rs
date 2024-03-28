@@ -183,10 +183,10 @@ where
         S: SubDomainMechanics<Pos, Vel>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
     {
-        self.voxels
-            .iter_mut()
-            .map(|(_, vox)| vox.calculate_force_between_cells_internally())
-            .collect::<Result<(), CalcError>>()?;
+        for (_, vox) in self.voxels.iter_mut() {
+            vox.calculate_force_between_cells_internally()?;
+        }
+
         // Calculate forces for all cells from neighbors
         // TODO can we do this without memory allocation?
         let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
@@ -372,19 +372,18 @@ where
             }?;
         }
 
-        self.voxels
+        for (cellbox, aux_storage) in self
+            .voxels
             .iter_mut()
-            .map(|(_, vox)| {
-                vox.cells.iter_mut().map(|(cellbox, aux_storage)| {
-                    super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
-                        cellbox,
-                        aux_storage,
-                        *dt,
-                    )
-                })
-            })
+            .map(|(_, vox)| vox.cells.iter_mut())
             .flatten()
-            .collect::<Result<Vec<_>, CalcError>>()?;
+        {
+            super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
+                cellbox,
+                aux_storage,
+                *dt,
+            )?;
+        }
         Ok(())
     }
 
@@ -396,12 +395,19 @@ where
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         S: SubDomainMechanics<Pos, Vel>,
     {
-        self.voxels
+        for (cell, _) in self
+            .voxels
             .iter_mut()
             .map(|(_, voxel)| voxel.cells.iter_mut())
             .flatten()
-            .map(|(cell, _)| self.subdomain.apply_boundary(cell))
-            .collect::<Result<(), BoundaryError>>()
+        {
+            let mut pos = cell.pos();
+            let mut vel = cell.velocity();
+            self.subdomain.apply_boundary(&mut pos, &mut vel)?;
+            cell.set_pos(&pos);
+            cell.set_velocity(&vel);
+        }
+        Ok(())
     }
 
     /// Sort new cells into respective voxels
