@@ -53,28 +53,42 @@ pub struct DecomposedDomain<I, S, C> {
 }
 
 /// Subdomains are produced by decomposing a [Domain] into multiple physical regions.
-pub trait SubDomain<C> {
+pub trait SubDomain {
     /// Individual Voxels inside each subdomain can be accessed by this index.
     type VoxelIndex;
 
+    /// Obtains the neighbor voxels of the specified voxel index. This function behaves similarly
+    /// to [SubDomain::get_voxel_index_of] in that it also has to return
+    /// indices which are in other [SubDomains](SubDomain).
+    fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex>;
+
+    // fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
+
+    /// Get all voxel indices of this [SubDomain].
+    fn get_all_indices(&self) -> Vec<Self::VoxelIndex>;
+}
+
+/// TODO
+pub trait SubDomainSortCells<C>: SubDomain {
     /// If given a cell, we can sort this cell into the corresponding Voxel.
     /// This function is supposed to return the correct voxel index of the cell even if this index
     /// is inside another [SubDomain]. This restriction might be lifted in the future but is still
     /// required now.
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError>;
+}
 
-    /// Obtains the neighbor voxels of the specified voxel index. This function behaves similarly to
-    /// [SubDomain::get_voxel_index_of] in that it also has to return
-    /// indices which are in other [SubDomains](SubDomain).
-    fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex>;
-
+///
+pub trait SubDomainMechanics<Pos, Vel>: SubDomain {
     /// If the subdomain has boundary conditions, this function will enforce them onto the cells.
     /// For the future, we plan to replace this function to additionally obtain information
     /// about the previous and current location of the cell.
-    fn apply_boundary(&self, cell: &mut C) -> Result<(), BoundaryError>;
+    fn apply_boundary(&self, pos: &mut Pos, vel: &mut Vel) -> Result<(), BoundaryError>;
+}
 
-    /// Get all voxel indices of this [SubDomain].
-    fn get_all_indices(&self) -> Vec<Self::VoxelIndex>;
+///
+pub trait SubDomainForce<Pos, Vel, For> {
+    ///
+    fn apply_custom_force(pos: &Pos, vel: &Vel) -> Result<For, crate::CalcError>;
 }
 
 /// Specifies how to retrieve a unique identifier of an object.
