@@ -131,9 +131,9 @@ impl CellAspectField {
     }
 }
 
-struct FieldInfo {
-    field_type: syn::Type,
-    field_name: Option<syn::Ident>,
+pub struct FieldInfo {
+    pub field_type: syn::Type,
+    pub field_name: Option<syn::Ident>,
 }
 
 // ################################### IMPLEMENTING ##################################
