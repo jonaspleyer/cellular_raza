@@ -783,22 +783,12 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
         }
 
-        impl<C> cellular_raza_concepts::domain_new::SubDomain<C> for $subdomain_name
-        where
-            C: cellular_raza_concepts::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
+        impl cellular_raza_concepts::domain_new::SubDomain for $subdomain_name
+        // where
+        //     C: cellular_raza_concepts::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
         {
             type VoxelIndex = [i64; $d];
 
-            fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-                let p = cell.pos();
-                let mut out = [0; $d];
-
-                for i in 0..$d {
-                    out[i] = ((p[i] - self.domain_min[0]) / self.domain_voxel_sizes[i]) as i64;
-                    out[i] = out[i].min(self.domain_n_voxels[i]-1).max(0);
-                }
-                Ok(out)
-            }
 
             fn get_neighbor_voxel_indices(&self, index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
                 // Create the bounds for the following creation of all the voxel indices
@@ -820,12 +810,43 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 return v;
             }
 
-            fn apply_boundary(&self, _cell: &mut C) -> Result<(), BoundaryError> {
-                todo!()
-            }
-
             fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
                 self.voxels.iter().map(|vox| vox.ind.clone()).collect()
+            }
+        }
+
+        impl<C> cellular_raza_concepts::domain_new::SubDomainSortCells<C> for $subdomain_name
+        where
+            C: Mechanics<
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            $float_type,
+        >,
+        {
+
+            fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
+                let pos = cell.pos();
+                let mut out = [0; $d];
+
+                for i in 0..$d {
+                    out[i] = ((pos[i] - self.domain_min[0]) / self.domain_voxel_sizes[i]) as i64;
+                    out[i] = out[i].min(self.domain_n_voxels[i]-1).max(0);
+                }
+                Ok(out)
+            }
+        }
+
+        impl cellular_raza_concepts::domain_new::SubDomainMechanics<
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+        > for $subdomain_name {
+            fn apply_boundary(
+                &self,
+                _pos: &mut SVector<$float_type, $d>,
+                _vel: &mut SVector<$float_type, $d>
+            ) -> Result<(), BoundaryError> {
+                todo!()
             }
         }
     }
