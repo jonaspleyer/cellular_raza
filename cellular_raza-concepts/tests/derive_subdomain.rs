@@ -1,5 +1,5 @@
 use cellular_raza_concepts::domain_new::*;
-use cellular_raza_concepts::{BoundaryError, Domain};
+use cellular_raza_concepts::BoundaryError;
 
 struct DomainMechanics;
 
