@@ -89,6 +89,7 @@ mod test {
         rng_seed: u64,
     }
 
+    #[allow(unused)]
     struct VoxelIndex(usize);
 
     struct TestSubDomain {
@@ -226,7 +227,7 @@ mod test {
         fn apply_boundary(
             &self,
             pos: &mut f64,
-            vel: &mut f64,
+            _vel: &mut f64,
         ) -> Result<(), cellular_raza_concepts::BoundaryError> {
             if self.reflect_at_boundary.0 && *pos < self.min {
                 *pos = self.min;
