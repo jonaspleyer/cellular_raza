@@ -107,5 +107,42 @@ pub trait Id {
     fn ref_id(&self) -> &Self::Identifier;
 }
 
+/// This trait derives the different aspects of a [SubDomain].
+///
+/// It serves similarly as the [cellular_raza_concepts_derive::CellAgent] trait to quickly
+/// build new structures from already existing functionality.
+///
+/// | Attribute | Trait | Implemented |
+/// | ---  | --- |:---:|
+/// | `Base` | [SubDomain] | ✅ |
+/// | `Mechanics` | [SubDomainMechanics] | ✅ |
+/// | `SortCells` | [SubDomainSortCells] | ✅ |
+/// | `Force` | [SubDomainForce] | ❌  |
+/// | `Reactions` | [SubDomainReactions] | ❌ |
+///
+/// # Example Usage
+/// ```
+/// # use cellular_raza_concepts::domain_new::*;
+/// # struct MySubDomain;
+/// # impl SubDomain for MySubDomain {
+/// #     type VoxelIndex = usize;
+/// #     fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<usize> {
+/// #         Vec::new()
+/// #     }
+/// #     fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
+/// #         Vec::new()
+/// #     }
+/// # }
+/// #[derive(SubDomain)]
+/// struct MyDerivedSubDomain {
+///     #[Base]
+///     s: MySubDomain,
+/// }
+/// # let derived_subdomain = MyDerivedSubDomain {
+/// #     s: MySubDomain,
+/// # };
+/// # let all_indices = derived_subdomain.get_all_indices();
+/// # assert_eq!(all_indices.len(), 0);
+/// ```
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::SubDomain;
