@@ -636,6 +636,11 @@ impl SimulationAspect {
                 );
                 (generics, field)
             }
+            SimulationAspect::DomainForce => {
+                let generics = vec![];
+                let field = quote!();
+                (generics, field)
+            }
         }
     }
 }

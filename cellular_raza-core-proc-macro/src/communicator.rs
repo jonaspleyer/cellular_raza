@@ -238,6 +238,7 @@ impl SimulationAspect {
                     ),
                 ],
             ),
+            SimulationAspect::DomainForce => (vec![], vec![]),
         }
     }
 }

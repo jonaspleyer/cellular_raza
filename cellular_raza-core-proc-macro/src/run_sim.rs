@@ -439,6 +439,11 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
 
+    if kwargs.aspects.contains(&DomainForce) {
+        // TODO only enable this feature if the subdomain supports it
+        step_1.extend(quote!(sbox.calculate_custom_domain_force()?;));
+    }
+
     if kwargs.aspects.contains(&Cycle) {
         step_3.extend(quote!(sbox.update_cell_cycle()?;));
     }

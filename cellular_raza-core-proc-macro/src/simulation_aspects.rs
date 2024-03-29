@@ -40,6 +40,7 @@ pub enum SimulationAspect {
     Interaction,
     Cycle,
     Reactions,
+    DomainForce,
 }
 
 // TODO add option to specify type parameters for individual aspects
@@ -177,6 +178,7 @@ impl SimulationAspect {
             SimulationAspect::Interaction,
             SimulationAspect::Cycle,
             SimulationAspect::Reactions,
+            SimulationAspect::DomainForce,
         ]
     }
 
@@ -195,6 +197,7 @@ impl SimulationAspect {
             SimulationAspect::Interaction => quote::quote!(Interaction),
             SimulationAspect::Cycle => quote::quote!(Cycle),
             SimulationAspect::Reactions => quote::quote!(Reactions),
+            SimulationAspect::DomainForce => quote::quote!(DomainForce),
         }
     }
 
@@ -206,6 +209,7 @@ impl SimulationAspect {
             SimulationAspect::Interaction => quote::quote!(interaction),
             SimulationAspect::Cycle => quote::quote!(cycle),
             SimulationAspect::Reactions => quote::quote!(reactions),
+            SimulationAspect::DomainForce => quote::quote!(domainforce),
         }
     }
 }
@@ -217,6 +221,7 @@ impl<'a> From<&'a SimulationAspect> for String {
             SimulationAspect::Interaction => "Interaction",
             SimulationAspect::Mechanics => "Mechanics",
             SimulationAspect::Reactions => "Reactions",
+            SimulationAspect::DomainForce => "DomainForce",
         }
         .to_owned()
     }
