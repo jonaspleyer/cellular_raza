@@ -298,9 +298,13 @@ where
             )
             .iter()
         {
-            let vox = self.voxels
-                .get_mut(&pos_info.index_receiver)
-                .ok_or(cellular_raza_concepts::IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
+            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(
+                cellular_raza_concepts::IndexError(format!(
+                    "EngineError: Voxel with index {:?} of PosInformation can not be\
+                            found in this thread.",
+                    pos_info.index_receiver
+                )),
+            )?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
@@ -330,10 +334,10 @@ where
     /// In this last step, all [ForceInformation] are gathered and used to update the
     /// cells positions and velocities.
     ///
-    /// For the future, we hope to provide an abstracted method to use
-    /// any of our implemented solvers.
-    /// The solver currently limits the number of saved previous increments in the [UpdateMechanics]
-    /// trait.
+    /// For the future, we hope to provide an abstracted method to use any of our implemented
+    /// solvers.
+    /// The solver currently limits the number of saved previous increments in the
+    /// [UpdateMechanics] trait.
     ///
     /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
     /// solver.
@@ -409,8 +413,8 @@ where
         Ok(())
     }
 
-    /// Applies boundary conditions to cells. For the future, we hope to be using previous and current position
-    /// of cells rather than the cell itself.
+    /// Applies boundary conditions to cells. For the future, we hope to be using previous and
+    /// current position of cells rather than the cell itself.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn apply_boundary<Pos, Vel, For, Float>(&mut self) -> Result<(), BoundaryError>
     where
@@ -435,9 +439,9 @@ where
     /// Sort new cells into respective voxels
     ///
     /// This step determines if a cell is still in its correct location
-    /// after its position has changed. This can be due to the [SubDomainBox::update_mechanics_step_3]
-    /// method or due to other effects such as cell-division by the [cellular_raza_concepts::Cycle]
-    /// trait.
+    /// after its position has changed. This can be due to the
+    /// [SubDomainBox::update_mechanics_step_3] method or due to other effects such as
+    /// cell-division by the [cellular_raza_concepts::Cycle] trait.
     ///
     /// If the cell is not in the correct voxel, we either directly insert this cell into the voxel
     /// or send it to the other [SubDomainBox] to take care of this.
@@ -471,20 +475,12 @@ where
                 });
             find_new_home_cells.extend(new_voxel_cells);
             vox.cells = old_voxel_cells;
-            /* let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
-                Some(ind) => ind,
-                None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
-            }!=voxel_index);
-            // Check if the cell needs to be sent to another multivoxelcontainer
-            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());*/
         }
 
         // Send cells to other multivoxelcontainer or keep them here
         for (cell, aux_storage) in find_new_home_cells {
             let ind = self.subdomain.get_voxel_index_of(&cell)?;
             let cell_index = self.voxel_index_to_plain_index[&ind];
-            // let new_thread_index = self.index_to_thread[&ind];
-            // let cell_index = self.index_to_plain_index[&ind];
             match self.voxels.get_mut(&cell_index) {
                 // If new voxel is in current multivoxelcontainer then save them there
                 Some(vox) => {
