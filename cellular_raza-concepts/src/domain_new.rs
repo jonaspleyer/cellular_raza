@@ -92,7 +92,7 @@ pub trait SubDomainMechanics<Pos, Vel> {
 ///
 pub trait SubDomainForce<Pos, Vel, For> {
     ///
-    fn apply_custom_force(pos: &Pos, vel: &Vel) -> Result<For, crate::CalcError>;
+    fn calculate_custom_force(&self, pos: &Pos, vel: &Vel) -> Result<For, crate::CalcError>;
 }
 
 /// Specifies how to retrieve a unique identifier of an object.
