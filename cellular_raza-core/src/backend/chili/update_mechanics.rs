@@ -231,12 +231,33 @@ where
             }
         }
 
-        // Calculate custom force of voxel on cell
-        /* TODO
-        self.voxels
+        Ok(())
+    }
+
+    /// Calculates the custom [force](cellular_raza_concepts::domain_new::SubDomainForce) of
+    /// the domain on the cells.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn calculate_custom_domain_force<Pos, Vel, For, Float, const N: usize>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        Pos: Clone,
+        Vel: Clone,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        S: cellular_raza_concepts::domain_new::SubDomainForce<Pos, Vel, For>,
+    {
+        for (cell, aux) in self
+            .voxels
             .iter_mut()
-            .map(|(_, vox)| vox.calculate_custom_force_on_cells())
-            .collect::<Result<(), CalcError>>()?;*/
+            .map(|(_, vox)| vox.cells.iter_mut())
+            .flatten()
+        {
+            let f = self
+                .subdomain
+                .calculate_custom_force(&cell.pos(), &cell.velocity())?;
+            aux.add_force(f);
+        }
         Ok(())
     }
 
