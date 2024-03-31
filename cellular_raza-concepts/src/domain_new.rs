@@ -202,7 +202,7 @@ pub trait Id {
 /// | `Base` | [SubDomain] | ✅ |
 /// | `Mechanics` | [SubDomainMechanics] | ✅ |
 /// | `SortCells` | [SubDomainSortCells] | ✅ |
-/// | `Force` | [SubDomainForce] | ❌  |
+/// | `Force` | [SubDomainForce] | ✅  |
 /// | `Reactions` | [SubDomainReactions] | ❌ |
 ///
 /// # Example Usage

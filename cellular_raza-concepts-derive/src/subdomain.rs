@@ -2,6 +2,7 @@ pub enum DomainAspect {
     Base,
     Mechanics,
     Reactions,
+    Force,
 }
 
 impl DomainAspect {
@@ -13,6 +14,7 @@ impl DomainAspect {
                 "Base" => Some(DomainAspect::Base),
                 "Mechanics" => Some(DomainAspect::Mechanics),
                 "Reactions" => Some(DomainAspect::Reactions),
+                "Force" => Some(DomainAspect::Force),
                 _ => None,
             }
         } else {
@@ -99,6 +101,7 @@ pub struct DomainImplementer {
     base: Option<FieldInfo>,
     mechanics: Option<FieldInfo>,
     reactions: Option<FieldInfo>,
+    force: Option<FieldInfo>,
 }
 
 impl From<DomainParser> for DomainImplementer {
@@ -106,6 +109,7 @@ impl From<DomainParser> for DomainImplementer {
         let mut base = None;
         let mut mechanics = None;
         let mut reactions = None;
+        let mut force = None;
 
         value.aspects.into_iter().for_each(|aspect_field| {
             aspect_field.aspects.into_iter().for_each(|aspect| {
@@ -117,6 +121,7 @@ impl From<DomainParser> for DomainImplementer {
                     DomainAspect::Mechanics => mechanics = Some(field_info),
                     DomainAspect::Base => base = Some(field_info),
                     DomainAspect::Reactions => reactions = Some(field_info),
+                    DomainAspect::Force => force = Some(field_info),
                 }
             })
         });
@@ -127,6 +132,7 @@ impl From<DomainParser> for DomainImplementer {
             base,
             mechanics,
             reactions,
+            force,
         }
     }
 }
@@ -243,6 +249,49 @@ impl DomainImplementer {
     fn implement_reactions(&self) -> proc_macro2::TokenStream {
         todo!()
     }
+
+    fn implement_force(&self) -> proc_macro2::TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.force {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(velocity, "__cr_private_Vel");
+            new_ident!(force, "__cr_private_For");
+            let tokens = quote::quote!(#position, #velocity, #force);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, SubDomainForce, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            push_ident!(generics, velocity);
+            push_ident!(generics, force);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics SubDomainForce<#position, #velocity, #force>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn calculate_custom_force(
+                        &self,
+                        pos: &#position,
+                        vel: &#velocity,
+                    ) -> Result<#force, CalcError> {
+                        <#field_type as SubDomainForce<#position, #velocity, #force>>
+                            ::calculate_custom_force(
+                                &self.#field_name,
+                                pos,
+                                vel,
+                        )
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
+    }
 }
 
 pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -252,5 +301,6 @@ pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let mut res = proc_macro2::TokenStream::new();
     res.extend(domain_implementer.implement_base());
     res.extend(domain_implementer.implement_mechanics());
+    res.extend(domain_implementer.implement_force());
     super::cell_agent::wrap(res).into()
 }
