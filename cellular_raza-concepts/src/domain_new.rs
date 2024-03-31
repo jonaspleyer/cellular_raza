@@ -81,7 +81,47 @@ pub trait SubDomainSortCells<C>: SubDomain {
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError>;
 }
 
+/// Apply boundary conditions to a cells position and velocity.
 ///
+/// # Example Usage
+/// ```
+/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::BoundaryError;
+/// struct MyMechanics {
+///     x_min: f64,
+///     x_max: f64,
+/// }
+///
+/// impl SubDomainMechanics<f64, f64> for MyMechanics {
+///     fn apply_boundary(&self, pos: &mut f64, vel: &mut f64) -> Result<(), BoundaryError> {
+///         if *pos < self.x_min {
+///             *vel = vel.abs();
+///         }
+///         if *pos > self.x_max {
+///             *vel = -vel.abs();
+///         }
+///         *pos = pos.clamp(self.x_min, self.x_max);
+///         Ok(())
+///     }
+/// }
+///
+/// #[derive(SubDomain)]
+/// struct MySubDomain {
+///     #[Mechanics]
+///     mechanics: MyMechanics,
+/// }
+/// # let _my_sdm = MySubDomain {
+/// #     mechanics: MyMechanics {
+/// #         x_min: 1.0,
+/// #         x_max: 33.0,
+/// #     }
+/// # };
+/// # let mut pos = 0.0;
+/// # let mut vel = - 0.1;
+/// # _my_sdm.apply_boundary(&mut pos, &mut vel).unwrap();
+/// # assert_eq!(pos, 1.0);
+/// # assert_eq!(vel, 0.1);
+/// ```
 pub trait SubDomainMechanics<Pos, Vel> {
     /// If the subdomain has boundary conditions, this function will enforce them onto the cells.
     /// For the future, we plan to replace this function to additionally obtain information
@@ -89,11 +129,56 @@ pub trait SubDomainMechanics<Pos, Vel> {
     fn apply_boundary(&self, pos: &mut Pos, vel: &mut Vel) -> Result<(), BoundaryError>;
 }
 
+/// Apply a force on a cell depending on its position and velocity.
 ///
+/// # Example Usage
+/// ```
+/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::CalcError;
+/// struct MyForce {
+///     damping: f64,
+/// }
+///
+/// impl SubDomainForce<f64, f64, f64> for MyForce {
+///     fn calculate_custom_force(&self, pos: &f64, vel: &f64) -> Result<f64, CalcError> {
+///         Ok(- self.damping * vel)
+///     }
+/// }
+///
+/// #[derive(SubDomain)]
+/// struct MySubDomain {
+///     #[Force]
+///     force: MyForce,
+/// }
+/// # let _my_sdm = MySubDomain {
+/// #     force: MyForce {
+/// #         damping: 0.1,
+/// #     }
+/// # };
+/// # let calculated_force = _my_sdm.calculate_custom_force(&0.0, &1.0).unwrap();
+/// # assert_eq!(calculated_force, -0.1);
+/// ```
 pub trait SubDomainForce<Pos, Vel, For> {
     ///
     fn calculate_custom_force(&self, pos: &Pos, vel: &Vel) -> Result<For, crate::CalcError>;
 }
+
+/// Describes extracellular reactions and fluid dynamics
+///
+/// # Example Usage
+/// ```compile_fail
+/// # use cellular_raza_concepts::domain_new::*;
+/// struct MyReactions;
+///
+/// impl SubDomainReactions for MyReactions {}
+///
+/// #[derive(SubDomain)]
+/// struct DerivedSubDomain {
+///     #[Reactions]
+///     reactions: MyReactions,
+/// }
+/// ```
+pub trait SubDomainReactions {}
 
 /// Specifies how to retrieve a unique identifier of an object.
 pub trait Id {
