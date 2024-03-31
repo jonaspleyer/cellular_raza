@@ -61,7 +61,7 @@ pub trait SubDomain {
     type VoxelIndex;
 
     /// Obtains the neighbor voxels of the specified voxel index. This function behaves similarly
-    /// to [SubDomain::get_voxel_index_of] in that it also has to return
+    /// to [SubDomainSortCells::get_voxel_index_of] in that it also has to return
     /// indices which are in other [SubDomains](SubDomain).
     fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex>;
 
