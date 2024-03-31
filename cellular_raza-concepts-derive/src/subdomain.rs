@@ -1,5 +1,6 @@
 pub enum DomainAspect {
     Base,
+    SortCells,
     Mechanics,
     Reactions,
     Force,
@@ -12,6 +13,7 @@ impl DomainAspect {
             let p_string = p.to_string();
             match p_string.as_str() {
                 "Base" => Some(DomainAspect::Base),
+                "SortCells" => Some(DomainAspect::SortCells),
                 "Mechanics" => Some(DomainAspect::Mechanics),
                 "Reactions" => Some(DomainAspect::Reactions),
                 "Force" => Some(DomainAspect::Force),
@@ -99,6 +101,7 @@ pub struct DomainImplementer {
     name: syn::Ident,
     generics: syn::Generics,
     base: Option<FieldInfo>,
+    sort_cells: Option<FieldInfo>,
     mechanics: Option<FieldInfo>,
     reactions: Option<FieldInfo>,
     force: Option<FieldInfo>,
@@ -107,6 +110,7 @@ pub struct DomainImplementer {
 impl From<DomainParser> for DomainImplementer {
     fn from(value: DomainParser) -> Self {
         let mut base = None;
+        let mut sort_cells = None;
         let mut mechanics = None;
         let mut reactions = None;
         let mut force = None;
@@ -121,6 +125,7 @@ impl From<DomainParser> for DomainImplementer {
                     DomainAspect::Mechanics => mechanics = Some(field_info),
                     DomainAspect::Base => base = Some(field_info),
                     DomainAspect::Reactions => reactions = Some(field_info),
+                    DomainAspect::SortCells => sort_cells = Some(field_info),
                     DomainAspect::Force => force = Some(field_info),
                 }
             })
@@ -130,6 +135,7 @@ impl From<DomainParser> for DomainImplementer {
             name: value.name,
             generics: value.generics,
             base,
+            sort_cells,
             mechanics,
             reactions,
             force,
@@ -174,7 +180,7 @@ impl DomainImplementer {
         let struct_name = &self.name;
         let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
-        if let Some(field_info) = &self.mechanics {
+        if let Some(field_info) = &self.sort_cells {
             let field_type = &field_info.field_type;
             let field_name = &field_info.field_name;
             new_ident!(cell, "__cr_private_Cell");
@@ -300,6 +306,7 @@ pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 
     let mut res = proc_macro2::TokenStream::new();
     res.extend(domain_implementer.implement_base());
+    res.extend(domain_implementer.implement_sort_cells());
     res.extend(domain_implementer.implement_mechanics());
     res.extend(domain_implementer.implement_force());
     super::cell_agent::wrap(res).into()
