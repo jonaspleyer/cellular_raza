@@ -2,8 +2,8 @@ pub enum DomainAspect {
     Base,
     SortCells,
     Mechanics,
-    Reactions,
     Force,
+    Reactions,
 }
 
 impl DomainAspect {
@@ -15,8 +15,8 @@ impl DomainAspect {
                 "Base" => Some(DomainAspect::Base),
                 "SortCells" => Some(DomainAspect::SortCells),
                 "Mechanics" => Some(DomainAspect::Mechanics),
-                "Reactions" => Some(DomainAspect::Reactions),
                 "Force" => Some(DomainAspect::Force),
+                "Reactions" => Some(DomainAspect::Reactions),
                 _ => None,
             }
         } else {
@@ -103,8 +103,8 @@ pub struct DomainImplementer {
     base: Option<FieldInfo>,
     sort_cells: Option<FieldInfo>,
     mechanics: Option<FieldInfo>,
-    reactions: Option<FieldInfo>,
     force: Option<FieldInfo>,
+    reactions: Option<FieldInfo>,
 }
 
 impl From<DomainParser> for DomainImplementer {
@@ -112,8 +112,8 @@ impl From<DomainParser> for DomainImplementer {
         let mut base = None;
         let mut sort_cells = None;
         let mut mechanics = None;
-        let mut reactions = None;
         let mut force = None;
+        let mut reactions = None;
 
         value.aspects.into_iter().for_each(|aspect_field| {
             aspect_field.aspects.into_iter().for_each(|aspect| {
@@ -122,11 +122,11 @@ impl From<DomainParser> for DomainImplementer {
                     field_name: aspect_field.field.ident.clone(),
                 };
                 match aspect {
-                    DomainAspect::Mechanics => mechanics = Some(field_info),
                     DomainAspect::Base => base = Some(field_info),
-                    DomainAspect::Reactions => reactions = Some(field_info),
                     DomainAspect::SortCells => sort_cells = Some(field_info),
+                    DomainAspect::Mechanics => mechanics = Some(field_info),
                     DomainAspect::Force => force = Some(field_info),
+                    DomainAspect::Reactions => reactions = Some(field_info),
                 }
             })
         });
@@ -137,8 +137,8 @@ impl From<DomainParser> for DomainImplementer {
             base,
             sort_cells,
             mechanics,
-            reactions,
             force,
+            reactions,
         }
     }
 }

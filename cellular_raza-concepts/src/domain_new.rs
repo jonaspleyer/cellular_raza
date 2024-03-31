@@ -200,8 +200,8 @@ pub trait Id {
 /// | Attribute | Trait | Implemented |
 /// | ---  | --- |:---:|
 /// | `Base` | [SubDomain] | ✅ |
-/// | `Mechanics` | [SubDomainMechanics] | ✅ |
 /// | `SortCells` | [SubDomainSortCells] | ✅ |
+/// | `Mechanics` | [SubDomainMechanics] | ✅ |
 /// | `Force` | [SubDomainForce] | ✅  |
 /// | `Reactions` | [SubDomainReactions] | ❌ |
 ///
