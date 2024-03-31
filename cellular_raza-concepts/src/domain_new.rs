@@ -56,6 +56,50 @@ pub struct DecomposedDomain<I, S, C> {
 }
 
 /// Subdomains are produced by decomposing a [Domain] into multiple physical regions.
+///
+/// # Derivation
+/// ```
+/// # use cellular_raza_concepts::domain_new::*;
+/// struct MySubDomain {
+///     x_min: f32,
+///     x_max: f32,
+///     n: usize,
+/// }
+///
+/// impl SubDomain for MySubDomain {
+///     type VoxelIndex = usize;
+///
+///     fn get_neighbor_voxel_indices(
+///         &self,
+///         voxel_index: &Self::VoxelIndex
+///     ) -> Vec<Self::VoxelIndex> {
+///         (voxel_index.saturating_sub(1)..voxel_index.saturating_add(1).min(self.n)+1)
+///             .filter(|k| k!=voxel_index)
+///             .collect()
+///     }
+///
+///     fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
+///         (0..self.n).collect()
+///     }
+/// }
+///
+/// #[derive(SubDomain)]
+/// struct MyNewSubDomain {
+///     #[Base]
+///     base: MySubDomain,
+/// }
+/// # let _my_sdm = MyNewSubDomain {
+/// #     base: MySubDomain {
+/// #         x_min: -20.0,
+/// #         x_max: -11.0,
+/// #         n: 20,
+/// #     }
+/// # };
+/// # assert_eq!(_my_sdm.get_all_indices(), (0..20).collect::<Vec<_>>());
+/// # assert_eq!(_my_sdm.get_neighbor_voxel_indices(&0), vec![1]);
+/// # assert_eq!(_my_sdm.get_neighbor_voxel_indices(&3), vec![2,4]);
+/// # assert_eq!(_my_sdm.get_neighbor_voxel_indices(&7), vec![6,8]);
+/// ```
 pub trait SubDomain {
     /// Individual Voxels inside each subdomain can be accessed by this index.
     type VoxelIndex;
