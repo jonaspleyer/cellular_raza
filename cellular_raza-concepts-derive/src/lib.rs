@@ -18,26 +18,6 @@ mod subdomain;
 ///     ...
 /// }
 /// ```
-/// Some attributes also require to specify types as well.
-/// ```ignore
-/// struct MyCell {
-///     #[Mechanics]
-///     interaction: MyMechanics,
-///     ...
-/// }
-/// ```
-/// A summary can be seen in the following table
-///
-/// | Attribute | Type Arguments |
-/// | --- | --- |
-/// | `Cycle`                   | `(Float=f64)`                                                         |
-/// | `Mechanics`               | `(Pos, Vel, For, Float=f64)`                                          |
-/// | `Interaction`             | `(Pos, Vel, For, Inf=())`                                             |
-/// | `CellularReactions`       | `(ConcVecIntracellular, ConcVecExtracellular=ConcVecIntracellular)`   |
-/// | `ExtracellularGradient`   | `(ConcGradientExtracellular)`                                         |
-/// | `Volume`                  | `(Float=f64)`                                                         |
-///
-/// For a description of these type arguments see `cellular_raza_concepts` crate.
 #[proc_macro_derive(
     CellAgent,
     attributes(
