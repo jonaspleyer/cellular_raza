@@ -127,7 +127,7 @@ pub trait SubDomainSortCells<C>: SubDomain {
 
 /// Apply boundary conditions to a cells position and velocity.
 ///
-/// # Example Usage
+/// # Derivation
 /// ```
 /// # use cellular_raza_concepts::domain_new::*;
 /// # use cellular_raza_concepts::BoundaryError;
@@ -175,7 +175,7 @@ pub trait SubDomainMechanics<Pos, Vel> {
 
 /// Apply a force on a cell depending on its position and velocity.
 ///
-/// # Example Usage
+/// # Derivation
 /// ```
 /// # use cellular_raza_concepts::domain_new::*;
 /// # use cellular_raza_concepts::CalcError;
@@ -209,7 +209,7 @@ pub trait SubDomainForce<Pos, Vel, For> {
 
 /// Describes extracellular reactions and fluid dynamics
 ///
-/// # Example Usage
+/// # Derivation
 /// ```compile_fail
 /// # use cellular_raza_concepts::domain_new::*;
 /// struct MyReactions;
