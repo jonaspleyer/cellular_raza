@@ -53,7 +53,7 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     cell_agent::derive_cell_agent(input)
 }
 
-#[proc_macro_derive(SubDomain, attributes(Base, SortCells, Mechanics, Force))]
+#[proc_macro_derive(SubDomain, attributes(Base, SortCells, Mechanics, Force, Reactions))]
 pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     subdomain::derive_subdomain(input)
 }

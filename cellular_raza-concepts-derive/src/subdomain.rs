@@ -253,7 +253,15 @@ impl DomainImplementer {
     }
 
     fn implement_reactions(&self) -> proc_macro2::TokenStream {
-        todo!()
+        if let Some(_) = &self.reactions {
+            quote::quote!(
+                unimplemented!("The Reactions traits are currently reworked and thus not\
+                    accessible for derivation via the derive(SubDomain) macro at this point in\
+                    time.")
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 
     fn implement_force(&self) -> proc_macro2::TokenStream {
@@ -309,5 +317,6 @@ pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     res.extend(domain_implementer.implement_sort_cells());
     res.extend(domain_implementer.implement_mechanics());
     res.extend(domain_implementer.implement_force());
+    res.extend(domain_implementer.implement_reactions());
     super::cell_agent::wrap(res).into()
 }
