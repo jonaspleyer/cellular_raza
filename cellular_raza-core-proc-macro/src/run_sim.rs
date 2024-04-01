@@ -38,12 +38,19 @@ impl Parallelizer {
                             -> Result<_, #core_path::backend::chili::SimulationError> {#code})?;
                     handles.push(handle);
                 }
+                let mut storage_managers = vec![];
                 for handle in handles {
                     // TODO decide if we need to catch this error in the future
-                    handle
+                    let storage_manager = handle
                         .join()
                         .expect("Could not join threads after simulation has finished")?;
+                    storage_managers.push(storage_manager);
                 }
+                let storage_manager = storage_managers.pop()
+                    .ok_or(#core_path::storage::StorageError::InitError(
+                        format!("Simulation Threads did not yield any storage managers")
+                    ))?;
+                Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_manager)
             }),
             Self::Rayon => unimplemented!(),
         }
@@ -487,7 +494,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             };
             sbox.save_voxels(&_storage_manager, &next_time_point)?;
         }
-        Ok(())
+        Ok(_storage_manager)
     )
 }
 
@@ -530,8 +537,8 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             &_aux_storage,
         )?;
 
-        #parallelized_update_func
-        Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
+        let res = #parallelized_update_func?;
+        Result::<_, #core_path::backend::chili::SimulationError>::Ok(res)
     })
 }
 
@@ -636,8 +643,8 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
     quote::quote!({
         #types
         #test_compat
-        {#run_main}?;
-        Result::<(), #core_path::backend::chili::SimulationError>::Ok(())
+        let res = #run_main?;
+        Result::<#core_path::storage::StorageManager<_, _>, #core_path::backend::chili::SimulationError>::Ok(res)
     })
     .into()
 }
