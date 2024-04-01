@@ -52,7 +52,9 @@ impl Parallelizer {
                     ))?;
                 Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_manager)
             }),
-            Self::Rayon => unimplemented!(),
+            Self::Rayon => quote::quote!(unimplemented!(
+                "We currently do not support parallelization via rayon."
+            )),
         }
     }
 }
