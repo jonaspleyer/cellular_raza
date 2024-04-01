@@ -25,7 +25,7 @@ impl Parallelizer {
     ) -> proc_macro2::TokenStream {
         let core_path = &core_path;
         match &self {
-            Self::OsThreads => quote::quote!(
+            Self::OsThreads => quote::quote!({
                 let mut handles = vec![];
                 for (key, mut sbox) in runner
                     .subdomain_boxes
@@ -44,7 +44,7 @@ impl Parallelizer {
                         .join()
                         .expect("Could not join threads after simulation has finished")?;
                 }
-            ),
+            }),
             Self::Rayon => unimplemented!(),
         }
     }
