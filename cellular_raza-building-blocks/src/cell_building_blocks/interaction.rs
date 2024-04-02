@@ -55,65 +55,7 @@ where
 /// The interaction is artificially bound from above by a value $\beta$ in
 /// order to obtain better numerical stability.
 ///
-/// <div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
-/// <script>
-/// function ljp(x, epsilon, sigma, bound, cutoff) {
-///     var s = 4*epsilon*((sigma/x)**12 - (sigma/x)**6);
-///     var q = 1.0;
-///     if (x>=cutoff) {
-///         q = 0.0
-///     }
-///     return q * Math.min(bound, s);
-/// }
-/// function generate_data(x, epsilon, sigma, bound, cutoff) {
-///     var y = [];
-///     x.forEach((xi, i) => {
-///         y[i] = ljp(xi, epsilon, sigma, bound, cutoff);
-///     });
-///     return y;
-/// }
-/// var epsilon = 1.0;
-/// var sigma = 1.0;
-/// var bound = 1.515 * epsilon;
-/// var cutoff = 2.5 * sigma;
-/// var n_samples = 200;
-/// var x = [...Array(n_samples).keys()].map((x) => 3.5*x/(sigma*n_samples));
-/// var y = generate_data(x, epsilon, sigma, bound, cutoff);
-/// var trace = {
-///     x: x,
-///     y: y,
-///     type: 'scatter',
-///     line: {
-///         color: "#FDBF35",
-///     },
-/// };
-/// var layout = {
-///     xaxis: {
-///         tickvals: [sigma, 2**(1/6)*sigma, 2*sigma, cutoff],
-///         ticktext: ['σ', "1,12σ", '2σ', 'ζ'],
-///         color: "#FFF",
-///     },
-///     yaxis: {
-///         tickvals: [-epsilon, 0, bound],
-///         ticktext: ['-ε', '0', 'β'],
-///         color: "#FFF",
-///     },
-///     title: "Lennard-Jones Potential with Bound",
-///     plot_bgcolor:"#FFF4",
-///     paper_bgcolor:"#505050",
-///     font: {
-///         color: "#FFF",
-///     },
-///     margin: {
-///         t: 60,
-///         b: 60,
-///         l: 60,
-///         r: 60,
-///     }
-/// };
-/// var options = {staticPlot: true};
-/// Plotly.newPlot('myDiv', [trace], layout, options);
-/// </script>
+#[doc = include_str!("plot_bound_lennard_jones.html")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct BoundLennardJones {
