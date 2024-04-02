@@ -189,6 +189,77 @@ impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, 
     fn get_interaction_information(&self) -> () {}
 }
 
+/// Famous [Morse](https://doi.org/10.1103/PhysRev.34.57) potential for diatomic molecules.
+///
+/// \\begin{equation}
+///     V(r) = C_r \exp\left(-\frac{r}{l_r}\right) - C_a
+///     \exp\left(-\frac{r}{l_a}\right)
+/// \\end{equation}
+///
+/// To translate the struct fields [`radius`](MorsePotential::radius) and
+/// [`interaction_range`](MorsePotential::interaction_range) to $l_r$ and $l_a$ respectively, we
+/// assume that the forces are exactly balanced when the distance $r=R_1 + R_2=R$ where $R_1$ and
+/// $R_2$ are the radii of the respective objects interacting with reach other.
+///
+/// \\begin{align}
+///     \frac{\partial V}{\partial r}(R) &= 0\\\\
+///     &= \frac{C_r}{l_r}\exp\left(-\frac{R}{l_r}\right)
+///         - \frac{C_a}{l_a}\exp\left(-\frac{R}{l_a}\right)\\\\
+///     &= \frac{C_r}{C_a}\frac{l_a}{l_r}
+///         - \exp\left(-R\left(\frac{1}{l_a} - \frac{1}{l_r}\right)\right)
+/// \\end{align}
+///
+/// Thus the combined radius $R=$[`radius`](MorsePotential::radius) is given by
+///
+/// \\begin{equation}
+///     R = - \frac{l_r l_a}{l_r - l_a}\log\left(\frac{C_r}{C_a}\frac{l_a}{l_r}\right)
+/// \\end{equation}
+///
+/// We can also appreciate again, that the original potential $V(r)$ is completely symmetric when
+/// interchanging attractive and repulsive properties $l_a,C_a$ and $l_r,C_r$.
+///
+#[doc = include_str!("morse_potential_plot.html")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+// #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+pub struct MorsePotential<F> {
+    /// Radius of the object
+    pub radius: F,
+    /// Defines the length for the interaction range
+    pub interaction_range: F,
+    /// Cutoff after which the interaction is exactly 0
+    pub cutoff: F,
+    /// Repelling strength between objects
+    pub strength_repelling: F,
+    /// Attracting strength between objects
+    pub strength_attraction: F,
+}
+
+// TODO remove this allow(unused)
+#[allow(unused)]
+impl<const D: usize, F>
+    Interaction<nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, F>
+    for MorsePotential<F>
+where
+    F: nalgebra::ClosedSub,
+    F: nalgebra::ComplexField,
+{
+    fn get_interaction_information(&self) -> F {
+        self.radius.clone()
+    }
+
+    fn calculate_force_between(
+        &self,
+        own_pos: &nalgebra::SVector<F, D>,
+        own_vel: &nalgebra::SVector<F, D>,
+        ext_pos: &nalgebra::SVector<F, D>,
+        ext_vel: &nalgebra::SVector<F, D>,
+        ext_info: &F,
+    ) -> Result<nalgebra::SVector<F, D>, CalcError> {
+        let r = (own_pos - ext_pos).norm();
+        todo!()
+    }
+}
+
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {

@@ -1,0 +1,109 @@
+<script src='https://cdn.plot.ly/plotly-2.27.0.min.js'></script>
+
+<div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
+<script>
+    function potential(r, lr, la, Cr, Ca) {
+        var exp_r = r/lr;
+        var exp_a = r/la;
+        return Cr * Math.exp(-exp_r) - Ca * Math.exp(-exp_a);
+    }
+    function generate_data(x, lr, la, Cr, Ca) {
+        var y = [];
+        x.forEach((xi, i) => {
+            y[i] = potential(xi, lr, la, Cr, Ca);
+        });
+        return y;
+    }
+    var lr = 1.0;
+    var la = 2.0;
+    var Cr = 1.5;
+    var Ca = 1.0;
+    function calculate_radius(lr, la, Cr, Ca) {
+        return - lr*la/(lr - la) * Math.log(Cr*la/(Ca*lr));
+    }
+    var radius = calculate_radius(lr, la, Cr, Ca);
+    var n_samples = 200;
+    var x = [...Array(n_samples).keys()].map((s) => 5*la*s/(n_samples));
+    var y = generate_data(x, lr, la, Cr, Ca);
+    var data_la = [1.5, 1.75, 2.0, 2.25, 2.5];
+    var sliderSteps = [];
+    for (i=0; i<data_la.length; i++) {
+        // Calculate new values
+        var la_new = data_la[i];
+        var la_new_name = la_new.toFixed(2);
+        var y_new = generate_data(x, lr, la_new, Cr, Ca);
+        var radius_new = calculate_radius(lr, la_new, Cr, Ca);
+        // Append new slider step
+        var sliderstep = {
+            label: la_new_name,
+            method: 'animate',
+            args: [
+                {
+                    data: [{x: x, y: y_new}],
+                    mode: 'immediate',
+                    layout: {
+                        xaxis: {
+                            tickvals: [0, radius_new],
+                            ticktext: ['0', 'R'],
+                        },
+                        yaxis: {
+                            tickvals: [potential(radius, lr, la_new, Cr, Ca), 0, Cr - Ca],
+                            ticktext: ['V(R)', '0', 'C<sub>r</sub> - C<sub>a</sub>'],
+                        },
+                    },
+                },
+            ],
+        };
+        sliderSteps.push(sliderstep);
+    }
+    var layout = {
+        xaxis: {
+            tickvals: [0, radius],
+            ticktext: ['0', 'R'],
+            color: "#FFF",
+        },
+        yaxis: {
+            tickvals: [potential(radius, lr, la, Cr, Ca), 0, Cr - Ca],
+            ticktext: ['V(R)', '0', 'C<sub>r</sub> - C<sub>a</sub>'],
+            color: "#FFF",
+            range: [-0.3*Ca, 1.1*(Cr - Ca)],
+        },
+        title: "Morse Potential",
+        plot_bgcolor:"#FFF4",
+        paper_bgcolor:"#505050",
+        font: {
+            color: "#FFF",
+        },
+        margin: {
+            t: 60,
+            b: 60,
+            l: 60,
+            r: 60,
+        },
+        sliders: [{
+            pad: {1: 130, t:55},
+            currentvalue: {
+                visible: true,
+                prefix: 'Ratio interaction range to radius: ',
+                xanchor: 'right',
+                font: {size: 20, color: '#FFF'},
+            },
+            transition: {duration: 500},
+            steps: sliderSteps,
+            active: 2,
+        }],
+    };
+    var options = {staticPlot: true};
+    Plotly.newPlot('myDiv', {
+        data: [{
+            x: x,
+            y: y,
+            type: 'scatter',
+            line: {
+                color: "#FDBF35",
+            },
+        }],
+        layout: layout,
+        options: options,
+    });
+</script>
