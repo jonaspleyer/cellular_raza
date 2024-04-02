@@ -218,7 +218,7 @@ impl<const D: usize> Interaction<SVector<f32, D>, SVector<f32, D>, SVector<f32, 
 /// We can also appreciate again, that the original potential $V(r)$ is completely symmetric when
 /// interchanging attractive and repulsive properties $l_a,C_a$ and $l_r,C_r$.
 ///
-#[doc = include_str!("morse_potential_plot.html")]
+#[doc = include_str!("plot_morse_potential.html")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 // #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct MorsePotential<F> {
