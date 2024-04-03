@@ -270,10 +270,10 @@ pub struct StorageManager<Id, Element> {
 /// ```
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct StorageBuilder {
-    location: std::path::PathBuf,
-    priority: UniqueVec<StorageOption>,
+    pub(crate) location: std::path::PathBuf,
+    pub(crate) priority: UniqueVec<StorageOption>,
     #[cfg(feature = "timestamp")]
-    add_date: bool,
+    pub(crate) add_date: bool,
 }
 
 impl StorageBuilder {
