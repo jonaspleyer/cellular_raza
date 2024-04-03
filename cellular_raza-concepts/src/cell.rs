@@ -36,8 +36,14 @@ pub struct CellAgentBox<Cel> {
 }
 
 impl<Cel> Id for CellAgentBox<Cel> {
+    type Identifier = CellularIdentifier;
+
     fn get_id(&self) -> CellularIdentifier {
         self.id
+    }
+
+    fn ref_id(&self) -> &CellularIdentifier {
+        &self.id
     }
 }
 
