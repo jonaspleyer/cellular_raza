@@ -150,7 +150,7 @@ impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Elem
         Id: Serialize,
         Element: for<'a> Deserialize<'a>,
     {
-        todo!();
+        unimplemented!();
     }
 
     fn load_all_elements_at_iteration(
