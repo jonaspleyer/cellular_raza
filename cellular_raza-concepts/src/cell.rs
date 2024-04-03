@@ -11,11 +11,16 @@ use serde::{Deserialize, Serialize};
 // TODO consider making this an associated type of the Id trait
 pub type CellularIdentifier = (u64, u64);
 
-/// Obtains the unique identifier of a cell
-// TODO consider making this trait generic for cell and voxel with associated type varying
+/// Specifies how to retrieve a unique identifier of an object.
 pub trait Id {
-    /// Simple method to access the identifier of the cell
-    fn get_id(&self) -> CellularIdentifier;
+    /// The identifier type is usually chosen to be completely unique and repeatable across
+    /// different simulations.
+    type Identifier;
+
+    /// Retrieves the Identifier from the object.
+    fn get_id(&self) -> Self::Identifier;
+    /// Returns a reference to the id of the object.
+    fn ref_id(&self) -> &Self::Identifier;
 }
 
 /// A container struct containing meta-information of a given Cell

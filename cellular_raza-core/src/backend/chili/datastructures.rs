@@ -276,11 +276,11 @@ where
     where
         A: Serialize,
         C: Serialize,
-        CellBox<C>: cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
+        CellBox<C>: cellular_raza_concepts::Id<Identifier = CellIdentifier>,
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
             use crate::storage::StorageInterface;
-            use cellular_raza_concepts::domain_new::Id;
+            use cellular_raza_concepts::Id;
             let cells = self
                 .voxels
                 .iter()

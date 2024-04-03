@@ -224,17 +224,6 @@ pub trait SubDomainForce<Pos, Vel, For> {
 /// ```
 pub trait SubDomainReactions {}
 
-/// Specifies how to retrieve a unique identifier of an object.
-pub trait Id {
-    /// The identifier type is usually chosen to be completely unique and repeatable across
-    /// different simulations.
-    type Identifier;
-
-    /// Retrieves the Identifier from the object.
-    fn get_id(&self) -> Self::Identifier;
-    /// Returns a reference to the id of the object.
-    fn ref_id(&self) -> &Self::Identifier;
-}
 
 /// This trait derives the different aspects of a [SubDomain].
 ///

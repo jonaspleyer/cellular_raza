@@ -35,7 +35,7 @@ impl<C> DerefMut for CellBox<C> {
     }
 }
 
-impl<C> cellular_raza_concepts::domain_new::Id for CellBox<C> {
+impl<C> cellular_raza_concepts::Id for CellBox<C> {
     type Identifier = CellIdentifier;
 
     fn get_id(&self) -> CellIdentifier {

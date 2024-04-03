@@ -17,7 +17,7 @@ impl<C, A> Voxel<C, A> {
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>
-            + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
+            + cellular_raza_concepts::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
         // Update the cell individual cells
@@ -118,7 +118,7 @@ where
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, F>
-            + cellular_raza_concepts::domain_new::Id<Identifier = CellIdentifier>,
+            + cellular_raza_concepts::Id<Identifier = CellIdentifier>,
         A: UpdateCycle + Default,
     {
         self.voxels
