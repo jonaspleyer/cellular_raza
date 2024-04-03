@@ -292,7 +292,7 @@ where
         // Store worker threads in supervisor
         self.worker_threads = handles;
 
-        // This starts all threads simultanously
+        // This starts all threads simultaneously
         start_barrier.wait();
         Ok(())
     }
@@ -702,7 +702,7 @@ where
     /// Plots a spatial image of the simulation result at given iteration
     /// with custom functions for cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn plot_spatial_at_iteration_custom_cell_funtion<Cpf>(
+    pub fn plot_spatial_at_iteration_custom_cell_function<Cpf>(
         &self,
         iteration: u64,
         cell_plotting_func: Cpf,
