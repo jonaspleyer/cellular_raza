@@ -482,31 +482,21 @@ where
             })
             .collect();
 
-        let storage_location = setup.storage.location;
-        // Format the current time if feature is active
-        #[cfg(feature = "timestamp")]
-        let storage_location = if setup.storage.add_date {
-            let date = chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S");
-            storage_location.join(format!("{}", date))
-        } else {
-            storage_location
-        };
-        setup.storage.location = storage_location.into();
-
         // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
+        let meta_infos_builder = setup.storage.clone()
+            .location(meta_infos_path);
         let meta_infos =
-            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create_with_priority(
-                &meta_infos_path,
+            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::construct(
+                &meta_infos_builder,
                 0,
-                &setup.storage.storage_priority,
             )
             .unwrap();
 
         // Create all multivoxelcontainers
         use rand::{RngCore, SeedableRng};
         use rand_chacha::ChaCha8Rng;
-        let mut rng_generator = ChaCha8Rng::seed_from_u64(setup.meta_params.rng_seed);
+        let mut rng_generator = ChaCha8Rng::seed_from_u64(setup.meta_params.rng_seed.clone());
         multivoxelcontainers = voxel_and_cell_boxes
             .into_iter()
             .enumerate()
@@ -604,31 +594,34 @@ where
                 let storage_voxels_path = setup.storage.location.clone().join("voxel_storage");
 
                 // TODO catch these errors!
+                let storage_cells_builder = setup.storage.clone().location(storage_cells_path);
+
                 let storage_cells =
-                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create_with_priority(
-                        &storage_cells_path,
+                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::construct(
+                        &storage_cells_builder,
                         i as u64,
-                        &setup.storage.storage_priority,
                     )
                     .unwrap();
-                let storage_voxels =
-                    StorageManager::<
-                        PlainIndex,
-                        VoxelBox<
-                            Ind,
-                            Pos,
-                            Vel,
-                            For,
-                            Vox,
-                            Cel,
-                            ConcVecExtracellular,
-                            ConcBoundaryExtracellular,
-                            ConcVecIntracellular,
-                        >,
-                    >::open_or_create_with_priority(&storage_voxels_path, i as u64, &setup.storage.storage_priority)
-                    .unwrap();
+                let storage_voxels_builder = setup.storage.clone().location(storage_voxels_path);
+                let storage_voxels = StorageManager::<
+                    PlainIndex,
+                    VoxelBox<
+                        Ind,
+                        Pos,
+                        Vel,
+                        For,
+                        Vox,
+                        Cel,
+                        ConcVecExtracellular,
+                        ConcBoundaryExtracellular,
+                        ConcVecIntracellular,
+                    >,
+                >::construct(&storage_voxels_builder, i as u64)
+                .unwrap();
 
-                voxels.iter_mut().for_each(|(_, voxelbox)| (strategies.voxel_definition_strategies)(&mut voxelbox.voxel));
+                voxels.iter_mut().for_each(|(_, voxelbox)| {
+                    (strategies.voxel_definition_strategies)(&mut voxelbox.voxel)
+                });
 
                 // Define the container for many voxels
                 let cont = MultiVoxelContainer {
