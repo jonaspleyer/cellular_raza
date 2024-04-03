@@ -3,7 +3,7 @@ use cellular_raza_concepts::*;
 use kdam::BarExt;
 
 use super::errors::*;
-use crate::storage::{StorageInterface, StorageManager};
+use crate::storage::{StorageBuilder, StorageInterface, StorageManager};
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
@@ -12,8 +12,6 @@ use super::domain_decomposition::{
 use super::config::{
     ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, TimeSetup,
 };
-
-use super::config::StorageConfig;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

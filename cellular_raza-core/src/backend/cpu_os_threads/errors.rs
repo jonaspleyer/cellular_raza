@@ -36,7 +36,7 @@ macro_rules! impl_from_error {
 }
 
 /// Covers all errors that can occur in this Simulation
-/// 
+///
 /// This main error type should be derivable from errors arising during the simulation process.
 /// It is required for custom error types `MyCustomError` of the engine to implement the
 /// `From<MyCustomError> for SimulationError`.
