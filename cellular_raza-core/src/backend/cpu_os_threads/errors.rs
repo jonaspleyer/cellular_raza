@@ -36,7 +36,23 @@ macro_rules! impl_from_error {
 }
 
 /// Covers all errors that can occur in this Simulation
-/// The errors are listed from very likely to be a user error from almost certainly an internal error.
+/// 
+/// This main error type should be derivable from errors arising during the simulation process.
+/// It is required for custom error types `MyCustomError` of the engine to implement the
+/// `From<MyCustomError> for SimulationError`.
+///
+/// Errors are separated by their ability to be recovered, ignored or handled otherwise.
+/// Since this crate aims to provide an adaptive solving approach, it is desired to have a fallback
+/// mechanism which can be called for errors which may arise due to precision problems.
+///
+/// The following table shows a summary of the errors currently supported and their handling
+/// approach.
+///
+/// | ErrorType | Possible Error Reasons | Handling Strategy |
+/// | --- | --- | --- |
+/// | BoundaryError | Solver Accuracy, Domain Implementation bug, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
+/// | CalcError | Solver Accuracy, Bug by user implementation of corresponding function, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
+// TODO implement the handling of these errors!
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
@@ -53,7 +69,7 @@ pub enum SimulationError {
     /// [Cycle](cellular_raza_concepts::Cycle) trait.
     DivisionError(DivisionError),
     /// Related to the [PhasedDeath](cellular_raza_concepts::CycleEvent::PhasedDeath) event.
-    /// This error can only occurr during the
+    /// This error can only occur during the
     /// [update_conditional_phased_death](cellular_raza_concepts::Cycle::update_conditional_phased_death)
     /// method.
     DeathError(DeathError),
@@ -62,7 +78,7 @@ pub enum SimulationError {
     /// Plotting results. See also [cellular_raza_concepts::PlotSelf] and [cellular_raza_concepts::CreatePlottingRoot].
     DrawingError(DrawingError),
     /// Mostly caused by trying to find a voxel by its index.
-    /// This error can also occurr when applying too large simulation-steps.
+    /// This error can also occur when applying too large simulation-steps.
     IndexError(IndexError),
 
     // Less likely but possible to be user errors
