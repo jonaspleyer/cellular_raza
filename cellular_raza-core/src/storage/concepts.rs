@@ -298,6 +298,11 @@ impl StorageBuilder {
         Self { priority, ..self }
     }
 
+    /// Get the current priority
+    pub fn get_priority(&self) -> UniqueVec<StorageOption> {
+        self.priority.clone()
+    }
+
     /// Define a folder where to store results
     pub fn location<P>(self, location: P) -> Self
     where
@@ -309,10 +314,21 @@ impl StorageBuilder {
         }
     }
 
+    /// Get the current storage_location
+    pub fn get_location(&self) -> std::path::PathBuf {
+        self.location.clone()
+    }
+
     /// Store results by their current date inside the specified folder path
     #[cfg(feature = "timestamp")]
     pub fn add_date(self, add_date: bool) -> Self {
         Self { add_date, ..self }
+    }
+
+    /// Get information if the current date should be appended to the storage path
+    #[cfg(feature = "timestamp")]
+    pub fn get_add_date(&self) -> bool {
+        self.add_date
     }
 }
 
