@@ -112,14 +112,15 @@ impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Elem
         Ok(())
     }
 
-    fn store_batch_elements(
-        &self,
+    fn store_batch_elements<'a, I>(
+        &'a self,
         iteration: u64,
-        identifiers_elements: &[(Id, Element)],
+        identifiers_elements: I,
     ) -> Result<(), StorageError>
     where
-        Id: Serialize,
-        Element: Serialize,
+        Id: 'a + Serialize,
+        Element: 'a + Serialize,
+        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
         let mut iteration_file =
             self.create_or_get_iteration_file_with_prefix(iteration, "batch")?;

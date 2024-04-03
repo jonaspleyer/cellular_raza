@@ -107,14 +107,15 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         Ok(())
     }
 
-    fn store_batch_elements(
+    fn store_batch_elements<'a, I>(
         &self,
         iteration: u64,
-        identifiers_elements: &[(Id, Element)],
+        identifiers_elements: I,
     ) -> Result<(), StorageError>
     where
-        Id: Serialize,
-        Element: Serialize,
+        Id: 'a + Serialize,
+        Element: 'a + Serialize,
+        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
         let iteration_file = self.create_or_get_iteration_file_with_prefix(iteration, "batch")?;
         let batch = BatchSaveFormat {

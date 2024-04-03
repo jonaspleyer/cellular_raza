@@ -596,14 +596,15 @@ pub trait StorageInterface<Id, Element> {
         Element: Serialize;
 
     /// Stores a batch of multiple elements with identifiers all at the same iteration.
-    fn store_batch_elements(
-        &self,
+    fn store_batch_elements<'a, I>(
+        &'a self,
         iteration: u64,
-        identifiers_elements: &[(Id, Element)],
+        identifiers_elements: I,
     ) -> Result<(), StorageError>
     where
-        Id: Serialize,
-        Element: Serialize,
+        Id: 'a + Serialize,
+        Element: 'a + Serialize,
+        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
         identifiers_elements
             .into_iter()
