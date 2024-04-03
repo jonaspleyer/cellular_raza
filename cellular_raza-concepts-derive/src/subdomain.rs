@@ -254,11 +254,10 @@ impl DomainImplementer {
 
     fn implement_reactions(&self) -> proc_macro2::TokenStream {
         if let Some(_) = &self.reactions {
-            quote::quote!(
-                unimplemented!("The Reactions traits are currently reworked and thus not\
-                    accessible for derivation via the derive(SubDomain) macro at this point in\
-                    time.")
-            )
+            quote::quote!(unimplemented!(
+                "The Reactions traits are currently reworked and thus not accessible for\
+                derivation via the derive(SubDomain) macro at this point in time."
+            ))
         } else {
             proc_macro2::TokenStream::new()
         }
