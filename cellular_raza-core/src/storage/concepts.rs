@@ -421,21 +421,22 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     }
 
     #[allow(unused)]
-    fn store_batch_elements(
-        &self,
+    fn store_batch_elements<'a, I>(
+        &'a self,
         iteration: u64,
-        identifiers_elements: &[(Id, Element)],
+        identifiers_elements: I,
     ) -> Result<(), StorageError>
     where
-        Id: Serialize,
-        Element: Serialize,
+        Id: 'a + Serialize,
+        Element: 'a + Serialize,
+        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
         if let Some(sled_storage) = &self.sled_storage {
-            sled_storage.store_batch_elements(iteration, identifiers_elements)?;
+            sled_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
         }
 
         if let Some(json_storage) = &self.json_storage {
-            json_storage.store_batch_elements(iteration, identifiers_elements)?;
+            json_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
         }
 
         if let Some(xml_storage) = &self.xml_storage {
