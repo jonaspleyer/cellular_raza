@@ -249,16 +249,16 @@ where
         #[cfg(not(feature = "tracing"))] F,
     >(
         &self,
-        storage_manager: &crate::storage::StorageManager<&VoxelPlainIndex, &Voxel<C, A>>,
+        storage_manager: &crate::storage::StorageManager<VoxelPlainIndex, Voxel<C, A>>,
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
         Voxel<C, A>: Serialize,
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
-            let voxels = self.voxels.iter().collect::<Vec<_>>();
             use crate::storage::StorageInterface;
-            storage_manager.store_batch_elements(next_time_point.iteration as u64, &voxels)?;
+            let iter = self.voxels.iter();
+            storage_manager.store_batch_elements(next_time_point.iteration as u64, iter)?;
         }
         Ok(())
     }
@@ -270,7 +270,7 @@ where
         #[cfg(not(feature = "tracing"))] F,
     >(
         &self,
-        storage_manager: &crate::storage::StorageManager<&CellIdentifier, (&CellBox<C>, &A)>,
+        storage_manager: &crate::storage::StorageManager<CellIdentifier, (CellBox<C>, A)>,
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
@@ -284,11 +284,9 @@ where
             let cells = self
                 .voxels
                 .iter()
-                .map(|(_, vox)| vox.cells.iter())
-                .flatten()
-                .map(|(c, a)| (c.ref_id(), (c, a)))
-                .collect::<Vec<_>>();
-            storage_manager.store_batch_elements(next_time_point.iteration as u64, &cells)?;
+                .map(|(_, vox)| vox.cells.iter().map(|ca| (ca.0.ref_id(), ca)))
+                .flatten();
+            storage_manager.store_batch_elements(next_time_point.iteration as u64, cells)?;
         }
         Ok(())
     }

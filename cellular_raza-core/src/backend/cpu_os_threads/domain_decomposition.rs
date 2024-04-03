@@ -1179,11 +1179,10 @@ where
         let cells = self
             .voxels
             .iter()
-            .map(|(_, vox)| vox.cells.clone().into_iter().map(|(c, _)| (c.get_id(), c)))
-            .flatten()
-            .collect::<Vec<_>>();
+            .map(|(_, vox)| vox.cells.iter().map(|(c, _)| (c.ref_id(), c)))
+            .flatten();
 
-        self.storage_cells.store_batch_elements(*iteration, &cells)
+        self.storage_cells.store_batch_elements(*iteration, cells)
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
@@ -1205,14 +1204,9 @@ where
         >: Clone + Send + Sync + 'static,
     {
         use cellular_raza_concepts::Id;
-        let voxels = self
-            .voxels
-            .iter()
-            .map(|(_, voxel)| (voxel.get_id(), voxel.clone()))
-            .collect::<Vec<_>>();
+        let voxels = self.voxels.iter().map(|(_, voxel)| (voxel.ref_id(), voxel));
 
-        self.storage_voxels
-            .store_batch_elements(*iteration, &voxels)
+        self.storage_voxels.store_batch_elements(*iteration, voxels)
     }
 
     // TODO find better function signature to have multiple time-scales
