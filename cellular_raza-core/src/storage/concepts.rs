@@ -23,7 +23,7 @@ pub enum StorageError {
     SledError(sled::Error),
     /// Generic serialization error thrown by the [bincode] library.
     SerializeError(Box<bincode::ErrorKind>),
-    /// Initialization error mainly used for initialization of datatbases such as [sled].
+    /// Initialization error mainly used for initialization of databases such as [sled].
     InitError(String),
     /// Error when parsing file/folder names.
     ParseIntError(std::num::ParseIntError),
@@ -108,7 +108,7 @@ pub enum StorageOption {
     Sled,
     /// Save results as [json](https://www.json.org/json-en.html) file.
     SerdeJson,
-    /// Svae results as [xml](https://www.xml.org/) file.
+    /// Save results as [xml](https://www.xml.org/) file.
     SerdeXml,
 }
 
@@ -127,7 +127,7 @@ pub enum StorageOption {
 pub struct UniqueVec<T>(Vec<T>);
 
 impl<T> UniqueVec<T> {
-    /// Createa a new empty [UniqueVec].
+    /// Creates an new empty [UniqueVec].
     pub fn new() -> Self {
         Self(Vec::new())
     }
@@ -574,7 +574,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
 pub trait StorageInterface<Id, Element> {
     /// Initializes the current storage device.
     ///
-    /// In the case of databases, this may alreay result in an IO operation
+    /// In the case of databases, this may already result in an IO operation
     /// while when saving as files such as json or xml folders might be created.
     fn open_or_create(
         location: &std::path::Path,
@@ -623,7 +623,7 @@ pub trait StorageInterface<Id, Element> {
         Id: Serialize,
         Element: for<'a> Deserialize<'a>;
 
-    /// Loads the elements history, meaning every occurance of the element in the storage.
+    /// Loads the elements history, meaning every occurrence of the element in the storage.
     /// This function should provide the results in ordered fashion such that the time
     /// direction is retained.
     fn load_element_history(
