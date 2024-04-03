@@ -76,7 +76,7 @@ pub struct SimulationSetup<Dom, Cel, Cont = ()> {
     pub(crate) cells: Vec<Cel>,
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
-    pub(crate) storage: StorageConfig,
+    pub(crate) storage: crate::storage::StorageBuilder,
     pub(crate) controller: Cont,
 }
 
@@ -128,7 +128,7 @@ impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
         cells: V,
         time: TimeSetup,
         meta_params: SimulationMetaParams,
-        storage: StorageConfig,
+        storage: crate::storage::StorageBuilder,
         controller: Cont,
     ) -> SimulationSetup<Dom, Cel, Cont>
     where
@@ -284,7 +284,7 @@ where
 
     /// Construct a new [SimulationSupervisor] from a given [SimulationSetup] with [Strategies].
     pub fn initialize_with_strategies(
-        mut setup: SimulationSetup<Dom, Cel, Cont>,
+        setup: SimulationSetup<Dom, Cel, Cont>,
         strategies: Strategies<Vox>,
     ) -> SimulationSupervisor<
         MultiVoxelContainer<

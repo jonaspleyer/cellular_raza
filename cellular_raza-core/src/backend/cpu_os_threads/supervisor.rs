@@ -82,8 +82,8 @@ where
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
     /// Defines in which format and if results should be saved.
-    /// See [StorageConfig].
-    pub storage: StorageConfig,
+    /// See [StorageBuilder].
+    pub storage: StorageBuilder,
 
     /// Physical [Domain] of the simulation.
     pub(crate) domain: DomainBox<Dom>,
@@ -449,7 +449,7 @@ pub struct SimulationResult<
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     /// Configure how to store results of the simulation
-    pub storage: StorageConfig,
+    pub storage: StorageBuilder,
 
     pub(crate) domain: DomainBox<Dom>,
     /// [StorageManager] responsible for saving and loading cells
