@@ -133,7 +133,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(r)
     }
 
-    fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues {
+    fn get_neighbor_values(_border_info: &Self::BorderInfo) -> Self::NeighborValues {
         todo!()
     }
 }
