@@ -94,10 +94,6 @@ pub(crate) struct ForceInformation<For> {
     pub index_sender: PlainIndex,
 }
 
-pub(crate) trait GetPlainIndex {
-    fn get_plain_index(&self) -> PlainIndex;
-}
-
 /// Wrapper for a [Voxel] struct that includes more information and cells.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct VoxelBox<
@@ -136,7 +132,7 @@ impl<
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
-    > GetPlainIndex
+    > Id
     for VoxelBox<
         Ind,
         Pos,
@@ -149,8 +145,14 @@ impl<
         ConcVecIntracellular,
     >
 {
-    fn get_plain_index(&self) -> PlainIndex {
+    type Identifier = PlainIndex;
+
+    fn get_id(&self) -> PlainIndex {
         self.plain_index
+    }
+
+    fn ref_id(&self) -> &Self::Identifier {
+        &self.plain_index
     }
 }
 
@@ -1202,11 +1204,11 @@ where
             ConcVecIntracellular,
         >: Clone + Send + Sync + 'static,
     {
+        use cellular_raza_concepts::Id;
         let voxels = self
             .voxels
-            .clone()
-            .into_iter()
-            .map(|(_, voxel)| (voxel.get_plain_index(), voxel))
+            .iter()
+            .map(|(_, voxel)| (voxel.get_id(), voxel.clone()))
             .collect::<Vec<_>>();
 
         self.storage_voxels
