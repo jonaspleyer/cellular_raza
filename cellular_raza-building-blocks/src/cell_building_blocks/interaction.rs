@@ -212,12 +212,19 @@ macro_rules! implement_morse_potential(
                 _ext_vel: &nalgebra::SVector<$float_type, D>,
                 ext_info: &$float_type,
             ) -> Result<nalgebra::SVector<$float_type, D>, CalcError> {
+                let dir = own_pos - ext_pos;
+                let dist = dir.norm();
+
+                // If the distance between the two objects is greater than the cutoff, we
+                // immediately return zero.
+                if dist > self.cutoff {
+                    use num::Zero;
+                    return Ok([$float_type::zero(); D].into());
+                }
                 let lr = self.length_repelling;
                 let la = self.length_attracting;
                 let cr = self.strength_repelling;
                 let ca = self.strength_attracting;
-                let dir = own_pos - ext_pos;
-                let dist = dir.norm();
                 let lr_combined = *ext_info + self.length_repelling;
                 let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
                 Ok(dir * force)
