@@ -6,6 +6,7 @@ struct DomainMechanics;
 impl SubDomain for DomainMechanics {
     type VoxelIndex = usize;
 
+    #[allow(unused)]
     fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
         Vec::new()
     }
