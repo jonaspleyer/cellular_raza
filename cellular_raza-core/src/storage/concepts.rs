@@ -250,6 +250,8 @@ pub struct BatchSaveFormat<Id, Element> {
 #[derive(Clone, Debug)]
 pub struct StorageManager<Id, Element> {
     storage_priority: UniqueVec<StorageOption>,
+    builder: StorageBuilder,
+    instance: u64,
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     json_storage: Option<JsonStorageInterface<Id, Element>>,
@@ -382,6 +384,19 @@ impl<Id, Element> StorageManager<Id, Element> {
         };
 
         Ok(manager)
+    }
+
+    /// Extracts all information given by the [StorageBuilder] when constructing
+    pub fn extract_builder(&self) -> StorageBuilder {
+        self.builder.clone()
+    }
+
+    /// Get the instance of this object.
+    ///
+    /// These instances should not be overlapping, ie. there should not be two objects existing in
+    /// parallel with the same instance number.
+    pub fn get_instance(&self) -> u64 {
+        self.instance
     }
 }
 
