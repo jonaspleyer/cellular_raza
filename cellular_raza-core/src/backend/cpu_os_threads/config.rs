@@ -68,61 +68,6 @@ pub struct TimeSetup {
     pub t_eval: Vec<(f64, bool)>,
 }
 
-/// Contains settings on how to handle storing results.
-///
-/// ```rust
-/// # use cellular_raza_core::storage::StorageOption;
-/// # use cellular_raza_core::backend::cpu_os_threads::StorageConfig;
-/// let output_path = std::path::PathBuf::from("my_output_directory");
-/// let storage_config = StorageConfig::from_path(&output_path)
-///     .storage_priority(vec![StorageOption::SerdeJson].into());
-/// ```
-#[derive(Clone, Serialize, Deserialize)]
-pub struct StorageConfig {
-    location: std::path::PathBuf,
-    storage_priority: UniqueVec<StorageOption>,
-    #[cfg(feature = "timestamp")]
-    add_date: bool,
-}
-
-impl StorageConfig {
-    /// Create a new [StorageConfig] from a given path where to save results
-    pub fn from_path(path: &std::path::Path) -> Self {
-        Self {
-            location: path.into(),
-            storage_priority: StorageOption::default_priority(),
-            #[cfg(feature = "timestamp")]
-            add_date: true,
-        }
-    }
-
-    /// Set the priority in which to store and look for results.
-    /// Supplying an empty vector will lead to not storing any results.
-    pub fn storage_priority(mut self, storage_priority: UniqueVec<StorageOption>) -> Self {
-        self.storage_priority = storage_priority;
-        self
-    }
-
-    /// Modify the location where to save
-    pub fn location(mut self, location: &std::path::Path) -> Self {
-        self.location = location.into();
-        self
-    }
-
-    /// Determines whether a date should be added to the name of the output folder
-    /// By default this is true to avoid conflicts with previously run simulations.
-    #[cfg(feature = "timestamp")]
-    pub fn add_date(mut self, add_date: bool) -> Self {
-        self.add_date = add_date;
-        self
-    }
-
-    /// Retrieve the storage location
-    pub fn get_location(&self) -> std::path::PathBuf {
-        self.location.clone()
-    }
-}
-
 /// # Complete Set of parameters controlling execution flow of simulation
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationSetup<Dom, Cel, Cont = ()> {
