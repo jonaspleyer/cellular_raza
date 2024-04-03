@@ -121,6 +121,11 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 ///     \exp\left(-\frac{r}{l_a}\right)
 /// \\end{equation}
 ///
+/// Calculating the interaction resulting from this potential is very cheap computationally but not
+/// intuitive.
+/// Thus we provide additional methods to set, grow and shrink the current radius of the object.
+///
+/// # Deriving convenience methods
 /// To translate the struct fields [`radius`](MorsePotential::radius) and
 /// [`interaction_range`](MorsePotential::interaction_range) to $l_r$ and $l_a$ respectively, we
 /// assume that the forces are exactly balanced when the distance $r=R_1 + R_2=R$ where $R_1$ and
@@ -134,56 +139,144 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 ///         - \exp\left(-R\left(\frac{1}{l_a} - \frac{1}{l_r}\right)\right)
 /// \\end{align}
 ///
-/// Thus the combined radius $R=$[`radius`](MorsePotential::radius) is given by
+/// Thus the combined radius $R=R_1 + R_2$ is given by
 ///
 /// \\begin{equation}
 ///     R = - \frac{l_r l_a}{l_r - l_a}\log\left(\frac{C_r}{C_a}\frac{l_a}{l_r}\right)
 /// \\end{equation}
+///
+/// We assume that $l_a=$[`interaction_range`](MorsePotential::interaction_range).
+/// Thus, we can now calculate $l_r$ via
+///
+/// \\begin{equation}
+///     l_r = R \text{W} \left(-\frac{C_a R}{C_r l_a}\exp\left(-\frac{R}{l_a}\right)\right)
+/// \\end{equation}
+///
+/// where $\text{W}(x)$ is the
+/// [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_function).
 ///
 /// We can also appreciate again, that the original potential $V(r)$ is completely symmetric when
 /// interchanging attractive and repulsive properties $l_a,C_a$ and $l_r,C_r$.
 ///
 #[doc = include_str!("plot_morse_potential.html")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-// #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
-pub struct MorsePotential<F> {
+#[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
+pub struct MorsePotential {
     /// Radius of the object
-    pub radius: F,
+    pub length_repelling: f64,
     /// Defines the length for the interaction range
-    pub interaction_range: F,
+    pub length_attracting: f64,
     /// Cutoff after which the interaction is exactly 0
-    pub cutoff: F,
+    pub cutoff: f64,
     /// Repelling strength between objects
-    pub strength_repelling: F,
+    pub strength_repelling: f64,
     /// Attracting strength between objects
-    pub strength_attraction: F,
+    pub strength_attracting: f64,
 }
 
-// TODO remove this allow(unused)
-#[allow(unused)]
-impl<const D: usize, F>
-    Interaction<nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, F>
-    for MorsePotential<F>
-where
-    F: nalgebra::ClosedSub,
-    F: nalgebra::ComplexField,
-{
-    fn get_interaction_information(&self) -> F {
-        self.radius.clone()
-    }
-
-    fn calculate_force_between(
-        &self,
-        own_pos: &nalgebra::SVector<F, D>,
-        own_vel: &nalgebra::SVector<F, D>,
-        ext_pos: &nalgebra::SVector<F, D>,
-        ext_vel: &nalgebra::SVector<F, D>,
-        ext_info: &F,
-    ) -> Result<nalgebra::SVector<F, D>, CalcError> {
-        let r = (own_pos - ext_pos).norm();
-        todo!()
-    }
+/// Same as [MorsePotential] but for `f32` type.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+pub struct MorsePotentialF32 {
+    /// Radius of the object
+    pub length_repelling: f32,
+    /// Defines the length for the interaction range
+    pub length_attracting: f32,
+    /// Cutoff after which the interaction is exactly 0
+    pub cutoff: f32,
+    /// Repelling strength between objects
+    pub strength_repelling: f32,
+    /// Attracting strength between objects
+    pub strength_attracting: f32,
 }
+
+macro_rules! implement_morse_potential(
+    ($struct_name:ident, $float_type:ident) => {
+        impl<const D: usize>
+            Interaction<
+                nalgebra::SVector<$float_type, D>,
+                nalgebra::SVector<$float_type, D>,
+                nalgebra::SVector<$float_type, D>,
+                $float_type,
+            > for $struct_name
+        {
+            fn get_interaction_information(&self) -> $float_type {
+                self.length_repelling.clone()
+            }
+
+            fn calculate_force_between(
+                &self,
+                own_pos: &nalgebra::SVector<$float_type, D>,
+                _own_vel: &nalgebra::SVector<$float_type, D>,
+                ext_pos: &nalgebra::SVector<$float_type, D>,
+                _ext_vel: &nalgebra::SVector<$float_type, D>,
+                ext_info: &$float_type,
+            ) -> Result<nalgebra::SVector<$float_type, D>, CalcError> {
+                let lr = self.length_repelling;
+                let la = self.length_attracting;
+                let cr = self.strength_repelling;
+                let ca = self.strength_attracting;
+                let dir = own_pos - ext_pos;
+                let dist = dir.norm();
+                let lr_combined = *ext_info + self.length_repelling;
+                let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
+                Ok(dir * force)
+            }
+        }
+
+        // TODO implement these functionalities and clean up unused where needed
+        impl $struct_name {
+            /// CURRENTLY UNIMPLEMENTED!
+            // /// ```
+            // /// # use cellular_raza_building_blocks::*;
+            // #[doc = concat!(
+            //     "let morse = ",
+            //     stringify!($struct_name),
+            //     "::new(2.0, 3.0, 0.1, 0.5);"
+            // )]
+            // /// ```
+            #[allow(unused)]
+            pub fn new(
+                radius: $float_type,
+                interaction_range: $float_type,
+                strength_attracting: $float_type,
+                strength_repelling: $float_type,
+            ) -> Self {
+                unimplemented!()
+            }
+
+            /// CURRENTLY UNIMPLEMENTED!
+            ///
+            /// This function as a generic argument which is the dimensionality of the underlying
+            /// simulation.
+            /// Eg. for a 2-dimensional simulation use it as follows:
+            /// ```
+            /// # use cellular_raza_building_blocks::*;
+            #[doc = concat!("let mut my_potential = ", stringify!($struct_name))]
+            /// {
+            ///     length_repelling: 1.0,
+            ///     length_attracting: 2.0,
+            ///     strength_repelling: 2.0,
+            ///     strength_attracting: 1.0,
+            ///     cutoff: 2.0,
+            /// };
+            /// my_potential.grow_radius_with_volume::<2>(3.0);
+            /// ```
+            #[allow(unused)]
+            pub fn grow_radius_with_volume<const D: usize>(&mut self, volume: $float_type) {
+                // unimplemented!()
+            }
+
+            /// CURRENTLY UNIMPLEMENTED!
+            #[allow(unused)]
+            pub fn grow_radius_by_length(&mut self, length: $float_type) {
+            }
+        }
+    };
+);
+
+implement_morse_potential!(MorsePotential, f64);
+implement_morse_potential!(MorsePotentialF32, f32);
 
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
