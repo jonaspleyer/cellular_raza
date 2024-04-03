@@ -185,7 +185,7 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        Storage: StorageConfig::from_path(std::path::Path::new("out/kidney_organoid_model")),
+        Storage: StorageBuilder::new().location("out/kidney_organoid_model"),
     );
 
     let strategies = Strategies {

@@ -264,7 +264,8 @@ pub fn run_simulation(
         rng_seed: meta_params.random_seed,
     };
 
-    let storage = StorageConfig::from_path(std::path::Path::new(&meta_params.save_path))
+    let storage = StorageBuilder::new()
+        .location(&meta_params.save_path)
         .add_date(meta_params.save_add_date);
     // storage.export_formats = vec![ExportOptions::Vtk];
 

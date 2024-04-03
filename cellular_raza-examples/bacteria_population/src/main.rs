@@ -210,7 +210,7 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageConfig::from_path(std::path::Path::new("out/bacteria_population")),
+        StorageBuilder::new().location("out/bacteria_population"),
         CellNumberController {
             target_cell_number: 15_000,
             stored_ids: std::collections::HashSet::new(),

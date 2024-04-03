@@ -300,7 +300,7 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageConfig::from_path(std::path::Path::new("out/ureter_signalling")),
+        StorageBuilder::new().location("out/ureter_signalling"),
         (),
     );
 

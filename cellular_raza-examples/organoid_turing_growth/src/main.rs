@@ -295,7 +295,7 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageConfig::from_path(std::path::Path::new("out/organoid_turing_growth")),
+        StorageBuilder::new().location("out/organoid_turing_growth"),
         (),
     );
 
