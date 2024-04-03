@@ -337,46 +337,35 @@ impl<Id, Element> StorageManager<Id, Element> {
             let date = format!("{}", chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S"));
             location.push(date);
         }
-        Self::open_or_create_with_priority(&location, instance, &storage_builder.priority)
-    }
-
-    /// Constructs the storage manager
-    ///
-    /// This creates the required file hierarchy and initializes any storage elements which
-    /// might be required.
-    pub fn open_or_create_with_priority(
-        location: &std::path::Path,
-        storage_instance: u64,
-        storage_priority: &UniqueVec<StorageOption>,
-    ) -> Result<Self, StorageError> {
-        // Fill the used storage options
         let mut sled_storage = None;
         let mut json_storage = None;
         let mut xml_storage = None;
-        for storage_variant in storage_priority.iter() {
+        for storage_variant in storage_builder.priority.iter() {
             match storage_variant {
                 StorageOption::SerdeJson => {
                     json_storage = Some(JsonStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("json"),
-                        storage_instance,
+                        instance,
                     )?);
                 }
                 StorageOption::Sled => {
                     sled_storage = Some(SledStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("sled"),
-                        storage_instance,
+                        instance,
                     )?);
                 }
                 StorageOption::SerdeXml => {
                     xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("xml"),
-                        storage_instance,
+                        instance,
                     )?);
                 }
             }
         }
         let manager = StorageManager {
-            storage_priority: storage_priority.clone(),
+            storage_priority: storage_builder.priority.clone(),
+            builder: storage_builder.clone(),
+            instance,
 
             sled_storage,
             json_storage,
@@ -407,7 +396,8 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         storage_instance: u64,
     ) -> Result<Self, StorageError> {
         let storage_priority = StorageOption::default_priority();
-        Self::open_or_create_with_priority(location, storage_instance, &storage_priority)
+        let storage_builder = StorageBuilder::new().priority(storage_priority);
+        Self::construct(&storage_builder, 0)
     }
 
     #[allow(unused)]
