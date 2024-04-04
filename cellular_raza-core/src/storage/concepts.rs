@@ -365,10 +365,11 @@ impl<Id, Element> StorageManager<Id, Element> {
                     )?);
                 }
                 StorageOption::Sled => {
-                    sled_storage = Some(SledStorageInterface::<Id, Element>::open_or_create(
-                        &location.to_path_buf().join("sled"),
-                        instance,
-                    )?);
+                    sled_storage =
+                        Some(SledStorageInterface::<Id, Element, false>::open_or_create(
+                            &location.to_path_buf().join("sled"),
+                            instance,
+                        )?);
                 }
                 StorageOption::SerdeXml => {
                     xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(

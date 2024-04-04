@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 /// Use the [sled] database to save results to an embedded database.
 // TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
 #[derive(Clone, Debug)]
-pub struct SledStorageInterface<Id, Element> {
+pub struct SledStorageInterface<Id, Element, const Temp: bool = false> {
     db: sled::Db,
     // TODO use this buffer
     // buffer: StorageBuffer<Id, Element>,
@@ -17,7 +17,7 @@ pub struct SledStorageInterface<Id, Element> {
     element_phantom: PhantomData<Element>,
 }
 
-impl<Id, Element> SledStorageInterface<Id, Element> {
+impl<Id, Element, const Temp: bool> SledStorageInterface<Id, Element, Temp> {
     /// Transform a u64 value to an iteration key which can be given to a sled tree.
     fn iteration_to_key(iteration: u64) -> [u8; 8] {
         iteration.to_le_bytes()
@@ -47,7 +47,9 @@ impl<Id, Element> SledStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Element> {
+impl<Id, Element, const Temp: bool> StorageInterface<Id, Element>
+    for SledStorageInterface<Id, Element, Temp>
+{
     fn open_or_create(
         location: &std::path::Path,
         _storage_instance: u64,
@@ -56,6 +58,7 @@ impl<Id, Element> StorageInterface<Id, Element> for SledStorageInterface<Id, Ele
             .mode(sled::Mode::HighThroughput)
             .cache_capacity(1024 * 1024 * 1024 * 5) // 5gb
             .path(&location)
+            .temporary(Temp)
             .use_compression(false);
 
         let db = config.open()?;
