@@ -418,6 +418,28 @@ impl<Id, Element> StorageManager<Id, Element> {
     }
 }
 
+macro_rules! exec_for_all_storage_options(
+    (@internal $self:ident, $storage_option:ident, $field:ident, $function:ident, $($args:tt)*) => {
+        {
+            if let Some($field) = &$self.$field {
+                $field.$function($($args)*)
+            } else {
+                Err(StorageError::InitError(
+                    stringify!($storage_option, " storage was not initialized but called").into(),
+                ))?
+            }
+        }
+    };
+    ($self:ident, $priority:ident, $function:ident, $($args:tt)*) => {
+        match $priority {
+            StorageOption::Sled => exec_for_all_storage_options!(@internal $self, Sled, sled_storage, $function, $($args)*),
+            StorageOption::SledTemp => exec_for_all_storage_options!(@internal $self, SledTemp, sled_temp_storage, $function, $($args)*),
+            StorageOption::SerdeJson => exec_for_all_storage_options!(@internal $self, SerdeJson, json_storage, $function, $($args)*),
+            StorageOption::SerdeXml => exec_for_all_storage_options!(@internal $self, SerdeXml, xml_storage, $function, $($args)*),
+        }
+    }
+);
+
 impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn open_or_create(
@@ -490,36 +512,13 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Element: for<'a> Deserialize<'a>,
     {
         for priority in self.storage_priority.iter() {
-            let element = match priority {
-                StorageOption::Sled => {
-                    if let Some(sled_storage) = &self.sled_storage {
-                        sled_storage.load_single_element(iteration, identifier)
-                    } else {
-                        Err(StorageError::InitError(
-                            "Sled storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeJson => {
-                    if let Some(json_storage) = &self.json_storage {
-                        json_storage.load_single_element(iteration, identifier)
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeJson storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeXml => {
-                    if let Some(xml_storage) = &self.xml_storage {
-                        xml_storage.load_single_element(iteration, identifier)
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeXML storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-            };
-            return element;
+            return exec_for_all_storage_options!(
+                self,
+                priority,
+                load_single_element,
+                iteration,
+                identifier
+            );
         }
         Ok(None)
     }
@@ -534,72 +533,19 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         Element: for<'a> Deserialize<'a>,
     {
         for priority in self.storage_priority.iter() {
-            let elements = match priority {
-                StorageOption::Sled => {
-                    if let Some(sled_storage) = &self.sled_storage {
-                        sled_storage.load_all_elements_at_iteration(iteration)
-                    } else {
-                        Err(StorageError::InitError(
-                            "Sled storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeJson => {
-                    if let Some(json_storage) = &self.json_storage {
-                        json_storage.load_all_elements_at_iteration(iteration)
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeJson storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeXml => {
-                    if let Some(xml_storage) = &self.xml_storage {
-                        xml_storage.load_all_elements_at_iteration(iteration)
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeXML storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-            };
-            return elements;
+            return exec_for_all_storage_options!(
+                self,
+                priority,
+                load_all_elements_at_iteration,
+                iteration
+            );
         }
         Ok(HashMap::new())
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
         for priority in self.storage_priority.iter() {
-            let iterations = match priority {
-                StorageOption::Sled => {
-                    if let Some(sled_storage) = &self.sled_storage {
-                        sled_storage.get_all_iterations()
-                    } else {
-                        Err(StorageError::InitError(
-                            "Sled storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeJson => {
-                    if let Some(json_storage) = &self.json_storage {
-                        json_storage.get_all_iterations()
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeJson storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-                StorageOption::SerdeXml => {
-                    if let Some(xml_storage) = &self.xml_storage {
-                        xml_storage.get_all_iterations()
-                    } else {
-                        Err(StorageError::InitError(
-                            "SerdeXML storage was not initialized but called".into(),
-                        ))?
-                    }
-                }
-            };
-            return iterations;
+            return exec_for_all_storage_options!(self, priority, get_all_iterations,);
         }
         Ok(Vec::new())
     }
