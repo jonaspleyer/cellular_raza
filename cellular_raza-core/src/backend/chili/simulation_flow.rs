@@ -652,7 +652,13 @@ where
     }
 
     fn send(&mut self, receiver: &I, message: T) -> Result<(), SimulationError> {
-        self.senders[&receiver].send(message)?;
+        let sender = self
+            .senders
+            .get(&receiver)
+            .ok_or(super::IndexError(format!(
+                "could not find specified receiver"
+            )))?;
+        sender.send(message)?;
         Ok(())
     }
 }
