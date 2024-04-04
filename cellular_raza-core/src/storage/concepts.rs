@@ -106,6 +106,8 @@ impl Error for StorageError {}
 pub enum StorageOption {
     /// Save results as [sled] database.
     Sled,
+    /// Save results as [sled] database but remove them when dropping the struct
+    SledTemp,
     /// Save results as [json](https://www.json.org/json-en.html) file.
     SerdeJson,
     /// Save results as [xml](https://www.xml.org/) file.
@@ -254,6 +256,7 @@ pub struct StorageManager<Id, Element> {
     instance: u64,
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
+    sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
     json_storage: Option<JsonStorageInterface<Id, Element>>,
     xml_storage: Option<XmlStorageInterface<Id, Element>>,
 }
@@ -354,6 +357,7 @@ impl<Id, Element> StorageManager<Id, Element> {
             location.push(date);
         }
         let mut sled_storage = None;
+        let mut sled_temp_storage = None;
         let mut json_storage = None;
         let mut xml_storage = None;
         for storage_variant in storage_builder.priority.iter() {
@@ -371,6 +375,13 @@ impl<Id, Element> StorageManager<Id, Element> {
                             instance,
                         )?);
                 }
+                StorageOption::SledTemp => {
+                    sled_temp_storage =
+                        Some(SledStorageInterface::<Id, Element, true>::open_or_create(
+                            &location.to_path_buf().join("sled_memory"),
+                            instance,
+                        )?);
+                }
                 StorageOption::SerdeXml => {
                     xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf().join("xml"),
@@ -385,6 +396,7 @@ impl<Id, Element> StorageManager<Id, Element> {
             instance,
 
             sled_storage,
+            sled_temp_storage,
             json_storage,
             xml_storage,
         };
