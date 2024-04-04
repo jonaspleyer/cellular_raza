@@ -223,11 +223,11 @@ impl<Id, Element, const Temp: bool> StorageInterface<Id, Element>
                 },
             };
         }
-        if accumulator.len() != 0 {
-            return Ok(Some(accumulator));
+        Ok(if accumulator.len() != 0 {
+            Some(accumulator)
         } else {
-            return Ok(None);
-        }
+            None
+        })
     }
 
     fn load_all_elements_at_iteration(

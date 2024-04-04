@@ -627,11 +627,11 @@ pub trait StorageInterface<Id, Element> {
                 },
             )
             .collect::<Result<HashMap<u64, _>, StorageError>>()?;
-        if results.len() == 0 {
-            return Ok(None);
+        Ok(if results.len() == 0 {
+            None
         } else {
-            return Ok(Some(results));
-        }
+            Some(results)
+        })
     }
 
     /// Gets a snapshot of all elements at a given iteration.
@@ -660,7 +660,7 @@ pub trait StorageInterface<Id, Element> {
             .iter()
             .map(|iteration| {
                 let elements = self.load_all_elements_at_iteration(*iteration)?;
-                return Ok((*iteration, elements));
+                Ok((*iteration, elements))
             })
             .collect::<Result<HashMap<_, _>, StorageError>>()?;
         Ok(all_elements)
