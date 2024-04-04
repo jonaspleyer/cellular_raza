@@ -1,4 +1,5 @@
 use cellular_raza::core::backend::chili::*;
+use cellular_raza::core::storage::StorageOption;
 use cellular_raza::prelude::{
     CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, NewtonDamped3D, RngError,
     StorageBuilder,
@@ -153,7 +154,9 @@ fn main() -> Result<(), SimulationError> {
         N_TIMES,
         SAVE_INTERVAL,
     )?;
-    let storage_builder = StorageBuilder::new().location("out/cell_sorting");
+    let storage_builder = StorageBuilder::new()
+        .location("out/cell_sorting")
+        .priority([StorageOption::SerdeJson]);
 
     let settings = cellular_raza::core::backend::chili::Settings {
         n_threads: N_THREADS.try_into().unwrap(),
