@@ -636,7 +636,8 @@ pub trait StorageInterface<Id, Element> {
 
     /// Gets a snapshot of all elements at a given iteration.
     ///
-    /// This function might be useful when implementing how simulations can be restored from saved results.
+    /// This function might be useful when implementing how simulations can be restored from saved
+    /// results.
     fn load_all_elements_at_iteration(
         &self,
         iteration: u64,
@@ -649,7 +650,8 @@ pub trait StorageInterface<Id, Element> {
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError>;
 
     /// Loads all elements for every iteration.
-    /// This will yield the complete storage and may result in extremely large allocations of memory.
+    /// This will yield the complete storage and may result in extremely large allocations of
+    /// memory.
     fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
