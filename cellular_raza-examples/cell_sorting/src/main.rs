@@ -51,7 +51,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         ext_pos: &Vector3<f64>,
         _ext_vel: &Vector3<f64>,
         ext_info: &(f64, Species),
-    ) -> Option<Result<Vector3<f64>, CalcError>> {
+    ) -> Result<Vector3<f64>, CalcError> {
         let min_relative_distance_to_center = 0.3162277660168379;
         let (r, dir) =
             match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
@@ -62,9 +62,7 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
                 }
                 true => {
                     let dir = match own_pos == ext_pos {
-                        true => {
-                            return None;
-                        }
+                        true => {return Ok([0.0; 3].into());}
                         false => (own_pos - ext_pos).normalize(),
                     };
                     let r = self.cell_radius * min_relative_distance_to_center;
@@ -90,9 +88,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
         let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
 
         if *species == self.species {
-            Some(Ok(repelling_force + attracting_force))
+            Ok(repelling_force + attracting_force)
         } else {
-            Some(Ok(repelling_force))
+            Ok(repelling_force)
         }
     }
 
