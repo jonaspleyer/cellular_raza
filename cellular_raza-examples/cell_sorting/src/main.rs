@@ -62,7 +62,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
                 }
                 true => {
                     let dir = match own_pos == ext_pos {
-                        true => {return Ok([0.0; 3].into());}
+                        true => {
+                            return Ok([0.0; 3].into());
+                        }
                         false => (own_pos - ext_pos).normalize(),
                     };
                     let r = self.cell_radius * min_relative_distance_to_center;

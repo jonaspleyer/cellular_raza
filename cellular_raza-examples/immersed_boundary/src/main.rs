@@ -1,5 +1,5 @@
-use rand_chacha::ChaCha8Rng;
 use cellular_raza::prelude::CalcError;
+use rand_chacha::ChaCha8Rng;
 
 trait Reactions<I> {
     fn increment_intracellular(&mut self, increment: &I);

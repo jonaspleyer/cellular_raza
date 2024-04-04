@@ -1,5 +1,5 @@
-use crate::storage::StorageManager;
 use super::{CellIdentifier, VoxelPlainIndex};
+use crate::storage::StorageManager;
 
 /// Gathers the [StorageManager] for cells and voxels of the previously run simulation
 pub struct StorageAccess<C, V> {

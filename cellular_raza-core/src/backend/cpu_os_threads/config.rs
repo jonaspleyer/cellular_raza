@@ -484,8 +484,7 @@ where
 
         // Create
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
-        let meta_infos_builder = setup.storage.clone()
-            .location(meta_infos_path);
+        let meta_infos_builder = setup.storage.clone().location(meta_infos_path);
         let meta_infos =
             StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::construct(
                 &meta_infos_builder,
