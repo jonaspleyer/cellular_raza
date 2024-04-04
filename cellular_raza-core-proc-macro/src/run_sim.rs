@@ -467,7 +467,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     quote!(
         #[allow(unused)]
-        let _storage_manager: #core_path::storage::StorageManager<_, _> =
+        let _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
+           #core_path::storage::StorageManager::construct(&#settings.storage, key as u64)?;
+        let _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
            #core_path::storage::StorageManager::construct(&#settings.storage, key as u64)?;
 
         // Set up the time stepper
@@ -494,9 +496,13 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 (Some(bar), true) => _time_stepper.update_bar(bar)?,
                 _ => (),
             };
-            sbox.save_voxels(&_storage_manager, &next_time_point)?;
+            sbox.save_voxels(&_storage_manager_voxels, &next_time_point)?;
+            sbox.save_cells(&_storage_manager_cells, &next_time_point)?;
         }
-        Ok(_storage_manager)
+        Ok(#core_path::backend::chili::StorageAccess {
+            voxels: _storage_manager_voxels.clone(),
+            cells: _storage_manager_cells.clone(),
+        })
     )
 }
 
@@ -646,7 +652,10 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
         #types
         #test_compat
         let res = #run_main?;
-        Result::<#core_path::storage::StorageManager<_, _>, #core_path::backend::chili::SimulationError>::Ok(res)
+        Result::<
+            #core_path::backend::chili::StorageAccess<_, _>,
+            #core_path::backend::chili::SimulationError
+        >::Ok(res)
     })
     .into()
 }
