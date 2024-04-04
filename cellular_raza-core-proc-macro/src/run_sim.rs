@@ -471,11 +471,16 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let settings = &kwargs.settings;
 
     quote!(
-        #[allow(unused)]
+        let builder = #settings.storage.clone();
+        let loc_voxels = builder.get_location().join("voxels");
+        let loc_cells = builder.get_location().join("cells");
+        let builder_voxels = builder.clone().location(loc_voxels);
+        let builder_cells = builder.clone().location(loc_cells);
+
         let _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
-           #core_path::storage::StorageManager::construct(&#settings.storage, key as u64)?;
+           #core_path::storage::StorageManager::construct(&builder_voxels, key as u64)?;
         let _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
-           #core_path::storage::StorageManager::construct(&#settings.storage, key as u64)?;
+           #core_path::storage::StorageManager::construct(&builder_cells, key as u64)?;
 
         // Set up the time stepper
         let mut _time_stepper = #settings.time.clone();
