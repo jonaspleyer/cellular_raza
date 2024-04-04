@@ -224,7 +224,6 @@ pub trait SubDomainForce<Pos, Vel, For> {
 /// ```
 pub trait SubDomainReactions {}
 
-
 /// This trait derives the different aspects of a [SubDomain].
 ///
 /// It serves similarly as the [cellular_raza_concepts_derive::CellAgent] trait to quickly

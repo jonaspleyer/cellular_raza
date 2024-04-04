@@ -4,6 +4,8 @@ use crate::mechanics::Mechanics;
 
 use serde::{Deserialize, Serialize};
 
+// TODO move this module to cpu_os_threads backend except for traits
+
 /// This is a unique identifier which is deterministic even in multi-threading situations.
 /// Its components are
 /// 1. PlainIndex of Voxel where it was created
