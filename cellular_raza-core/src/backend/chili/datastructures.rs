@@ -144,8 +144,13 @@ where
                 let plain_index = voxel_index_to_plain_index[&voxel_index];
                 let neighbors = voxel_index_to_neighbor_plain_indices
                     .remove(&voxel_index)
-                    .unwrap();
-                (
+                    .ok_or(super::IndexError(format!(
+                        "cellular_raza::core::chili internal error in decomposition:\
+                        please file a bug report!\
+                        https://github.com/jonaspleyer/cellular_raza/issues/new?\
+                        title=internal%20error%20during%20domain%20decomposition",
+                    )))?;
+                Ok((
                     plain_index,
                     Voxel {
                         plain_index,
@@ -155,7 +160,7 @@ where
                         id_counter: 0,
                         rng: rand_chacha::ChaCha8Rng::seed_from_u64(decomposed_domain.rng_seed),
                     },
-                )
+                ))
             });
             let syncer = syncers.remove(&subdomain_plain_index).ok_or(BoundaryError(
                 "Index was not present in subdomain map".into(),
@@ -169,7 +174,7 @@ where
             let mut subdomain_box = SubDomainBox {
                 _index: index.clone(),
                 subdomain,
-                voxels: voxels.collect(),
+                voxels: voxels.collect::<Result<_, SimulationError>>()?,
                 voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
                 plain_index_to_subdomain: plain_index_to_subdomain.clone(),
                 communicator,
@@ -178,7 +183,7 @@ where
             subdomain_box.insert_cells(&mut cells)?;
             Ok((index, subdomain_box))
         })
-        .collect::<Result<HashMap<_, _>, BoundaryError>>()?;
+        .collect::<Result<HashMap<_, _>, SimulationError>>()?;
     let simulation_runner = SimulationRunner { subdomain_boxes };
     Ok(simulation_runner)
 }
