@@ -223,12 +223,12 @@ impl<T> IntoIterator for UniqueVec<T> {
 impl StorageOption {
     /// Which storage option should be used by default.
     pub fn default_priority() -> UniqueVec<Self> {
-        return vec![
+        vec![
             StorageOption::SerdeJson,
             // TODO fix sled! This is currently not working on multiple threads
             // StorageOptions::Sled,
         ]
-        .into();
+        .into()
     }
 }
 
