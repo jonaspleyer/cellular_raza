@@ -275,6 +275,7 @@ pub struct StorageManager<Id, Element> {
 pub struct StorageBuilder {
     pub(crate) location: std::path::PathBuf,
     pub(crate) priority: UniqueVec<StorageOption>,
+    pub(crate) suffix: std::path::PathBuf,
     #[cfg(feature = "timestamp")]
     pub(crate) add_date: bool,
 }
@@ -290,6 +291,7 @@ impl StorageBuilder {
         Self {
             location: "./out".into(),
             priority: UniqueVec::new(),
+            suffix: "".into(),
             #[cfg(feature = "timestamp")]
             add_date: true,
         }
@@ -315,6 +317,19 @@ impl StorageBuilder {
             location: location.into(),
             ..self
         }
+    }
+
+    /// Define a suffix which will be appended to the save path
+    pub fn suffix(self, suffix: impl Into<std::path::PathBuf>) -> Self {
+        Self {
+            suffix: suffix.into(),
+            ..self
+        }
+    }
+
+    /// Get the current suffix
+    pub fn get_suffix(&self) -> std::path::PathBuf {
+        self.suffix.clone()
     }
 
     /// Get the current storage_location
@@ -356,6 +371,7 @@ impl<Id, Element> StorageManager<Id, Element> {
             let date = format!("{}", chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S"));
             location.push(date);
         }
+        location = location.join(&storage_builder.suffix);
         let mut sled_storage = None;
         let mut sled_temp_storage = None;
         let mut json_storage = None;
