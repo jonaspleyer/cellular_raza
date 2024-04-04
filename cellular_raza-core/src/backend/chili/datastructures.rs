@@ -69,7 +69,6 @@ where
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
     let decomposed_domain = domain.decompose(n_subdomains, agents)?;
-    // TODO do not unwrap
     if !validate_map(&decomposed_domain.neighbor_map) {
         panic!("Map not valid!");
     }
@@ -92,8 +91,8 @@ where
             )
         })
         .collect::<HashMap<_, _>>();
-    let mut syncers = Sy::from_map(&neighbor_map).unwrap();
-    let mut communicators = Com::from_map(&neighbor_map).unwrap();
+    let mut syncers = Sy::from_map(&neighbor_map)?;
+    let mut communicators = Com::from_map(&neighbor_map)?;
     let voxel_index_to_plain_index = decomposed_domain
         .index_subdomain_cells
         .iter()
@@ -179,8 +178,7 @@ where
             subdomain_box.insert_cells(&mut cells)?;
             Ok((index, subdomain_box))
         })
-        .collect::<Result<HashMap<_, _>, BoundaryError>>()
-        .unwrap();
+        .collect::<Result<HashMap<_, _>, BoundaryError>>()?;
     let simulation_runner = SimulationRunner { subdomain_boxes };
     Ok(simulation_runner)
 }
