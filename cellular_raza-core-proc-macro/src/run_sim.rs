@@ -472,10 +472,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     quote!(
         let builder = #settings.storage.clone();
-        let loc_voxels = builder.get_location().join("voxels");
-        let loc_cells = builder.get_location().join("cells");
-        let builder_voxels = builder.clone().location(loc_voxels);
-        let builder_cells = builder.clone().location(loc_cells);
+        let builder_voxels = builder.clone().suffix(builder.get_suffix().join("voxels"));
+        let builder_cells = builder.clone().suffix(builder.get_suffix().join("cells"));
 
         let _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
            #core_path::storage::StorageManager::construct(&builder_voxels, key as u64)?;
