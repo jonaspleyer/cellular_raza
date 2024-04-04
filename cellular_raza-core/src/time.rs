@@ -88,13 +88,15 @@ where
         save_interval: u64,
     ) -> Result<Self, TimeError> {
         let max_save_points = n_steps.div_ceil(save_interval);
-        let save_interval_float = F::from_u64(save_interval).ok_or(TimeError(format!(
-            "Could not convert save_interval={save_interval} to type: {}",
-            std::any::type_name::<F>()
-        )))?;
-        let partial_save_points = (0..max_save_points)
-            .map(|_| t0 + save_interval_float * dt)
-            .collect();
+        let save_point_to_float = |u: u64| -> Result<F, TimeError> {
+            F::from_u64(save_interval * u).ok_or(TimeError(format!(
+                "Could not convert save_interval={save_interval} to type: {}",
+                std::any::type_name::<F>()
+            )))
+        };
+        let partial_save_points = (0..max_save_points + 1)
+            .map(|n| Ok(t0 + save_point_to_float(n)? * dt))
+            .collect::<Result<_, TimeError>>()?;
         Self::from_partial_save_points(t0, dt, partial_save_points)
     }
 
