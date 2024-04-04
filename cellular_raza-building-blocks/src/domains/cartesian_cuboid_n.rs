@@ -843,10 +843,32 @@ macro_rules! implement_cartesian_cuboid_domain_new {
         > for $subdomain_name {
             fn apply_boundary(
                 &self,
-                _pos: &mut SVector<$float_type, $d>,
-                _vel: &mut SVector<$float_type, $d>
+                pos: &mut SVector<$float_type, $d>,
+                velocity: &mut SVector<$float_type, $d>
             ) -> Result<(), BoundaryError> {
-                todo!()
+                // For each dimension
+                for i in 0..$d {
+                    // Check if the particle is below lower edge
+                    if pos[i] < self.domain_min[i] {
+                        pos[i] = 2.0 * self.domain_min[i] - pos[i];
+                        velocity[i] = velocity[i].abs();
+                    }
+                    // Check if the particle is over the edge
+                    if pos[i] > self.domain_max[i] {
+                        pos[i] = 2.0 * self.domain_max[i] - pos[i];
+                        velocity[i] = - velocity[i].abs();
+                    }
+                }
+
+                // If new position is still out of boundary return error
+                for i in 0..$d {
+                    if pos[i] < self.domain_min[i] || pos[i] > self.domain_max[i] {
+                        return Err(BoundaryError(
+                                format!("Particle is out of domain at position {:?}", pos)
+                        ));
+                    }
+                }
+                Ok(())
             }
         }
     }
