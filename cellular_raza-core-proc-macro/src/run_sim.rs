@@ -38,19 +38,19 @@ impl Parallelizer {
                             -> Result<_, #core_path::backend::chili::SimulationError> {#code})?;
                     handles.push(handle);
                 }
-                let mut storage_managers = vec![];
+                let mut storage_accesses = vec![];
                 for handle in handles {
                     // TODO decide if we need to catch this error in the future
-                    let storage_manager = handle
+                    let result = handle
                         .join()
                         .expect("Could not join threads after simulation has finished")?;
-                    storage_managers.push(storage_manager);
+                    storage_accesses.push(result);
                 }
-                let storage_manager = storage_managers.pop()
+                let storage_access = storage_accesses.pop()
                     .ok_or(#core_path::storage::StorageError::InitError(
                         format!("Simulation Threads did not yield any storage managers")
                     ))?;
-                Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_manager)
+                Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_access)
             }),
             Self::Rayon => quote::quote!(unimplemented!(
                 "We currently do not support parallelization via rayon."
