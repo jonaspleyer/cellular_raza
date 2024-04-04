@@ -121,6 +121,8 @@ enum Kwarg {
         double_colon: syn::Token![:],
         parallelizer: Parallelizer,
     },
+    // TODO add storage ie. to enable or disable storing of results entirely
+    // figure out how this interacts with the TimeStepper trait in cellular_raza_core::time
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -447,6 +449,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_3.extend(quote!(sbox.update_mechanics_step_3(&next_time_point.increment)?;));
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
+
+    // TODO find a way to group "local functions together without having to iterate over all
+    // cells multiple times.
 
     if kwargs.aspects.contains(&DomainForce) {
         // TODO only enable this feature if the subdomain supports it
