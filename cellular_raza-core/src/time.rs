@@ -100,7 +100,8 @@ where
         Self::from_partial_save_points(t0, dt, partial_save_points)
     }
 
-    ///
+    /// Similar to [Self::from_partial_save_points] but specify the time step between every save
+    /// point together with the integration step.
     pub fn from_partial_save_interval(
         t0: F,
         dt: F,
