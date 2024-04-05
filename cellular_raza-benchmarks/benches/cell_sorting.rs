@@ -83,6 +83,14 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
     }
 }
 
+#[derive(CellAgent, Clone, Serialize, Deserialize)]
+struct Cell {
+    #[Mechanics]
+    mechanics: NewtonDamped3D,
+    #[Interaction]
+    interaction: CellSpecificInteraction,
+}
+
 fn run_simulation(
     n_cells_1: usize,
     n_cells_2: usize,
@@ -100,7 +108,7 @@ fn run_simulation(
             rng.gen_range(0.0..domain_size),
             rng.gen_range(0.0..domain_size),
         ]);
-        ModularCell {
+        Cell {
             mechanics: NewtonDamped3D {
                 pos,
                 vel: Vector3::zero(),
@@ -116,10 +124,6 @@ fn run_simulation(
                 relative_interaction_range: 1.5,
                 cell_radius: 6.0,
             },
-            cycle: NoCycle {},
-            interaction_extracellular: NoExtracellularGradientSensing,
-            cellular_reactions: NoCellularReactions,
-            volume: 0.0,
         }
     });
 
