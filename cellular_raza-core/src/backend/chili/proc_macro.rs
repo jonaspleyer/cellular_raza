@@ -7,8 +7,20 @@ pub use cellular_raza_core_proc_macro::run_test_for_aspects;
 pub use cellular_raza_core_proc_macro::build_aux_storage;
 
 /// Derives the [FromMap](crate::backend::chili::FromMap) trait.
+///
+/// Note that all fields of the struct need to implement the [FromMap] trait.
+/// It is currently still necessary to specify the type parameter for the [FromMap] trait.
+///
 ///  ```
-/// use cellular_raza_core::backend::chili::FromMap;
+/// use cellular_raza_core::backend::chili::{ChannelComm, FromMap};
+/// use cellular_raza_concepts::IndexError;
+///
+/// #[derive(FromMap)]
+/// #[FromMapIndex(usize)]
+/// struct NewCommunicator {
+///     channel_communicator_1: ChannelComm<usize, String>,
+///     channel_communicator_2: ChannelComm<usize, bool>,
+/// }
 /// ```
 pub use cellular_raza_core_proc_macro::FromMap;
 
