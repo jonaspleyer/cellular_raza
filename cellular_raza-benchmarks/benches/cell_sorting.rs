@@ -135,7 +135,7 @@ fn run_simulation(
 
     let time = FixedStepsize::from_partial_save_steps(0.0, dt, n_steps as u64, n_steps as u64 + 1)?;
 
-    let storage = StorageBuilder::new().location("out/cell_sorting");
+    let storage = StorageBuilder::new();
 
     let settings = chili::Settings {
         n_threads,
