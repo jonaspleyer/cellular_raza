@@ -430,7 +430,6 @@ pub fn convert_core_path(core_path: Option<syn::Path>) -> syn::Path {
     }
 }
 
-// TODO complete this function
 pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     use quote::quote;
     use SimulationAspect::*;
