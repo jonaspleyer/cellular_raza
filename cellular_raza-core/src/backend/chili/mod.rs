@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Identifier for voxels used internally to get rid of user-defined ones.
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct VoxelPlainIndex(usize);
 
