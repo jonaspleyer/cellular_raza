@@ -145,8 +145,7 @@ fn main() -> Result<(), SimulationError> {
         [0.0; 3],
         [DOMAIN_SIZE; 3],
         [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_RADIUS * 2.0; 3],
-    )
-    .unwrap();
+    )?;
 
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
         0.0,
