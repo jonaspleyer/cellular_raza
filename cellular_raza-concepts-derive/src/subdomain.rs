@@ -104,7 +104,7 @@ implement_parsing_of_derive_attributes!(
 
 use super::cell_agent::FieldInfo;
 
-pub struct DomainImplementer {
+pub struct SubDomainImplementer {
     name: syn::Ident,
     generics: syn::Generics,
     base: Option<FieldInfo>,
@@ -114,31 +114,31 @@ pub struct DomainImplementer {
     reactions: Option<FieldInfo>,
 }
 
-impl From<DomainParser> for DomainImplementer {
-    fn from(value: DomainParser) -> Self {
+impl From<SubDomainParser> for SubDomainImplementer {
+    fn from(value: SubDomainParser) -> Self {
         let mut base = None;
         let mut sort_cells = None;
         let mut mechanics = None;
         let mut force = None;
         let mut reactions = None;
 
-        value.aspects.into_iter().for_each(|aspect_field| {
-            aspect_field.aspects.into_iter().for_each(|aspect| {
+        value.elements.into_iter().for_each(|aspect_field| {
+            aspect_field.elements.into_iter().for_each(|aspect| {
                 let field_info = FieldInfo {
                     field_type: aspect_field.field.ty.clone(),
                     field_name: aspect_field.field.ident.clone(),
                 };
                 match aspect {
-                    DomainAspect::Base => base = Some(field_info),
-                    DomainAspect::SortCells => sort_cells = Some(field_info),
-                    DomainAspect::Mechanics => mechanics = Some(field_info),
-                    DomainAspect::Force => force = Some(field_info),
-                    DomainAspect::Reactions => reactions = Some(field_info),
+                    SubDomainAspect::Base => base = Some(field_info),
+                    SubDomainAspect::SortCells => sort_cells = Some(field_info),
+                    SubDomainAspect::Mechanics => mechanics = Some(field_info),
+                    SubDomainAspect::Force => force = Some(field_info),
+                    SubDomainAspect::Reactions => reactions = Some(field_info),
                 }
             })
         });
 
-        DomainImplementer {
+        SubDomainImplementer {
             name: value.name,
             generics: value.generics,
             base,
@@ -150,7 +150,7 @@ impl From<DomainParser> for DomainImplementer {
     }
 }
 
-impl DomainImplementer {
+impl SubDomainImplementer {
     fn implement_base(&self) -> proc_macro2::TokenStream {
         let struct_name = &self.name;
         let (impl_generics, struct_ty_generics, where_clause) = &self.generics.split_for_impl();
@@ -315,14 +315,14 @@ impl DomainImplementer {
 }
 
 pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let domain_parser = syn::parse_macro_input!(input as DomainParser);
-    let domain_implementer: DomainImplementer = domain_parser.into();
+    let subdomain_parser = syn::parse_macro_input!(input as SubDomainParser);
+    let subdomain_implementer: SubDomainImplementer = subdomain_parser.into();
 
     let mut res = proc_macro2::TokenStream::new();
-    res.extend(domain_implementer.implement_base());
-    res.extend(domain_implementer.implement_sort_cells());
-    res.extend(domain_implementer.implement_mechanics());
-    res.extend(domain_implementer.implement_force());
-    res.extend(domain_implementer.implement_reactions());
+    res.extend(subdomain_implementer.implement_base());
+    res.extend(subdomain_implementer.implement_sort_cells());
+    res.extend(subdomain_implementer.implement_mechanics());
+    res.extend(subdomain_implementer.implement_force());
+    res.extend(subdomain_implementer.implement_reactions());
     super::cell_agent::wrap(res).into()
 }
