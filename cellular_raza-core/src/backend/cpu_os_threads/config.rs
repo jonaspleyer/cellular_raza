@@ -486,7 +486,7 @@ where
         let meta_infos_path = setup.storage.location.clone().join("meta_infos");
         let meta_infos_builder = setup.storage.clone().location(meta_infos_path);
         let meta_infos =
-            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::construct(
+            StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create(
                 &meta_infos_builder,
                 0,
             )
@@ -596,7 +596,7 @@ where
                 let storage_cells_builder = setup.storage.clone().location(storage_cells_path);
 
                 let storage_cells =
-                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::construct(
+                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
                         &storage_cells_builder,
                         i as u64,
                     )
@@ -615,7 +615,7 @@ where
                         ConcBoundaryExtracellular,
                         ConcVecIntracellular,
                     >,
-                >::construct(&storage_voxels_builder, i as u64)
+                >::open_or_create(&storage_voxels_builder, i as u64)
                 .unwrap();
 
                 voxels.iter_mut().for_each(|(_, voxelbox)| {

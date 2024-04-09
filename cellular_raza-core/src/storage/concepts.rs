@@ -359,9 +359,9 @@ impl<Id, Element> StorageManager<Id, Element> {
     /// let builder = StorageBuilder::new()
     ///     .location("/tmp");
     ///
-    /// let manager = StorageManager::<usize, f64>::construct(&builder, 0).unwrap();
+    /// let manager = StorageManager::<usize, f64>::open_or_create(&builder, 0).unwrap();
     /// ```
-    pub fn construct(
+    pub fn open_or_create(
         storage_builder: &StorageBuilder,
         instance: u64,
     ) -> Result<Self, StorageError> {
@@ -464,7 +464,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     ) -> Result<Self, StorageError> {
         let storage_priority = StorageOption::default_priority();
         let storage_builder = StorageBuilder::new().priority(storage_priority);
-        Self::construct(&storage_builder, 0)
+        Self::open_or_create(&storage_builder, 0)
     }
 
     #[allow(unused)]
