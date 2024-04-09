@@ -51,6 +51,8 @@ for (i=0; i<data_la.length; i++) {
                         ticktext: ['0', 'R', 'cutoff'],
                     },
                     yaxis: {
+                        color: "#FFF",
+                        range: [-0.3*Ca, 1.1*(Cr - Ca)],
                         tickvals: [potential(radius, lr, la_new, Cr, Ca, cutoff), 0, Cr - Ca],
                         ticktext: ['V(R)', '0', 'C<sub>r</sub> - C<sub>a</sub>'],
                     },
@@ -60,11 +62,11 @@ for (i=0; i<data_la.length; i++) {
     };
     sliderSteps.push(sliderstep);
 }
+var initial_step = 2;
+console.log(sliderSteps);
 var layout = {
-    yaxis: {
-        color: "#FFF",
-        range: [-0.3*Ca, 1.1*(Cr - Ca)],
-    },
+    xaxis: sliderSteps[initial_step]["args"][0]["layout"]["xaxis"],
+    yaxis: sliderSteps[initial_step]["args"][0]["layout"]["yaxis"],
     title: "Morse Potential",
     plot_bgcolor:"#FFF4",
     paper_bgcolor:"#505050",
@@ -87,7 +89,7 @@ var layout = {
         },
         transition: {duration: 500},
         steps: sliderSteps,
-        active: 2,
+        active: initial_step,
     }],
 };
 var options = {staticPlot: true};
