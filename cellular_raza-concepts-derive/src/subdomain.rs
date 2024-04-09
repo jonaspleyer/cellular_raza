@@ -1,99 +1,106 @@
-pub enum DomainAspect {
-    Base,
-    SortCells,
-    Mechanics,
-    Force,
-    Reactions,
-}
+macro_rules! implement_parsing_of_derive_attributes(
+    (
+        $enum_name:ident,
+        [$($name:ident),*],
+        $field_struct:ident,
+        $parser:ident
+    ) => {
+        pub enum $enum_name {
+            $($name),*
+        }
 
-impl DomainAspect {
-    fn from_attribute(attr: &syn::Attribute) -> Option<Self> {
-        let path = attr.meta.path().get_ident();
-        if let Some(p) = path {
-            let p_string = p.to_string();
-            match p_string.as_str() {
-                "Base" => Some(DomainAspect::Base),
-                "SortCells" => Some(DomainAspect::SortCells),
-                "Mechanics" => Some(DomainAspect::Mechanics),
-                "Force" => Some(DomainAspect::Force),
-                "Reactions" => Some(DomainAspect::Reactions),
-                _ => None,
+        pub struct $field_struct {
+            elements: Vec<$enum_name>,
+            field: syn::Field,
+        }
+
+        impl $enum_name {
+            fn from_attribute(attr: &syn::Attribute) -> Option<Self> {
+                let path = attr.meta.path().get_ident();
+                path.and_then(|p| {
+                    let p_string = p.to_string();
+                    match p_string.as_str() {
+                        $(
+                            stringify!($name) => Some($enum_name::$name),
+                        )*
+                        _ => None,
+                    }
+                })
             }
-        } else {
-            None
+
+            pub fn from_fields(span: proc_macro2::Span,
+                fields: syn::Fields,
+            ) -> syn::Result<Vec<$field_struct>> {
+                match fields {
+                    syn::Fields::Named(fields_named) => Ok(fields_named
+                        .named
+                        .into_iter()
+                        .map(|field| $field_struct::from_field(field))
+                        .collect::<Vec<_>>()),
+                    syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
+                        .unnamed
+                        .into_iter()
+                        .map(|field| $field_struct::from_field(field))
+                        .collect::<Vec<_>>()),
+                    syn::Fields::Unit => Err(
+                        syn::Error::new(span, "Cannot derive from unit struct")
+                    ),
+                }
+            }
+        }
+
+        impl $field_struct {
+            pub fn from_field(field: syn::Field) -> Self {
+                let elements = field
+                    .attrs
+                    .iter()
+                    .map($enum_name::from_attribute)
+                    .filter_map(|s| s)
+                    .collect::<Vec<_>>();
+                Self { elements, field }
+            }
+        }
+
+        #[allow(unused)]
+        pub struct $parser {
+            attrs: Vec<syn::Attribute>,
+            vis: syn::Visibility,
+            struct_token: syn::Token![struct],
+            name: syn::Ident,
+            generics: syn::Generics,
+            elements: Vec<$field_struct>,
+        }
+
+        impl syn::parse::Parse for $parser {
+            fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+                let item_struct: syn::ItemStruct = input.parse()?;
+                let attrs = item_struct.attrs;
+                let vis = item_struct.vis;
+                let struct_token = item_struct.struct_token;
+                let name = item_struct.ident;
+                let generics = item_struct.generics;
+                let elements = $enum_name::from_fields(name.span(), item_struct.fields)?;
+
+                let res = Self {
+                    attrs,
+                    vis,
+                    struct_token,
+                    name,
+                    generics,
+                    elements,
+                };
+                Ok(res)
+            }
         }
     }
-}
+);
 
-pub struct DomainAspectField {
-    aspects: Vec<DomainAspect>,
-    field: syn::Field,
-}
-
-impl DomainAspectField {
-    pub fn from_field(field: syn::Field) -> Self {
-        let aspects = field
-            .attrs
-            .iter()
-            .map(DomainAspect::from_attribute)
-            .filter_map(|s| s)
-            .collect::<Vec<_>>();
-        Self { aspects, field }
-    }
-}
-
-impl DomainAspect {
-    pub fn from_fields(
-        span: proc_macro2::Span,
-        fields: syn::Fields,
-    ) -> syn::Result<Vec<DomainAspectField>> {
-        match fields {
-            syn::Fields::Named(fields_named) => Ok(fields_named
-                .named
-                .into_iter()
-                .map(|field| DomainAspectField::from_field(field))
-                .collect::<Vec<_>>()),
-            syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
-                .unnamed
-                .into_iter()
-                .map(|field| DomainAspectField::from_field(field))
-                .collect::<Vec<_>>()),
-            syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
-        }
-    }
-}
-
-#[allow(unused)]
-pub struct DomainParser {
-    attrs: Vec<syn::Attribute>,
-    vis: syn::Visibility,
-    struct_token: syn::Token![struct],
-    name: syn::Ident,
-    generics: syn::Generics,
-    aspects: Vec<DomainAspectField>,
-}
-
-impl syn::parse::Parse for DomainParser {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let item_struct: syn::ItemStruct = input.parse()?;
-        let attrs = item_struct.attrs;
-        let vis = item_struct.vis;
-        let struct_token = item_struct.struct_token;
-        let name = item_struct.ident;
-        let generics = item_struct.generics;
-        let aspects = DomainAspect::from_fields(name.span(), item_struct.fields)?;
-
-        let res = Self {
-            attrs,
-            vis,
-            struct_token,
-            name,
-            generics,
-            aspects,
-        };
-        Ok(res)
-    }
-}
+implement_parsing_of_derive_attributes!(
+    SubDomainAspect,
+    [Base, SortCells, Mechanics, Force, Reactions],
+    SubDomainAspectField,
+    SubDomainParser
+);
 
 use super::cell_agent::FieldInfo;
 
