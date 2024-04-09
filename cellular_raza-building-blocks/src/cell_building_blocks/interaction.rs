@@ -190,6 +190,83 @@ pub struct MorsePotentialF32 {
     pub strength_attracting: f32,
 }
 
+/// TODO
+pub fn calculate_morse_interaction<F, const D: usize>(
+    own_pos: &nalgebra::SVector<F, D>,
+    ext_pos: &nalgebra::SVector<F, D>,
+    ext_length_repelling: &F,
+    cutoff: F,
+    length_repelling: F,
+    length_attracting: F,
+    strength_repelling: F,
+    strength_attracting: F,
+) -> Result<nalgebra::SVector<F, D>, CalcError>
+where
+    F: Copy + nalgebra::RealField,
+{
+    let dir = own_pos - ext_pos;
+    let dist = dir.norm();
+
+    // If the distance between the two objects is greater than the cutoff, we
+    // immediately return zero.
+    if dist > cutoff {
+        return Ok([F::zero(); D].into());
+    }
+    let lr = length_repelling;
+    let la = length_attracting;
+    let cr = strength_repelling;
+    let ca = strength_attracting;
+    let lr_combined = *ext_length_repelling + length_repelling;
+    let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
+    Ok(dir * force)
+}
+
+fn product_log<F>(x: F, n_steps: usize) -> F
+where
+    F: Copy + nalgebra::RealField,
+{
+    let mut w = F::zero();
+    for _ in 0..n_steps {
+        w = w - (w * w.exp() - x) / (w.exp() + w * w.exp());
+    }
+    w
+}
+
+/// TODO
+pub fn calculate_morse_interaction_cell_radii<F, const D: usize>(
+    own_pos: &nalgebra::SVector<F, D>,
+    ext_pos: &nalgebra::SVector<F, D>,
+    ext_cell_radius: &F,
+    cutoff: F,
+    own_cell_radius: F,
+    interaction_range: F,
+    strength_repelling: F,
+    strength_attracting: F,
+) -> Result<nalgebra::SVector<F, D>, CalcError>
+where
+    F: Copy + nalgebra::RealField,
+{
+    let r_both = own_cell_radius + *ext_cell_radius;
+    let length_repelling = r_both
+        * product_log(
+            -strength_attracting / strength_repelling * r_both / interaction_range
+                * (-r_both / interaction_range).exp(),
+            3,
+        );
+    let ext_length_repelling = length_repelling * *ext_cell_radius / r_both;
+    let own_length_repelling = length_repelling * own_cell_radius / r_both;
+    calculate_morse_interaction(
+        own_pos,
+        ext_pos,
+        &ext_length_repelling,
+        cutoff,
+        own_length_repelling,
+        interaction_range,
+        strength_repelling,
+        strength_attracting,
+    )
+}
+
 macro_rules! implement_morse_potential(
     ($struct_name:ident, $float_type:ident) => {
         impl<const D: usize>
@@ -212,22 +289,16 @@ macro_rules! implement_morse_potential(
                 _ext_vel: &nalgebra::SVector<$float_type, D>,
                 ext_info: &$float_type,
             ) -> Result<nalgebra::SVector<$float_type, D>, CalcError> {
-                let dir = own_pos - ext_pos;
-                let dist = dir.norm();
-
-                // If the distance between the two objects is greater than the cutoff, we
-                // immediately return zero.
-                if dist > self.cutoff {
-                    use num::Zero;
-                    return Ok([$float_type::zero(); D].into());
-                }
-                let lr = self.length_repelling;
-                let la = self.length_attracting;
-                let cr = self.strength_repelling;
-                let ca = self.strength_attracting;
-                let lr_combined = *ext_info + self.length_repelling;
-                let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
-                Ok(dir * force)
+                calculate_morse_interaction(
+                    own_pos,
+                    ext_pos,
+                    ext_info,
+                    self.cutoff,
+                    self.length_repelling,
+                    self.length_attracting,
+                    self.strength_repelling,
+                    self.strength_attracting,
+                )
             }
         }
 
