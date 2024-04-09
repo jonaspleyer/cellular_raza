@@ -126,8 +126,8 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 /// Thus we provide additional methods to set, grow and shrink the current radius of the object.
 ///
 /// # Deriving convenience methods
-/// To translate the struct fields [`radius`](MorsePotential::radius) and
-/// [`interaction_range`](MorsePotential::interaction_range) to $l_r$ and $l_a$ respectively, we
+/// To translate the struct fields [`radius`](MorsePotential) and
+/// [`interaction_range`](MorsePotential) to $l_r$ and $l_a$ respectively, we
 /// assume that the forces are exactly balanced when the distance $r=R_1 + R_2=R$ where $R_1$ and
 /// $R_2$ are the radii of the respective objects interacting with reach other.
 ///
@@ -145,7 +145,7 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 ///     R = - \frac{l_r l_a}{l_r - l_a}\log\left(\frac{C_r}{C_a}\frac{l_a}{l_r}\right)
 /// \\end{equation}
 ///
-/// We assume that $l_a=$[`interaction_range`](MorsePotential::interaction_range).
+/// We assume that $l_a=$[`interaction_range`](MorsePotential).
 /// Thus, we can now calculate $l_r$ via
 ///
 /// \\begin{equation}
