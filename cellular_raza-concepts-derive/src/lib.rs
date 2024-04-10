@@ -1,8 +1,11 @@
 // #![deny(missing_docs)]
 // #![warn(clippy::missing_docs_in_private_items)]
 
+// Note that this way of importing the macros relies on the order in which the modules get
+// imported.
 #[macro_use]
 mod cell_agent;
+#[macro_use]
 mod subdomain;
 
 /// Derive cellular concepts
