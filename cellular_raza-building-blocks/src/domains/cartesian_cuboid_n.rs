@@ -18,7 +18,8 @@ use plotters::coord::cartesian::Cartesian2d;
 use plotters::coord::types::RangedCoordf64;
 use plotters::prelude::DrawingArea;
 
-/// Helper function to calculate the decomposition of a large number N into n as evenly-sized chunks as possible
+/// Helper function to calculate the decomposition of a large number N into n as evenly-sizedchunks
+/// chunks as possible
 /// Examples:
 /// N   n   decomp
 /// 10  3    1 *  4  +  3 *  3
@@ -60,7 +61,8 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
                 n += 1;
                 m -= 1;
             }
-        // Residue is negative. This means we have subtracted too much and we just decrease n and increase m
+        // Residue is negative. This means we have subtracted too much and we just decrease n and
+        // increase m
         } else {
             n -= 1;
             m += 1;
@@ -88,7 +90,11 @@ macro_rules! define_and_implement_cartesian_cuboid {
             fn check_min_max(min: [f64; $d], max: [f64; $d]) -> Result<(), CalcError> {
                 for i in 0..$d {
                     match max[i] > min[i] {
-                        false => Err(CalcError(format!("Min {:?} must be smaller than Max {:?} for domain boundaries!", min, max))),
+                        false => Err(CalcError(format!(
+                            "Min {:?} must be smaller than Max {:?} for domain boundaries!",
+                            min,
+                            max
+                        ))),
                         true => Ok(()),
                     }?;
                 }
@@ -101,7 +107,10 @@ macro_rules! define_and_implement_cartesian_cuboid {
             {
                 for i in 0..$d {
                     match interaction_ranges[i] > F::zero() {
-                        false => Err(CalcError(format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i]))),
+                        false => Err(CalcError(format!(
+                            "Interaction range must be positive and non-negative! Got value {:?}",
+                            interaction_ranges[i]
+                        ))),
                         true => Ok(())
                     }?;
                 }
@@ -111,8 +120,13 @@ macro_rules! define_and_implement_cartesian_cuboid {
             // TODO write this nicely!
             #[doc = "Builds a new `"]
             #[doc = stringify!($name)]
-            #[doc = "` from given boundaries and maximum interaction ranges of the containing cells."]
-            pub fn from_boundaries_and_interaction_ranges(min: [f64; $d], max: [f64; $d], interaction_ranges: [f64; $d]) -> Result<$name, CalcError> {
+            #[doc = "` from given boundaries and maximum interaction ranges of the containing
+                cells."]
+            pub fn from_boundaries_and_interaction_ranges(
+                min: [f64; $d],
+                max: [f64; $d],
+                interaction_ranges: [f64; $d]
+            ) -> Result<$name, CalcError> {
                 $name::check_min_max(min, max)?;
                 $name::check_positive(interaction_ranges)?;
                 let mut n_vox = [0; $d];
@@ -132,7 +146,11 @@ macro_rules! define_and_implement_cartesian_cuboid {
             #[doc = "Builds a new `"]
             #[doc = stringify!($name)]
             #[doc = "` from given boundaries and the number of voxels per dimension specified."]
-            pub fn from_boundaries_and_n_voxels(min: [f64; $d], max: [f64; $d], n_vox: [usize; $d]) -> Result<$name, CalcError> {
+            pub fn from_boundaries_and_n_voxels(
+                min: [f64; $d],
+                max: [f64; $d],
+                n_vox: [usize; $d]
+            ) -> Result<$name, CalcError> {
                 $name::check_min_max(min, max)?;
                 $name::check_positive(n_vox)?;
                 let mut voxel_sizes = [0.0; $d];
@@ -186,7 +204,12 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
         }
 
         impl<const N: usize> $voxel_name<N> {
-            pub(crate) fn new(min: [f64; $d], max: [f64; $d], index: [i64; $d], domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>) -> $voxel_name<N> {
+            pub(crate) fn new(
+                min: [f64; $d],
+                max: [f64; $d],
+                index: [i64; $d],
+                domain_boundaries: Vec<([i64; $d], BoundaryCondition<SVector<f64, N>>)>
+            ) -> $voxel_name<N> {
                 let middle = [$((max[$k] + min[$k])/2.0),+];
                 let dx = [$(max[$k]-min[$k]),+];
                 $voxel_name::<N> {
@@ -197,7 +220,9 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                     index,
                     extracellular_concentrations: SVector::<f64, N>::from_element(0.0),
                     #[cfg(feature = "gradients")]
-                    extracellular_gradient: SVector::<SVector<f64, $d>, N>::from_element(SVector::<f64, $d>::from_element(0.0)),
+                    extracellular_gradient: SVector::<SVector<f64, $d>, N>::from_element(
+                        SVector::<f64, $d>::from_element(0.0)
+                    ),
                     diffusion_constant: SVector::<f64, N>::from_element(0.0),
                     production_rate: SVector::<f64, N>::from_element(0.0),
                     degradation_rate: SVector::<f64, N>::from_element(0.0),
@@ -216,7 +241,12 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
 
             fn position_is_in_domain(&self, pos: &SVector<f64, $d>) -> Result<(), RequestError> {
                 match pos.iter().enumerate().any(|(i, p)| !(self.min[i] <= *p && *p <= self.max[i])) {
-                    true => Err(RequestError(format!("point {:?} is not in requested voxel with boundaries {:?} {:?}", pos, self.min, self.max))),
+                    true => Err(RequestError(format!(
+                        "point {:?} is not in requested voxel with boundaries {:?} {:?}",
+                        pos,
+                        self.min,
+                        self.max
+                    ))),
                     false => Ok(()),
                 }
             }
@@ -226,19 +256,34 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 for i in 0..$d {
                     diffs[i] = (index[i] as i32 - self.index[i] as i32).abs()
                 }
-                diffs.iter().enumerate().map(|(i, d)| self.dx[i].powf(2.0)* (*d as f64)).sum::<f64>()
+                diffs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, d)| self.dx[i].powf(2.0)* (*d as f64))
+                    .sum::<f64>()
             }
         }
 
         // Implement the Voxel trait for our n-dim voxel
-        impl<const N: usize> Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $voxel_name<N> {
+        impl<const N: usize> Voxel<[i64; $d], SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>
+            for $voxel_name<N> {
             fn get_index(&self) -> [i64; $d] {
                 self.index
             }
         }
 
-        impl<const N: usize> ExtracellularMechanics<[i64; $d], SVector<f64, $d>, SVector<f64, N>, SVector<SVector<f64, $d>, N>, SVector<f64, N>, SVector<f64, N>> for $voxel_name<N> {
-            fn get_extracellular_at_point(&self, pos: &SVector<f64, $d>) -> Result<SVector<f64, N>, RequestError> {
+        impl<const N: usize> ExtracellularMechanics<
+            [i64; $d],
+            SVector<f64, $d>,
+            SVector<f64, N>,
+            SVector<SVector<f64, $d>, N>,
+            SVector<f64, N>,
+            SVector<f64, N>
+        > for $voxel_name<N> {
+            fn get_extracellular_at_point(
+                &self,
+                pos: &SVector<f64, $d>
+            ) -> Result<SVector<f64, N>, RequestError> {
                 self.position_is_in_domain(pos)?;
                 Ok(self.extracellular_concentrations)
             }
@@ -248,63 +293,102 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
             }
 
             #[cfg(feature = "gradients")]
-            fn update_extracellular_gradient(&mut self, boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]) -> Result<(), CalcError> {
-                let mut new_gradient = SVector::<SVector<f64, $d>, N>::from_element(SVector::<f64, $d>::from_element(0.0));
+            fn update_extracellular_gradient(
+                &mut self,
+                boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]
+            ) -> Result<(), CalcError> {
+                let mut new_gradient = SVector::<SVector<f64, $d>, N>::from_element(
+                    SVector::<f64, $d>::from_element(0.0)
+                );
                 boundaries.iter()
                     .for_each(|(index, boundary_condition)| {
                         let extracellular_difference = match boundary_condition {
                             BoundaryCondition::Neumann(value) => {*value},
-                            BoundaryCondition::Dirichlet(value) => {self.extracellular_concentrations-value},
-                            BoundaryCondition::Value(value) => {self.extracellular_concentrations-value},
+                            BoundaryCondition::Dirichlet(value) => {
+                                self.extracellular_concentrations-value
+                            },
+                            BoundaryCondition::Value(value) => {
+                                self.extracellular_concentrations-value
+                            },
                         };
-                        let pointer = SVector::from([$(self.index[$k] as f64 - index[$k] as f64),+]);
+                        let pointer = SVector::from(
+                            [$(self.index[$k] as f64 - index[$k] as f64),+]
+                        );
                         let dist = pointer.norm();
                         let gradient = pointer.normalize()/dist;
-                        new_gradient.iter_mut().zip(extracellular_difference.into_iter()).for_each(|(component, diff)| *component += *diff*gradient);
-                        // let total_gradient = SVector::<SVector<f64,$d>,N>::from_iterator(extracellular_difference.into_iter().map(|diff| *diff*gradient));
-                        // gradient += total_gradient;
+                        new_gradient
+                            .iter_mut()
+                            .zip(extracellular_difference.into_iter())
+                            .for_each(|(component, diff)| *component += *diff*gradient);
                     });
                 self.extracellular_gradient = new_gradient;
                 Ok(())
             }
 
             #[cfg(feature = "gradients")]
-            fn get_extracellular_gradient_at_point(&self, _pos: &SVector<f64, $d>) -> Result<SVector<SVector<f64, $d>, N>, RequestError> {
+            fn get_extracellular_gradient_at_point(
+                &self,
+                _pos: &SVector<f64, $d>
+            ) -> Result<SVector<SVector<f64, $d>, N>, RequestError> {
                 Ok(self.extracellular_gradient)
             }
 
-            fn set_total_extracellular(&mut self, concentrations: &SVector<f64, N>) -> Result<(), CalcError> {
+            fn set_total_extracellular(
+                &mut self,
+                concentrations: &SVector<f64, N>
+            ) -> Result<(), CalcError> {
                 Ok(self.extracellular_concentrations = *concentrations)
             }
 
-            fn calculate_increment(&self, total_extracellular: &SVector<f64, N>, point_sources: &[(SVector<f64, $d>, SVector<f64, N>)], boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]) -> Result<SVector<f64, N>, CalcError> {
+            fn calculate_increment(
+                &self,
+                total_extracellular: &SVector<f64, N>,
+                point_sources: &[(SVector<f64, $d>, SVector<f64, N>)],
+                boundaries: &[([i64; $d], BoundaryCondition<SVector<f64, N>>)]
+            ) -> Result<SVector<f64, N>, CalcError> {
                 let mut inc = SVector::<f64, N>::from_element(0.0);
 
                 self.domain_boundaries
                     .iter()
                     .for_each(|(index, boundary)| match boundary {
-                        BoundaryCondition::Neumann(value) => inc += value / self.index_to_distance_squared(index).sqrt(),
-                        BoundaryCondition::Dirichlet(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(index),
-                        BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(index),
+                        BoundaryCondition::Neumann(value) =>
+                            inc += value / self.index_to_distance_squared(index).sqrt(),
+                        BoundaryCondition::Dirichlet(value) =>
+                            inc += (value-total_extracellular)
+                                / self.index_to_distance_squared(index),
+                        BoundaryCondition::Value(value) =>
+                            inc += (value-total_extracellular)
+                                / self.index_to_distance_squared(index),
                     });
 
                 boundaries.iter()
                     .for_each(|(index, boundary)| match boundary {
-                        BoundaryCondition::Neumann(value) => inc += value / self.index_to_distance_squared(&index).sqrt(),
-                        BoundaryCondition::Dirichlet(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(&index),
-                        BoundaryCondition::Value(value) => inc += (value-total_extracellular) / self.index_to_distance_squared(&index),
+                        BoundaryCondition::Neumann(value) =>
+                            inc += value
+                                / self.index_to_distance_squared(&index).sqrt(),
+                        BoundaryCondition::Dirichlet(value) =>
+                            inc += (value-total_extracellular)
+                                / self.index_to_distance_squared(&index),
+                        BoundaryCondition::Value(value) =>
+                            inc += (value-total_extracellular)
+                                / self.index_to_distance_squared(&index),
                     });
                 inc = inc.component_mul(&self.diffusion_constant);
 
                 point_sources.iter()
                     .for_each(|(_, value)| inc += value);
 
-                // Also calculate internal reactions. Here it is very simple only given by degradation and production.
-                inc += self.production_rate - self.degradation_rate.component_mul(&total_extracellular);
+                // Also calculate internal reactions. Here it is very simple only given by
+                // degradation and production.
+                inc += self.production_rate
+                    - self.degradation_rate.component_mul(&total_extracellular);
                 Ok(inc)
             }
 
-            fn boundary_condition_to_neighbor_voxel(&self, _neighbor_index: &[i64; $d]) -> Result<BoundaryCondition<SVector<f64, N>>, IndexError> {
+            fn boundary_condition_to_neighbor_voxel(
+                &self,
+                _neighbor_index: &[i64; $d]
+            ) -> Result<BoundaryCondition<SVector<f64, N>>, IndexError> {
                 Ok(BoundaryCondition::Value(self.extracellular_concentrations))
             }
         }
@@ -313,7 +397,11 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
         // Index is an array of size 3 with elements of type usize
         impl<Cel, const N: usize> Domain<Cel, [i64; $d], $voxel_name<N>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-        where Cel: cellular_raza_concepts::Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>>,
+            where Cel: cellular_raza_concepts::Mechanics<
+                SVector<f64, $d>,
+                SVector<f64, $d>,
+                SVector<f64, $d>
+            >,
         {
             fn apply_boundary(&self, cell: &mut Cel) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();
@@ -339,7 +427,10 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                 // If new position is still out of boundary return error
                 for i in 0..$d {
                     if pos[i] < self.min[i] || pos[i] > self.max[i] {
-                        return Err(BoundaryError(format!("Particle is out of domain at position {:?}", pos)));
+                        return Err(BoundaryError(format!(
+                            "Particle is out of domain at position {:?}",
+                            pos
+                        )));
                     }
                 }
                 Ok(())
@@ -405,7 +496,6 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
                     .map(|ind| {
                         let min = [$(self.min[$k] +    ind[$k]  as f64*self.voxel_sizes[$k]),+];
                         let max = [$(self.min[$k] + (1+ind[$k]) as f64*self.voxel_sizes[$k]),+];
-                        // TODO FIXUP we need to insert boundary conditions here as last argument
                         let domain_boundaries = (0..$d)
                             .map(|_| (-1_i64..2_i64))
                             .multi_cartesian_product()
@@ -650,13 +740,22 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 self,
                 n_subdomains: core::num::NonZeroUsize,
                 cells: I,
-            ) -> Result<cellular_raza_concepts::domain_new::DecomposedDomain<Self::SubDomainIndex, $subdomain_name, C>, DecomposeError> {
-                let mut indices = <Self as cellular_raza_concepts::domain_new::Domain<C, $subdomain_name>>::get_all_voxel_indices(&self);
+            ) -> Result<cellular_raza_concepts::domain_new::DecomposedDomain<
+                Self::SubDomainIndex,
+                $subdomain_name,
+                C
+            >, DecomposeError> {
+                let mut indices = <Self as cellular_raza_concepts::domain_new::Domain<
+                    C,
+                    $subdomain_name
+                >>::get_all_voxel_indices(&self);
 
                 let (n, m, average_len);
                 match get_decomp_res(indices.len(), n_subdomains.into()) {
                     Some(res) => (n, m, average_len) = res,
-                    None => return Err(DecomposeError::Generic("Could not find a suiting decomposition".to_owned())),
+                    None => return Err(
+                        DecomposeError::Generic("Could not find a suiting decomposition".to_owned())
+                    ),
                 };
 
                 // TODO optimize this!
@@ -684,7 +783,10 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
                 // We construct all Voxels which are grouped in their according subdomains
                 // Then we construct the subdomain
-                let mut index_subdomain_cells: std::collections::HashMap<Self::SubDomainIndex, (_, Vec<C>)> = ind_n
+                let mut index_subdomain_cells: std::collections::HashMap<
+                    Self::SubDomainIndex,
+                    (_, Vec<C>)
+                > = ind_n
                     .clone()
                     .into_iter()
                     .enumerate()
@@ -731,11 +833,23 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                         let voxel_index = self.get_voxel_index(&cell.pos())?;
                         // Now get the subdomain index of the voxel
                         let subdomain_index = voxel_index_to_subdomain_index.get(&voxel_index).ok_or(
-                            DecomposeError::IndexError(IndexError(format!("Could not cell with position {:?} in domain {:?}", cell.pos(), self)))
+                            DecomposeError::IndexError(IndexError(
+                                format!(
+                                    "Could not cell with position {:?} in domain {:?}",
+                                    cell.pos(),
+                                    self
+                                )
+                            ))
                         )?;
                         // Then add the cell to the subdomains cells.
                         index_subdomain_cells.get_mut(&subdomain_index).ok_or(
-                            DecomposeError::IndexError(IndexError(format!("Could not find subdomain index {:?} internally which should have been there.", subdomain_index)))
+                            DecomposeError::IndexError(IndexError(
+                                format!(
+                                    "Could not find subdomain index {:?} internally which should\
+                                    have been there.",
+                                    subdomain_index
+                                )
+                            ))
                         )?.1.push(cell);
                         Ok(())
 
@@ -760,8 +874,10 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                                 .get(&neighbor_voxel_index)
                                 .and_then(|v| Some(v.clone()))
                                 .ok_or(
-                                    DecomposeError::IndexError(
-                                        IndexError(format!("Could not find neighboring voxel index {:?} internally which should have been initialized.", neighbor_voxel_index))
+                                    DecomposeError::IndexError(IndexError(format!(
+                                        "Could not find neighboring voxel index {:?} internally\
+                                        which should have been initialized.",
+                                        neighbor_voxel_index))
                                 )
                             ))
                             .collect::<Result<Vec<usize>, _>>()
