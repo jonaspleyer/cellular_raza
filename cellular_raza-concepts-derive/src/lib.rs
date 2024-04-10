@@ -7,6 +7,7 @@
 mod cell_agent;
 #[macro_use]
 mod subdomain;
+mod domain;
 
 /// Derive cellular concepts
 ///
@@ -39,4 +40,9 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 #[proc_macro_derive(SubDomain, attributes(Base, SortCells, Mechanics, Force, Reactions))]
 pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     subdomain::derive_subdomain(input)
+}
+
+#[proc_macro_derive(Domain)]
+pub fn derive_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    domain::derive_domain(input)
 }
