@@ -602,21 +602,22 @@ where
                     )
                     .unwrap();
                 let storage_voxels_builder = setup.storage.clone().location(storage_voxels_path);
-                let storage_voxels = StorageManager::<
-                    PlainIndex,
-                    VoxelBox<
-                        Ind,
-                        Pos,
-                        Vel,
-                        For,
-                        Vox,
-                        Cel,
-                        ConcVecExtracellular,
-                        ConcBoundaryExtracellular,
-                        ConcVecIntracellular,
-                    >,
-                >::open_or_create(&storage_voxels_builder, i as u64)
-                .unwrap();
+                let storage_voxels =
+                    StorageManager::<
+                        PlainIndex,
+                        VoxelBox<
+                            Ind,
+                            Pos,
+                            Vel,
+                            For,
+                            Vox,
+                            Cel,
+                            ConcVecExtracellular,
+                            ConcBoundaryExtracellular,
+                            ConcVecIntracellular,
+                        >,
+                    >::open_or_create(&storage_voxels_builder, i as u64)
+                    .unwrap();
 
                 voxels.iter_mut().for_each(|(_, voxelbox)| {
                     (strategies.voxel_definition_strategies)(&mut voxelbox.voxel)
