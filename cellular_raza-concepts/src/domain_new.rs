@@ -263,3 +263,7 @@ pub trait SubDomainReactions {}
 /// ```
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::SubDomain;
+
+// TODO
+#[doc(inline)]
+pub use cellular_raza_concepts_derive::Domain;
