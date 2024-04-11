@@ -466,6 +466,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
     }
 
+    // TODO implement this!
+    if kwargs.aspects.contains(&Reactions) {}
+
     let core_path = &kwargs.core_path;
     let settings = &kwargs.settings;
 
