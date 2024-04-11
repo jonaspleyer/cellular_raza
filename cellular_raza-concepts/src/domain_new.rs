@@ -115,14 +115,22 @@ pub trait SubDomain {
     fn get_all_indices(&self) -> Vec<Self::VoxelIndex>;
 }
 
-/// TODO
-pub trait SubDomainSortCells<C>: SubDomain {
-    /// If given a cell, we can sort this cell into the corresponding Voxel.
-    /// This function is supposed to return the correct voxel index of the cell
-    /// even if this index is inside another [SubDomain].
-    /// This restriction might be lifted in the future but is still
-    /// required now.
-    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError>;
+/// Assign an [Index](SortCells::Index) to a given cell.
+///
+/// This trait is used by the [Domain] and [SubDomain] trait to assign a [Domain::SubDomainIndex]
+/// and [SubDomain::VoxelIndex] respectively.
+///
+/// # [SubDomain]
+/// This trait is supposed to return the correct voxel index of the cell
+/// even if this index is inside another [SubDomain].
+/// This restriction might be lifted in the future but is still
+/// required now.
+pub trait SortCells<C> {
+    /// An index which determines to which next smaller unit the cell should be assigned.
+    type Index;
+
+    /// If given a cell, we can sort this cell into the corresponding sub unit.
+    fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError>;
 }
 
 /// Apply boundary conditions to a cells position and velocity.

@@ -62,8 +62,9 @@ where
     Ci: IntoIterator<Item = C>,
     D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
-    S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
     S::VoxelIndex: Eq + Hash + Ord + Clone,
+    S: cellular_raza_concepts::domain_new::SortCells<C, Index = <S as SubDomain>::VoxelIndex>
+        + cellular_raza_concepts::domain_new::SubDomain,
     A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
@@ -224,10 +225,10 @@ where
     where
         S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
-        S: cellular_raza_concepts::domain_new::SubDomainSortCells<C>,
+        S: cellular_raza_concepts::domain_new::SortCells<C, Index = S::VoxelIndex>,
     {
         for (cell, aux_storage) in new_cells.drain(..) {
-            let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
+            let voxel_index = self.subdomain.get_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];
             let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
                 "Could not find correct voxel for cell".to_owned(),
