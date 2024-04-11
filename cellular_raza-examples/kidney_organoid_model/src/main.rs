@@ -107,12 +107,20 @@ fn main() {
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
 
+    let dx = 1.05 * CELL_MECHANICS_AREA.sqrt();
+    let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
+    let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
-        .map(|n_cell| ModularCell {
+    .map(|n_cell| {
+        let n_x = n_cell as f64 % n_x_max;
+        let n_y = (n_cell as f64 / n_y_max).floor();
+        ModularCell {
             mechanics: VertexMechanics2D::new(
                 [
-                    rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
-                    rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
+                    0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
+                    0.1 * DOMAIN_SIZE_Y + n_y * dx,
+                    // rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
+                    // rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
                 ]
                 .into(),
                 CELL_MECHANICS_AREA,
@@ -169,6 +177,7 @@ fn main() {
                 ]),
             },
             volume: CELL_MECHANICS_AREA, // TODO
+            }
         })
         .collect::<Vec<_>>();
 
