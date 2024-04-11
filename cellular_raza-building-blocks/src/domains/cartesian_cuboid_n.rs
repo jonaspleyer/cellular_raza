@@ -931,7 +931,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             }
         }
 
-        impl<C> cellular_raza_concepts::domain_new::SubDomainSortCells<C> for $subdomain_name
+        impl<C> cellular_raza_concepts::domain_new::SortCells<C> for $subdomain_name
         where
             C: Mechanics<
             SVector<$float_type, $d>,
@@ -940,8 +940,9 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             $float_type,
         >,
         {
+            type Index = [i64; $d];
 
-            fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
+            fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError> {
                 let pos = cell.pos();
                 let mut out = [0; $d];
 
