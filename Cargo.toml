@@ -17,7 +17,6 @@ members = [
     "cellular_raza-examples/kidney_organoid_model",
     "cellular_raza-examples/organoid_turing_growth",
     "cellular_raza-examples/pool_model_pyo3",
-    "cellular_raza-examples/README.md",
     "cellular_raza-examples/template",
     "cellular_raza-examples/ureter_signalling",
 ]
