@@ -15,7 +15,7 @@ trait ReactionsExtra<I, E> {
     ) -> Result<(I, E), CalcError>;
 }
 
-fn calculate_intermediate_velocity(
+fn _calculate_intermediate_velocity(
     u: &ndarray::Array3<f64>,
     h_n: &ndarray::Array3<f64>,
     h_n_min_one: &ndarray::Array3<f64>,
@@ -35,7 +35,9 @@ fn main() {
     let mut velocity_ib_points = ndarray::Array3::<f64>::zeros([n_x, n_y, n_components]);
     let mut i = ndarray::Array3::<f64>::zeros([n_x, n_y, n_components]);
     let mut f_intermediate = i.clone();
+    #[allow(non_snake_case)]
     let mut V = f_intermediate.clone();
+    #[allow(non_snake_case)]
     let mut I = f_intermediate.clone();
     let mut nabla_pressure_intermediate = f_intermediate.clone();
     let mut u_star = f_intermediate.clone();

@@ -114,7 +114,7 @@ fn main() -> Result<(), chili::SimulationError> {
         settings: settings,
         aspects: [Mechanics, Interaction],
     );
-    let storage = chili::run_main!(
+    let _storage = chili::run_main!(
         domain: domain,
         agents: agents,
         settings: settings,
