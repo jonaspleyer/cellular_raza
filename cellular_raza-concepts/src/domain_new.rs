@@ -8,6 +8,10 @@ use crate::errors::{BoundaryError, DecomposeError};
 /// algorithms to split up the computational workload over multiple physical regions.
 /// That's why the domain itself is mostly responsible for being deconstructed
 /// into smaller [SubDomains](SubDomain) which can then be used to numerically solve our system.
+///
+/// This trait can be automatically implemented when the [SortCells], [DomainRngSeed],
+/// and [DomainCreateSubDomains] are satisfied together with a small number of trait bounds to hash
+/// and compare indices.
 pub trait Domain<C, S, Ci = Vec<C>> {
     /// Subdomains can be identified by their unique [SubDomainIndex](Domain::SubDomainIndex).
     /// The backend uses this property to construct a mapping (graph) between subdomains.
@@ -23,7 +27,14 @@ pub trait Domain<C, S, Ci = Vec<C>> {
 
     /// Deconstructs the [Domain] into its respective subdomains.
     ///
-    /// In addition, we provide the initial cells for the simulation
+    /// When using the blanket implementation of this function, the following steps are carried
+    /// out:
+    /// Its functionality consists of the following steps:
+    /// 1. Decompose the Domain into [Subdomains](SubDomain)
+    /// 2. Build a neighbor map between [SubDomains](SubDomain)
+    /// 3. Sort cells to their respective [SubDomain]
+    /// However, to increase performance or avoid trait bounds, one can also opt to implement this
+    /// trait directly.
     fn decompose(
         self,
         n_subdomains: core::num::NonZeroUsize,
@@ -52,6 +63,99 @@ pub trait DomainCreateSubDomains<S> {
         &self,
         n_subdomains: core::num::NonZeroUsize,
     ) -> Result<Vec<(Self::SubDomainIndex, S, Vec<Self::VoxelIndex>)>, DecomposeError>;
+}
+
+impl<C, S, T> Domain<C, S> for T
+where
+    T: DomainRngSeed
+        + DomainCreateSubDomains<S>
+        + SortCells<C, Index = <T as DomainCreateSubDomains<S>>::SubDomainIndex>,
+    S: SubDomain<VoxelIndex = T::VoxelIndex>,
+    T::SubDomainIndex: Clone + core::hash::Hash + Eq,
+    T::VoxelIndex: Clone + core::hash::Hash + Eq,
+{
+    type SubDomainIndex = T::SubDomainIndex;
+    type VoxelIndex = T::VoxelIndex;
+
+    fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
+        todo!()
+    }
+
+    fn decompose(
+        self,
+        n_subdomains: core::num::NonZeroUsize,
+        cells: Vec<C>,
+    ) -> Result<DecomposedDomain<Self::SubDomainIndex, S, C>, DecomposeError> {
+        // Get all subdomains
+        let subdomains = self.create_subdomains(n_subdomains)?;
+
+        // Build a map from a voxel_index to the subdomain_index in which it is
+        let voxel_index_to_subdomain_index: std::collections::HashMap<
+            Self::VoxelIndex,
+            Self::SubDomainIndex,
+        > = subdomains
+            .iter()
+            .map(|(subdomain_index, _, voxel_indices)| {
+                voxel_indices
+                    .into_iter()
+                    .map(|voxel_index| (voxel_index.clone(), subdomain_index.clone()))
+            })
+            .flatten()
+            .collect();
+
+        // Build neighbor map
+        let mut neighbor_map: HashMap<Self::SubDomainIndex, Vec<Self::SubDomainIndex>> =
+            HashMap::new();
+        for (subdomain_index, subdomain, voxel_indices) in subdomains.iter() {
+            for voxel_index in voxel_indices.iter() {
+                for neighbor_voxel_index in subdomain.get_neighbor_voxel_indices(voxel_index) {
+                    let neighbor_subdomain = voxel_index_to_subdomain_index
+                        .get(&neighbor_voxel_index)
+                        .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
+                            "TODO"
+                        ))))?;
+                    let neighbors =
+                        neighbor_map
+                            .get_mut(subdomain_index)
+                            .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
+                                "TODO"
+                            ))))?;
+                    if neighbors.contains(neighbor_subdomain) {
+                        neighbors.push(neighbor_subdomain.clone());
+                    }
+                }
+            }
+        }
+
+        // Sort cells into the subdomains
+        let mut index_to_cells = HashMap::<_, Vec<C>>::new();
+        for cell in cells {
+            let index = self.get_index_of(&cell)?;
+            let existing_cells = index_to_cells.get_mut(&index);
+            match existing_cells {
+                Some(cell_vec) => cell_vec.push(cell),
+                None => {
+                    index_to_cells.insert(index, vec![cell]);
+                }
+            }
+        }
+        let index_subdomain_cells = subdomains
+            .into_iter()
+            .map(|(subdomain_index, subdomain, _)| {
+                let cells = index_to_cells
+                    .remove(&subdomain_index)
+                    .unwrap_or(Vec::new());
+                (subdomain_index, subdomain, cells)
+            })
+            .collect();
+
+        Ok(DecomposedDomain {
+            n_subdomains,
+            index_subdomain_cells,
+            neighbor_map,
+            rng_seed: self.get_rng_seed(),
+        })
+    }
 }
 
 /// Generated by the [decompose](Domain::decompose) method. The backend will know how to
