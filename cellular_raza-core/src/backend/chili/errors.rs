@@ -179,6 +179,36 @@ pub enum HandlingStrategy {
     AbortSimulation,
 }
 
+trait ErrorHandler {
+    fn handle_event(&mut self, value: Result<(), SimulationError>);
+    fn determine_strategy(&self, error: SimulationError) -> HandlingStrategy {
+        HandlingStrategy::AbortSimulation
+    }
+    fn do_continue(&mut self) -> Result<(), SimulationError>;
+}
+
+/// TODO
+pub struct DefaultHandler {
+    errors: Vec<SimulationError>,
+    syncer: super::BarrierSync,
+}
+
+impl ErrorHandler for DefaultHandler {
+    fn handle_event(&mut self, value: Result<(), SimulationError>) {
+        match value {
+            Ok(_) => (),
+            Err(e) => self.errors.push(e),
+        }
+    }
+
+    fn do_continue(&mut self) -> Result<(), SimulationError> {
+        match self.errors.drain(..).next() {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
+    }
+}
+
 #[cfg(feature = "pyo3")]
 impl From<SimulationError> for pyo3::PyErr {
     fn from(value: SimulationError) -> Self {
