@@ -133,15 +133,14 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
 
     fn load_single_element(
         &self,
-        _iteration: u64,
-        _identifier: &Id,
+        iteration: u64,
+        identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
         Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        unimplemented!()
-        /* let iterations = self.get_all_iterations()?;
+        let iterations = self.get_all_iterations()?;
         if iterations.contains(&iteration) {
             // Get the path where the iteration folder is
             let iteration_path = self.get_iteration_path(iteration);
@@ -165,8 +164,8 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
                                 for json_save_format in result.data.into_iter() {
                                     let id1 = bincode::serialize(&json_save_format.identifier)?;
                                     let id2 = bincode::serialize(&identifier)?;
-                                    if id1==id2 {
-                                        return Ok(Some(json_save_format.element))
+                                    if id1 == id2 {
+                                        return Ok(Some(json_save_format.element));
                                     }
                                 }
                             }
@@ -179,7 +178,7 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
             return Ok(None);
         } else {
             return Ok(None);
-        }*/
+        }
     }
 
     fn load_all_elements_at_iteration(
