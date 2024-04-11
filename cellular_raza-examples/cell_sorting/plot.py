@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import multiprocessing as mp
 import itertools
+import tqdm
 
 def get_all_iterations(path: Path):
     return [(int(iter_dir.split("/")[-1]), iter_dir) for iter_dir in glob.glob(str(path / "cells/json/*"))]
@@ -64,10 +65,20 @@ def plot_spheres(iteration: int, path: Path, opath = None):
     plotter.close()
     return img
 
+def __plot_spheres_helper(args):
+    plot_spheres(*args)
+
 def plot_all_spheres(path: Path):
     iterations = [it[0] for it in get_all_iterations(path)]
     pool = mp.Pool()
-    pool.starmap(plot_spheres, zip(iterations, itertools.repeat(path)))
+    list(
+        tqdm.tqdm(
+            pool.imap_unordered(
+                __plot_spheres_helper,
+                zip(iterations, itertools.repeat(path))
+            ),
+            total=len(iterations)
+    ))
 
 if __name__ == "__main__":
     last_save_path = get_last_save_path(Path("out/cell_sorting"))
