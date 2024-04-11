@@ -891,7 +891,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                     .collect::<Result<_, DecomposeError>>()?;
 
                 Ok(cellular_raza_concepts::domain_new::DecomposedDomain {
-                    n_subdomains: n+m,
+                    n_subdomains: (n+m).try_into().unwrap_or(1.try_into().unwrap()),
                     index_subdomain_cells,
                     neighbor_map,
                     rng_seed: self.rng_seed.clone(),

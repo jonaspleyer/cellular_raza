@@ -42,7 +42,7 @@ pub struct DecomposedDomain<I, S, C> {
     /// Such behaviour can result from not being able to construct as many subdomains as desired.
     /// Note that this function will attempt to construct more [SubDomains](SubDomain)
     /// than available CPUs if given a larger number.
-    pub n_subdomains: usize,
+    pub n_subdomains: core::num::NonZeroUsize,
     /// Vector containing properties of individual [SubDomains](SubDomain).
     /// Entries are [Domain::SubDomainIndex], [SubDomain], and a vector of cells.
     pub index_subdomain_cells: Vec<(I, S, Vec<C>)>,
