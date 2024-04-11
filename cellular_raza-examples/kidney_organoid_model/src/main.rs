@@ -185,7 +185,8 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        Storage: StorageBuilder::new().location("out/kidney_organoid_model"),
+        Storage: StorageBuilder::new()
+            .location("out/kidney_organoid_model"),
     );
 
     let strategies = Strategies {

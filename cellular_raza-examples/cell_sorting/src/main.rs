@@ -153,9 +153,7 @@ fn main() -> Result<(), SimulationError> {
         N_TIMES,
         SAVE_INTERVAL,
     )?;
-    let storage_builder = StorageBuilder::new()
-        .location("out/cell_sorting")
-        .priority([StorageOption::SerdeJson]);
+    let storage_builder = StorageBuilder::new().location("out/cell_sorting");
 
     let settings = cellular_raza::core::backend::chili::Settings {
         n_threads: N_THREADS.try_into().unwrap(),

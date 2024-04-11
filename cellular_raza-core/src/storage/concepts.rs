@@ -290,7 +290,7 @@ impl StorageBuilder {
     pub fn new() -> Self {
         Self {
             location: "./out".into(),
-            priority: UniqueVec::new(),
+            priority: UniqueVec::from_iter([StorageOption::SerdeJson]).0,
             suffix: "".into(),
             #[cfg(feature = "timestamp")]
             add_date: true,
