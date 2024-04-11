@@ -19,9 +19,9 @@ pub const CELL_RADIUS: f64 = 6.0;
 pub const CELL_MECHANICS_RELATIVE_INTERACTION_RANGE: f64 = 1.5;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 2.0;
 
-pub const DT: f64 = 0.25;
-pub const N_TIMES: u64 = 3_000;
-pub const SAVE_INTERVAL: u64 = 10;
+pub const DT: f64 = 0.2;
+pub const N_TIMES: u64 = 10_000;
+pub const SAVE_INTERVAL: u64 = 20;
 
 pub const N_THREADS: usize = 4;
 
