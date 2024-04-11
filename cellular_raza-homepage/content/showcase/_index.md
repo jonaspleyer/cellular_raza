@@ -14,6 +14,6 @@ title: Showcase
         card link="cell-sorting"
         title="3D Cell-Sorting"
         image="cell-sorting/cell_sorting_end.png"
-        subtitle="Spatial version of Metabolism-Integrated Bacterial Model"
+        subtitle="Low-parametric autonomous cell-sorting in 3 dimensions"
     >}}
 {{< /cards >}}
