@@ -4,15 +4,15 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 // Number of cells
-pub const N_CELLS: usize = 100;
+pub const N_CELLS: usize = 1_720;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
-pub const CELL_MECHANICS_SPRING_TENSION: f64 = 4.0;
-pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 2.0;
+pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
+pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
-pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 6.0;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 2.5;
+pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 3.0;
 pub const CELL_MECHANICS_DAMPENING_CONSTANT: f64 = 1.0;
 
 // Reaction parameters of the cell
@@ -38,8 +38,8 @@ pub const CELL_CYCLE_FOOD_DEATH_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.4;
 pub const CELL_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.6;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 400.0;
-pub const DOMAIN_SIZE_Y: f64 = 400.0;
+pub const DOMAIN_SIZE_X: f64 = 1_200.0;
+pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
 
 // Where will the cells be placed initially
 // Define a polygon by points
@@ -59,13 +59,13 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 0.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 60.0;
 
 // Time parameters
-pub const N_TIMES: usize = 50_001;
+pub const N_TIMES: usize = 100_001;
 pub const DT: f64 = 0.02;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 4;
+pub const N_THREADS: usize = 40;
 
 mod cell_properties;
 mod plotting;
