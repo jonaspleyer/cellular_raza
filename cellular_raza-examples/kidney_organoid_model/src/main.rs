@@ -129,6 +129,7 @@ fn main() {
                 },
                 InsideInteraction {
                     potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    average_radius: CELL_MECHANICS_AREA.sqrt(),
                 },
             ),
             interaction_extracellular: GradientSensing {},

@@ -33,6 +33,7 @@ pub struct OutsideInteraction {
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct InsideInteraction {
     pub potential_strength: f64,
+    pub average_radius: f64,
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
@@ -79,9 +80,10 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
     ) -> Result<Vector2<f64>, CalcError> {
         // Calculate direction between own and other point
         let z = ext_pos - own_pos;
+        let r = z.norm();
         let dir = z.normalize();
 
-        Ok(self.potential_strength * dir)
+        Ok(self.potential_strength * dir / (0.5 + 0.5 * r / self.average_radius))
     }
 
     fn get_interaction_information(&self) -> InteractionInformation {}
