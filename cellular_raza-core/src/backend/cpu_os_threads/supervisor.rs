@@ -533,7 +533,6 @@ where
         cell_plotting_func: Cpf,
         voxel_plotting_func: Vpf,
         domain_plotting_func: Dpf,
-        progress_bar: Option<kdam::Bar>,
     ) -> Result<(), SimulationError>
     where
         Dpf: for<'a> Fn(
@@ -594,13 +593,6 @@ where
             .collect::<Result<(), DrawingError>>()?;
 
         chart.present()?;
-
-        match progress_bar {
-            Some(mut bar) => {
-                bar.update(1)?;
-            }
-            None => (),
-        }
         Ok(())
     }
 
@@ -618,7 +610,6 @@ where
                 Cel::plot_self_bitmap,
                 Vox::plot_self_bitmap,
                 Dom::create_bitmap_root,
-                None,
             ),
             // ImageType::Svg => self.plot_spatial_at_iteration_with_functions(iteration, C::plot_self::<BitMapBackend>, V::plot_self, D::create_svg_root),
         }
@@ -660,7 +651,6 @@ where
             cell_plotting_func,
             voxel_plotting_func,
             domain_plotting_func,
-            None,
         )
     }
 
@@ -693,7 +683,6 @@ where
             cell_plotting_func,
             voxel_plotting_func,
             Dom::create_bitmap_root,
-            None,
         )
     }
 
@@ -721,7 +710,6 @@ where
                 cell_plotting_func,
                 Vox::plot_self_bitmap,
                 Dom::create_bitmap_root,
-                None,
             ),
         }
     }
@@ -741,11 +729,10 @@ where
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn build_progress_bar(&self, n_iterations: u64) -> Result<Option<kdam::Bar>, SimulationError> {
-        let mut progress_bar = None;
-        if self.plotting_config.show_progressbar {
-            progress_bar = Some(construct_progress_bar(n_iterations as usize)?);
+        match self.plotting_config.show_progressbar {
+            true => Ok(Some(construct_progress_bar(n_iterations as usize)?)),
+            false => Ok(None),
         }
-        Ok(progress_bar)
     }
 
     /// Plots a spatial image of the simulation result for all iterations with custom functions
@@ -796,6 +783,7 @@ where
 
         // Generate all images by calling the pool
         pool.install(move || -> Result<(), SimulationError> {
+            use kdam::TqdmParallelIterator;
             use rayon::prelude::*;
             let all_iterations = self.storage_voxels.get_all_iterations()?;
             let progress_bar = self.build_progress_bar(all_iterations.len() as u64)?;
@@ -803,18 +791,29 @@ where
                 Some(_) => println!("Generating Images"),
                 None => (),
             }
-            all_iterations
-                .into_par_iter()
-                .map(|iteration| {
-                    self.plot_spatial_at_iteration_with_functions(
-                        iteration,
-                        &cell_plotting_func,
-                        &voxel_plotting_func,
-                        &domain_plotting_func,
-                        progress_bar.clone(),
-                    )
-                })
-                .collect::<Result<(), SimulationError>>()?;
+            let map_func = |iteration: u64| -> Result<(), SimulationError> {
+                self.plot_spatial_at_iteration_with_functions(
+                    iteration,
+                    &cell_plotting_func,
+                    &voxel_plotting_func,
+                    &domain_plotting_func,
+                )
+            };
+            match progress_bar {
+                Some(bar) => {
+                    all_iterations
+                        .into_par_iter()
+                        .tqdm_with_bar(bar)
+                        .map(move |iteration| map_func(iteration))
+                        .collect::<Result<(), SimulationError>>()?;
+                }
+                None => {
+                    all_iterations
+                        .into_par_iter()
+                        .map(|iteration| map_func(iteration))
+                        .collect::<Result<(), SimulationError>>()?;
+                }
+            }
 
             Ok(())
         })
