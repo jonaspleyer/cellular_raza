@@ -122,7 +122,7 @@ impl<Id, Element, const TEMP: bool> StorageInterface<Id, Element>
         identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize,
+        Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         let tree = match self.open_tree(iteration)? {

@@ -524,7 +524,7 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize,
+        Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         for priority in self.storage_priority.iter() {
@@ -618,7 +618,7 @@ pub trait StorageInterface<Id, Element> {
         identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize,
+        Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>;
 
     /// Loads the elements history, meaning every occurrence of the element in the storage.
@@ -629,7 +629,7 @@ pub trait StorageInterface<Id, Element> {
         identifier: &Id,
     ) -> Result<Option<HashMap<u64, Element>>, StorageError>
     where
-        Id: Serialize,
+        Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         let results = self

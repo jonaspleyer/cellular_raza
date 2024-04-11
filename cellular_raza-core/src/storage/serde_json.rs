@@ -137,7 +137,7 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         _identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize,
+        Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         unimplemented!()
