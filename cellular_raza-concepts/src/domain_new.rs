@@ -170,6 +170,7 @@ pub struct DecomposedDomain<I, S, C> {
     pub n_subdomains: core::num::NonZeroUsize,
     /// Vector containing properties of individual [SubDomains](SubDomain).
     /// Entries are [Domain::SubDomainIndex], [SubDomain], and a vector of cells.
+    // TODO can be use another iterator than Vec<(I, S, Vec<C>)>?
     pub index_subdomain_cells: Vec<(I, S, Vec<C>)>,
     /// Encapsulates how the subdomains are linked to each other.
     /// Eg. two subdomains without any boundary will never appear in each others collection
