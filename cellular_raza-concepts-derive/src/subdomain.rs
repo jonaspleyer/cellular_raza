@@ -194,20 +194,22 @@ impl SubDomainImplementer {
             let tokens = quote::quote!(#cell);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SubDomainSortCells, tokens);
+                append_where_clause!(struct_where_clause, field_type, SortCells, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
-                impl #impl_generics SubDomainSortCells<#cell>
+                impl #impl_generics SortCells<#cell>
                 for #struct_name #struct_ty_generics #where_clause {
-                    fn get_voxel_index_of(
+                    type Index = <#field_type as SortCells>::Index;
+
+                    fn get_index_of(
                         &self,
                         cell: &#cell
-                    ) -> Result<Self::VoxelIndex, BoundaryError> {
-                        <#field_type as SubDomainSortCells<#cell>>::get_voxel_index_of(
+                    ) -> Result<Self::Index, BoundaryError> {
+                        <#field_type as SortCells<#cell>>::get_index_of(
                             &self.#field_name,
                             cell,
                         )
