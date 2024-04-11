@@ -48,7 +48,7 @@ impl<C, D> SimulationSetup<C, D> {
         self.domain.decompose(n_subdomains, self.cells)
     }
 
-    // TODO add a funtion which will automatically generate the correct number of subdomains
+    // TODO add a function which will automatically generate the correct number of subdomains
     // and simply checks beforehand how many cpu threads are available
     /// Similar to [decompose](SimulationSetup::decompose) method but does not require to specify
     /// how many subdomains should be chosen. It will attempt to retrieve resources available to the system
