@@ -10,6 +10,8 @@ mod serde_json;
 /// Save elements in the embedded database [sled].
 mod sled_database;
 
+mod test;
+
 pub use concepts::*;
 pub use quick_xml::*;
 pub use serde_json::*;
