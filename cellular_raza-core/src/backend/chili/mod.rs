@@ -32,6 +32,7 @@ mod simulation_flow;
 mod solvers;
 mod update_cycle;
 mod update_mechanics;
+mod update_reactions;
 
 pub use aux_storage::*;
 pub use datastructures::*;
@@ -43,3 +44,4 @@ pub use simulation_flow::*;
 pub use solvers::*;
 pub use update_cycle::*;
 pub use update_mechanics::*;
+pub use update_reactions::*;
