@@ -1203,7 +1203,6 @@ where
             ConcVecIntracellular,
         >: Clone + Send + Sync + 'static,
     {
-        use cellular_raza_concepts::Id;
         let voxels = self.voxels.iter().map(|(_, voxel)| (voxel.ref_id(), voxel));
 
         self.storage_voxels.store_batch_elements(*iteration, voxels)

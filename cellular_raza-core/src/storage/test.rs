@@ -1,8 +1,6 @@
-use crate::storage::*;
-
 #[test]
 fn store_load_json() -> Result<(), Box<dyn std::error::Error>> {
-    use crate::storage::StorageManager;
+    use crate::storage::*;
     let builder = StorageBuilder::new().priority([StorageOption::SerdeJson]);
     let storage_manager =
         StorageManager::<usize, BatchSaveFormat<usize, f64>>::open_or_create(&builder, 0)?;

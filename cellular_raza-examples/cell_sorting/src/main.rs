@@ -1,5 +1,4 @@
 use cellular_raza::core::backend::chili::*;
-use cellular_raza::core::storage::StorageOption;
 use cellular_raza::prelude::{
     CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, NewtonDamped3D, RngError,
     StorageBuilder,

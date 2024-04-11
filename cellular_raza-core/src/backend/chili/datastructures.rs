@@ -1,5 +1,4 @@
 use cellular_raza_concepts::domain_new::SubDomain;
-use cellular_raza_concepts::*;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "tracing")]
@@ -166,6 +165,7 @@ where
             let syncer = syncers.remove(&subdomain_plain_index).ok_or(BoundaryError(
                 "Index was not present in subdomain map".into(),
             ))?;
+            use cellular_raza_concepts::BoundaryError;
             let communicator =
                 communicators
                     .remove(&subdomain_plain_index)
@@ -221,12 +221,13 @@ where
     // TODO this is not a boundary error!
     /// Allows insertion of cells into the subdomain.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), BoundaryError>
+    pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), cellular_raza_concepts::BoundaryError>
     where
         S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
         S: cellular_raza_concepts::domain_new::SortCells<C, Index = S::VoxelIndex>,
     {
+        use cellular_raza_concepts::BoundaryError;
         for (cell, aux_storage) in new_cells.drain(..) {
             let voxel_index = self.subdomain.get_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];

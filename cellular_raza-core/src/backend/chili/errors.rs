@@ -181,7 +181,7 @@ pub enum HandlingStrategy {
 
 trait ErrorHandler {
     fn handle_event(&mut self, value: Result<(), SimulationError>);
-    fn determine_strategy(&self, error: SimulationError) -> HandlingStrategy {
+    fn determine_strategy(&self, _error: SimulationError) -> HandlingStrategy {
         HandlingStrategy::AbortSimulation
     }
     fn do_continue(&mut self) -> Result<(), SimulationError>;
