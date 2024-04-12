@@ -51,6 +51,7 @@ def plot_spheres(iteration: int, path: Path, opath = None):
     spheres = get_spheres(iteration, path)
 
     plotter = pv.Plotter(off_screen=True)
+    plotter.set_background([100, 100, 100])
     plotter.add_mesh(
         spheres,
         scalars="species",
@@ -58,6 +59,8 @@ def plot_spheres(iteration: int, path: Path, opath = None):
         cmap=["blue", "red"],
         show_scalar_bar=False
     )
+    plotter.enable_ssao(radius=12)
+    plotter.enable_anti_aliasing()
     if opath == None:
         opath = path / "images/{:010}.png".format(iteration)
         opath.parent.mkdir(parents=True, exist_ok=True)
