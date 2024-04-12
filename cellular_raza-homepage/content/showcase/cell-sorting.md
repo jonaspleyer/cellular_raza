@@ -15,7 +15,7 @@ We assume that cells are spherical objects which interact via force potentials.
 
 $$\begin{align}
     \sigma &= \frac{r}{R_i + R_j}\\\\
-    V(r) &= V_0 \left(\frac{3}{\sigma^3} - \frac{1}{\sigma}\right)
+    V(r) &= V_0 \left(\frac{1}{3\sigma^3} - \frac{1}{\sigma}\right)
 \end{align}$$
 
 The values $R_i,R_j$ are the radii of the cells ($i\neq j$) interacting with each other.
@@ -39,7 +39,7 @@ cutoff $\xi$ for the interaction where the resulting force is identical to zero.
 
 $$
     V(r) = \begin{cases}
-        V_0 \left(\frac{3}{\sigma^3} - \frac{1}{\sigma}\right) &\text{ if } r \leq \xi \\\\
+        V_0 \left(\frac{1}{3\sigma^3} - \frac{1}{\sigma}\right) &\text{ if } r \leq \xi \\\\
         0 &\text{ else }
     \end{cases}
 $$
