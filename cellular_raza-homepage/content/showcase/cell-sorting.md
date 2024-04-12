@@ -31,8 +31,10 @@ where the first term is the usual force term $F = - \nabla V$ obtained by differ
 given potential and the second term is a damping term which arises due to the cells being immersed
 inside a viscuous fluid.
 
+{{< callout type="info" >}}
 Note that we opted to omit the mass factor on the left-hand side of the previous equation.
 This means, that units of $V_0$ and $\lambda$ are changing and they incorporate this property.
+{{< /callout >}}
 
 We can assume that interactions between cells are restricted to close ranges and thus enforce a
 cutoff $\xi$ for the interaction where the resulting force is identical to zero.
