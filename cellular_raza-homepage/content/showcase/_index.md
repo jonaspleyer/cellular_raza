@@ -7,7 +7,7 @@ title: Showcase
     {{<
         card link="autophagy-protein-clustering"
         title="Autophagy Protein Clustering"
-        image="autophagy-protein-clustering/"
+        image="/showcase/autophagy-protein-clustering/with-avidity/snapshot_00040000.png"
         subtitle="ATG11 and ATG19 Particles phase-separate and form Clusters on the surface of a Cargo"
     >}}
     {{<
