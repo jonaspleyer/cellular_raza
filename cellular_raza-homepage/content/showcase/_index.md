@@ -5,6 +5,12 @@ title: Showcase
 
 {{< cards >}}
     {{<
+        card link="autophagy-protein-clustering"
+        title="Autophagy Protein Clustering"
+        image="autophagy-protein-clustering/"
+        subtitle="ATG11 and ATG19 Particles phase-separate and form Clusters on the surface of a Cargo"
+    >}}
+    {{<
         card link="free-motile-vertex-model"
         title="Free Motile Vertex Model"
         image="/showcase/free-motile-vertex-model/cells_at_iter_0000100000.png"
