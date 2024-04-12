@@ -111,72 +111,72 @@ fn main() {
     let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
     let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
-    .map(|n_cell| {
-        let n_x = n_cell as f64 % n_x_max;
-        let n_y = (n_cell as f64 / n_y_max).floor();
-        ModularCell {
-            mechanics: VertexMechanics2D::new(
-                [
-                    0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
-                    0.1 * DOMAIN_SIZE_Y + n_y * dx,
-                    // rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
-                    // rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
-                ]
-                .into(),
-                CELL_MECHANICS_AREA,
-                rng.gen_range(0.0..2.0*std::f64::consts::PI),
-                CELL_MECHANICS_SPRING_TENSION,
-                CELL_MECHANICS_CENTRAL_PRESSURE,
-                CELL_MECHANICS_DAMPENING_CONSTANT,
-                None,
-            ),
-            interaction: VertexDerivedInteraction::from_two_forces(
-                OutsideInteraction {
-                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+        .map(|n_cell| {
+            let n_x = n_cell as f64 % n_x_max;
+            let n_y = (n_cell as f64 / n_y_max).floor();
+            ModularCell {
+                mechanics: VertexMechanics2D::new(
+                    [
+                        0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
+                        0.1 * DOMAIN_SIZE_Y + n_y * dx,
+                        // rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
+                        // rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
+                    ]
+                    .into(),
+                    CELL_MECHANICS_AREA,
+                    rng.gen_range(0.0..2.0 * std::f64::consts::PI),
+                    CELL_MECHANICS_SPRING_TENSION,
+                    CELL_MECHANICS_CENTRAL_PRESSURE,
+                    CELL_MECHANICS_DAMPENING_CONSTANT,
+                    None,
+                ),
+                interaction: VertexDerivedInteraction::from_two_forces(
+                    OutsideInteraction {
+                        potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                        interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+                    },
+                    InsideInteraction {
+                        potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
+                        average_radius: CELL_MECHANICS_AREA.sqrt(),
+                    },
+                ),
+                interaction_extracellular: GradientSensing {},
+                cycle: OwnCycle::new(
+                    n_cell as u64,
+                    rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
+                    CELL_MECHANICS_MAXIMUM_AREA * rng.gen_range(0.9..1.0),
+                    CELL_CYCLE_GROWTH_RATE,
+                    CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
+                    CELL_CYCLE_FOOD_DEATH_THRESHOLD,
+                    CELL_CYCLE_FOOD_DIVISION_THRESHOLD,
+                ),
+                cellular_reactions: OwnReactions {
+                    intracellular_concentrations: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION,
+                        CELL_FOOD_INITIAL_CONCENTRATION,
+                    ]),
+                    intracellular_concentrations_saturation_level: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
+                        CELL_FOOD_SATURATION,
+                    ]),
+                    production_term: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_PRODUCTION_RATE,
+                        -CELL_FOOD_CONSUMPTION_RATE,
+                    ]),
+                    degradation_rate: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
+                        0.0,
+                    ]),
+                    secretion_rate: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_SECRETION_RATE,
+                        CELL_FOOD_SECRETION_RATE,
+                    ]),
+                    uptake_rate: ReactionVector::from([
+                        CELL_SPATIAL_SIGNALLING_MOLECULE_UPTAKE_RATE,
+                        CELL_FOOD_UPTAKE_RATE,
+                    ]),
                 },
-                InsideInteraction {
-                    potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    average_radius: CELL_MECHANICS_AREA.sqrt(),
-                },
-            ),
-            interaction_extracellular: GradientSensing {},
-            cycle: OwnCycle::new(
-                n_cell as u64,
-                rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
-                CELL_MECHANICS_MAXIMUM_AREA * rng.gen_range(0.9..1.0),
-                CELL_CYCLE_GROWTH_RATE,
-                CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
-                CELL_CYCLE_FOOD_DEATH_THRESHOLD,
-                CELL_CYCLE_FOOD_DIVISION_THRESHOLD,
-            ),
-            cellular_reactions: OwnReactions {
-                intracellular_concentrations: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION,
-                    CELL_FOOD_INITIAL_CONCENTRATION,
-                ]),
-                intracellular_concentrations_saturation_level: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
-                    CELL_FOOD_SATURATION,
-                ]),
-                production_term: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_PRODUCTION_RATE,
-                    -CELL_FOOD_CONSUMPTION_RATE,
-                ]),
-                degradation_rate: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
-                    0.0,
-                ]),
-                secretion_rate: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_SECRETION_RATE,
-                    CELL_FOOD_SECRETION_RATE,
-                ]),
-                uptake_rate: ReactionVector::from([
-                    CELL_SPATIAL_SIGNALLING_MOLECULE_UPTAKE_RATE,
-                    CELL_FOOD_UPTAKE_RATE,
-                ]),
-            },
-            volume: CELL_MECHANICS_AREA, // TODO
+                volume: CELL_MECHANICS_AREA, // TODO
             }
         })
         .collect::<Vec<_>>();
