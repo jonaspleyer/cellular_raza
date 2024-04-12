@@ -124,7 +124,7 @@ fn main() {
                 ]
                 .into(),
                 CELL_MECHANICS_AREA,
-                0.0,
+                rng.gen_range(0.0..2.0*std::f64::consts::PI),
                 CELL_MECHANICS_SPRING_TENSION,
                 CELL_MECHANICS_CENTRAL_PRESSURE,
                 CELL_MECHANICS_DAMPENING_CONSTANT,
