@@ -58,7 +58,56 @@ impl From<DomainParser> for DomainImplementer {
 
 impl DomainImplementer {
     fn implement_base(&self) -> proc_macro2::TokenStream {
-        proc_macro2::TokenStream::new()
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.base {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(cell, "__cr_private_Cell");
+            new_ident!(subdomain, "__cr_private_SubDomain");
+            new_ident!(cell_iterator, "__cr_private_CellIterator");
+            let tokens = quote::quote!(#cell, #subdomain, #cell_iterator);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Domain, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, cell);
+            push_ident!(generics, subdomain);
+            push_ident!(generics, cell_iterator);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    type SubDomainIndex = <#field_type as Domain<#tokens>>::SubDomainIndex;
+                    type VoxelIndex = <#field_type as Domain<#tokens>>::VoxelIndex;
+
+                    fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
+                        <#field_type as Domain<#tokens>>::get_all_voxel_indices(&self.#field_name)
+                    }
+
+                    fn decompose(
+                        self,
+                        n_subdomains: core::num::NonZeroUsize,
+                        cells: #cell_iterator
+                    ) -> Result<
+                        DecomposedDomain<Self::SubDomainIndex, #subdomain, #cell>,
+                        DecomposeError
+                    > {
+                        <#field_type as Domain<#tokens>>::decompose(
+                            self.#field_name,
+                            n_subdomains,
+                            cells
+                        )
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 
     fn implement_sort_cells(&self) -> proc_macro2::TokenStream {
