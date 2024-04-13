@@ -62,7 +62,10 @@ pub trait DomainCreateSubDomains<S> {
     fn create_subdomains(
         &self,
         n_subdomains: core::num::NonZeroUsize,
-    ) -> Result<Vec<(Self::SubDomainIndex, S, Vec<Self::VoxelIndex>)>, DecomposeError>;
+    ) -> Result<
+        impl IntoIterator<Item = (Self::SubDomainIndex, S, Vec<Self::VoxelIndex>)>,
+        DecomposeError,
+    >;
 }
 
 impl<C, S, T> Domain<C, S> for T
@@ -90,42 +93,16 @@ where
         let subdomains = self.create_subdomains(n_subdomains)?;
 
         // Build a map from a voxel_index to the subdomain_index in which it is
-        let voxel_index_to_subdomain_index: std::collections::HashMap<
-            Self::VoxelIndex,
-            Self::SubDomainIndex,
-        > = subdomains
-            .iter()
-            .map(|(subdomain_index, _, voxel_indices)| {
-                voxel_indices
-                    .into_iter()
-                    .map(|voxel_index| (voxel_index.clone(), subdomain_index.clone()))
-            })
-            .flatten()
-            .collect();
+        let mut voxel_index_to_subdomain_index =
+            std::collections::HashMap::<Self::VoxelIndex, Self::SubDomainIndex>::new();
 
         // Build neighbor map
         let mut neighbor_map: HashMap<Self::SubDomainIndex, Vec<Self::SubDomainIndex>> =
             HashMap::new();
-        for (subdomain_index, subdomain, voxel_indices) in subdomains.iter() {
-            for voxel_index in voxel_indices.iter() {
-                for neighbor_voxel_index in subdomain.get_neighbor_voxel_indices(voxel_index) {
-                    let neighbor_subdomain = voxel_index_to_subdomain_index
-                        .get(&neighbor_voxel_index)
-                        .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
-                            "TODO"
-                        ))))?;
-                    let neighbors =
-                        neighbor_map
-                            .get_mut(subdomain_index)
-                            .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
-                                "TODO"
-                            ))))?;
-                    if neighbors.contains(neighbor_subdomain) {
-                        neighbors.push(neighbor_subdomain.clone());
-                    }
-                }
-            }
-        }
+
+        // Build index_subdomain_cells
+        let mut index_subdomain_cells = Vec::new();
+
 
         // Sort cells into the subdomains
         let mut index_to_cells = HashMap::<_, Vec<C>>::new();
@@ -139,15 +116,32 @@ where
                 }
             }
         }
-        let index_subdomain_cells = subdomains
-            .into_iter()
-            .map(|(subdomain_index, subdomain, _)| {
-                let cells = index_to_cells
-                    .remove(&subdomain_index)
-                    .unwrap_or(Vec::new());
-                (subdomain_index, subdomain, cells)
-            })
-            .collect();
+
+        // Fill both with values
+        for (subdomain_index, subdomain, voxel_indices) in subdomains.into_iter() {
+            for voxel_index in voxel_indices.into_iter() {
+                voxel_index_to_subdomain_index.insert(voxel_index.clone(), subdomain_index.clone());
+                for neighbor_voxel_index in subdomain.get_neighbor_voxel_indices(&voxel_index) {
+                    let neighbor_subdomain = voxel_index_to_subdomain_index
+                        .get(&neighbor_voxel_index)
+                        .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
+                            "TODO"
+                        ))))?;
+                    let neighbors = neighbor_map.get_mut(&subdomain_index).ok_or(
+                        DecomposeError::IndexError(crate::IndexError(format!("TODO"))),
+                    )?;
+                    if neighbors.contains(neighbor_subdomain) {
+                        neighbors.push(neighbor_subdomain.clone());
+                    }
+                }
+            }
+
+            // Obtain cells which are in this subdomain
+            let cells = index_to_cells
+                .remove(&subdomain_index)
+                .unwrap_or(Vec::new());
+            index_subdomain_cells.push((subdomain_index, subdomain, cells));
+        }
 
         Ok(DecomposedDomain {
             n_subdomains,
