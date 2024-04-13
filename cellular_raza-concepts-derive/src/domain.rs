@@ -162,7 +162,46 @@ impl DomainImplementer {
     }
 
     fn implement_create_subdomains(&self) -> proc_macro2::TokenStream {
-        proc_macro2::TokenStream::new()
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.create_subdomains {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(subdomain, "__cr_private_SubDomain");
+            let tokens = quote::quote!(#subdomain);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Domain, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, subdomain);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics CreateSubDomains<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    type SubDomainIndex = <#field_type as CreateSubDomains<#tokens>>::SubDomainIndex;
+                    type VoxelIndex = <#field_type as CreateSubDomains<#tokens>>::VoxelIndex;
+
+                    fn create_subdomains(
+                        &self,
+                        n_subdomains: core::num::NonZeroUsize,
+                    ) -> Result<
+                        impl IntoIterator<Item = (Self::SubDOmainIndex, S, Vec<Self::VoxelIndex>)>,
+                        DecomposeError,
+                    > {
+                        <#field_type as CreateSubDomains<#tokens>>::create_subdomains(
+                            &self.#field_name,
+                            n_subdomains,
+                        )
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 }
 
