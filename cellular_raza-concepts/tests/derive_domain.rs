@@ -1,5 +1,5 @@
 use cellular_raza_concepts::domain_new::*;
-use cellular_raza_concepts::DecomposeError;
+use cellular_raza_concepts::{BoundaryError, DecomposeError};
 
 #[allow(unused)]
 struct Agent {
@@ -76,6 +76,85 @@ fn derive_domain() {
             x_max: 3001.0,
         },
     };
-    let voxel_indices = domain.get_all_voxel_indices();
-    assert_eq!(voxel_indices, vec![1]);
+    let decomposed_domain = domain.decompose(2.try_into().unwrap(), vec![]).unwrap();
+    assert_eq!(decomposed_domain.rng_seed, 1);
+}
+
+impl SortCells<Agent> for MyDomain {
+    type Index = u8;
+
+    fn get_index_of(
+        &self,
+        _cell: &Agent,
+    ) -> Result<Self::Index, cellular_raza_concepts::BoundaryError> {
+        Ok(1)
+    }
+}
+
+#[derive(Domain)]
+struct DerivedDomain2 {
+    #[SortCells]
+    my_domain: MyDomain,
+}
+
+#[test]
+fn derive_sort_cells() {
+    let domain = DerivedDomain2 {
+        my_domain: MyDomain {
+            x_min: 0.0,
+            x_max: 3000000.0,
+        },
+    };
+    let agent = Agent { pos: 3.0 };
+    let index = domain.get_index_of(&agent);
+    assert!(index.is_ok_and(|x| x == 1));
+}
+
+impl DomainRngSeed for MyDomain {
+    fn get_rng_seed(&self) -> u64 {
+        0
+    }
+}
+
+#[derive(Domain)]
+struct DerivedDomain3 {
+    #[DomainRngSeed]
+    my_domain: MyDomain,
+}
+
+#[test]
+fn derive_rng_seed() {
+    let domain = DerivedDomain3 {
+        my_domain: MyDomain {
+            x_min: -3.0,
+            x_max: 0.01,
+        },
+    };
+    assert_eq!(0, domain.get_rng_seed());
+}
+
+impl DomainCreateSubDomains<MySubDomain> for MyDomain {
+    type VoxelIndex = u8;
+    type SubDomainIndex = usize;
+
+    fn create_subdomains(
+        &self,
+        n_subdomains: core::num::NonZeroUsize,
+    ) -> Result<
+        impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain, Vec<Self::VoxelIndex>)>,
+        DecomposeError,
+    > {
+        let dx = (self.x_max - self.x_min)
+            / <usize as From<core::num::NonZeroUsize>>::from(n_subdomains) as f32;
+        Ok((0..n_subdomains.into()).map(move |n| {
+            (
+                0,
+                MySubDomain {
+                    x_min: self.x_min.clone() + n as f32 * dx,
+                    x_max: self.x_min.clone() + (n + 1) as f32 * dx,
+                },
+                Vec::new(),
+            )
+        }))
+    }
 }
