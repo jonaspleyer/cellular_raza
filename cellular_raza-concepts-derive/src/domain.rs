@@ -326,6 +326,6 @@ pub fn derive_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     res.extend(domain_implementer.implement_sort_cells());
     res.extend(domain_implementer.implement_rng_seed());
     res.extend(domain_implementer.implement_create_subdomains());
-    res.extend(domain_implementer.implement_derived_total());
+    // res.extend(domain_implementer.implement_derived_total());
     super::cell_agent::wrap(res).into()
 }
