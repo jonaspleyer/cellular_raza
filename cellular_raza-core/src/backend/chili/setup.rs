@@ -104,10 +104,6 @@ mod test {
         type SubDomainIndex = usize;
         type VoxelIndex = VoxelIndex;
 
-        fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
-            (0..self.n_voxels).map(|i| VoxelIndex(i)).collect()
-        }
-
         fn decompose(
             self,
             n_subdomains: core::num::NonZeroUsize,
