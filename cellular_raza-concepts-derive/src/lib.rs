@@ -42,7 +42,10 @@ pub fn derive_subdomain(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     subdomain::derive_subdomain(input)
 }
 
-#[proc_macro_derive(Domain)]
+#[proc_macro_derive(
+    Domain,
+    attributes(Base, DomainRngSeed, DomainCreateSubDomains, SortCells)
+)]
 pub fn derive_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     domain::derive_domain(input)
 }
