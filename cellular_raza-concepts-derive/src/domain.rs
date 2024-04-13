@@ -140,7 +140,25 @@ impl DomainImplementer {
     }
 
     fn implement_rng_seed(&self) -> proc_macro2::TokenStream {
-        proc_macro2::TokenStream::new()
+        let struct_name = &self.name;
+        let (impl_generics, struct_ty_generics, where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.rng_seed {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+
+            quote::quote!(
+                impl #impl_generics DomainRngSeed for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    fn get_rng_seed(&self) -> u64 {
+                        <#field_type as DomainRngSeed>::get_rng_seed(&self.#field_name)
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 
     fn implement_create_subdomains(&self) -> proc_macro2::TokenStream {
