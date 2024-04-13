@@ -34,10 +34,6 @@ impl Domain<Agent, MySubDomain> for MyDomain {
     type VoxelIndex = u8;
     type SubDomainIndex = usize;
 
-    fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
-        vec![1]
-    }
-
     fn decompose(
         self,
         _: core::num::NonZeroUsize,

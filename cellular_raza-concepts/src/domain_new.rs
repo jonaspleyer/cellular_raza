@@ -22,9 +22,6 @@ pub trait Domain<C, S, Ci = Vec<C>> {
     /// (graph) between voxels inside their respective subdomains.
     type VoxelIndex;
 
-    /// Retrieves all indices of subdomains.
-    fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex>;
-
     /// Deconstructs the [Domain] into its respective subdomains.
     ///
     /// When using the blanket implementation of this function, the following steps are carried

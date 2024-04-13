@@ -85,10 +85,6 @@ impl DomainImplementer {
                     type SubDomainIndex = <#field_type as Domain<#tokens>>::SubDomainIndex;
                     type VoxelIndex = <#field_type as Domain<#tokens>>::VoxelIndex;
 
-                    fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
-                        <#field_type as Domain<#tokens>>::get_all_voxel_indices(&self.#field_name)
-                    }
-
                     fn decompose(
                         self,
                         n_subdomains: core::num::NonZeroUsize,
