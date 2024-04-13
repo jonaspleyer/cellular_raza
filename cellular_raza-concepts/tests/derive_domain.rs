@@ -6,13 +6,11 @@ struct Agent {
     pos: f32,
 }
 
-#[allow(unused)]
 struct MyDomain {
     x_min: f32,
     x_max: f32,
 }
 
-#[allow(unused)]
 struct MySubDomain {
     x_min: f32,
     x_max: f32,
