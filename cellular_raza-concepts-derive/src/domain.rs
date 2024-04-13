@@ -107,7 +107,36 @@ impl DomainImplementer {
     }
 
     fn implement_sort_cells(&self) -> proc_macro2::TokenStream {
-        proc_macro2::TokenStream::new()
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.sort_cells {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(cell, "__cr_private_Cell");
+            let tokens = quote::quote!(#cell);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, SortCells, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, cell);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics SortCells<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    type Index = <#field_type as SortCells<#tokens>>::Index;
+
+                    fn get_index_of(&self, cell: &#cell) -> Result<Self::Index, BoundaryError> {
+                        <#field_type as SortCells<#tokens>>::get_index_of(&self.#field_name, cell)
+                    }
+                }
+            )
+        } else {
+            proc_macro2::TokenStream::new()
+        }
     }
 
     fn implement_rng_seed(&self) -> proc_macro2::TokenStream {
