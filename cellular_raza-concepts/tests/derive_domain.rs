@@ -1,4 +1,5 @@
 use cellular_raza_concepts::domain_new::*;
+use cellular_raza_concepts::DecomposeError;
 
 #[allow(unused)]
 struct Agent {
@@ -29,7 +30,6 @@ impl SubDomain for MySubDomain {
     }
 }
 
-// TODO
 impl Domain<Agent, MySubDomain> for MyDomain {
     type VoxelIndex = u8;
     type SubDomainIndex = usize;
@@ -68,6 +68,7 @@ impl Domain<Agent, MySubDomain> for MyDomain {
 #[allow(unused)]
 #[derive(Domain)]
 struct DerivedDomain {
+    #[Base]
     my_domain: MyDomain,
 }
 
@@ -79,6 +80,6 @@ fn derive_domain() {
             x_max: 3001.0,
         },
     };
-    // TODO
-    // domain.get_all_voxel_indices();
+    let voxel_indices = domain.get_all_voxel_indices();
+    assert_eq!(voxel_indices, vec![1]);
 }

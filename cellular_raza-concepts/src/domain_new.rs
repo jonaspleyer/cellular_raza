@@ -103,7 +103,6 @@ where
         // Build index_subdomain_cells
         let mut index_subdomain_cells = Vec::new();
 
-
         // Sort cells into the subdomains
         let mut index_to_cells = HashMap::<_, Vec<C>>::new();
         for cell in cells {
