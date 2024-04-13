@@ -679,6 +679,16 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
                 return v;
             }
+
+            fn get_all_voxel_indices(&self) -> Vec<[i64; $d]> {
+                [$($k),+]
+                    .iter()                                     // indices supplied in macro invokation
+                    .map(|i| (0..self.n_voxels[*i]))            // ranges from self.n_vox
+                    .multi_cartesian_product()                  // all possible combinations
+                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
+                    .collect()
+            }
+
         }
 
         #[doc ="Subdomain of ["]
@@ -721,15 +731,6 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             type SubDomainIndex = usize;
             type VoxelIndex = [i64; $d];
 
-            fn get_all_voxel_indices(&self) -> Vec<Self::VoxelIndex> {
-                [$($k),+]
-                    .iter()                                     // indices supplied in macro invokation
-                    .map(|i| (0..self.n_voxels[*i]))            // ranges from self.n_vox
-                    .multi_cartesian_product()                  // all possible combinations
-                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
-                    .collect()
-            }
-
             /// Much more research must be done to effectively write this function.
             /// We should be using more sophisticated functionality based on common known facts for
             /// minimizing surface area and number of neighbors.
@@ -745,10 +746,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 $subdomain_name,
                 C
             >, DecomposeError> {
-                let mut indices = <Self as cellular_raza_concepts::domain_new::Domain<
-                    C,
-                    $subdomain_name
-                >>::get_all_voxel_indices(&self);
+                let mut indices = self.get_all_voxel_indices();
 
                 let (n, m, average_len);
                 match get_decomp_res(indices.len(), n_subdomains.into()) {
