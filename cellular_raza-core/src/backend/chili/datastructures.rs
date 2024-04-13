@@ -221,7 +221,10 @@ where
     // TODO this is not a boundary error!
     /// Allows insertion of cells into the subdomain.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn insert_cells(&mut self, new_cells: &mut Vec<(C, Option<A>)>) -> Result<(), cellular_raza_concepts::BoundaryError>
+    pub fn insert_cells(
+        &mut self,
+        new_cells: &mut Vec<(C, Option<A>)>,
+    ) -> Result<(), cellular_raza_concepts::BoundaryError>
     where
         S::VoxelIndex: Eq + Hash + Ord,
         A: Default,
