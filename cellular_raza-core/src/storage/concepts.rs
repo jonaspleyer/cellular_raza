@@ -252,7 +252,7 @@ pub struct BatchSaveFormat<Id, Element> {
 #[derive(Clone, Debug)]
 pub struct StorageManager<Id, Element> {
     storage_priority: UniqueVec<StorageOption>,
-    builder: StorageBuilder,
+    builder: StorageBuilder<true>,
     instance: u64,
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
@@ -272,15 +272,17 @@ pub struct StorageManager<Id, Element> {
 ///     .location("./");
 /// ```
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct StorageBuilder {
-    pub(crate) location: std::path::PathBuf,
-    pub(crate) priority: UniqueVec<StorageOption>,
-    pub(crate) suffix: std::path::PathBuf,
+pub struct StorageBuilder<const INIT: bool = false> {
+    location: std::path::PathBuf,
+    priority: UniqueVec<StorageOption>,
+    suffix: std::path::PathBuf,
     #[cfg(feature = "timestamp")]
-    pub(crate) add_date: bool,
+    add_date: bool,
+    #[cfg(feature = "timestamp")]
+    date: std::path::PathBuf,
 }
 
-impl StorageBuilder {
+impl<const INIT: bool> StorageBuilder<INIT> {
     /// Constructs a new [StorageBuilder] with default settings.
     ///
     /// ```
@@ -294,6 +296,8 @@ impl StorageBuilder {
             suffix: "".into(),
             #[cfg(feature = "timestamp")]
             add_date: true,
+            #[cfg(feature = "timestamp")]
+            date: "".into(),
         }
     }
 
@@ -350,6 +354,59 @@ impl StorageBuilder {
     }
 }
 
+impl StorageBuilder<false> {
+    /// Initializes the [StorageBuilder] thus filling information about time.
+    pub fn init(self) -> StorageBuilder<true> {
+        #[cfg(feature = "timestamp")]
+        let date: std::path::PathBuf = if self.add_date {
+            format!("{}", chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S")).into()
+        } else {
+            "".into()
+        };
+        self.init_with_date(&date)
+    }
+
+    /// Specify the time at which the results should be saved
+    pub fn init_with_date(self, date: &std::path::Path) -> StorageBuilder<true> {
+        StorageBuilder::<true> {
+            location: self.location,
+            priority: self.priority,
+            suffix: self.suffix,
+            #[cfg(feature = "timestamp")]
+            add_date: self.add_date,
+            #[cfg(feature = "timestamp")]
+            date: date.into(),
+        }
+    }
+}
+
+impl StorageBuilder<true> {
+    /// Get the fully constructed path after the Builder has been initialized with the
+    /// [StorageBuilder::init] function.
+    pub fn get_full_path(&self) -> std::path::PathBuf {
+        let mut full_path = self.location.clone();
+        #[cfg(feature = "timestamp")]
+        if self.add_date {
+            full_path.extend(&self.date);
+        }
+        full_path.extend(&self.suffix);
+        full_path
+    }
+
+    /// De-initializes the StorageBuilder, making it possible to edit it again.
+    pub fn de_init(self) -> StorageBuilder<false> {
+        StorageBuilder {
+            location: self.location,
+            priority: self.priority,
+            suffix: self.suffix,
+            #[cfg(feature = "timestamp")]
+            add_date: self.add_date,
+            #[cfg(feature = "timestamp")]
+            date: "".into(),
+        }
+    }
+}
+
 impl<Id, Element> StorageManager<Id, Element> {
     /// Constructs the [StorageManager] from the instance identifier
     /// and the settings given by the [StorageBuilder].
@@ -362,16 +419,11 @@ impl<Id, Element> StorageManager<Id, Element> {
     /// let manager = StorageManager::<usize, f64>::open_or_create(&builder, 0).unwrap();
     /// ```
     pub fn open_or_create(
-        storage_builder: &StorageBuilder,
+        storage_builder: StorageBuilder<true>,
         instance: u64,
     ) -> Result<Self, StorageError> {
-        let mut location = storage_builder.location.clone();
-        #[cfg(feature = "timestamp")]
-        if storage_builder.add_date {
-            let date = format!("{}", chrono::Local::now().format("%Y-%m-%d-T%H-%M-%S"));
-            location.push(date);
-        }
-        location = location.join(&storage_builder.suffix);
+        let location = storage_builder.get_full_path();
+
         let mut sled_storage = None;
         let mut sled_temp_storage = None;
         let mut json_storage = None;
@@ -421,7 +473,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     }
 
     /// Extracts all information given by the [StorageBuilder] when constructing
-    pub fn extract_builder(&self) -> StorageBuilder {
+    pub fn extract_builder(&self) -> StorageBuilder<true> {
         self.builder.clone()
     }
 
@@ -464,7 +516,7 @@ impl<Id, Element> StorageInterfaceOpen<Id, Element> for StorageManager<Id, Eleme
     ) -> Result<Self, StorageError> {
         let storage_priority = StorageOption::default_priority();
         let storage_builder = StorageBuilder::new().priority(storage_priority);
-        Self::open_or_create(&storage_builder, 0)
+        Self::open_or_create(storage_builder, 0)
     }
 }
 
