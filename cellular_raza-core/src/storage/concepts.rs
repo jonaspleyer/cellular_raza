@@ -425,9 +425,11 @@ impl<Id, Element> StorageManager<Id, Element> {
     /// ```
     /// use cellular_raza_core::storage::*;
     /// let builder = StorageBuilder::new()
-    ///     .location("/tmp");
+    ///     .location("/tmp")
+    ///     .init();
     ///
-    /// let manager = StorageManager::<usize, f64>::open_or_create(&builder, 0).unwrap();
+    /// let manager = StorageManager::<usize, f64>::open_or_create(builder, 0)?;
+    /// # Ok::<(), StorageError>(())
     /// ```
     pub fn open_or_create(
         storage_builder: StorageBuilder<true>,
