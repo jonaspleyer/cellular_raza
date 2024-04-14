@@ -263,6 +263,11 @@ pub struct StorageManager<Id, Element> {
 
 /// Used to construct a [StorageManager]
 ///
+/// This builder contains multiple options which can be used to configure the location and type in
+/// which results are stored.
+/// To get an overview over all possible options, we refer to the [module](crate::storage)
+/// documentation.
+///
 /// ```
 /// use cellular_raza_core::storage::{StorageBuilder, StorageOption};
 ///
