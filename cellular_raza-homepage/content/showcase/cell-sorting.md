@@ -52,9 +52,6 @@ type.
 
 ## Parameters
 
-To simplify the discussion of our system, we can reduce it by dividing with one of the chosen
-parameters.
-
 In total, we are left with only 4 parameters to describe our system.
 
 | Parameter | Symbol | Value |
