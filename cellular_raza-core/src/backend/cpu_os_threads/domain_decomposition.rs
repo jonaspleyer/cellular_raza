@@ -515,8 +515,9 @@ pub struct MultiVoxelContainer<
     // However, maybe we should be thinking about specifying an interface to use this function
     // Something like:
     // fn update_domain(&mut self, domain: Domain) -> Result<(), BoundaryError>
-    // And then automatically have the ability to change cell positions if the domain shrinks/grows for example
-    // but then we might also want to change the number of voxels and redistribute cells accordingly
+    // And then automatically have the ability to change cell positions if the domain shrinks/grows
+    // for example but then we might also want to change the number of voxels and redistribute cells
+    // accordingly
     // This needs much more though!
     pub(crate) domain: DomainBox<Dom>,
     pub(crate) index_to_plain_index: BTreeMap<Ind, PlainIndex>,
@@ -549,7 +550,8 @@ pub struct MultiVoxelContainer<
     pub(crate) receiver_concentrations:
         Receiver<ConcentrationBoundaryInformation<ConcBoundaryExtracellular, Ind>>,
 
-    // Global barrier to synchronize threads and make sure every information is sent before further processing
+    // Global barrier to synchronize threads and make sure every information is sent before further
+    // processing
     pub(crate) barrier: Barrier,
 
     pub(crate) storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
@@ -690,7 +692,8 @@ where
             .collect::<Result<(), SimulationError>>()
     }
 
-    // TODO make sure that if no extracellular mechanics are in action updating is correct and the trait may be adjusted
+    // TODO make sure that if no extracellular mechanics are in action updating is correct and the
+    // trait may be adjusted
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_reactions<ConcGradientExtracellular, ConcTotalExtracellular>(
         &mut self,
@@ -732,14 +735,16 @@ where
                         let voxel_volume = voxelbox.voxel.get_volume();
                         let cell_to_voxel_volume = cell_volume / voxel_volume;
 
-                        // aux_storage.intracellular_concentration_increment += increment_intracellular;
                         voxelbox.extracellular_concentration_increments.push((
                             cellbox.cell.pos(),
                             increment_extracellular * cell_to_voxel_volume,
                         ));
-                        // TODO these reactions are currently on the same timescale as the fluid-dynamics but we should consider how this may change if we have different time-scales here
+                        // TODO these reactions are currently on the same timescale as the
+                        // fluid-dynamics but we should consider how this may change if we have
+                        // different time-scales here
                         // ALso the solver is currently simply an euler stepper.
-                        // This should be altered to have something like an (adaptive) Runge Kutta or Dopri (or better)
+                        // This should be altered to have something like an (adaptive) Runge Kutta
+                        // or Dopri (or better)
                         cellbox.cell.set_intracellular(
                             internal_concentration_vector + increment_intracellular * *dt,
                         );
@@ -877,7 +882,13 @@ where
     {
         // Update boundary conditions with new
         for concentration_boundary_information in self.receiver_concentrations.try_iter() {
-            let vox = self.voxels.get_mut(&concentration_boundary_information.index_original_sender).ok_or(IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", concentration_boundary_information.index_original_sender)))?;
+            let vox = self
+                .voxels
+                .get_mut(&concentration_boundary_information.index_original_sender)
+                .ok_or(IndexError(format!(
+                "EngineError: Sender with plain index {} was ended up in location where index is\
+                not present anymore",
+                concentration_boundary_information.index_original_sender)))?;
             vox.concentration_boundaries.push((
                 concentration_boundary_information.index_original_receiver_raw,
                 concentration_boundary_information.concentration_boundary,
@@ -893,7 +904,9 @@ where
                     &voxel_box.extracellular_concentration_increments,
                     &voxel_box.concentration_boundaries[..],
                 )?;
-                // Update the gradients before we set new extracllular because otherwise it would be inaccurate. This way the gradients are "behind" the actual concentrations by one timestep
+                // Update the gradients before we set new extracllular because otherwise it would
+                // be inaccurate. This way the gradients are "behind" the actual concentrations by
+                // one timestep
                 #[cfg(feature = "gradients")]
                 voxel_box
                     .voxel
@@ -909,7 +922,8 @@ where
         Ok(())
     }
 
-    // TODO the trait bounds here are too harsh. We should not be required to have Pos: Position or Vel: Velocity here at all!
+    // TODO the trait bounds here are too harsh. We should not be required to have Pos: Position
+    // or Vel: Velocity here at all!
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     where
@@ -1001,7 +1015,13 @@ where
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in self.receiver_pos.try_iter() {
-            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(IndexError(format!("EngineError: Voxel with index {:?} of PosInformation can not be found in this thread.", pos_info.index_receiver)))?;
+            let vox =
+                self.voxels
+                    .get_mut(&pos_info.index_receiver)
+                    .ok_or(IndexError(format!(
+                    "EngineError: Voxel with index {:?} of PosInformation can not be found in this\
+                    thread.",
+                    pos_info.index_receiver)))?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
@@ -1029,10 +1049,18 @@ where
     {
         // Update position and velocity of all cells with new information
         for obt_forces in self.receiver_force.try_iter() {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError(format!("EngineError: Sender with plain index {} was ended up in location where index is not present anymore", obt_forces.index_sender)))?;
+            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError(format!(
+                "EngineError: Sender with plain index {} was ended up in location where index is\
+                not present anymore", 
+                obt_forces.index_sender))
+            )?;
             match vox.cells.get_mut(obt_forces.count) {
                 Some((_, aux_storage)) => Ok(aux_storage.force+=obt_forces.force),
-                None => Err(IndexError(format!("EngineError: Force Information with sender index {:?} and cell at vector position {} could not be matched", obt_forces.index_sender, obt_forces.count))),
+                None => Err(IndexError(format!(
+                    "EngineError: Force Information with sender index {:?} and cell at vector\
+                    position {} could not be matched",
+                    obt_forces.index_sender, obt_forces.count)
+                )),
             }?;
         }
 
@@ -1042,8 +1070,6 @@ where
                 // Calculate the current increment
                 let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
 
-                // Use the two-step Adams-Bashforth method. See also: https://en.wikipedia.org/wiki/Linear_multistep_method
-                // TODO We should be able to implement arbitrary steppers here
                 match (
                     aux_storage.inc_pos_back_1.clone(),
                     aux_storage.inc_pos_back_2.clone(),
@@ -1121,12 +1147,6 @@ where
                 });
             find_new_home_cells.extend(new_voxel_cells);
             vox.cells = old_voxel_cells;
-            /* let new_voxel_cells = vox.cells.drain_filter(|(c, _)| match self.index_to_plain_index.get(&self.domain.get_voxel_index(&c)) {
-                Some(ind) => ind,
-                None => panic!("Cannot find index {:?}", self.domain.get_voxel_index(&c)),
-            }!=voxel_index);
-            // Check if the cell needs to be sent to another multivoxelcontainer
-            find_new_home_cells.append(&mut new_voxel_cells.collect::<Vec<_>>());*/
         }
 
         // Send cells to other multivoxelcontainer or keep them here
@@ -1264,16 +1284,19 @@ where
 
         self.update_cellular_reactions(dt)?;
 
-        // These are the true update steps where cell agents are modified the order here may play a role!
+        // These are the true update steps where cell agents are modified the order here may play a
+        // role!
 
         self.update_fluid_mechanics_step_3(dt)?;
 
         self.update_cellular_mechanics_step_3(dt)?;
 
-        // TODO this currently also does application of domain boundaries and inclusion of new cells which is wrong in general!
+        // TODO this currently also does application of domain boundaries and inclusion of new cells
+        // which is wrong in general!
         self.update_local_functions(dt)?;
 
-        // This function needs an additional synchronization step which cannot correctly be done in between the other ones
+        // This function needs an additional synchronization step which cannot correctly be done in
+        // between the other ones
         self.sort_cells_in_voxels_step_1()?;
 
         self.barrier.wait();
