@@ -1,5 +1,8 @@
 use super::concepts::StorageError;
-use super::concepts::{BatchSaveFormat, CombinedSaveFormat, StorageInterface};
+use super::concepts::{
+    BatchSaveFormat, CombinedSaveFormat, StorageInterfaceLoad, StorageInterfaceOpen,
+    StorageInterfaceStore,
+};
 use serde::{Deserialize, Serialize};
 
 use core::marker::PhantomData;
@@ -69,7 +72,7 @@ impl<Id, Element> XmlStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen<Id, Element> for XmlStorageInterface<Id, Element> {
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
@@ -87,7 +90,9 @@ impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Elem
             phantom_element: PhantomData,
         })
     }
+}
 
+impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id, Element> {
     fn store_single_element(
         &self,
         iteration: u64,
@@ -140,7 +145,9 @@ impl<Id, Element> StorageInterface<Id, Element> for XmlStorageInterface<Id, Elem
         iteration_file.write(&save_string.as_bytes())?;
         Ok(())
     }
+}
 
+impl<Id, Element> StorageInterfaceLoad<Id, Element> for XmlStorageInterface<Id, Element> {
     fn load_single_element(
         &self,
         _iteration: u64,

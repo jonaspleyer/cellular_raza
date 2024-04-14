@@ -1,5 +1,8 @@
 use super::concepts::StorageError;
-use super::concepts::{BatchSaveFormat, CombinedSaveFormat, StorageInterface};
+use super::concepts::{
+    BatchSaveFormat, CombinedSaveFormat, StorageInterfaceLoad, StorageInterfaceOpen,
+    StorageInterfaceStore,
+};
 use serde::{Deserialize, Serialize};
 
 use core::marker::PhantomData;
@@ -69,7 +72,7 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen<Id, Element> for JsonStorageInterface<Id, Element> {
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
@@ -87,7 +90,9 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
             phantom_element: PhantomData,
         })
     }
+}
 
+impl<Id, Element> StorageInterfaceStore<Id, Element> for JsonStorageInterface<Id, Element> {
     fn store_single_element(
         &self,
         iteration: u64,
@@ -130,7 +135,9 @@ impl<Id, Element> StorageInterface<Id, Element> for JsonStorageInterface<Id, Ele
         serde_json::to_writer_pretty(iteration_file, &batch)?;
         Ok(())
     }
+}
 
+impl<Id, Element> StorageInterfaceLoad<Id, Element> for JsonStorageInterface<Id, Element> {
     fn load_single_element(
         &self,
         iteration: u64,

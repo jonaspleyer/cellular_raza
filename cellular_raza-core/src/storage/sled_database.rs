@@ -1,5 +1,5 @@
 use super::concepts::StorageError;
-use super::concepts::StorageInterface;
+use super::concepts::{StorageInterfaceLoad, StorageInterfaceOpen, StorageInterfaceStore};
 
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ impl<Id, Element, const TEMP: bool> SledStorageInterface<Id, Element, TEMP> {
     }
 }
 
-impl<Id, Element, const TEMP: bool> StorageInterface<Id, Element>
+impl<Id, Element, const TEMP: bool> StorageInterfaceOpen<Id, Element>
     for SledStorageInterface<Id, Element, TEMP>
 {
     fn open_or_create(
@@ -69,7 +69,11 @@ impl<Id, Element, const TEMP: bool> StorageInterface<Id, Element>
             element_phantom: PhantomData,
         })
     }
+}
 
+impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>
+    for SledStorageInterface<Id, Element, TEMP>
+{
     fn store_single_element(
         &self,
         iteration: u64,
@@ -115,7 +119,11 @@ impl<Id, Element, const TEMP: bool> StorageInterface<Id, Element>
         tree.apply_batch(batch)?;
         Ok(())
     }
+}
 
+impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
+    for SledStorageInterface<Id, Element, TEMP>
+{
     fn load_single_element(
         &self,
         iteration: u64,
