@@ -81,7 +81,7 @@ where
     pub(crate) meta_params: SimulationMetaParams,
     /// Defines in which format and if results should be saved.
     /// See [StorageBuilder].
-    pub storage: StorageBuilder,
+    pub storage: StorageBuilder<true>,
 
     /// Physical [Domain] of the simulation.
     pub(crate) domain: DomainBox<Dom>,
@@ -402,7 +402,7 @@ where
                 t_eval: Vec::new(),
             },
             meta_params: self.meta_params.clone(),
-            storage: self.storage.clone(),
+            storage: self.storage.clone().de_init(),
             controller: self.controller_box.lock().unwrap().controller.clone(),
         };
 
@@ -448,7 +448,7 @@ pub struct SimulationResult<
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a>,
 {
     /// Configure how to store results of the simulation
-    pub storage: StorageBuilder,
+    pub storage: StorageBuilder<true>,
 
     pub(crate) domain: DomainBox<Dom>,
     /// [StorageManager] responsible for saving and loading cells
@@ -567,7 +567,7 @@ where
             .collect::<Vec<_>>();
 
         // Choose the correct file path
-        let mut file_path = self.storage.location.clone();
+        let mut file_path = self.storage.get_full_path().clone();
         file_path.push("images");
         match std::fs::create_dir(&file_path) {
             Ok(()) => (),

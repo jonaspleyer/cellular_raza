@@ -482,11 +482,13 @@ where
             })
             .collect();
 
-        // Create
-        let meta_infos_builder = setup.storage.clone().suffix("meta_infos");
+        // # Create all storage solutions
+        // First initialize the builder
+        let builder = setup.storage.init();
+        let meta_infos_builder = builder.clone().suffix("meta_infos");
         let meta_infos =
             StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create(
-                &meta_infos_builder,
+                meta_infos_builder,
                 0,
             )
             .unwrap();
@@ -589,15 +591,15 @@ where
                     create_senders!(sender_receiver_pairs_boundary_concentrations);
 
                 // TODO catch these errors!
-                let storage_cells_builder = setup.storage.clone().suffix("cell_storage");
+                let storage_cells_builder = builder.clone().suffix("cell_storage");
 
                 let storage_cells =
                     StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
-                        &storage_cells_builder,
+                        storage_cells_builder,
                         i as u64,
                     )
                     .unwrap();
-                let storage_voxels_builder = setup.storage.clone().suffix("voxel_storage");
+                let storage_voxels_builder = builder.clone().suffix("voxel_storage");
                 let storage_voxels =
                     StorageManager::<
                         PlainIndex,
@@ -612,7 +614,7 @@ where
                             ConcBoundaryExtracellular,
                             ConcVecIntracellular,
                         >,
-                    >::open_or_create(&storage_voxels_builder, i as u64)
+                    >::open_or_create(storage_voxels_builder, i as u64)
                     .unwrap();
 
                 voxels.iter_mut().for_each(|(_, voxelbox)| {
@@ -663,7 +665,7 @@ where
 
             time: setup.time,
             meta_params: setup.meta_params,
-            storage: setup.storage,
+            storage: builder,
 
             domain: setup.domain.into(),
 
