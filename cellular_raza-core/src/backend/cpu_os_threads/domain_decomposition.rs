@@ -2,7 +2,7 @@ use super::{Agent, Force, InteractionInformation, Position, Velocity};
 use cellular_raza_concepts::*;
 
 use super::errors::*;
-use crate::storage::{StorageInterface, StorageManager};
+use crate::storage::StorageManager;
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -1196,6 +1196,7 @@ where
         CellAgentBox<Cel>: Clone,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
     {
+        use crate::storage::StorageInterfaceStore;
         let cells = self
             .voxels
             .iter()
@@ -1223,6 +1224,7 @@ where
             ConcVecIntracellular,
         >: Clone + Send + Sync + 'static,
     {
+        use crate::storage::StorageInterfaceStore;
         let voxels = self.voxels.iter().map(|(_, voxel)| (voxel.ref_id(), voxel));
 
         self.storage_voxels.store_batch_elements(*iteration, voxels)

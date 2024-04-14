@@ -3,7 +3,7 @@ use cellular_raza_concepts::*;
 use kdam::BarExt;
 
 use super::errors::*;
-use crate::storage::{StorageBuilder, StorageInterface, StorageManager};
+use crate::storage::{StorageBuilder, StorageManager};
 
 use super::domain_decomposition::{
     AuxiliaryCellPropertyStorage, DomainBox, MultiVoxelContainer, VoxelBox,
@@ -393,6 +393,7 @@ where
         Cont: Clone,
         Obs: Clone,
     {
+        use crate::storage::StorageInterfaceStore;
         let setup_current = SimulationSetup {
             domain: self.domain.clone(),
             cells: Vec::<Cel>::new(),
@@ -556,6 +557,7 @@ where
             + Send
             + Sync,
     {
+        use crate::storage::StorageInterfaceLoad;
         // Obtain the voxels from the database
         let voxel_boxes = self
             .storage_voxels
@@ -779,6 +781,7 @@ where
         >: Send + Sync,
         DomainBox<Dom>: Send + Sync,
     {
+        use crate::storage::StorageInterfaceLoad;
         let pool = self.build_thread_pool()?;
 
         // Generate all images by calling the pool

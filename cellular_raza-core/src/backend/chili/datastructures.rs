@@ -264,7 +264,7 @@ where
         Voxel<C, A>: Serialize,
     {
         if let Some(crate::time::TimeEvent::FullSave) = next_time_point.event {
-            use crate::storage::StorageInterface;
+            use crate::storage::StorageInterfaceStore;
             let iter = self.voxels.iter();
             storage_manager.store_batch_elements(next_time_point.iteration as u64, iter)?;
         }
@@ -287,7 +287,7 @@ where
         CellBox<C>: cellular_raza_concepts::Id<Identifier = CellIdentifier>,
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
-            use crate::storage::StorageInterface;
+            use crate::storage::StorageInterfaceStore;
             use cellular_raza_concepts::Id;
             let cells = self
                 .voxels
