@@ -1049,18 +1049,20 @@ where
     {
         // Update position and velocity of all cells with new information
         for obt_forces in self.receiver_force.try_iter() {
-            let vox = self.voxels.get_mut(&obt_forces.index_sender).ok_or(IndexError(format!(
+            let vox = self
+                .voxels
+                .get_mut(&obt_forces.index_sender)
+                .ok_or(IndexError(format!(
                 "EngineError: Sender with plain index {} was ended up in location where index is\
                 not present anymore", 
-                obt_forces.index_sender))
-            )?;
+                obt_forces.index_sender)))?;
             match vox.cells.get_mut(obt_forces.count) {
-                Some((_, aux_storage)) => Ok(aux_storage.force+=obt_forces.force),
+                Some((_, aux_storage)) => Ok(aux_storage.force += obt_forces.force),
                 None => Err(IndexError(format!(
                     "EngineError: Force Information with sender index {:?} and cell at vector\
                     position {} could not be matched",
-                    obt_forces.index_sender, obt_forces.count)
-                )),
+                    obt_forces.index_sender, obt_forces.count
+                ))),
             }?;
         }
 
