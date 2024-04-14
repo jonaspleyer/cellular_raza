@@ -519,18 +519,6 @@ macro_rules! exec_for_all_storage_options(
     }
 );
 
-impl<Id, Element> StorageInterfaceOpen<Id, Element> for StorageManager<Id, Element> {
-    #[allow(unused)]
-    fn open_or_create(
-        location: &std::path::Path,
-        storage_instance: u64,
-    ) -> Result<Self, StorageError> {
-        let storage_priority = StorageOption::default_priority();
-        let storage_builder = StorageBuilder::new().priority(storage_priority);
-        Self::open_or_create(storage_builder, 0)
-    }
-}
-
 impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn store_single_element(
