@@ -312,17 +312,6 @@ impl<const INIT: bool> StorageBuilder<INIT> {
         self.priority.clone()
     }
 
-    /// Define a folder where to store results
-    pub fn location<P>(self, location: P) -> Self
-    where
-        std::path::PathBuf: From<P>,
-    {
-        Self {
-            location: location.into(),
-            ..self
-        }
-    }
-
     /// Define a suffix which will be appended to the save path
     pub fn suffix(self, suffix: impl Into<std::path::PathBuf>) -> Self {
         Self {
@@ -334,11 +323,6 @@ impl<const INIT: bool> StorageBuilder<INIT> {
     /// Get the current suffix
     pub fn get_suffix(&self) -> std::path::PathBuf {
         self.suffix.clone()
-    }
-
-    /// Get the current storage_location
-    pub fn get_location(&self) -> std::path::PathBuf {
-        self.location.clone()
     }
 
     /// Store results by their current date inside the specified folder path
@@ -377,6 +361,28 @@ impl StorageBuilder<false> {
             #[cfg(feature = "timestamp")]
             date: date.into(),
         }
+    }
+
+    /// Define a folder where to store results
+    ///
+    /// Note that this functionality is only available as long as the [StorageBuilder] has not been
+    /// initialized.
+    pub fn location<P>(self, location: P) -> Self
+    where
+        std::path::PathBuf: From<P>,
+    {
+        Self {
+            location: location.into(),
+            ..self
+        }
+    }
+
+    /// Get the current storage_location
+    ///
+    /// Note that this functionality is only available as long as the [StorageBuilder] has not been
+    /// initialized.
+    pub fn get_location(&self) -> std::path::PathBuf {
+        self.location.clone()
     }
 }
 
