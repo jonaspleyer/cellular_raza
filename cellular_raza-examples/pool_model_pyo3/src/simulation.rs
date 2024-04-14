@@ -294,7 +294,7 @@ pub fn run_simulation(
     supervisor.config.show_progressbar = meta_params.show_progressbar;
 
     save_initial_state(
-        &supervisor.storage.get_location(),
+        &supervisor.storage.get_full_path(),
         &cells,
         &domain,
         &meta_params,
@@ -302,5 +302,5 @@ pub fn run_simulation(
 
     let simulation_result = supervisor.run_full_sim().unwrap();
 
-    Ok(simulation_result.storage.get_location())
+    Ok(simulation_result.storage.get_full_path())
 }
