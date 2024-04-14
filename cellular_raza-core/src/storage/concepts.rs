@@ -456,7 +456,7 @@ macro_rules! exec_for_all_storage_options(
     }
 );
 
-impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn open_or_create(
         location: &std::path::Path,
@@ -466,7 +466,9 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         let storage_builder = StorageBuilder::new().priority(storage_priority);
         Self::open_or_create(&storage_builder, 0)
     }
+}
 
+impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn store_single_element(
         &self,
@@ -516,7 +518,9 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
         }
         Ok(())
     }
+}
 
+impl<Id, Element> StorageInterfaceLoad<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn load_single_element(
         &self,
@@ -567,8 +571,8 @@ impl<Id, Element> StorageInterface<Id, Element> for StorageManager<Id, Element> 
     }
 }
 
-/// Provide methods to initialize, store and load single and multiple elements at iterations.
-pub trait StorageInterface<Id, Element> {
+/// Open or create a new instance of the Storage controller.
+pub trait StorageInterfaceOpen<Id, Element> {
     /// Initializes the current storage device.
     ///
     /// In the case of databases, this may already result in an IO operation
@@ -579,7 +583,10 @@ pub trait StorageInterface<Id, Element> {
     ) -> Result<Self, StorageError>
     where
         Self: Sized;
+}
 
+/// Handles storing of elements
+pub trait StorageInterfaceStore<Id, Element> {
     /// Saves a single element at given iteration.
     fn store_single_element(
         &self,
@@ -608,7 +615,10 @@ pub trait StorageInterface<Id, Element> {
             .collect::<Result<Vec<_>, _>>()?;
         Ok(())
     }
+}
 
+/// Handles loading of elements
+pub trait StorageInterfaceLoad<Id, Element> {
     // TODO decide if these functions should be &mut self instead of &self
     // This could be useful when implementing buffers, but maybe unnecessary.
     /// Loads a single element from the storage solution if the element exists.
@@ -710,4 +720,20 @@ pub trait StorageInterface<Id, Element> {
             );
         Ok(reordered_elements)
     }
+}
+
+/// Provide methods to initialize, store and load single and multiple elements at iterations.
+pub trait StorageInterface<Id, Element>:
+    StorageInterfaceOpen<Id, Element>
+    + StorageInterfaceLoad<Id, Element>
+    + StorageInterfaceStore<Id, Element>
+{
+}
+
+impl<Id, Element, T> StorageInterface<Id, Element> for T
+where
+    T: StorageInterfaceLoad<Id, Element>,
+    T: StorageInterfaceStore<Id, Element>,
+    T: StorageInterfaceOpen<Id, Element>,
+{
 }
