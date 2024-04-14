@@ -288,24 +288,6 @@ pub struct StorageBuilder<const INIT: bool = false> {
 }
 
 impl<const INIT: bool> StorageBuilder<INIT> {
-    /// Constructs a new [StorageBuilder] with default settings.
-    ///
-    /// ```
-    /// use cellular_raza_core::storage::StorageBuilder;
-    /// let storage_builder = StorageBuilder::new();
-    /// ```
-    pub fn new() -> Self {
-        Self {
-            location: "./out".into(),
-            priority: UniqueVec::from_iter([StorageOption::SerdeJson]).0,
-            suffix: "".into(),
-            #[cfg(feature = "timestamp")]
-            add_date: true,
-            #[cfg(feature = "timestamp")]
-            date: "".into(),
-        }
-    }
-
     /// Define the priority of [StorageOption]. See [StorageOption::default_priority].
     pub fn priority(self, priority: impl IntoIterator<Item = StorageOption>) -> Self {
         let (priority, _) = UniqueVec::from_iter(priority);
@@ -344,6 +326,24 @@ impl<const INIT: bool> StorageBuilder<INIT> {
 }
 
 impl StorageBuilder<false> {
+    /// Constructs a new [StorageBuilder] with default settings.
+    ///
+    /// ```
+    /// use cellular_raza_core::storage::StorageBuilder;
+    /// let storage_builder = StorageBuilder::new();
+    /// ```
+    pub fn new() -> Self {
+        Self {
+            location: "./out".into(),
+            priority: UniqueVec::from_iter([StorageOption::SerdeJson]).0,
+            suffix: "".into(),
+            #[cfg(feature = "timestamp")]
+            add_date: true,
+            #[cfg(feature = "timestamp")]
+            date: "".into(),
+        }
+    }
+
     /// Initializes the [StorageBuilder] thus filling information about time.
     pub fn init(self) -> StorageBuilder<true> {
         #[cfg(feature = "timestamp")]
