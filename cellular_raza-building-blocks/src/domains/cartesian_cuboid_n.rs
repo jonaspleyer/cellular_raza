@@ -1110,12 +1110,19 @@ mod test {
 
     #[test]
     fn test_get_demomp_res() {
+        #[cfg(debug_assertions)]
+        let max = 500;
+        #[cfg(not(debug_assertions))]
         let max = 5_000;
 
         (1..max)
             .into_par_iter()
             .map(|n_voxel| {
-                for n_regions in 1..1_000 {
+                #[cfg(debug_assertions)]
+                let max_regions = 100;
+                #[cfg(not(debug_assertions))]
+                let max_regions = 1_000;
+                for n_regions in 1..max_regions {
                     match get_decomp_res(n_voxel, n_regions) {
                         Some(res) => {
                             let (n, m, average_len) = res;
