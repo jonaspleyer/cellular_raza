@@ -115,3 +115,50 @@ where
         DrawingError(drawing_error.to_string())
     }
 }
+
+/// For internal use: formats an error message to include a link to the bug tracker on github.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! format_error_message(
+    (@function) => {
+        {
+            fn f() {}
+            let name = std::any::type_name_of_val(&f);
+            name.strip_suffix("::f").unwrap()
+        }
+    };
+    ($bug_title:expr, $error_msg:expr) => {
+        {
+            let title = $bug_title.replace(" ", "%20");
+            let body = $error_msg.replace(" ", "%20");
+            format!("Internal Error in file {} function {}: +++ {} +++ Please file a bug-report: \
+                https://github.com/jonaspleyer/cellular_raza/issues/new?\
+                title={}&body={}",
+                format_error_message!(@function),
+                file!(),
+                $error_msg,
+                title,
+                body,
+            )
+        }
+    };
+);
+
+mod test_error_messages {
+    #[test]
+    fn test_link_title() {
+        let error_message = crate::format_error_message!(
+            "The title of this error message",
+            format!("Some long description.")
+        );
+        let mut parts = error_message.split("https");
+        parts.next().unwrap();
+        let res = parts.next().unwrap();
+        assert_eq!(
+            res,
+            "://github.com/jonaspleyer/cellular_raza/issues/new?\
+                title=The%20title%20of%20this%20error%20message&\
+                body=Some%20long%20description."
+        );
+    }
+}
