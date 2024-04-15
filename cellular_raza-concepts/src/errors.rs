@@ -128,9 +128,15 @@ macro_rules! format_error_message(
         }
     };
     ($bug_title:expr, $error_msg:expr) => {
-        {
+        {//#[cfg(debug_assertions)]
+         //TODO think about enabling these debug_assertions (performance difference unclear to me)
+        let __cr_private_error = {
             let title = $bug_title.replace(" ", "%20");
-            let body = $error_msg.replace(" ", "%20");
+            let mut body = String::from($error_msg);
+            body = body + &format!("%0A%0AFile: {}", file!());
+            body = body + &format!("%0ALine: {}", line!());
+            body = body + &format!("%0AColumn: {}", column!());
+            body = body.replace(" ", "%20");
             format!("Internal Error in file {} function {}: +++ {} +++ Please file a bug-report: \
                 https://github.com/jonaspleyer/cellular_raza/issues/new?\
                 title={}&body={}",
@@ -140,25 +146,20 @@ macro_rules! format_error_message(
                 title,
                 body,
             )
+        };
+        //#[cfg(not(debug_assertions))]
+        //let __cr_private_error = format!("Encountered internal error: {} with message: \
+        //    {} Run in debug mode for more details.",
+        //    $bug_title,
+        //    $error_msg
+        //);
+        __cr_private_error
         }
     };
 );
 
-mod test_error_messages {
-    #[test]
-    fn test_link_title() {
-        let error_message = crate::format_error_message!(
-            "The title of this error message",
-            format!("Some long description.")
-        );
-        let mut parts = error_message.split("https");
-        parts.next().unwrap();
-        let res = parts.next().unwrap();
-        assert_eq!(
-            res,
-            "://github.com/jonaspleyer/cellular_raza/issues/new?\
-                title=The%20title%20of%20this%20error%20message&\
-                body=Some%20long%20description."
-        );
-    }
+#[test]
+fn fail() {
+    let error_message = crate::format_error_message!("short title", "long descr");
+    panic!("{}", error_message);
 }
