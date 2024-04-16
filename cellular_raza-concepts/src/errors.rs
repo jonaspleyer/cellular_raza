@@ -118,7 +118,6 @@ where
 
 /// For internal use: formats an error message to include a link to the bug tracker on github.
 #[macro_export]
-#[doc(hidden)]
 macro_rules! format_error_message(
     (@function) => {
         {
