@@ -356,6 +356,121 @@ macro_rules! implement_morse_potential(
 implement_morse_potential!(MorsePotential, f64);
 implement_morse_potential!(MorsePotentialF32, f32);
 
+/// Generalizeation of the [BoundLennardJones] potential for arbitrary floating point types.
+///
+/// \\begin{align}
+///     U(r) &= C\epsilon\left[ \left(\frac{\sigma}{r}\right)^n -
+///         \left(\frac{\sigma}{r}\right)^m\right]\\\\
+///     C &= \frac{n}{n-m}\left(\frac{n}{m}\right)^{\frac{n}{n-m}}\\
+///     V(r) &= \min(U(r), \beta)\theta(r-\zeta)
+/// \\end{align}
+///
+/// This struct itself does not provide python bindings.
+/// We provide specialized types for different floating-point types.
+/// | Name | Float Type |
+/// | --- | --- |
+/// | [MiePotentialF64] | COMING |
+/// | [MiePotentialF32] | COMING |
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct MiePotential<F = f64> {
+    /// Interaction strength $\epsilon$ of the potential.
+    pub sigma: F,
+    /// Overall size $\sigma$ of the object of the potential.
+    pub potential_strength: F,
+    /// Numerical bound $\beta$ of the interaction strength.
+    pub bound: F,
+    /// Defines a cutoff $\zeta$ after which the potential will be fixed to exactly zero.
+    pub cutoff: F,
+    /// Exponent $n$ of the potential
+    en: F,
+    /// Exponent $m$ of the potential
+    em: F,
+}
+
+impl<F, const D: usize> Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F>
+    for MiePotential<F>
+where
+    F: nalgebra::RealField + Copy,
+{
+    fn calculate_force_between(
+        &self,
+        own_pos: &SVector<F, D>,
+        _own_vel: &SVector<F, D>,
+        ext_pos: &SVector<F, D>,
+        _ext_vel: &SVector<F, D>,
+        ext_sigma: &F,
+    ) -> Result<SVector<F, D>, CalcError> {
+        let z = own_pos - ext_pos;
+        let r = z.norm();
+        if r == F::zero() {
+            return Err(CalcError(format!(
+                "identical position for two objects. Cannot Calculate force in Mie potential"
+            )));
+        }
+        if r > self.cutoff {
+            return Ok([F::zero(); D].into());
+        }
+        let dir = z / r;
+        let x = (self.sigma + *ext_sigma) / r;
+        let mie_constant =
+            self.en / (self.en - self.em) * (self.en / self.em).powf(self.em / (self.en - self.em));
+        let potential_part = self.en * (x.powf(self.en + F::one()) - x.powf(self.em + F::one()));
+        let force = self.potential_strength * mie_constant * potential_part;
+        let force = force.min(self.bound);
+        Ok(dir * force)
+    }
+
+    fn get_interaction_information(&self) -> F {
+        self.sigma
+    }
+}
+
+impl<F> MiePotential<F>
+where
+    F: nalgebra::RealField + num::FromPrimitive + Copy,
+{
+    /// Constructs a new [MiePotential] with given parameters.
+    pub fn new(
+        radius: F,
+        potential_strength: F,
+        bound: F,
+        cutoff: F,
+        exponent_n: usize,
+        exponent_m: usize,
+    ) -> Result<Self, CalcError> {
+        let em = F::from_usize(exponent_m).ok_or(CalcError(format!(
+            "could not convert usize {} to float of type {}",
+            exponent_m,
+            std::any::type_name::<F>()
+        )))?;
+        let en = F::from_usize(exponent_n).ok_or(CalcError(format!(
+            "could not convert usize {} to float of type {}",
+            exponent_n,
+            std::any::type_name::<F>()
+        )))?;
+        let mut res = Self {
+            sigma: F::one(),
+            potential_strength,
+            bound,
+            cutoff,
+            en,
+            em,
+        };
+        res.set_radius(radius);
+        Ok(res)
+    }
+
+    /// Obtains the current radius of this object
+    pub fn get_radius(&self) -> F {
+        self.sigma * (self.em / self.en).powf(-F::one() / (self.en - self.em))
+    }
+
+    /// Set the radius which corresponds to the repelling part of this potential
+    pub fn set_radius(&mut self, radius: F) {
+        self.sigma = radius * (self.em / self.en).powf(F::one() / (self.en - self.em));
+    }
+}
+
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {
