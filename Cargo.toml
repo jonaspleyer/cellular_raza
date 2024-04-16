@@ -19,6 +19,7 @@ members = [
     "cellular_raza-examples/pool_model_pyo3",
     "cellular_raza-examples/template",
     "cellular_raza-examples/ureter_signalling",
+    "cellular_raza-examples/sender-receiver",
 ]
 resolver = "2"
 
