@@ -83,6 +83,106 @@ pub struct CartesianCuboid<F, const D: usize> {
     pub rng_seed: u64,
 }
 
+impl<F, const D: usize> CartesianCuboid<F, D>
+where
+    F: 'static + num::Float + Copy + core::fmt::Debug + num::FromPrimitive + num::ToPrimitive,
+{
+    fn check_min_max(min: &[F; D], max: &[F; D]) -> Result<(), BoundaryError>
+    where
+        F: core::fmt::Debug,
+    {
+        for i in 0..D {
+            if min[i] >= max[i] {
+                return Err(BoundaryError(format!(
+                    "Min {:?} must be smaller than Max {:?} for domain boundaries!",
+                    min, max
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Builds a new [CartesianCuboid] from given boundaries and maximum interaction ranges of the
+    /// containing cells.
+    pub fn from_boundaries_and_interaction_range(
+        min: impl Into<[F; D]>,
+        max: impl Into<[F; D]>,
+        interaction_range: F,
+    ) -> Result<Self, BoundaryError> {
+        // Perform conversions
+        let min: [F; D] = min.into();
+        let max: [F; D] = max.into();
+
+        // Check that the specified min and max are actually smaller / larger
+        Self::check_min_max(&min, &max)?;
+
+        // Define some constants. We hope that the compiler optimizes this away (highly likely)
+        let one = F::one();
+        let two = one + one;
+
+        // Calculate the number of voxels from given interaction ranges
+        let mut n_voxels = [0; D];
+        let mut dx = [F::zero(); D];
+        for i in 0..D {
+            let n = ((max[i] - min[i]) / interaction_range / two).ceil();
+            // This conversion should hopefully never fail.
+            n_voxels[i] = n.to_usize().ok_or(BoundaryError(
+                cellular_raza_concepts::format_error_message!(
+                    format!(
+                        "Cannot convert float {:?} of type {} to usize",
+                        n,
+                        std::any::type_name::<F>()
+                    ),
+                    "conversion error during domain setup"
+                ),
+            ))?;
+            dx[i] = (max[i] - min[i]) / n;
+        }
+
+        Ok(Self {
+            min: min.into(),
+            max: max.into(),
+            dx: dx.into(),
+            n_voxels: n_voxels.into(),
+            rng_seed: 0,
+        })
+    }
+
+    /// Builds a new [CartesianCuboid] from given boundaries and the number of voxels per dimension
+    /// specified.
+    pub fn from_boundaries_and_n_voxels(
+        min: impl Into<[F; D]>,
+        max: impl Into<[F; D]>,
+        n_voxels: impl Into<[usize; D]>,
+    ) -> Result<Self, BoundaryError> {
+        let min: [F; D] = min.into();
+        let max: [F; D] = max.into();
+        let n_voxels: [usize; D] = n_voxels.into();
+        Self::check_min_max(&min, &max)?;
+        let mut dx: SVector<F, D> = [F::zero(); D].into();
+        for i in 0..D {
+            let n = F::from_usize(n_voxels[i]).ok_or(BoundaryError(
+                cellular_raza_concepts::format_error_message!(
+                    "conversion error during domain setup",
+                    format!(
+                        "Cannot convert usize {} to float of type {}",
+                        n_voxels[i],
+                        std::any::type_name::<F>()
+                    )
+                ),
+            ))?;
+            dx[i] = (max[i] - min[i]) / n;
+        }
+        Ok(Self {
+            min: min.into(),
+            max: max.into(),
+            dx,
+            n_voxels: n_voxels.into(),
+            rng_seed: 0,
+        })
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
