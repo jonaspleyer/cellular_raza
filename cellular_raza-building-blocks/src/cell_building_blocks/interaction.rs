@@ -303,7 +303,7 @@ macro_rules! implement_morse_potential(
         }
 
         // TODO implement these functionalities and clean up unused where needed
-        impl $struct_name {
+        /* impl $struct_name {
             /// CURRENTLY UNIMPLEMENTED!
             // /// ```
             // /// # use cellular_raza_building_blocks::*;
@@ -355,7 +355,7 @@ macro_rules! implement_morse_potential(
             pub fn get_radius(&self) -> $float_type {
                 unimplemented!()
             }
-        }
+        }*/
     };
 );
 
