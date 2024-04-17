@@ -107,7 +107,7 @@ fn main() {
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
 
-    let dx = 1.05 * CELL_MECHANICS_AREA.sqrt();
+    let dx = 0.95 * CELL_MECHANICS_AREA.sqrt();
     let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
     let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
