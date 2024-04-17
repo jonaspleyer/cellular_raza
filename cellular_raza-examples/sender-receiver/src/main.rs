@@ -149,7 +149,13 @@ fn main() -> Result<(), SimulationError> {
             k_p: 0.01 * MOLAR / SECOND,
             t_d: 1.0 * MINUTE,
             t_i: 20.0 * MINUTE,
-            previous_values: vec![],
+            with_mpc: true,
+            previous_dus: vec![],
+            previous_production_values: vec![],
+            prediction_time: 2.0 * MINUTE,
+            sampling_prod_low: 0.0 * MOLAR / SECOND,
+            sampling_prod_high: 0.0001 * MOLAR / SECOND,
+            sampling_steps: 10,
         },
     );
 
