@@ -183,6 +183,52 @@ where
     }
 }
 
+impl<F, const D: usize> CartesianCuboid<F, D> {
+    fn get_all_voxel_indices(&self) -> impl IntoIterator<Item = SVector<usize, D>> {
+        use itertools::*;
+        (0..D)
+            .map(|i| 0..self.n_voxels[i])
+            .multi_cartesian_product()
+            .map(|x| {
+                let mut index: SVector<usize, D> = [0; D].into();
+                for j in 0..D {
+                    index[j] = x[j];
+                }
+                index
+            })
+    }
+
+    /// Get the total amount of indices in this domain
+    fn get_n_indices(&self) -> usize {
+        let mut res = 1;
+        for i in 0..D {
+            res *= self.n_voxels[i];
+        }
+        res
+    }
+}
+
+mod test_domain_setup {
+    #[test]
+    fn from_boundaries_and_interaction_range() {
+        use crate::CartesianCuboid;
+        let min = [0.0; 2];
+        let max = [2.0; 2];
+        let interaction_range = 1.0;
+        let _ = CartesianCuboid::from_boundaries_and_interaction_range(min, max, interaction_range)
+            .unwrap();
+    }
+
+    #[test]
+    fn from_boundaries_and_n_voxels() {
+        use crate::CartesianCuboid;
+        let min = [-100.0f32; 55];
+        let max = [43000.0f32; 55];
+        let n_voxels = [22; 55];
+        let _ = CartesianCuboid::from_boundaries_and_n_voxels(min, max, n_voxels).unwrap();
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
