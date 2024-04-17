@@ -1,6 +1,6 @@
 [package]
 name = "cr_sender_receiver"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 
