@@ -367,16 +367,23 @@ implement_morse_potential!(MorsePotentialF32, f32);
 /// \\begin{align}
 ///     U(r) &= C\epsilon\left[ \left(\frac{\sigma}{r}\right)^n -
 ///         \left(\frac{\sigma}{r}\right)^m\right]\\\\
-///     C &= \frac{n}{n-m}\left(\frac{n}{m}\right)^{\frac{n}{n-m}}\\
+///     C &= \frac{n}{n-m}\left(\frac{n}{m}\right)^{\frac{n}{n-m}}\\\\
 ///     V(r) &= \min(U(r), \beta)\theta(r-\zeta)
 /// \\end{align}
 ///
-/// This struct itself does not provide python bindings.
-/// We provide specialized types for different floating-point types.
-/// | Name | Float Type |
-/// | --- | --- |
-/// | [MiePotentialF64] | COMING |
-/// | [MiePotentialF32] | COMING |
+// This struct itself does not provide python bindings.
+// We provide specialized types for different floating-point types.
+//
+// | Name | Float Type |
+// | --- | --- |
+// | [MiePotentialF64] | COMING |
+// | [MiePotentialF32] | COMING |
+//
+/// # References
+/// <div id="bibtex_display"></div>
+/// <textarea id="bibtex_input" style="display:none;">
+#[doc = include_str!("mie_potential.bib")]
+/// </textarea>
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     /// Interaction strength $\epsilon$ of the potential.
