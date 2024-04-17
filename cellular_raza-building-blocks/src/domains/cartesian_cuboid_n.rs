@@ -116,15 +116,11 @@ where
         // Check that the specified min and max are actually smaller / larger
         Self::check_min_max(&min, &max)?;
 
-        // Define some constants. We hope that the compiler optimizes this away (highly likely)
-        let one = F::one();
-        let two = one + one;
-
         // Calculate the number of voxels from given interaction ranges
         let mut n_voxels = [0; D];
         let mut dx = [F::zero(); D];
         for i in 0..D {
-            let n = ((max[i] - min[i]) / interaction_range / two).ceil();
+            let n = ((max[i] - min[i]) / interaction_range).ceil();
             // This conversion should hopefully never fail.
             n_voxels[i] = n.to_usize().ok_or(BoundaryError(
                 cellular_raza_concepts::format_error_message!(
