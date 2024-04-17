@@ -125,6 +125,19 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
         // let controller_var = self.k_p * (du + self.t_d * derivative + integral / self.t_i);
         let controller_var = proportional + differential + integral;
 
+        use std::fs::File;
+        use std::io::Write;
+        let mut f = File::options()
+            .append(true)
+            .create(true)
+            .open("controller_logs.csv")
+            .unwrap();
+        let line = format!(
+            "{},{},{},{},{},{}\n",
+            average_conc, du, proportional, differential, integral, controller_var
+        );
+        f.write(line.as_bytes()).unwrap();
+
         // Adjust values
         cells
             .into_iter()
