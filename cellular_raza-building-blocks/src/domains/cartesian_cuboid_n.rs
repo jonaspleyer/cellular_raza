@@ -229,6 +229,42 @@ mod test_domain_setup {
     }
 }
 
+impl<C, F, const D: usize> cellular_raza_concepts::domain_new::SortCells<C>
+    for CartesianCuboid<F, D>
+where
+    C: Mechanics<SVector<F, D>, SVector<F, D>, SVector<F, D>>,
+    F: 'static
+        + num::Float
+        + Copy
+        + core::fmt::Debug
+        + num::FromPrimitive
+        + num::ToPrimitive
+        + core::ops::SubAssign
+        + nalgebra::ClosedDiv<F>,
+{
+    type Index = SVector<usize, D>;
+
+    fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError> {
+        let pos = cell.pos();
+        Self::check_min_max(&self.min.into(), &pos.into())?;
+        let n_vox = (pos - self.min).component_div(&self.dx);
+        let mut res = [0usize; D];
+        for i in 0..D {
+            res[i] = n_vox[i].to_usize().ok_or(BoundaryError(
+                cellular_raza_concepts::format_error_message!(
+                    "conversion error during domain setup",
+                    format!(
+                        "Cannot convert float {:?} of type {} to usize",
+                        n_vox[i],
+                        std::any::type_name::<F>()
+                    )
+                ),
+            ))?;
+        }
+        Ok(res.into())
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
