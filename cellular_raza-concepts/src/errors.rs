@@ -156,9 +156,3 @@ macro_rules! format_error_message(
         }
     };
 );
-
-#[test]
-fn fail() {
-    let error_message = crate::format_error_message!("short title", "long descr");
-    panic!("{}", error_message);
-}
