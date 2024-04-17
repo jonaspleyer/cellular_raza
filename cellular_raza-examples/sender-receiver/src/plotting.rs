@@ -8,7 +8,7 @@ use plotters::{
     style::RGBColor,
 };
 
-use crate::bacteria_properties::*;
+use crate::{bacteria_properties::*, TARGET_AVERAGE_CONC};
 
 pub fn plot_voxel(
     voxel: &CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>,
@@ -16,7 +16,7 @@ pub fn plot_voxel(
 ) -> Result<(), DrawingError> {
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
-    let upper_bound = 12.0;
+    let upper_bound = 3_000.0;
     let concentration = voxel.get_total_extracellular()[0];
 
     // This should give a nice colormap
@@ -44,7 +44,7 @@ pub fn plot_modular_cell(
     let dx = root.get_x_range().end - root.get_x_range().start;
     let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
 
-    let s = modular_cell.interaction.get_radius() / dx * dx_pix as f64;
+    let s = modular_cell.interaction.radius / dx * dx_pix as f64;
     let cell_border = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
         s,
@@ -52,8 +52,8 @@ pub fn plot_modular_cell(
     );
     root.draw(&cell_border)?;
 
-    /* let lower_bound = 0.0;
-    let upper_bound = modular_cell.cycle.food_threshold / 10.0;
+    let lower_bound = 0.0;
+    let upper_bound = 5.0 * TARGET_AVERAGE_CONC;
 
     // Define colormap
     let derived_colormap = DerivedColorMap::new(&[RGBColor(102, 52, 83), RGBColor(247, 126, 201)]);
@@ -71,6 +71,6 @@ pub fn plot_modular_cell(
         s * (1.0 - relative_border_thickness),
         Into::<ShapeStyle>::into(&cell_inside_color).filled(),
     );
-    root.draw(&cell_inside)?;*/
+    root.draw(&cell_inside)?;
     Ok(())
 }

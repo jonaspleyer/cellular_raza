@@ -112,12 +112,15 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
         self.previous_values.push(du);
 
         // Make prediction
+        // TODO
 
         // Calculate PID Controller
         let pn = self.previous_values.len();
         let derivative = if pn > 1 {
-            (self.previous_values[pn-1] - self.previous_values[pn-2]) / DT
-        } else {0.0};
+            (self.previous_values[pn - 1] - self.previous_values[pn - 2]) / DT
+        } else {
+            0.0
+        };
         let integral = self.previous_values.iter().sum::<f64>() * DT;
         let proportional = self.k_p * du;
         let differential = self.k_p * self.t_d * derivative;
