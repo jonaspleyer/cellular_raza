@@ -9,7 +9,7 @@ pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type MyCellType = ModularCell<
     NewtonDamped2D,
-    MiePotential,
+    MiePotential<3, 1, f64>,
     NoCycle,
     OwnReactions,
     NoExtracellularGradientSensing,

@@ -98,13 +98,11 @@ fn main() -> Result<(), SimulationError> {
                     damping_constant: CELL_MECHANICS_DAMPING,
                     mass: 1.0,
                 },
-                interaction: MiePotential::new(
+                interaction: MiePotential::<3, 1>::new(
                     CELL_MECHANICS_RADIUS,
                     CELL_MECHANICS_POTENTIAL_STRENGTH,
                     1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
                     CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_MECHANICS_RADIUS,
-                    3,
-                    1,
                 )?,
                 interaction_extracellular: NoExtracellularGradientSensing,
                 cycle: NoCycle,
