@@ -273,6 +273,131 @@ impl<F, const D: usize> cellular_raza_concepts::domain_new::DomainRngSeed
     }
 }
 
+#[test]
+fn generate_subdomains() {
+    use cellular_raza_concepts::domain_new::DomainCreateSubDomains;
+    let min = [0.0; 3];
+    let max = [100.0; 3];
+    let interaction_range = 20.0;
+    let domain =
+        CartesianCuboid::from_boundaries_and_interaction_range(min, max, interaction_range)
+            .unwrap();
+    let sub_domains = domain
+        .create_subdomains(4.try_into().unwrap())
+        .unwrap()
+        .into_iter()
+        .collect::<Vec<_>>();
+    assert_eq!(sub_domains.len(), 4);
+    assert_eq!(
+        sub_domains
+            .iter()
+            .map(|(_, _, voxels)| voxels.len() as usize)
+            .sum::<usize>(),
+        5usize.pow(3)
+    );
+}
+
+/// TODO
+#[derive(Clone, Debug)]
+pub struct CartesianSubDomain<F, const D: usize> {
+    min: SVector<F, D>,
+    max: SVector<F, D>,
+    dx: SVector<F, D>,
+}
+
+impl<F, const D: usize>
+    cellular_raza_concepts::domain_new::DomainCreateSubDomains<CartesianSubDomain<F, D>>
+    for CartesianCuboid<F, D>
+where
+    F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
+{
+    type SubDomainIndex = usize;
+    type VoxelIndex = SVector<usize, D>;
+
+    fn create_subdomains(
+        &self,
+        n_subdomains: core::num::NonZeroUsize,
+    ) -> Result<
+        impl IntoIterator<
+            Item = (
+                Self::SubDomainIndex,
+                CartesianSubDomain<F, D>,
+                Vec<Self::VoxelIndex>,
+            ),
+        >,
+        DecomposeError,
+    > {
+        let indices = self.get_all_voxel_indices();
+        let n_indices = self.get_n_indices();
+
+        let (n, m, average_len) = get_decomp_res(n_indices, n_subdomains.into()).ok_or(
+            DecomposeError::Generic("Could not find a suiting decomposition".to_owned()),
+        )?;
+
+        // TODO Currently we are not splitting the voxels apart efficiently
+        // These are subdomains which contain n voxels
+        let switcher = n * average_len;
+        println!("n: {n} m: {m}");
+        println!("average_len: {average_len}");
+        let indices_grouped = indices.into_iter().enumerate().group_by(|(i, _)| {
+            use num::Integer;
+            if *i < switcher {
+                i.div_rem(&average_len).0
+            } else {
+                (i - switcher).div_rem(&(average_len - 1).max(1)).0 + n
+            }
+        });
+        let mut res = Vec::new();
+        for (n_subdomain, indices) in indices_grouped.into_iter() {
+            let mut min_vox = [0; D];
+            let mut max_vox = [0; D];
+            let voxels = indices
+                .into_iter()
+                .map(|(_, index)| {
+                    for i in 0..D {
+                        min_vox[i] = min_vox[i].min(index[i]);
+                        max_vox[i] = max_vox[i].max(index[i]);
+                    }
+                    index
+                })
+                .collect::<Vec<_>>();
+            let mut min = [F::zero(); D];
+            let mut max = [F::zero(); D];
+            for i in 0..D {
+                let n_vox_min = F::from_usize(min_vox[i]).ok_or(DecomposeError::Generic(
+                    cellular_raza_concepts::format_error_message!(
+                        "conversion error during domain setup",
+                        format!(
+                            "Cannot convert float {:?} of type {} to usize",
+                            min_vox[i],
+                            std::any::type_name::<F>()
+                        )
+                    ),
+                ))?;
+                let n_vox_max = F::from_usize(max_vox[i]).ok_or(DecomposeError::Generic(
+                    cellular_raza_concepts::format_error_message!(
+                        "conversion error during domain setup",
+                        format!(
+                            "Cannot convert float {:?} of type {} to usize",
+                            max_vox[i],
+                            std::any::type_name::<F>()
+                        )
+                    ),
+                ))?;
+                min[i] = self.min[i] + n_vox_min * self.dx[i];
+                max[i] = self.min[i] + (n_vox_max + F::one()) * self.dx[i];
+            }
+            let subdomain = CartesianSubDomain {
+                min: min.into(),
+                max: max.into(),
+                dx: self.dx.clone(),
+            };
+            res.push((n_subdomain, subdomain, voxels));
+        }
+        Ok(res)
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
