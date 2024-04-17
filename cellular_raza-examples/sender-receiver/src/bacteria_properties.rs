@@ -65,8 +65,8 @@ impl CellularReactions<ReactionVector> for OwnReactions {
 pub struct ConcentrationController {
     pub target_average_conc: f64,
     pub k_p: f64,
-    pub k_i: f64,
-    pub k_d: f64,
+    pub t_i: f64,
+    pub t_d: f64,
     pub previous_values: Vec<f64>,
 }
 
@@ -114,17 +114,22 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
             (self.previous_values[pn-1] - self.previous_values[pn-2]) / DT
         } else {0.0};
         let integral = self.previous_values.iter().sum::<f64>() * DT;
-        let controller_var = self.k_p * du + self.k_d * derivative + self.k_i * integral;
+        let proportional = self.k_p * du;
+        let differential = self.k_p * self.t_d * derivative;
+        let integral = self.k_p * integral / self.t_i;
+        // let controller_var = self.k_p * (du + self.t_d * derivative + integral / self.t_i);
+        let controller_var = proportional + differential + integral;
 
         // Adjust values
-        cells.into_iter().for_each(|(c, _)| {
-            match c.cell.cellular_reactions.species {
+        cells
+            .into_iter()
+            .for_each(|(c, _)| match c.cell.cellular_reactions.species {
                 Species::Sender => {
-                    c.cell.cellular_reactions.production_term.add_scalar_mut(controller_var);
-                },
+                    c.cell.cellular_reactions.production_term[0] =
+                        (c.cell.cellular_reactions.production_term[0] + controller_var).max(0.0);
+                }
                 _ => (),
-            }
-        });
+            });
         Ok(())
     }
 }

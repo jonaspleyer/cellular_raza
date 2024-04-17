@@ -139,9 +139,9 @@ fn main() -> Result<(), SimulationError> {
         StorageBuilder::new().location("out/bacteria_population"),
         ConcentrationController {
             target_average_conc: TARGET_AVERAGE_CONC,
-            k_p: 0.2,
-            k_i: 0.01,
-            k_d: 0.1,
+            k_p: 0.01,
+            t_d: 1.0 * MINUTE,
+            t_i: 20.0 * MINUTE,
             previous_values: vec![],
         },
     );
