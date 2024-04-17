@@ -393,8 +393,8 @@ pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     em: F,
 }
 
-impl<F, const D: usize, const N: usize, const M: usize> Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F>
-    for MiePotential<N, M, F>
+impl<F, const D: usize, const N: usize, const M: usize>
+    Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F> for MiePotential<N, M, F>
 where
     F: nalgebra::RealField + Copy,
 {
@@ -421,7 +421,8 @@ where
         let sigma = self.radius_to_sigma_factor() * x;
         let mie_constant =
             self.en / (self.en - self.em) * (self.en / self.em).powf(self.em / (self.en - self.em));
-        let potential_part = self.en * (sigma.powf(self.en + F::one()) - x.powf(self.em + F::one()));
+        let potential_part =
+            self.en * (sigma.powf(self.en + F::one()) - x.powf(self.em + F::one()));
         let force = self.potential_strength * mie_constant * potential_part;
         let force = force.min(self.bound);
         Ok(dir * force)
@@ -437,16 +438,11 @@ where
     F: nalgebra::RealField + num::FromPrimitive + Copy,
 {
     fn radius_to_sigma_factor(&self) -> F {
-        (self.em/self.en).powf(F::one() / (self.en - self.em))
+        (self.em / self.en).powf(F::one() / (self.en - self.em))
     }
 
     /// Constructs a new [MiePotential] with given parameters.
-    pub fn new(
-        radius: F,
-        potential_strength: F,
-        bound: F,
-        cutoff: F,
-    ) -> Result<Self, CalcError> {
+    pub fn new(radius: F, potential_strength: F, bound: F, cutoff: F) -> Result<Self, CalcError> {
         let em = F::from_usize(M).ok_or(CalcError(format!(
             "could not convert usize {} to float of type {}",
             M,
