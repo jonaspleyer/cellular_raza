@@ -14,6 +14,7 @@ use rand_chacha::ChaCha8Rng;
 pub const MICRO_METRE: f64 = 1.0;
 pub const MINUTE: f64 = 60.0;
 pub const SECOND: f64 = 1.0;
+pub const MOLAR: f64 = 1.0;
 
 // Number of cells to put into simulation in the Beginning
 pub const N_CELLS_INITIAL_SENDER: u32 = 50;
@@ -39,12 +40,12 @@ pub const DOMAIN_SIZE: f64 = 300.0;
 pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 4.0 * MICRO_METRE * MICRO_METRE / SECOND;
 
 // Controller parameters
-pub const TARGET_AVERAGE_CONC: f64 = 2.0;
+pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
 
 // Time parameters
 pub const DT: f64 = 0.1 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
-pub const T_END: f64 = 250.0 * MINUTE;
+pub const T_END: f64 = 50.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
@@ -59,7 +60,7 @@ use plotting::*;
 
 fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>) {
     voxel.diffusion_constant = [VOXEL_LIGAND_DIFFUSION_CONSTANT].into();
-    voxel.extracellular_concentrations = [0.0].into();
+    voxel.extracellular_concentrations = [0.0 * MOLAR].into();
     voxel.degradation_rate = ReactionVector::zero();
     voxel.production_rate = ReactionVector::zero();
 }
@@ -109,9 +110,9 @@ fn main() -> Result<(), SimulationError> {
                 cycle: NoCycle,
                 cellular_reactions: OwnReactions {
                     species,
-                    intracellular_concentrations: [0.0].into(),
+                    intracellular_concentrations: [0.0 * MOLAR].into(),
                     turnover_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
-                    production_term: [0.0].into(),
+                    production_term: [0.0 * MOLAR / SECOND].into(),
                     secretion_rate: [CELL_LIGAND_SECRETION_RATE].into(),
                     uptake_rate: [CELL_LIGAND_UPTAKE_RATE].into(),
                 },
@@ -145,7 +146,7 @@ fn main() -> Result<(), SimulationError> {
         StorageBuilder::new().location("out/sender_receiver"),
         ConcentrationController {
             target_average_conc: TARGET_AVERAGE_CONC,
-            k_p: 0.01,
+            k_p: 0.01 * MOLAR / SECOND,
             t_d: 1.0 * MINUTE,
             t_i: 20.0 * MINUTE,
             previous_values: vec![],
