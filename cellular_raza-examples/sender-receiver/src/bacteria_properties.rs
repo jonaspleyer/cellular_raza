@@ -79,10 +79,15 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
     {
         let mut n_cells = 0;
         let mut total_conc = 0.0;
-        cells.into_iter().for_each(|cell| {
-            total_conc += cell.cell.get_intracellular()[0];
-            n_cells += 1;
-        });
+        cells
+            .into_iter()
+            .for_each(|cell| match cell.cell.cellular_reactions.species {
+                Species::Receiver => {
+                    total_conc += cell.cell.get_intracellular()[0];
+                    n_cells += 1;
+                }
+                _ => (),
+            });
         Ok(Observable(total_conc / n_cells as f64, n_cells))
     }
 
