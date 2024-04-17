@@ -28,8 +28,9 @@ pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 =
 pub const CELL_MECHANICS_DAMPING: f64 = 2.0 / MINUTE;
 
 // Reaction parameters of the cell
-pub const CELL_LIGAND_TURNOVER_RATE: f64 = 0.025 / MINUTE;
-pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.05 / MINUTE;
+pub const CELL_LIGAND_TURNOVER_RATE: f64 = 0.5 / MINUTE;
+pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.5 / MINUTE;
+pub const CELL_LIGAND_SECRETION_RATE: f64 = 0.5 / MINUTE;
 
 // Parameters for domain
 pub const DOMAIN_SIZE: f64 = 300.0;
@@ -41,10 +42,10 @@ pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 4.0 * MICRO_METRE * MICRO_METRE
 pub const TARGET_AVERAGE_CONC: f64 = 2.0;
 
 // Time parameters
-pub const DT: f64 = 0.5 * SECOND;
-pub const T_START: f64 = 0.0 * SECOND;
-pub const T_END: f64 = 50.0 * MINUTE;
-pub const SAVE_INTERVAL: usize = 250;
+pub const DT: f64 = 0.1 * SECOND;
+pub const T_START: f64 = 0.0 * MINUTE;
+pub const T_END: f64 = 250.0 * MINUTE;
+pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
@@ -110,8 +111,8 @@ fn main() -> Result<(), SimulationError> {
                     species,
                     intracellular_concentrations: [0.0].into(),
                     turnover_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
-                    production_term: ReactionVector::zero(),
-                    secretion_rate: ReactionVector::zero(),
+                    production_term: [0.0].into(),
+                    secretion_rate: [CELL_LIGAND_SECRETION_RATE].into(),
                     uptake_rate: [CELL_LIGAND_UPTAKE_RATE].into(),
                 },
                 volume: 2.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
@@ -129,7 +130,12 @@ fn main() -> Result<(), SimulationError> {
         TimeSetup {
             t_start: 0.0,
             t_eval: (0..n_times)
-                .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
+                .map(|i| {
+                    (
+                        T_START + DT * i as f64,
+                        (DT * i as f64) % SAVE_INTERVAL == 0.0,
+                    )
+                })
                 .collect::<Vec<(f64, bool)>>(),
         },
         SimulationMetaParams {
