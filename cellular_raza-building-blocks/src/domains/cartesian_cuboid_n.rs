@@ -265,6 +265,14 @@ where
     }
 }
 
+impl<F, const D: usize> cellular_raza_concepts::domain_new::DomainRngSeed
+    for CartesianCuboid<F, D>
+{
+    fn get_rng_seed(&self) -> u64 {
+        self.rng_seed
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
