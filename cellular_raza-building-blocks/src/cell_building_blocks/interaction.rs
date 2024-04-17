@@ -342,12 +342,18 @@ macro_rules! implement_morse_potential(
             /// ```
             #[allow(unused)]
             pub fn grow_radius_with_volume<const D: usize>(&mut self, volume: $float_type) {
-                // unimplemented!()
+                unimplemented!()
             }
 
             /// CURRENTLY UNIMPLEMENTED!
             #[allow(unused)]
             pub fn grow_radius_by_length(&mut self, length: $float_type) {
+                unimplemented!()
+            }
+
+            ///
+            pub fn get_radius(&self) -> $float_type {
+                unimplemented!()
             }
         }
     };
