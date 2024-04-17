@@ -142,7 +142,7 @@ fn main() -> Result<(), SimulationError> {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageBuilder::new().location("out/bacteria_population"),
+        StorageBuilder::new().location("out/sender_receiver"),
         ConcentrationController {
             target_average_conc: TARGET_AVERAGE_CONC,
             k_p: 0.01,
