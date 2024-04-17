@@ -56,6 +56,24 @@ where
 /// order to obtain better numerical stability.
 ///
 #[doc = include_str!("plot_bound_lennard_jones.html")]
+///
+/// # References
+/// <textarea id="bibtex_input" style="display:none;">
+/// @article{doi:10.1098/rspa.1924.0081,
+/// author = {Jones, J. E.  and Chapman, Sydney },
+/// title = {On the determination of molecular fields.—I. From the variation of the viscosity of a gas with temperature},
+/// journal = {Proceedings of the Royal Society of London. Series A, Containing Papers of a Mathematical and Physical Character},
+/// volume = {106},
+/// number = {738},
+/// pages = {441-462},
+/// year = {1924},
+/// doi = {10.1098/rspa.1924.0081},
+/// URL = {https://royalsocietypublishing.org/doi/abs/10.1098/rspa.1924.0081},
+/// eprint = {https://royalsocietypublishing.org/doi/pdf/10.1098/rspa.1924.0081},
+/// }
+/// </textarea>
+/// <div id="bibtex_display"></div>
+///
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct BoundLennardJones {
@@ -159,6 +177,26 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 /// interchanging attractive and repulsive properties $l_a,C_a$ and $l_r,C_r$.
 ///
 #[doc = include_str!("plot_morse_potential.html")]
+///
+/// # References
+/// <textarea id="bibtex_input" style="display:none;">
+/// @article{PhysRev.34.57,
+///   title = {Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels},
+///   author = {Morse, Philip M.},
+///   journal = {Phys. Rev.},
+///   volume = {34},
+///   issue = {1},
+///   pages = {57--64},
+///   numpages = {0},
+///   year = {1929},
+///   month = {Jul},
+///   publisher = {American Physical Society},
+///   doi = {10.1103/PhysRev.34.57},
+///   url = {https://link.aps.org/doi/10.1103/PhysRev.34.57}
+/// }
+/// </textarea>
+/// <div id="bibtex_display"></div>
+///
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
 pub struct MorsePotential {
@@ -380,10 +418,23 @@ implement_morse_potential!(MorsePotentialF32, f32);
 // | [MiePotentialF32] | COMING |
 //
 /// # References
-/// <div id="bibtex_display"></div>
 /// <textarea id="bibtex_input" style="display:none;">
-#[doc = include_str!("mie_potential.bib")]
+/// @article{Mie1903,
+///   title = {Zur kinetischen Theorie der einatomigen K\"{o}rper},
+///   volume = {316},
+///   ISSN = {1521-3889},
+///   url = {http://dx.doi.org/10.1002/andp.19033160802},
+///   DOI = {10.1002/andp.19033160802},
+///   number = {8},
+///   journal = {Annalen der Physik},
+///   publisher = {Wiley},
+///   author = {Mie,  Gustav},
+///   year = {1903},
+///   month = jan,
+///   pages = {657–697}
+/// }
 /// </textarea>
+/// <div id="bibtex_display"></div>
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     /// Interaction strength $\epsilon$ of the potential.
