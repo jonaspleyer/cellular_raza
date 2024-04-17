@@ -6,6 +6,7 @@ use pyo3::prelude::*;
 
 // Imports from std and core
 use core::cmp::{max, min};
+use std::usize;
 
 // Imports from other crates
 use itertools::Itertools;
@@ -69,6 +70,17 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
         }
     }
     None
+}
+
+/// TODO
+#[derive(Clone, Debug)]
+pub struct CartesianCuboid<F, const D: usize> {
+    min: SVector<F, D>,
+    max: SVector<F, D>,
+    dx: SVector<F, D>,
+    n_voxels: SVector<usize, D>,
+    /// Seed from which all random numbers will be initially drawn
+    pub rng_seed: u64,
 }
 
 macro_rules! define_and_implement_cartesian_cuboid {
