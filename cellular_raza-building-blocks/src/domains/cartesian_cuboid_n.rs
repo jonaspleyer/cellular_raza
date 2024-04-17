@@ -213,6 +213,7 @@ mod test_domain_setup {
         let interaction_range = 1.0;
         let _ = CartesianCuboid::from_boundaries_and_interaction_range(min, max, interaction_range)
             .unwrap();
+        // TODO add actual test case here
     }
 
     #[test]
@@ -222,6 +223,7 @@ mod test_domain_setup {
         let max = [43000.0f32; 55];
         let n_voxels = [22; 55];
         let _ = CartesianCuboid::from_boundaries_and_n_voxels(min, max, n_voxels).unwrap();
+        // TODO add actual test case here
     }
 }
 
