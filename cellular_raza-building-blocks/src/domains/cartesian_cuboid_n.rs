@@ -289,7 +289,7 @@ fn generate_subdomains() {
     assert_eq!(
         sub_domains
             .iter()
-            .map(|(_, _, voxels)| voxels.len() as usize)
+            .map(|(_, _, voxels)| voxels.len())
             .sum::<usize>(),
         5usize.pow(3)
     );
@@ -335,8 +335,6 @@ where
         // TODO Currently we are not splitting the voxels apart efficiently
         // These are subdomains which contain n voxels
         let switcher = n * average_len;
-        println!("n: {n} m: {m}");
-        println!("average_len: {average_len}");
         let indices_grouped = indices.into_iter().enumerate().group_by(|(i, _)| {
             use num::Integer;
             if *i < switcher {
