@@ -175,7 +175,6 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
                 .map(|i| self.sampling_prod_low + production_term_sampling_increment * i as f64)
                 .map(|u| (u, cost_func(u)))
                 .fold((0.0, f64::INFINITY), |(x1, x2), (c1, c2)| {
-                    println!("{} {} {} {}", x1, x2, c1, c2);
                     if x2 < c2 {
                         (x1, x2)
                     } else {
