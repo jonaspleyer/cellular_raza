@@ -372,9 +372,9 @@ implement_morse_potential!(MorsePotentialF32, f32);
 /// | [MiePotentialF64] | COMING |
 /// | [MiePotentialF32] | COMING |
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct MiePotential<F = f64> {
+pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     /// Interaction strength $\epsilon$ of the potential.
-    pub sigma: F,
+    pub radius: F,
     /// Overall size $\sigma$ of the object of the potential.
     pub potential_strength: F,
     /// Numerical bound $\beta$ of the interaction strength.
@@ -387,8 +387,8 @@ pub struct MiePotential<F = f64> {
     em: F,
 }
 
-impl<F, const D: usize> Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F>
-    for MiePotential<F>
+impl<F, const D: usize, const N: usize, const M: usize> Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F>
+    for MiePotential<N, M, F>
 where
     F: nalgebra::RealField + Copy,
 {
@@ -398,7 +398,7 @@ where
         _own_vel: &SVector<F, D>,
         ext_pos: &SVector<F, D>,
         _ext_vel: &SVector<F, D>,
-        ext_sigma: &F,
+        ext_radius: &F,
     ) -> Result<SVector<F, D>, CalcError> {
         let z = own_pos - ext_pos;
         let r = z.norm();
@@ -411,63 +411,54 @@ where
             return Ok([F::zero(); D].into());
         }
         let dir = z / r;
-        let x = (self.sigma + *ext_sigma) / r;
+        let x = (self.radius + *ext_radius) / r;
+        let sigma = self.radius_to_sigma_factor() * x;
         let mie_constant =
             self.en / (self.en - self.em) * (self.en / self.em).powf(self.em / (self.en - self.em));
-        let potential_part = self.en * (x.powf(self.en + F::one()) - x.powf(self.em + F::one()));
+        let potential_part = self.en * (sigma.powf(self.en + F::one()) - x.powf(self.em + F::one()));
         let force = self.potential_strength * mie_constant * potential_part;
         let force = force.min(self.bound);
         Ok(dir * force)
     }
 
     fn get_interaction_information(&self) -> F {
-        self.sigma
+        self.radius
     }
 }
 
-impl<F> MiePotential<F>
+impl<F, const N: usize, const M: usize> MiePotential<N, M, F>
 where
     F: nalgebra::RealField + num::FromPrimitive + Copy,
 {
+    fn radius_to_sigma_factor(&self) -> F {
+        (self.em/self.en).powf(F::one() / (self.en - self.em))
+    }
+
     /// Constructs a new [MiePotential] with given parameters.
     pub fn new(
         radius: F,
         potential_strength: F,
         bound: F,
         cutoff: F,
-        exponent_n: usize,
-        exponent_m: usize,
     ) -> Result<Self, CalcError> {
-        let em = F::from_usize(exponent_m).ok_or(CalcError(format!(
+        let em = F::from_usize(M).ok_or(CalcError(format!(
             "could not convert usize {} to float of type {}",
-            exponent_m,
+            M,
             std::any::type_name::<F>()
         )))?;
-        let en = F::from_usize(exponent_n).ok_or(CalcError(format!(
+        let en = F::from_usize(N).ok_or(CalcError(format!(
             "could not convert usize {} to float of type {}",
-            exponent_n,
+            N,
             std::any::type_name::<F>()
         )))?;
-        let mut res = Self {
-            sigma: F::one(),
+        Ok(Self {
+            radius,
             potential_strength,
             bound,
             cutoff,
             en,
             em,
-        };
-        res.set_radius(radius);
-        Ok(res)
-    }
-
-    /// Obtains the current radius of this object
-    pub fn get_radius(&self) -> F {
-        self.sigma * (self.em / self.en).powf(-F::one() / (self.en - self.em))
-    }
-
-    /// Set the radius which corresponds to the repelling part of this potential
-    pub fn set_radius(&mut self, radius: F) {
-        self.sigma = radius * (self.em / self.en).powf(F::one() / (self.en - self.em));
+        })
     }
 }
 
