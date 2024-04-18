@@ -237,8 +237,10 @@ impl StorageOption {
 /// Define how elements and identifiers are saved when being serialized together.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CombinedSaveFormat<Id, Element> {
-    pub(super) identifier: Id,
-    pub(super) element: Element,
+    /// Identifier of the element
+    pub identifier: Id,
+    /// Actual element which is being stored
+    pub element: Element,
 }
 
 /// Define how batches of elements and identifiers are saved when being serialized.
