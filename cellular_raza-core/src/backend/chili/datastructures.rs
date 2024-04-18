@@ -241,6 +241,7 @@ where
                 CellBox::new(voxel.plain_index, voxel.id_counter, cell, None),
                 aux_storage.map_or(A::default(), |x| x),
             ));
+            voxel.id_counter += 1;
         }
         Ok(())
     }
