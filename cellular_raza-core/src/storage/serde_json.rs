@@ -253,3 +253,46 @@ impl<Id, Element> StorageInterfaceLoad<Id, Element> for JsonStorageInterface<Id,
             .collect::<Result<Vec<_>, _>>()
     }
 }
+
+// TODO extend this to test all functions
+macro_rules! test_storage_interface(
+    ($interface_name:ident, $module_name:ident) => {
+        #[cfg(test)]
+        mod $module_name {
+            use super::*;
+
+            #[test]
+            fn store_load_all_elements() {
+                use tempdir::TempDir;
+                let dir = TempDir::new("tempdir").unwrap();
+                let location = dir.path().join(concat!("tempdir_", stringify!($interface_name)));
+                let interface_0 = $interface_name::open_or_create(&location, 0).unwrap();
+                let interface_1 = $interface_name::open_or_create(&location, 1).unwrap();
+                let generate_elements = |low: usize, high: usize| {
+                    (low..high).map(|i| (i, i as f64))
+                    .collect::<std::collections::HashMap<_, _>>()
+                };
+                let identifiers_elements_0 = generate_elements(0, 10);
+                let identifiers_elements_1 = generate_elements(20, 30);
+                let iteration = 100;
+                interface_0
+                    .store_batch_elements(iteration, identifiers_elements_0.iter())
+                    .unwrap();
+                interface_1
+                    .store_batch_elements(iteration, identifiers_elements_1.iter())
+                    .unwrap();
+                let loaded_elements_0 = interface_0.load_all_elements_at_iteration(iteration)
+                    .unwrap();
+                let loaded_elements_1 = interface_1.load_all_elements_at_iteration(iteration)
+                    .unwrap();
+                let mut identifiers_elements = identifiers_elements_0.clone();
+                identifiers_elements.extend(identifiers_elements_1);
+                assert_eq!(identifiers_elements, loaded_elements_0);
+                assert_eq!(identifiers_elements, loaded_elements_1);
+                assert_eq!(loaded_elements_0, loaded_elements_1);
+            }
+        }
+    }
+);
+
+test_storage_interface!(JsonStorageInterface, json_tests);
