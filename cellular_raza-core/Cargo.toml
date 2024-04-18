@@ -50,6 +50,9 @@ version = "0.0.8"
 path = "../cellular_raza-core-proc-macro"
 version = "0.0.8"
 
+[dev-dependencies]
+tempdir = "0.3"
+
 [features]
 default = ["gradients", "timestamp"]
 tracing = ["dep:tracing", "dep:tracing-subscriber"]
