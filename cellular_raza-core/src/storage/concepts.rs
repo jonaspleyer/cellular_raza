@@ -404,6 +404,11 @@ impl StorageBuilder<true> {
         full_path
     }
 
+    #[doc(hidden)]
+    pub fn init(self) -> Self {
+        self
+    }
+
     /// De-initializes the StorageBuilder, making it possible to edit it again.
     pub fn de_init(self) -> StorageBuilder<false> {
         StorageBuilder {

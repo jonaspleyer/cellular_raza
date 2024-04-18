@@ -15,14 +15,14 @@ pub struct SimulationSetup<C, D> {
 
 /// Specify settings surrounding execution and storage
 #[derive(Clone, Deserialize, Serialize)]
-pub struct Settings<T> {
+pub struct Settings<T, const INIT: bool> {
     /// Number of threads used for executing simulation in parallel
     pub n_threads: core::num::NonZeroUsize,
     // TODO replace this with timestepper in the future
     /// Specify how time is advanced during the simulation
     pub time: T,
     /// Define storage properties
-    pub storage: crate::storage::StorageBuilder,
+    pub storage: crate::storage::StorageBuilder<INIT>,
     /// Determines if progress bar should be shown during execution
     pub show_progressbar: bool,
 }
