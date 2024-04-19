@@ -80,29 +80,6 @@ impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
-    /// Advances the cycle of a cell by a small time increment `dt`.
-    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_cycle<
-        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
-        #[cfg(not(feature = "tracing"))] Float,
-    >(
-        &mut self,
-        dt: Float,
-    ) -> Result<(), CalcError>
-    where
-        C: cellular_raza_concepts::Cycle<C, Float>,
-        A: UpdateCycle,
-    {
-        self.voxels.iter_mut().for_each(|(_, voxel)| {
-            voxel.cells.iter_mut().for_each(|(cell, aux_storage)| {
-                if let Some(event) = C::update_cycle(&mut voxel.rng, &dt, cell) {
-                    aux_storage.add_cycle_event(event);
-                }
-            })
-        });
-        Ok(())
-    }
-
     /// Separate function to update the cell cycle
     ///
     /// Instead of running one big update function for all local rules, we have to treat this cell
@@ -127,4 +104,21 @@ where
             .collect::<Result<(), SimulationError>>()?;
         Ok(())
     }
+}
+
+/// Advances the cycle of a cell by a small time increment `dt`.
+pub fn local_cycle_update<C, A, Float>(
+    cell: &mut C,
+    aux_storage: &mut A,
+    dt: Float,
+    rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), cellular_raza_concepts::RngError>
+where
+    C: cellular_raza_concepts::Cycle<C, Float>,
+    A: UpdateCycle,
+{
+    if let Some(event) = C::update_cycle(rng, &dt, cell) {
+        aux_storage.add_cycle_event(event);
+    }
+    Ok(())
 }
