@@ -58,6 +58,7 @@ macro_rules! impl_from_error {
 /// | [SendError](SimulationError::SendError) | 3/10 | 6/10 | 1/10 |
 /// | [ReceiveError](SimulationError::ReceiveError) | 3/10 | 6/10 | 1/10 |
 /// | [StorageError](SimulationError::StorageError) | 3/10 | 7/10 | 0/10 |
+/// | [RngError](SimulationError::RngError) | 1/10 | 8/10 | 1/10 |
 /// | [IoError](SimulationError::IoError) | 1/10 | 9/10 | 0/10 |
 #[derive(Debug)]
 pub enum SimulationError {
@@ -103,6 +104,9 @@ pub enum SimulationError {
     /// When writing to output files or reading from them.
     /// See [std::io::Error]
     IoError(std::io::Error),
+
+    /// Error related to random number generation by the [rand_chacha::ChaCha8Rng] struct.
+    RngError(RngError),
 }
 
 impl_from_error! {SimulationError,
@@ -117,7 +121,8 @@ impl_from_error! {SimulationError,
     (IndexError, IndexError),
     (IoError, std::io::Error),
     (DrawingError, DrawingError),
-    (StorageError, StorageError)
+    (StorageError, StorageError),
+    (RngError, RngError)
 }
 
 impl_error_variant! {SimulationError,
@@ -133,7 +138,8 @@ impl_error_variant! {SimulationError,
     IndexError,
     IoError,
     DrawingError,
-    StorageError
+    StorageError,
+    RngError
 }
 
 // Implement the general error property
@@ -229,6 +235,7 @@ impl From<SimulationError> for pyo3::PyErr {
             SendError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             ReceiveError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             StorageError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            RngError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             IoError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
         }
     }
