@@ -253,7 +253,7 @@ where
     pub fn run_local_cell_funcs<Func, F>(
         &mut self,
         func: Func,
-        dt: F,
+        next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), super::SimulationError>
     where
         Func: Fn(
@@ -264,6 +264,7 @@ where
         ) -> Result<(), super::SimulationError>,
         F: Copy,
     {
+        let dt = next_time_point.increment;
         for (_, voxel) in self.voxels.iter_mut() {
             for (cellbox, aux_storage) in voxel.cells.iter_mut() {
                 func(&mut cellbox.cell, aux_storage, dt, &mut voxel.rng)?;
