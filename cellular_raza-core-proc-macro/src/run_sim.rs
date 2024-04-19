@@ -439,6 +439,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
 
+    let core_path = &kwargs.core_path;
+    let settings = &kwargs.settings;
+
     if kwargs
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
@@ -469,8 +472,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     // TODO implement this!
     if kwargs.aspects.contains(&Reactions) {}
 
-    let core_path = &kwargs.core_path;
-    let settings = &kwargs.settings;
 
     quote!(
         let builder = #settings.storage.clone().init();
