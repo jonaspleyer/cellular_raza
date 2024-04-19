@@ -250,9 +250,18 @@ where
     ///
     /// Used to iterate over all cells in the current subdomain and running local functions which
     /// need no communication with other subdomains
-    pub fn run_local_cell_funcs<Func, F>(&mut self, func: Func, dt: F) -> Result<(), super::SimulationError>
+    pub fn run_local_cell_funcs<Func, F>(
+        &mut self,
+        func: Func,
+        dt: F,
+    ) -> Result<(), super::SimulationError>
     where
-        Func: Fn(&mut C, &mut A, F, &mut rand_chacha::ChaCha8Rng) -> Result<(), super::SimulationError>,
+        Func: Fn(
+            &mut C,
+            &mut A,
+            F,
+            &mut rand_chacha::ChaCha8Rng,
+        ) -> Result<(), super::SimulationError>,
         F: Copy,
     {
         for (_, voxel) in self.voxels.iter_mut() {
