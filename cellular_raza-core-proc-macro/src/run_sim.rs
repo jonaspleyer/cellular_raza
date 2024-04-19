@@ -471,10 +471,20 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     // TODO implement this!
     if kwargs.aspects.contains(&Reactions) {}
 
-    // TODO implement this
-    // let local_funcs = quote!(
-    //     sbox.run_local_cell_funcs
-    // );
+    let update_local_funcs = quote!(
+        let __cr_private_combined_local_cell_funcs = |
+            cell: &mut _,
+            aux_storage: &mut _,
+            dt,
+            rng: &mut rand_chacha::ChaCha8Rng
+        | -> Result<(), #core_path::backend::chili::SimulationError> {
+            #(
+                #local_func_names(cell, aux_storage, dt, rng)?;
+            )*
+            Ok(())
+        };
+        sbox.run_local_cell_funcs(__cr_private_combined_local_cell_funcs, &next_time_point)?;
+    );
 
     quote!(
         let builder = #settings.storage.clone().init();
@@ -503,8 +513,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             #step_2
             sbox.sync();
             #step_3
-            // TODO
-            // sbox.run_local_cell_funcs(#local_funcs);
+            #update_local_funcs
             sbox.sync();
             #step_4
 
