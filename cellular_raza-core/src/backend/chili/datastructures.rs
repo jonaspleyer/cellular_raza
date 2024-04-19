@@ -246,6 +246,23 @@ where
         Ok(())
     }
 
+    /// Update all purely local functions
+    ///
+    /// Used to iterate over all cells in the current subdomain and running local functions which
+    /// need no communication with other subdomains
+    pub fn run_local_cell_funcs<Func, F>(&mut self, func: Func, dt: F) -> Result<(), super::SimulationError>
+    where
+        Func: Fn(&mut C, &mut A, F, &mut rand_chacha::ChaCha8Rng) -> Result<(), super::SimulationError>,
+        F: Copy,
+    {
+        for (_, voxel) in self.voxels.iter_mut() {
+            for (cellbox, aux_storage) in voxel.cells.iter_mut() {
+                func(&mut cellbox.cell, aux_storage, dt, &mut voxel.rng)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Save all voxels (containing all cells) with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
     pub fn save_voxels<
