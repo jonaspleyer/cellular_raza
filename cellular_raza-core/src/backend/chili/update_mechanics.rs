@@ -531,3 +531,20 @@ where
         Ok(())
     }
 }
+
+/// Corresponds to the [set_random_variable](cellular_raza_concepts::Mechanics::set_random_variable)
+/// function of the [Mechanics](cellular_raza_concepts::Mechanics) trait.
+pub fn local_mechanics_set_random_variable<C, A, Pos, Vel, For, Float, const N: usize>(
+    cell: &mut C,
+    aux_storage: &mut A,
+    dt: Float,
+    rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), cellular_raza_concepts::RngError>
+where
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+    A: UpdateMechanics<Pos, Vel, For, Float, N>,
+{
+    let next_update_point = cell.set_random_variable(rng, dt)?;
+    aux_storage.set_next_random_update(next_update_point);
+    Ok(())
+}
