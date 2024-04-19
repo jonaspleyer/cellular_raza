@@ -245,12 +245,7 @@ where
         }
         Ok(())
     }
-}
 
-impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
-where
-    S: SubDomain,
-{
     /// Save all voxels (containing all cells) with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
     pub fn save_voxels<
