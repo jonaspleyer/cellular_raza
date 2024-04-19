@@ -438,6 +438,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_2 = proc_macro2::TokenStream::new();
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
+    let mut local_cell_func_names = Vec::<proc_macro2::TokenStream>::new();
 
     let core_path = &kwargs.core_path;
     let settings = &kwargs.settings;
@@ -452,11 +453,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
 
-    // TODO find a way to group "local functions together without having to iterate over all
-    // cells multiple times.
-
     if kwargs.aspects.contains(&DomainForce) {
-        // TODO only enable this feature if the subdomain supports it
         step_1.extend(quote!(sbox.calculate_custom_domain_force()?;));
     }
 
@@ -465,6 +462,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Mechanics) {
+        local_cell_func_names.push(quote!(#core_path::backend::chili::local_mechanics_set_random_variable));
         step_3.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
     }
@@ -472,6 +470,10 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     // TODO implement this!
     if kwargs.aspects.contains(&Reactions) {}
 
+    // TODO implement this
+    // let local_funcs = quote!(
+    //     sbox.run_local_cell_funcs
+    // );
 
     quote!(
         let builder = #settings.storage.clone().init();
@@ -500,6 +502,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             #step_2
             sbox.sync();
             #step_3
+            // TODO
+            // sbox.run_local_cell_funcs(#local_funcs);
             sbox.sync();
             #step_4
 
