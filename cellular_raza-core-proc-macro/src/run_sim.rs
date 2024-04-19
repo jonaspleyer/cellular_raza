@@ -438,7 +438,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_2 = proc_macro2::TokenStream::new();
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
-    let mut local_cell_func_names = Vec::<proc_macro2::TokenStream>::new();
+    let mut local_func_names = Vec::<proc_macro2::TokenStream>::new();
 
     let core_path = &kwargs.core_path;
     let settings = &kwargs.settings;
@@ -458,11 +458,11 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Cycle) {
-        step_3.extend(quote!(sbox.update_cell_cycle()?;));
+        local_func_names.push(quote!(#core_path::backend::chili::local_cycle_update));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
-        local_cell_func_names
+        local_func_names
             .push(quote!(#core_path::backend::chili::local_mechanics_set_random_variable));
         step_3.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
