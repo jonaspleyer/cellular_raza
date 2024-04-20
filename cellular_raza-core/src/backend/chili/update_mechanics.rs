@@ -543,8 +543,15 @@ pub fn local_mechanics_set_random_variable<C, A, Pos, Vel, For, Float, const N: 
 where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     A: UpdateMechanics<Pos, Vel, For, Float, N>,
+    Float: core::ops::Sub<Output = Float> + core::cmp::PartialOrd,
 {
-    let next_update_point = cell.set_random_variable(rng, dt)?;
-    aux_storage.set_next_random_update(next_update_point);
+    if let Some(next_time) = aux_storage.get_next_random_update() {
+        if next_time <= dt {
+            let next_update_point = cell.set_random_variable(rng, dt)?;
+            aux_storage.set_next_random_update(next_update_point);
+        } else {
+            aux_storage.set_next_random_update(Some(next_time - dt));
+        }
+    }
     Ok(())
 }
