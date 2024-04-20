@@ -453,6 +453,11 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
 
+    if kwargs.aspects.contains(&Interaction) {
+        local_func_names
+            .push(quote!(#core_path::backend::chili::local_interaction_react_to_neighbors));
+    }
+
     if kwargs.aspects.contains(&DomainForce) {
         step_1.extend(quote!(sbox.calculate_custom_domain_force()?;));
     }

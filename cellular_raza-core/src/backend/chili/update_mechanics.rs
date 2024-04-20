@@ -2,8 +2,8 @@
 use tracing::instrument;
 
 use super::{
-    CellBox, Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateMechanics,
-    Voxel, VoxelPlainIndex,
+    CellBox, Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateInteraction,
+    UpdateMechanics, Voxel, VoxelPlainIndex,
 };
 use cellular_raza_concepts::{
     domain_new::{SubDomain, SubDomainMechanics},
@@ -553,5 +553,20 @@ where
             aux_storage.set_next_random_update(Some(next_time - dt));
         }
     }
+    Ok(())
+}
+
+/// TODO
+pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
+    cell: &mut C,
+    aux_storage: &A,
+    _dt: Float,
+    _rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), cellular_raza_concepts::CalcError>
+where
+    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+    A: UpdateInteraction,
+{
+    cell.react_to_neighbours(aux_storage.get_current_neighbours())?;
     Ok(())
 }
