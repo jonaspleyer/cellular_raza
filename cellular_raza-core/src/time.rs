@@ -110,7 +110,7 @@ where
     ) -> Result<Self, TimeError> {
         let mut partial_save_points = vec![];
         let mut t = t0;
-        while t < t_max {
+        while t <= t_max {
             partial_save_points.push(t);
             t = t + save_interval;
         }
