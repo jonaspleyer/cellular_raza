@@ -328,7 +328,7 @@ macro_rules! implement_brownian_mechanics(
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: f64,
             ) -> Result<Option<f64>, RngError> {
-                self.random_vector = generate_random_vector(rng, self.update_interval as f64 * dt)?;
+                self.random_vector = generate_random_vector(rng, dt.sqrt())?;
                 Ok(Some(self.update_interval as f64 * dt))
             }
 
