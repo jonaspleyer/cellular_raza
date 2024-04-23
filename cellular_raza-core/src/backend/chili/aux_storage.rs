@@ -106,12 +106,32 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 }
 
 /// Stores intermediate information about the mechanics of a cell.
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AuxStorageMechanics<Pos, Vel, For, Float, const N: usize> {
     positions: FixedSizeRingBuffer<Pos, N>,
     velocities: FixedSizeRingBuffer<Vel, N>,
     current_force: For,
     next_random_mechanics_update: Option<Float>,
+}
+
+// It is necessary to implement this trait by hand since with the current version of the Mechanics
+// concept, we need to specify next_random_mechanics_update: Some(0.0) in order for any updates to
+// be done at all.
+impl<Pos, Vel, For, Float, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, Float, N>
+where
+    Pos: Default,
+    Vel: Default,
+    For: Default,
+    Float: Default,
+{
+    fn default() -> Self {
+        Self {
+            positions: FixedSizeRingBuffer::<Pos, N>::default(),
+            velocities: FixedSizeRingBuffer::<Vel, N>::default(),
+            current_force: For::default(),
+            next_random_mechanics_update: Some(Float::default()),
+        }
+    }
 }
 
 impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N>
