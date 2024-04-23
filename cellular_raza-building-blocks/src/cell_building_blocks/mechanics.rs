@@ -409,7 +409,7 @@ macro_rules! define_langevin_nd(
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
             ) -> Result<Option<$float_type>, RngError> {
-                self.random_vector = generate_random_vector(rng, 2.0 * self.kb_temperature)?;// TODO * self.update_interval as $float_type * dt)?;
+                self.random_vector = generate_random_vector(rng, dt.sqrt())?;
                 Ok(Some(self.update_interval as $float_type * dt))
             }
 
