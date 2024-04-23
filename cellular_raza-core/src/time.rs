@@ -118,8 +118,8 @@ where
     }
 
     /// Simple function to construct the stepper from an initial time point, the time increment and
-    /// the time points at which the simulation should be saved. Notice that these saves do not cover
-    /// [FullSaves](TimeEvent::FullSave) but only [PartialSaves](TimeEvent::PartialSave).
+    /// the time points at which the simulation should be saved. Notice that these saves do not
+    /// cover [FullSaves](TimeEvent::FullSave) but only [PartialSaves](TimeEvent::PartialSave).
     pub fn from_partial_save_points(
         t0: F,
         dt: F,

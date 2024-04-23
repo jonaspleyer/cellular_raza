@@ -193,7 +193,7 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
             let line = format!("{},{},{},{}\n", self.target_average_conc - average_conc, average_conc, res.0, res.1);
             f.write(line.as_bytes()).unwrap();
 
-            // If the approach was succesfull, we return the calculated value
+            // If the approach was successful, we return the calculated value
             // otherwise retturn the standard one.
             if res.1 < f64::INFINITY {
                 res.0.max(0.0)

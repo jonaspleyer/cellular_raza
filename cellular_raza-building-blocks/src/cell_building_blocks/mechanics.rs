@@ -186,7 +186,7 @@ where
     Ok(random_dir)
 }
 
-macro_rules! implement_brownian_mechanis(
+macro_rules! implement_brownian_mechanics(
     ($struct_name:ident, $d:literal) => {
         /// Brownian motion of particles
         ///
@@ -345,9 +345,9 @@ macro_rules! implement_brownian_mechanis(
     }
 );
 
-implement_brownian_mechanis!(Brownian1D, 1);
-implement_brownian_mechanis!(Brownian2D, 2);
-implement_brownian_mechanis!(Brownian3D, 3);
+implement_brownian_mechanics!(Brownian1D, 1);
+implement_brownian_mechanics!(Brownian2D, 2);
+implement_brownian_mechanics!(Brownian3D, 3);
 
 macro_rules! define_langevin_nd(
     ($struct_name:ident, $d:literal, $float_type:ident) => {
