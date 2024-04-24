@@ -564,7 +564,11 @@ pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::CalcError>
 where
-    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
+    // TODO this constraint is only here due to current implementation limitations we should try to
+    // remove this either by giving the option to specify types in the run_main! proc macro or by
+    // somehow inferring this type
+        + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     A: UpdateInteraction,
 {
     cell.react_to_neighbours(aux_storage.get_current_neighbours())?;
