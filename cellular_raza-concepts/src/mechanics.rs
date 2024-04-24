@@ -19,8 +19,8 @@ pub trait Mechanics<Pos, Vel, For, Float = f64> {
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: Float,
-    ) -> Result<Option<Float>, RngError> {
-        Ok(None)
+    ) -> Result<(), RngError> {
+        Ok(())
     }
 
     /// Calculate the time-derivative of force and velocity given all the forces that act on the cell.

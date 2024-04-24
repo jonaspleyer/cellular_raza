@@ -110,7 +110,7 @@ where
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: Float,
-    ) -> Result<Option<Float>, RngError> {
+    ) -> Result<(), RngError> {
         self.cell.set_random_variable(rng, dt)
     }
 

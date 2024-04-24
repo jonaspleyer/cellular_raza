@@ -326,7 +326,7 @@ impl AgentImplementer {
                     fn set_random_variable(&mut self,
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: #float_type,
-                    ) -> Result<Option<#float_type>, RngError> {
+                    ) -> Result<(), RngError> {
                         <#field_type as Mechanics<#tokens>>::set_random_variable(
                             &mut self.#field_name,
                             rng,

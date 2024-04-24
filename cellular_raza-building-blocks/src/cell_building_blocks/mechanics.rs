@@ -196,15 +196,12 @@ macro_rules! implement_brownian_mechanics(
         /// | $\vec{x}$ | `pos` | Position of the particle. |
         /// | $D$ | `diffusion_constant` | Damping constant of each particle. |
         /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-        /// | $\Delta t$ | `update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
         ///
         /// # Equations
         /// We integrate the standard brownian motion stochastic differential equation.
         /// \\begin{equation}
         ///     \dot{\vec{x}} = -\frac{D}{k_B T}\nabla V(x) + \sqrt{2D}R(t)
         /// \\end{equation}
-        /// The variable `update_interval` $n_t$ determines how often a new random direction for travel
-        /// is generated.
         /// The new random vector is then also sampled by a distribution with greater width.
         /// If we choose this value larger than one, we can
         /// resolve smaller timesteps to more accurately solve the equations.
@@ -217,8 +214,6 @@ macro_rules! implement_brownian_mechanics(
             pub diffusion_constant: f64,
             /// The product of temperature and boltzmann constant $k_B T$.
             pub kb_temperature: f64,
-            /// The steps it takes for the particle to update its random vector
-            pub update_interval: usize,
             random_vector: SVector<f64, $d>,
         }
 
@@ -230,14 +225,12 @@ macro_rules! implement_brownian_mechanics(
                 pos: [f64; $d],
                 diffusion_constant: f64,
                 kb_temperature: f64,
-                update_interval: usize,
             ) -> Self {
                 use num::Zero;
                 Self {
                     pos: pos.into(),
                     diffusion_constant,
                     kb_temperature,
-                    update_interval,
                     random_vector: SVector::<f64, $d>::zero(),
                 }
             }
@@ -251,10 +244,8 @@ macro_rules! implement_brownian_mechanics(
             fn _new(
                 pos: [f64; $d],
                 diffusion_constant: f64,
-                kb_temperature: f64,
-                update_interval: usize,
             ) -> Self {
-                Self::new(pos, diffusion_constant, kb_temperature, update_interval)
+                Self::new(pos, diffusion_constant, kb_temperature)
             }
 
 
@@ -276,12 +267,6 @@ macro_rules! implement_brownian_mechanics(
                 self.kb_temperature = kb_temperature;
             }
 
-            /// [pyo3] setter for `update_interval`
-            #[setter]
-            pub fn set_update_interval(&mut self, update_interval: usize) {
-                self.update_interval = update_interval;
-            }
-
             /// [pyo3] getter for `pos`
             #[getter]
             pub fn get_pos(&self) -> [f64; $d] {
@@ -298,12 +283,6 @@ macro_rules! implement_brownian_mechanics(
             #[getter]
             pub fn get_kb_temperature(&self) -> f64 {
                 self.kb_temperature
-            }
-
-            /// [pyo3] getter for `update_interval`
-            #[getter]
-            pub fn get_update_interval(&self) -> usize {
-                self.update_interval
             }
         }
 
@@ -362,7 +341,6 @@ macro_rules! define_langevin_nd(
         /// | $M$ | `mass` | Mass of the particle. |
         /// | $\gamma$ | `damping` | Damping constant |
         /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
-        /// | $\Delta t$ | `update_interval` | A multiple of the integration constant `dt` which determines how often a new random direction for movement is chosen. |
         ///
         /// # Equations
         ///
@@ -382,8 +360,6 @@ macro_rules! define_langevin_nd(
             pub damping: $float_type,
             /// Product of Boltzmann constant and temperature
             pub kb_temperature: $float_type,
-            /// Number of steps to do before updating the internal random vector again
-            pub update_interval: usize,
             random_vector: SVector<$float_type, $d>,
         }
 
@@ -439,7 +415,6 @@ macro_rules! define_langevin_nd(
                 mass: $float_type,
                 damping: $float_type,
                 kb_temperature: $float_type,
-                update_interval: usize,
             ) -> Self {
                 Self {
                     pos: pos.into(),
@@ -447,7 +422,6 @@ macro_rules! define_langevin_nd(
                     mass,
                     damping,
                     kb_temperature,
-                    update_interval,
                     random_vector: [0.0; $d].into(),
                 }
             }
@@ -498,18 +472,6 @@ macro_rules! define_langevin_nd(
             /// [pyo3] setter for `kb_temperature`
             pub fn set_kb_temperature(&mut self, kb_temperature: $float_type) {
                 self.kb_temperature = kb_temperature;
-            }
-
-            #[getter(update_interval)]
-            /// [pyo3] getter for `update_interval`
-            pub fn get_update_interval(&self) -> usize {
-                self.update_interval
-            }
-
-            #[setter(update_interval)]
-            /// [pyo3] setter for `update_interval`
-            pub fn set_update_interval(&mut self, update_interval: usize) {
-                self.update_interval = update_interval;
             }
 
             fn __repr__(&self) -> String {
