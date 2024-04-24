@@ -29,6 +29,13 @@ version = "0.0.8"
 path = "../cellular_raza-concepts"
 version = "0.0.8"
 
+[dev-dependencies]
+num.workspace = true
+rand_chacha.workspace = true
+serde.workspace = true
+rand.workspace = true
+nalgebra = "0.32.5"
+
 [features]
 default = ["gradients"]
 tracing = ["cellular_raza-core/tracing"]
