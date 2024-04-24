@@ -1,7 +1,7 @@
 use cellular_raza::building_blocks::{
     BoundLennardJonesF32, CartesianCuboid2NewF32, NewtonDamped2DF32,
 };
-use cellular_raza::concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError, Volume};
+use cellular_raza::concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError};
 
 use cellular_raza::core::backend::chili;
 
@@ -26,15 +26,6 @@ impl Default for SimulationSettings {
             n_threads: 4,
             dt: 0.002,
         }
-    }
-}
-
-#[derive(Clone, Deserialize, Serialize)]
-struct Vol(f64);
-
-impl Volume for Vol {
-    fn get_volume(&self) -> f64 {
-        self.0
     }
 }
 
