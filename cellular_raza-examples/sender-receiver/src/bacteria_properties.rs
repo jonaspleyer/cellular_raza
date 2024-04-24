@@ -1,12 +1,11 @@
 use cellular_raza::prelude::*;
 
+use nalgebra::DVector;
 use num::Zero;
+use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS, DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER,
-    N_CELLS_INITIAL_SENDER,
-};
+use crate::{CELL_LIGAND_TURNOVER_RATE, DT};
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
@@ -81,6 +80,62 @@ pub struct ConcentrationController {
 
 pub struct Observable(f64, usize);
 
+#[derive(Clone)]
+struct Parameters {
+    delay: f64,
+    sink: f64,
+}
+
+fn predict(
+    production_history: &Vec<f64>,
+    production_next: f64,
+    parameters: &Parameters,
+    n_compartments: usize,
+    n_steps: usize,
+    dt: f64,
+) -> Result<Vec<DVector<f64>>, ControllerError> {
+    // Define initial values
+    let y0 = DVector::from_iterator(n_compartments + 1, (0..n_compartments + 1).map(|_| 2.0));
+    let time_to_step = |t: f64| (t / dt) as usize;
+
+    let ode = |y: &DVector<f64>,
+               dy: &mut DVector<f64>,
+               t: &f64,
+               p: &Parameters|
+     -> Result<(), CalcError> {
+        let max_len = y.len();
+        for i in 0..max_len - 1 {
+            dy[i + 1] = p.delay * (y[i] - y[i + 1])
+        }
+        let step = time_to_step(*t);
+        dy[0] = if production_history.len() == 0 {
+            0.0
+        } else if step < production_history.len() {
+            production_history[step]
+        } else {
+            production_next
+        };
+        dy[max_len - 1] -= p.sink * y[max_len - 1];
+        Ok(())
+    };
+
+    // Define time
+    let t0 = 0.0;
+    let steps = production_history.len() + n_steps;
+    let t_series = (0..steps).map(|i| t0 + i as f64 * dt).collect::<Vec<_>>();
+
+    // Solve the ode
+    let res = ode_integrate::prelude::solve_ode_time_series_single_step_add(
+        &y0,
+        &t_series,
+        &ode,
+        &parameters,
+        FixedStepSolvers::Rk4,
+    )
+    .or_else(|e| Err(cellular_raza::concepts::ControllerError(format!("{}", e))))?;
+    Ok(res)
+}
+
 impl Controller<MyCellType, Observable> for ConcentrationController {
     fn measure<'a, I>(&self, cells: I) -> Result<Observable, CalcError>
     where
@@ -117,126 +172,95 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
 
         // Calculate difference
         let average_conc = total_conc / n_cells as f64;
-        let du = self.target_average_conc - average_conc;
+
+        let du = if self.with_mpc {
+            // Define parameters for prediction
+            let parameters = Parameters {
+                delay: 1.0,
+                sink: CELL_LIGAND_TURNOVER_RATE,
+            };
+            let n_compartments = 10;
+
+            // Make prediction
+            let mut predicted_production_term = 0.0;
+            let mut current_cost = f64::INFINITY;
+            for i in 0..10 {
+                let new_production_term = i as f64 * 0.1;
+                let predicted_series = predict(
+                    &self.previous_production_values,
+                    new_production_term,
+                    &parameters,
+                    n_compartments,
+                    20,
+                    DT,
+                )?;
+
+                // Calculate difference to desired value
+                let du = self.target_average_conc
+                    - match predicted_series.last() {
+                        Some(p) => p[n_compartments - 1],
+                        None => average_conc,
+                    };
+
+                // Set up cost function
+                let cost = du.powf(2.0);
+                if cost < current_cost {
+                    current_cost = cost;
+                    predicted_production_term = new_production_term;
+                }
+            }
+
+            // Compare the predicted necessary production term with the last one which was active
+            let res = if self.previous_production_values.len() > 0 {
+                predicted_production_term
+                    - self.previous_production_values[self.previous_production_values.len() - 1]
+            } else {
+                0.0
+            };
+            todo!("Something is missing here still");
+            res
+        } else {
+            self.target_average_conc - average_conc
+        };
         self.previous_dus.push(du);
 
-        let new_production_term = if self.with_mpc {
-            // Make prediction
-            // Calculate how much ligand was produced already
-            let produced_ligand = self.previous_production_values.iter().sum::<f64>()
-                * DT
-                * N_CELLS_INITIAL_SENDER as f64;
-
-            // Calculate average intracellular concentration so far
-            let degraded_ligand = self
-                .previous_dus
-                .iter()
-                .map(|du| CELL_LIGAND_TURNOVER_RATE * (self.target_average_conc - du))
-                .sum::<f64>()
-                / self.previous_dus.len() as f64;
-
-            // Set up cost function
-            let cost_func = |production_term: f64| {
-                // Past (known) values
-                let previous = produced_ligand - degraded_ligand;
-
-                // Make prediction
-                let produced_ligand_predicted =
-                    N_CELLS_INITIAL_SENDER as f64 * self.prediction_time * production_term;
-                let degraded_ligand_predicted = N_CELLS_INITIAL_RECEIVER as f64
-                    * self.prediction_time
-                    * CELL_LIGAND_TURNOVER_RATE
-                    * self
-                        .previous_dus
-                        .last()
-                        .and_then(|x| Some(self.target_average_conc - x))
-                        .or_else(|| Some(0.0))
-                        .unwrap();
-
-                // Combine values
-                let predicted = produced_ligand_predicted - degraded_ligand_predicted;
-                let vol_cells = (N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER) as f64
-                    * CELL_MECHANICS_RADIUS.powf(2.0)
-                    * std::f64::consts::PI;
-
-                // Calculate average conc everywhere
-                let vol_domain = DOMAIN_SIZE.powf(2.0);
-                let approximated_conc = previous + predicted;
-                let average_domain_conc = approximated_conc * vol_cells / (vol_domain + vol_cells);
-
-                // Compare to target average_conc
-                (self.target_average_conc - average_domain_conc).powf(2.0)
-            };
-
-            // Numerically minimize this function
-            let production_term_sampling_increment =
-                (self.sampling_prod_high - self.sampling_prod_low) / self.sampling_steps as f64;
-            let res = (0..self.sampling_steps)
-                .map(|i| self.sampling_prod_low + production_term_sampling_increment * i as f64)
-                .map(|u| (u, cost_func(u)))
-                .fold((0.0, f64::INFINITY), |(x1, x2), (c1, c2)| {
-                    if x2 < c2 {
-                        (x1, x2)
-                    } else {
-                        (c1, c2)
-                    }
-                });
-
-            // Write results to file
-            use std::fs::File;
-            use std::io::Write;
-            let mut f = File::options()
-                .append(true)
-                .create(true)
-                .open("controller_logs.csv")
-                .unwrap();
-            let line = format!("{},{},{},{}\n", self.target_average_conc - average_conc, average_conc, res.0, res.1);
-            f.write(line.as_bytes()).unwrap();
-
-            // If the approach was successful, we return the calculated value
-            // otherwise retturn the standard one.
-            if res.1 < f64::INFINITY {
-                res.0.max(0.0)
-            } else {
-                0.0
-            }
+        // Calculate PID Controller
+        let pn = self.previous_dus.len();
+        let derivative = if pn > 1 {
+            (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
         } else {
-            // Calculate PID Controller
-            let pn = self.previous_dus.len();
-            let derivative = if pn > 1 {
-                (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
-            } else {
-                0.0
-            };
-            let integral = self.previous_dus.iter().sum::<f64>() * DT;
-
-            let proportional = self.k_p * du;
-            let differential = self.k_p * self.t_d * derivative;
-            let integral = self.k_p * integral / self.t_i;
-            // let controller_var = self.k_p * (du + self.t_d * derivative + integral / self.t_i);
-            let controller_var = proportional + differential + integral;
-
-            use std::fs::File;
-            use std::io::Write;
-            let mut f = File::options()
-                .append(true)
-                .create(true)
-                .open("controller_logs.csv")
-                .unwrap();
-            let line = format!(
-                "{},{},{},{},{},{}\n",
-                average_conc, du, proportional, differential, integral, controller_var
-            );
-            f.write(line.as_bytes()).unwrap();
-
-            (self
-                .previous_production_values
-                .last()
-                .or_else(|| Some(&0.0))
-                .unwrap()
-                + controller_var)
-                .max(0.0)
+            0.0
         };
+        let integral = self.previous_dus.iter().sum::<f64>() * DT;
+
+        let proportional = self.k_p * du;
+        let differential = self.k_p * self.t_d * derivative;
+        let integral = self.k_p * integral / self.t_i;
+        let controller_var = proportional + differential + integral;
+
+        // Write results to file
+        use std::fs::File;
+        use std::io::Write;
+        let mut f = File::options()
+            .append(true)
+            .create(true)
+            .open("controller_logs.csv")
+            .unwrap();
+        let line = format!(
+            "{},{},{},{},{},{}\n",
+            average_conc, du, proportional, differential, integral, controller_var
+        );
+        f.write(line.as_bytes()).unwrap();
+
+        let new_production_term = (self
+            .previous_production_values
+            .last()
+            .or_else(|| Some(&0.0))
+            .unwrap()
+            + controller_var)
+            .max(0.0);
+
+        // Push new production value
         self.previous_production_values.push(new_production_term);
 
         // Adjust values

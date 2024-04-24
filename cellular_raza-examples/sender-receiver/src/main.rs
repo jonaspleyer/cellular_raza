@@ -45,7 +45,7 @@ pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
 // Time parameters
 pub const DT: f64 = 0.1 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
-pub const T_END: f64 = 50.0 * MINUTE;
+pub const T_END: f64 = 10.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
@@ -155,7 +155,7 @@ fn main() -> Result<(), SimulationError> {
             prediction_time: 2.0 * MINUTE,
             sampling_prod_low: 0.0 * MOLAR / SECOND,
             sampling_prod_high: 0.0001 * MOLAR / SECOND,
-            sampling_steps: 10,
+            sampling_steps: 5,
         },
     );
 

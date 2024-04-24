@@ -12,3 +12,4 @@ nalgebra = { version="0.32" }
 num = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 plotters = { workspace = true }
+ode_integrate = "0.0.2"
