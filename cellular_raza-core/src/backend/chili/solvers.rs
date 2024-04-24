@@ -24,7 +24,7 @@ pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
     dt: Float,
 ) -> Result<(), CalcError>
 where
-    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, 0>,
+    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 0>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     Pos: core::ops::Mul<Float, Output = Pos>,
     Pos: core::ops::Add<Pos, Output = Pos>,
@@ -73,7 +73,7 @@ pub fn mechanics_adams_bashforth_3<C, A, Pos, Vel, For, Float>(
     dt: Float,
 ) -> Result<(), CalcError>
 where
-    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, 2>,
+    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 2>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     Pos: core::ops::Mul<Float, Output = Pos>,
     Pos: core::ops::Add<Pos, Output = Pos>,
@@ -150,7 +150,7 @@ pub fn mechanics_adams_bashforth_2<C, A, Pos, Vel, For, Float>(
     dt: Float,
 ) -> Result<(), CalcError>
 where
-    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, Float, 1>,
+    A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 1>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     Pos: core::ops::Mul<Float, Output = Pos>,
     Pos: core::ops::Add<Pos, Output = Pos>,

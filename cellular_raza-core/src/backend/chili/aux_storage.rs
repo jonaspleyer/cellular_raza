@@ -101,38 +101,34 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 
 /// Stores intermediate information about the mechanics of a cell.
 #[derive(Clone, Deserialize, Serialize)]
-pub struct AuxStorageMechanics<Pos, Vel, For, Float, const N: usize> {
+pub struct AuxStorageMechanics<Pos, Vel, For, const N: usize> {
     positions: FixedSizeRingBuffer<Pos, N>,
     velocities: FixedSizeRingBuffer<Vel, N>,
     current_force: For,
-    next_random_mechanics_update: Option<Float>,
 }
 
 // It is necessary to implement this trait by hand since with the current version of the Mechanics
 // concept, we need to specify next_random_mechanics_update: Some(0.0) in order for any updates to
 // be done at all.
-impl<Pos, Vel, For, Float, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, Float, N>
+impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N>
 where
     Pos: Default,
     Vel: Default,
     For: Default,
-    Float: Default,
 {
     fn default() -> Self {
         Self {
             positions: FixedSizeRingBuffer::<Pos, N>::default(),
             velocities: FixedSizeRingBuffer::<Vel, N>::default(),
             current_force: For::default(),
-            next_random_mechanics_update: Some(Float::default()),
         }
     }
 }
 
-impl<Pos, Vel, For, Float, const N: usize> UpdateMechanics<Pos, Vel, For, Float, N>
-    for AuxStorageMechanics<Pos, Vel, For, Float, N>
+impl<Pos, Vel, For, const N: usize> UpdateMechanics<Pos, Vel, For, N>
+    for AuxStorageMechanics<Pos, Vel, For, N>
 where
     For: Clone + core::ops::AddAssign<For> + num::Zero,
-    Float: Clone,
 {
     #[inline]
     fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Pos, N> {
@@ -172,16 +168,6 @@ where
     #[inline]
     fn clear_forces(&mut self) {
         self.current_force = For::zero();
-    }
-
-    #[inline]
-    fn get_next_random_update(&self) -> Option<Float> {
-        self.next_random_mechanics_update.clone()
-    }
-
-    #[inline]
-    fn set_next_random_update(&mut self, next: Option<Float>) {
-        self.next_random_mechanics_update = next;
     }
 }
 
@@ -331,9 +317,9 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     /// }
     /// ```
     fn mechanics_default() {}
@@ -343,9 +329,9 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// pub struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     /// }
     /// ```
     fn mechanics_visibility_1() {}
@@ -355,9 +341,9 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub(crate) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// pub(crate) struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     /// }
     /// ```
     fn mechanics_visibility_2() {}
@@ -368,16 +354,16 @@ mod test_derive_aux_storage_compile {
     ///     use cellular_raza_core::backend::chili::*;
     ///
     ///     #[derive(AuxStorage)]
-    ///     pub(super) struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-    ///         #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///         aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    ///     pub(super) struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+    ///         #[UpdateMechanics(Pos, Vel, For, N)]
+    ///         aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     ///     }
     /// }
-    /// fn use_impl<T, Pos, Vel, For, Float, const N: usize>(
+    /// fn use_impl<T, Pos, Vel, For, const N: usize>(
     ///     aux_storage: T
     /// ) -> For
     /// where
-    ///     T: cellular_raza_core::backend::chili::UpdateMechanics<Pos, Vel, For, Float, N>,
+    ///     T: cellular_raza_core::backend::chili::UpdateMechanics<Pos, Vel, For, N>,
     /// {
     ///     aux_storage.get_current_force()
     /// }
@@ -389,9 +375,9 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<Pos, Vel, For, Float, T, const N: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, T, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     ///     other: T,
     /// }
     /// ```
@@ -402,9 +388,9 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize, const M: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    /// struct TestStructMechanics<Pos, Vel, For, const N: usize, const M: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     ///     count: [i64; M],
     /// }
     /// ```
@@ -415,12 +401,12 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize>
+    /// struct TestStructMechanics<Pos, Vel, For, const N: usize>
     /// where
     ///     Pos: Clone,
     /// {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     /// }
     /// ```
     fn mechanics_where_clause() {}
@@ -430,10 +416,10 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-    ///     #[UpdateMechanics(Pos, Vel, For, Float, N)]
+    /// struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+    ///     #[UpdateMechanics(Pos, Vel, For, N)]
     ///     #[cfg(not(test))]
-    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    ///     aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     /// }
     /// ```
     fn mechanics_other_attributes() {}
@@ -725,11 +711,11 @@ pub mod test_derive_aux_storage {
     use cellular_raza_core_proc_macro::AuxStorage;
 
     #[derive(AuxStorage)]
-    struct TestStructDouble<Pos, Vel, For, Float, const N: usize> {
+    struct TestStructDouble<Pos, Vel, For, const N: usize> {
         #[UpdateCycle]
         aux_cycle: AuxStorageCycle,
-        #[UpdateMechanics(Pos, Vel, For, Float, N)]
-        aux_mechanics: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+        #[UpdateMechanics(Pos, Vel, For, N)]
+        aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     }
 
     #[derive(AuxStorage)]
@@ -739,9 +725,9 @@ pub mod test_derive_aux_storage {
     }
 
     #[derive(AuxStorage)]
-    struct TestStructMechanics<Pos, Vel, For, Float, const N: usize> {
-        #[UpdateMechanics(Pos, Vel, For, Float, N)]
-        aux_mechanis: AuxStorageMechanics<Pos, Vel, For, Float, N>,
+    struct TestStructMechanics<Pos, Vel, For, const N: usize> {
+        #[UpdateMechanics(Pos, Vel, For, N)]
+        aux_mechanis: AuxStorageMechanics<Pos, Vel, For, N>,
     }
 
     fn add_get_events<A>(aux_storage: &mut A)
@@ -786,38 +772,35 @@ pub mod test_derive_aux_storage {
 
     #[test]
     fn mechanics() {
-        let mut aux_storage = TestStructMechanics::<_, _, _, _, 4> {
+        let mut aux_storage = TestStructMechanics::<_, _, _, 4> {
             aux_mechanis: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(1_f32);
-        aux_storage.set_next_random_update(Some(120.034958_f32));
     }
 
     #[test]
     fn cycle_mechanics_add_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _, _, _, 4> {
+        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(-5_f32);
-        aux_storage.set_next_random_update(Some(33_f32));
         add_get_events(&mut aux_storage);
     }
 
     #[test]
     fn cycle_mechanics_set_get_events() {
-        let mut aux_storage = TestStructDouble::<_, _, _, _, 4> {
+        let mut aux_storage = TestStructDouble::<_, _, _, 4> {
             aux_cycle: AuxStorageCycle::default(),
             aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
         aux_storage.add_force(111_i64);
-        aux_storage.set_next_random_update(Some(0_f32));
         set_get_events(&mut aux_storage);
     }
 }
@@ -1202,8 +1185,6 @@ mod test_build_aux_storage {
             ///             assert_eq!(last_velocities, vec![10_f32]);
             ///             aux_storage.add_force(22_f32);
             ///             assert_eq!(aux_storage.get_current_force(), 22_f32);
-            ///             aux_storage.set_next_random_update(Some(44_f64));
-            ///             assert_eq!(aux_storage.get_next_random_update(), Some(44_f64));
             ///         }
             ///     };
             ///     (Interaction) => {

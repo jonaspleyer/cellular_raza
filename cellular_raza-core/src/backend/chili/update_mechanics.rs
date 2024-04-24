@@ -77,7 +77,7 @@ impl<C, A> Voxel<C, A> {
     where
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         For: Clone + core::ops::Mul<Float, Output = For> + core::ops::Neg<Output = For>,
         Float: num::Float,
     {
@@ -131,7 +131,7 @@ impl<C, A> Voxel<C, A> {
             + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         Float: num::Float,
     {
         let one_half = Float::one() / (Float::one() + Float::one());
@@ -172,7 +172,7 @@ where
         Inf: Clone,
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         For: Clone
             + core::ops::AddAssign
             + core::ops::Mul<Float, Output = For>
@@ -244,7 +244,7 @@ where
         Pos: Clone,
         Vel: Clone,
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         S: cellular_raza_concepts::domain_new::SubDomainForce<Pos, Vel, For>,
     {
         for (cell, aux) in self
@@ -281,7 +281,7 @@ where
             + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-        A: UpdateMechanics<Pos, Vel, For, Float, N>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         Float: num::Float,
         Pos: Clone,
         Vel: Clone,
@@ -354,7 +354,7 @@ where
         dt: &Float,
     ) -> Result<(), SimulationError>
     where
-        A: UpdateMechanics<Pos, Vel, For, Float, 2>,
+        A: UpdateMechanics<Pos, Vel, For, 2>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>

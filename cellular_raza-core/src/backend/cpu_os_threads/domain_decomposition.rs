@@ -168,8 +168,6 @@ pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     inc_pos_back_2: Option<Pos>,
     inc_vel_back_1: Option<Vel>,
     inc_vel_back_2: Option<Vel>,
-
-    next_random_mechanics_update: Option<f64>,
 }
 
 impl<Pos, Vel, For, ConcVecIntracellular> Default
@@ -189,8 +187,6 @@ where
             inc_pos_back_2: None,
             inc_vel_back_1: None,
             inc_vel_back_2: None,
-
-            next_random_mechanics_update: Some(0.0),
         }
     }
 }
