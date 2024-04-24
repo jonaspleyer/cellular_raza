@@ -649,15 +649,8 @@ where
 
                 vox.cells
                     .iter_mut()
-                    .map(|(cell, aux_storage)| {
-                        if let Some(next_time) = aux_storage.next_random_mechanics_update {
-                            if next_time <= *dt {
-                                aux_storage.next_random_mechanics_update =
-                                    cell.set_random_variable(&mut vox.rng, *dt)?;
-                            } else {
-                                aux_storage.next_random_mechanics_update = Some(next_time - dt);
-                            }
-                        }
+                    .map(|(cell, _)| {
+                        cell.set_random_variable(&mut vox.rng, *dt)?;
                         Ok(())
                     })
                     .collect::<Result<Vec<_>, SimulationError>>()?;

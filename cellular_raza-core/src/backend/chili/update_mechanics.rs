@@ -542,17 +542,10 @@ pub fn local_mechanics_set_random_variable<C, A, Pos, Vel, For, Float, const N: 
 ) -> Result<(), cellular_raza_concepts::RngError>
 where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-    A: UpdateMechanics<Pos, Vel, For, Float, N>,
+    A: UpdateMechanics<Pos, Vel, For, N>,
     Float: core::ops::Sub<Output = Float> + core::cmp::PartialOrd,
 {
-    if let Some(next_time) = aux_storage.get_next_random_update() {
-        if next_time <= dt {
-            let next_update_point = cell.set_random_variable(rng, dt)?;
-            aux_storage.set_next_random_update(next_update_point);
-        } else {
-            aux_storage.set_next_random_update(Some(next_time - dt));
-        }
-    }
+    cell.set_random_variable(rng, dt)?;
     Ok(())
 }
 
