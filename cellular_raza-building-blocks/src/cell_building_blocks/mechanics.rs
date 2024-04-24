@@ -311,10 +311,13 @@ macro_rules! implement_brownian_mechanics(
             fn set_random_variable(
                 &mut self,
                 rng: &mut rand_chacha::ChaCha8Rng,
-                dt: f64,
-            ) -> Result<Option<f64>, RngError> {
-                self.random_vector = generate_random_vector(rng, dt.sqrt())?;
-                Ok(Some(self.update_interval as $float_type * dt))
+                dt: $float_type,
+            ) -> Result<(), RngError> {
+                self.random_vector = generate_random_vector(
+                    rng,
+                    dt.sqrt()
+                )? / dt;
+                Ok(())
             }
 
             fn calculate_increment(
@@ -393,9 +396,12 @@ macro_rules! define_langevin_nd(
                 &mut self,
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
-            ) -> Result<Option<$float_type>, RngError> {
-                self.random_vector = generate_random_vector(rng, dt.sqrt())?;
-                Ok(Some(self.update_interval as $float_type * dt))
+            ) -> Result<(), RngError> {
+                self.random_vector = generate_random_vector(
+                    rng,
+                    dt.sqrt()
+                )? / dt;
+                Ok(())
             }
 
             fn calculate_increment(
