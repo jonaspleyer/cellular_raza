@@ -187,7 +187,7 @@ where
 }
 
 macro_rules! implement_brownian_mechanics(
-    ($struct_name:ident, $d:literal) => {
+    ($struct_name:ident, $d:literal, $float_type:ty) => {
         /// Brownian motion of particles
         ///
         /// # Parameters
@@ -209,12 +209,12 @@ macro_rules! implement_brownian_mechanics(
         #[cfg_attr(feature = "pyo3", pyclass)]
         pub struct $struct_name {
             /// Current position of the particle $\vec{x}$.
-            pub pos: SVector<f64, $d>,
+            pub pos: SVector<$float_type, $d>,
             /// Diffusion constant $D$.
-            pub diffusion_constant: f64,
+            pub diffusion_constant: $float_type,
             /// The product of temperature and boltzmann constant $k_B T$.
-            pub kb_temperature: f64,
-            random_vector: SVector<f64, $d>,
+            pub kb_temperature: $float_type,
+            random_vector: SVector<$float_type, $d>,
         }
 
         impl $struct_name {
@@ -222,16 +222,16 @@ macro_rules! implement_brownian_mechanics(
             #[doc = concat!("[", stringify!($struct_name), "]")]
             /// mechanics model for the specified dimension.
             pub fn new(
-                pos: [f64; $d],
-                diffusion_constant: f64,
-                kb_temperature: f64,
+                pos: [$float_type; $d],
+                diffusion_constant: $float_type,
+                kb_temperature: $float_type,
             ) -> Self {
                 use num::Zero;
                 Self {
                     pos: pos.into(),
                     diffusion_constant,
                     kb_temperature,
-                    random_vector: SVector::<f64, $d>::zero(),
+                    random_vector: SVector::<$float_type, $d>::zero(),
                 }
             }
         }
@@ -242,8 +242,9 @@ macro_rules! implement_brownian_mechanics(
         impl $struct_name {
             #[new]
             fn _new(
-                pos: [f64; $d],
-                diffusion_constant: f64,
+                pos: [$float_type; $d],
+                diffusion_constant: $float_type,
+                kb_temperature: $float_type,
             ) -> Self {
                 Self::new(pos, diffusion_constant, kb_temperature)
             }
@@ -251,56 +252,61 @@ macro_rules! implement_brownian_mechanics(
 
             /// [pyo3] setter for `pos`
             #[setter]
-            pub fn set_pos(&mut self, pos: [f64; $d]) {
+            pub fn set_pos(&mut self, pos: [$float_type; $d]) {
                 self.pos = pos.into();
             }
 
             /// [pyo3] setter for `diffusion_constant`
             #[setter]
-            pub fn set_diffusion_constant(&mut self, diffusion_constant: f64) {
+            pub fn set_diffusion_constant(&mut self, diffusion_constant: $float_type) {
                 self.diffusion_constant = diffusion_constant;
             }
 
             /// [pyo3] setter for `kb_temperature`
             #[setter]
-            pub fn set_kb_temperature(&mut self, kb_temperature: f64) {
+            pub fn set_kb_temperature(&mut self, kb_temperature: $float_type) {
                 self.kb_temperature = kb_temperature;
             }
 
             /// [pyo3] getter for `pos`
             #[getter]
-            pub fn get_pos(&self) -> [f64; $d] {
+            pub fn get_pos(&self) -> [$float_type; $d] {
                 self.pos.into()
             }
 
             /// [pyo3] getter for `diffusion_constant`
             #[getter]
-            pub fn get_diffusion_constant(&self) -> f64 {
+            pub fn get_diffusion_constant(&self) -> $float_type {
                 self.diffusion_constant
             }
 
             /// [pyo3] getter for `kb_temperature`
             #[getter]
-            pub fn get_kb_temperature(&self) -> f64 {
+            pub fn get_kb_temperature(&self) -> $float_type {
                 self.kb_temperature
             }
         }
 
-        impl Mechanics<SVector<f64, $d>, SVector<f64, $d>, SVector<f64, $d>> for $struct_name {
-            fn pos(&self) -> SVector<f64, $d> {
+        impl Mechanics<
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            $float_type
+        > for $struct_name {
+            fn pos(&self) -> SVector<$float_type, $d> {
                 self.pos
             }
 
-            fn velocity(&self) -> SVector<f64, $d> {
+            fn velocity(&self) -> SVector<$float_type, $d> {
                 use num::Zero;
-                SVector::<f64, $d>::zero()
+                SVector::<$float_type, $d>::zero()
             }
 
-            fn set_pos(&mut self, pos: &SVector<f64, $d>) {
+            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
                 self.pos = *pos;
             }
 
-            fn set_velocity(&mut self, _velocity: &SVector<f64, $d>) {}
+            fn set_velocity(&mut self, _velocity: &SVector<$float_type, $d>) {}
 
             fn set_random_variable(
                 &mut self,
@@ -308,25 +314,28 @@ macro_rules! implement_brownian_mechanics(
                 dt: f64,
             ) -> Result<Option<f64>, RngError> {
                 self.random_vector = generate_random_vector(rng, dt.sqrt())?;
-                Ok(Some(self.update_interval as f64 * dt))
+                Ok(Some(self.update_interval as $float_type * dt))
             }
 
             fn calculate_increment(
                 &self,
-                force: SVector<f64, $d>,
-            ) -> Result<(SVector<f64, $d>, SVector<f64, $d>), CalcError> {
+                force: SVector<$float_type, $d>,
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 use num::Zero;
                 let dx = self.diffusion_constant / self.kb_temperature * force
-                    + 2_f64.sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
-                Ok((dx, SVector::<f64, $d>::zero()))
+                    + (2.0 as $float_type).sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
+                Ok((dx, SVector::<$float_type, $d>::zero()))
             }
         }
     }
 );
 
-implement_brownian_mechanics!(Brownian1D, 1);
-implement_brownian_mechanics!(Brownian2D, 2);
-implement_brownian_mechanics!(Brownian3D, 3);
+implement_brownian_mechanics!(Brownian1D, 1, f64);
+implement_brownian_mechanics!(Brownian2D, 2, f64);
+implement_brownian_mechanics!(Brownian3D, 3, f64);
+implement_brownian_mechanics!(Brownian1DF32, 1, f32);
+implement_brownian_mechanics!(Brownian2DF32, 2, f32);
+implement_brownian_mechanics!(Brownian3DF32, 3, f32);
 
 macro_rules! define_langevin_nd(
     ($struct_name:ident, $d:literal, $float_type:ident) => {
