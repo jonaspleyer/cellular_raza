@@ -67,7 +67,7 @@ impl<C> CellBox<C> {
 // --------------------------------- UPDATE-MECHANICS --------------------------------
 /// Used to store intermediate information about last positions and velocities.
 /// Can store up to `N` values.
-pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
+pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
     /// Stores the last position of the cell. May overwrite old results depending on
     /// how many old results are being stored.
     fn set_last_position(&mut self, pos: Pos);
@@ -97,12 +97,6 @@ pub trait UpdateMechanics<Pos, Vel, For, Float, const N: usize> {
 
     /// Removes all stored forces
     fn clear_forces(&mut self);
-
-    /// Next time point at which the internal state is updated randomly
-    fn get_next_random_update(&self) -> Option<Float>;
-
-    /// Set the time point for the next random update
-    fn set_next_random_update(&mut self, next: Option<Float>);
 }
 
 /// Stores intermediate information about the mechanics of a cell.
