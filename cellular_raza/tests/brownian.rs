@@ -1,36 +1,6 @@
 use cellular_raza_building_blocks::{Brownian3D, CartesianCuboid3New};
-use cellular_raza_concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError};
 use cellular_raza_core::storage::StorageInterfaceLoad;
-use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Deserialize, Serialize)]
-struct MyInteraction;
-
-impl<Pos, Vel, For> Interaction<Pos, Vel, For> for MyInteraction
-where
-    For: num::Zero,
-{
-    fn calculate_force_between(
-        &self,
-        _own_pos: &Pos,
-        _own_vel: &Vel,
-        _ext_pos: &Pos,
-        _ext_vel: &Vel,
-        _ext_info: &(),
-    ) -> Result<For, cellular_raza::prelude::CalcError> {
-        Ok(For::zero())
-    }
-    fn get_interaction_information(&self) -> () {}
-}
-
-#[derive(CellAgent, Clone, Deserialize, Serialize)]
-struct Particle {
-    #[Mechanics]
-    mechanics: Brownian3D,
-    #[Interaction]
-    interaction: MyInteraction,
-}
 
 struct Parameters {
     n_particles: usize,
@@ -92,17 +62,14 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
 
     let particles = (0..parameters.n_particles).map(|_| {
         let pos = [domain_size / 2.0; 3];
-        Particle {
-            mechanics: Brownian3D::new(pos, parameters.diffusion_constant, 1.0),
-            interaction: MyInteraction,
-        }
+        Brownian3D::new(pos, parameters.diffusion_constant, 1.0)
     });
 
     let storage_access = cellular_raza_core::backend::chili::run_simulation!(
         agents: particles,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction]
+        aspects: [Mechanics]
     )?;
 
     let positions = storage_access
@@ -114,7 +81,7 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
                 iteration,
                 particles
                     .into_iter()
-                    .map(|(_, (p, _))| (p.identifier, p.cell.mechanics.pos))
+                    .map(|(_, (p, _))| (p.identifier, p.cell.pos))
                     .collect::<std::collections::HashMap<_, _>>(),
             )
         })
