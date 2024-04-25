@@ -342,11 +342,7 @@ where
     /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
     /// solver.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_mechanics_interaction_step_3<
-        Pos,
-        Vel,
-        For,
-    >(
+    pub fn update_mechanics_interaction_step_3<Pos, Vel, For>(
         &mut self,
     ) -> Result<(), SimulationError>
     where

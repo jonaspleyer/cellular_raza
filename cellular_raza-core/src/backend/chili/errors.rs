@@ -194,6 +194,7 @@ trait ErrorHandler {
 }
 
 /// TODO
+#[allow(unused)]
 pub struct DefaultHandler {
     errors: Vec<SimulationError>,
     syncer: super::BarrierSync,

@@ -328,7 +328,7 @@ where
         let indices = self.get_all_voxel_indices();
         let n_indices = self.get_n_indices();
 
-        let (n, m, average_len) = get_decomp_res(n_indices, n_subdomains.into()).ok_or(
+        let (n, _m, average_len) = get_decomp_res(n_indices, n_subdomains.into()).ok_or(
             DecomposeError::Generic("Could not find a suiting decomposition".to_owned()),
         )?;
 
