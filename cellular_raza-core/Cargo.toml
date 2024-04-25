@@ -51,7 +51,7 @@ path = "../cellular_raza-core-proc-macro"
 version = "0.0.8"
 
 [dev-dependencies]
-tempdir = "0.3"
+tempdir.workspace = true
 
 [features]
 default = ["gradients", "timestamp"]
