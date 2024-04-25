@@ -111,18 +111,16 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         .map(|(iteration, displs)| (iteration, displs.iter().sum::<f64>() / displs.len() as f64))
         .collect::<std::collections::HashMap<_, _>>();
 
-    let std_dev = square_displacements
+    let std_dev_err = square_displacements
         .iter()
         .map(|(iteration, displs)| {
-            (
-                iteration,
-                (displs
-                    .iter()
-                    .map(|displ| (displ - means[&iteration]).powf(2.0))
-                    .sum::<f64>()
-                    / displs.len() as f64)
-                    .sqrt(),
-            )
+            let sigma = (displs
+                .iter()
+                .map(|displ| (displ - means[&iteration]).powf(2.0))
+                .sum::<f64>()
+                / displs.len() as f64)
+                .sqrt();
+            (iteration, (sigma, sigma / (displs.len() as f64).sqrt()))
         })
         .collect::<std::collections::HashMap<_, _>>();
 
