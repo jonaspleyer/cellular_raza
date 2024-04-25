@@ -107,7 +107,8 @@ fn analyze_positions<const D: usize>(
     // Calculate probability for values to be identical
     let mut sum_relative_diffs = 0.0;
     for &iteration in means.keys() {
-        let expected = 6.0 * parameters.diffusion_constant * *iteration as f64 * parameters.dt;
+        let expected =
+            2.0 * D as f64 * parameters.diffusion_constant * *iteration as f64 * parameters.dt;
         let (_, std_err) = std_dev_err[iteration];
         let relative_diff = (expected - means[iteration]).powf(2.0) / std_err;
         sum_relative_diffs += relative_diff;
