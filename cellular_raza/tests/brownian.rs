@@ -74,9 +74,13 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         parameters.save_interval,
     )?;
 
+    // Use a temporary directory to automatically clean up all files in it
+    use tempdir::TempDir;
+    let dir = TempDir::new("tempdir").unwrap();
+    let location = dir.path().join(&parameters.storage_name);
     let storage = cellular_raza_core::storage::StorageBuilder::new()
         .priority([cellular_raza_core::storage::StorageOption::Sled])
-        .location(parameters.storage_name.clone())
+        .location(location)
         .init();
 
     let settings = cellular_raza_core::backend::chili::Settings {
