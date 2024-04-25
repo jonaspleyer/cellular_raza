@@ -125,6 +125,8 @@ fn main() -> Result<(), SimulationError> {
     // ## CREATE SUPERVISOR AND RUN SIMULATION ##
     // ##########################################
     let n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
+    let storage = StorageBuilder::new().location("out/sender_receiver").init();
+    let save_path = storage.get_full_path();
     let setup = SimulationSetup::new(
         domain,
         cells,
@@ -143,7 +145,7 @@ fn main() -> Result<(), SimulationError> {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageBuilder::new().location("out/sender_receiver"),
+        storage,
         ConcentrationController {
             target_average_conc: TARGET_AVERAGE_CONC,
             k_p: 0.01 * MOLAR / SECOND,
@@ -156,6 +158,7 @@ fn main() -> Result<(), SimulationError> {
             sampling_prod_low: 0.0 * MOLAR / SECOND,
             sampling_prod_high: 0.0001 * MOLAR / SECOND,
             sampling_steps: 5,
+            save_path,
         },
     );
 

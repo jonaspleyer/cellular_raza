@@ -70,12 +70,16 @@ pub struct ConcentrationController {
     pub t_i: f64,
     pub t_d: f64,
     pub previous_dus: Vec<f64>,
+
     pub previous_production_values: Vec<f64>,
+
     pub with_mpc: bool,
     pub prediction_time: f64,
     pub sampling_prod_low: f64,
     pub sampling_prod_high: f64,
     pub sampling_steps: usize,
+
+    pub save_path: std::path::PathBuf,
 }
 
 pub struct Observable(f64, usize);
@@ -134,6 +138,18 @@ fn predict(
     )
     .or_else(|e| Err(cellular_raza::concepts::ControllerError(format!("{}", e))))?;
     Ok(res)
+}
+
+fn write_line_to_file(save_path: &std::path::Path, line: String) {
+    use std::fs::File;
+    use std::io::Write;
+    let f = File::options()
+        .append(true)
+        .create(true)
+        .open(save_path.join("controller_logs.csv"))
+        .unwrap();
+    let mut f = std::io::LineWriter::new(f);
+    writeln!(f, "{}", line).unwrap();
 }
 
 impl Controller<MyCellType, Observable> for ConcentrationController {
@@ -210,6 +226,19 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
                 }
             }
 
+            // Write results to file
+            let line = format!(
+                "{},{},{},{}",
+                average_conc,
+                current_cost,
+                predicted_production_term,
+                self.previous_production_values
+                    .last()
+                    .or_else(|| Some(&0.0))
+                    .unwrap()
+            );
+            write_line_to_file(&self.save_path, line);
+
             // Compare the predicted necessary production term with the last one which was active
             let res = if self.previous_production_values.len() > 0 {
                 predicted_production_term
@@ -230,6 +259,14 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
             (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
         } else {
             0.0
+
+            // Write results to file
+            let line = format!(
+                "{},{},{},{},{},{}",
+                average_conc, du, proportional, differential, integral, controller_var
+            );
+            write_line_to_file(&self.save_path, line);
+
         };
         let integral = self.previous_dus.iter().sum::<f64>() * DT;
 
