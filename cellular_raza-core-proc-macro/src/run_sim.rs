@@ -453,7 +453,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Mechanics) {
-        step_3.extend(quote!(sbox.update_mechanics_step_3(&next_time_point.increment)?;));
+        local_func_names.push(quote!(#core_path::backend::chili::local_mechanics_update_step_3));
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
 

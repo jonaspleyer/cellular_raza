@@ -383,45 +383,6 @@ where
         Ok(())
     }
 
-    /// TODO
-    pub fn update_mechanics_step_3<
-        Pos,
-        Vel,
-        For,
-        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
-        #[cfg(not(feature = "tracing"))] Float,
-    >(
-        &mut self,
-        dt: &Float,
-    ) -> Result<(), SimulationError>
-    where
-        A: UpdateMechanics<Pos, Vel, For, 2>,
-        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float> + Clone,
-        Float: num::Float + Copy + num::FromPrimitive,
-        Pos: core::ops::Mul<Float, Output = Pos>,
-        Pos: core::ops::Add<Pos, Output = Pos>,
-        Pos: core::ops::Sub<Pos, Output = Pos>,
-        Pos: Clone,
-        Vel: core::ops::Mul<Float, Output = Vel>,
-        Vel: core::ops::Add<Vel, Output = Vel>,
-        Vel: core::ops::Sub<Vel, Output = Vel>,
-        Vel: Clone,
-    {
-        for (cellbox, aux_storage) in self
-            .voxels
-            .iter_mut()
-            .map(|(_, vox)| vox.cells.iter_mut())
-            .flatten()
-        {
-            super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
-                cellbox,
-                aux_storage,
-                *dt,
-            )?;
-        }
-        Ok(())
-    }
-
     /// Applies boundary conditions to cells. For the future, we hope to be using previous and
     /// current position of cells rather than the cell itself.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
@@ -539,6 +500,42 @@ where
         }
         Ok(())
     }
+}
+
+/// TODO
+pub fn local_mechanics_update_step_3<
+    C,
+    A,
+    Pos,
+    Vel,
+    For,
+    #[cfg(feature = "tracing")] Float: core::fmt::Debug,
+    #[cfg(not(feature = "tracing"))] Float,
+>(
+    cell: &mut C,
+    aux_storage: &mut A,
+    dt: Float,
+    _rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), SimulationError>
+where
+    A: UpdateMechanics<Pos, Vel, For, 2>,
+    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float> + Clone,
+    Float: num::Float + Copy + num::FromPrimitive,
+    Pos: core::ops::Mul<Float, Output = Pos>,
+    Pos: core::ops::Add<Pos, Output = Pos>,
+    Pos: core::ops::Sub<Pos, Output = Pos>,
+    Pos: Clone,
+    Vel: core::ops::Mul<Float, Output = Vel>,
+    Vel: core::ops::Add<Vel, Output = Vel>,
+    Vel: core::ops::Sub<Vel, Output = Vel>,
+    Vel: Clone,
+{
+    super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
+        cell,
+        aux_storage,
+        dt,
+    )?;
+    Ok(())
 }
 
 /// Corresponds to the [set_random_variable](cellular_raza_concepts::Mechanics::set_random_variable)
