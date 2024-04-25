@@ -18,6 +18,9 @@ struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Self {
+            #[cfg(debug_assertions)]
+            n_particles: 160,
+            #[cfg(not(debug_assertions))]
             n_particles: 800,
             domain_size: 200.0,
 
