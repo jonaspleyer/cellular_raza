@@ -1,5 +1,6 @@
-use cellular_raza_building_blocks::{Brownian3D, CartesianCuboid3New};
-use cellular_raza_core::storage::StorageInterfaceLoad;
+use cellular_raza_building_blocks::*;
+use cellular_raza_core::{storage::StorageInterfaceLoad, time::FixedStepsize};
+use nalgebra::SVector;
 use serde::{Deserialize, Serialize};
 
 struct Parameters {
@@ -37,13 +38,12 @@ impl Default for Parameters {
     }
 }
 
-#[allow(unused)]
-fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
-    let domain_size = parameters.domain_size;
-    assert!(domain_size > 0.0);
-    let domain =
-        CartesianCuboid3New::from_boundaries_and_n_voxels([0.0; 3], [domain_size; 3], [3; 3])?;
-
+fn define_settings(
+    parameters: &Parameters,
+) -> Result<
+    cellular_raza_core::backend::chili::Settings<FixedStepsize<f64>, true>,
+    Box<dyn std::error::Error>,
+> {
     let time = cellular_raza_core::time::FixedStepsize::from_partial_save_steps(
         0.0,
         parameters.dt,
@@ -60,39 +60,19 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         .location(location)
         .init();
 
-    let settings = cellular_raza_core::backend::chili::Settings {
+    Ok(cellular_raza_core::backend::chili::Settings {
         n_threads: 1.try_into().unwrap(),
         time,
         storage,
         show_progressbar: false,
-    };
+    })
+}
 
-    let initial_position = nalgebra::Vector3::from([domain_size / 2.0; 3]);
-    let particles = (0..parameters.n_particles)
-        .map(|_| Brownian3D::new(initial_position.into(), parameters.diffusion_constant, 1.0));
-
-    let storage_access = cellular_raza_core::backend::chili::run_simulation!(
-        agents: particles,
-        domain: domain,
-        settings: settings,
-        aspects: [Mechanics]
-    )?;
-
-    let positions = storage_access
-        .cells
-        .load_all_elements()?
-        .into_iter()
-        .map(|(iteration, particles)| {
-            (
-                iteration,
-                particles
-                    .into_iter()
-                    .map(|(_, (p, _))| (p.identifier, p.cell.pos))
-                    .collect::<std::collections::HashMap<_, _>>(),
-            )
-        })
-        .collect::<std::collections::HashMap<u64, _>>();
-
+fn analyze_positions<const D: usize>(
+    parameters: &Parameters,
+    positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let initial_position = SVector::from([parameters.domain_size / 2.0; D]);
     let square_displacements = positions
         .into_iter()
         .map(|(iteration, positions)| {
@@ -100,7 +80,7 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
                 iteration,
                 positions
                     .into_iter()
-                    .map(|(id, pos)| (pos - initial_position).norm_squared())
+                    .map(|pos| (pos - initial_position).norm_squared())
                     .collect::<Vec<_>>(),
             )
         })
@@ -135,6 +115,50 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
     sum_relative_diffs /= means.len() as f64;
     assert!(sum_relative_diffs < 0.15);
     Ok(())
+}
+
+macro_rules! test_brownian {
+    ($parameters:ident, $domain_name:ident, $particle_name:ident, $d:literal) => {{
+        let domain_size = $parameters.domain_size;
+        assert!(domain_size > 0.0);
+        let domain =
+            $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
+    
+        let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
+        let particles = (0..$parameters.n_particles)
+            .map(|_| $particle_name::new(
+                initial_position.into(),
+                $parameters.diffusion_constant,
+                1.0
+            ));
+
+        let settings = define_settings(&$parameters)?;
+
+        let storage_access = cellular_raza_core::backend::chili::run_simulation!(
+            agents: particles,
+            domain: domain,
+            settings: settings,
+            aspects: [Mechanics]
+        )?;
+
+        let positions = storage_access
+            .cells
+            .load_all_elements()?
+            .into_iter()
+            .map(|(iteration, particles)| {
+                (
+                    iteration,
+                    particles
+                        .into_iter()
+                        .map(|(_, (p, _))| p.cell.pos)
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<std::collections::HashMap<u64, _>>();
+
+        analyze_positions(&$parameters, positions)?;
+        Result::<(), Box<dyn std::error::Error>>::Ok(())
+    }}
 }
 
 #[test]
