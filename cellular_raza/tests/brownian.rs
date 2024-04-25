@@ -124,13 +124,16 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect::<std::collections::HashMap<_, _>>();
 
+    // Calculate probability for values to be identical
+    let mut sum_relative_diffs = 0.0;
     for &iteration in means.keys() {
-        let expected = 6.0
-            * parameters.diffusion_constant
-            * (*iteration - min_iteration) as f64
-            * parameters.dt;
-        assert!((means[iteration] - expected).abs() <= std_dev[iteration]);
+        let expected = 6.0 * parameters.diffusion_constant * *iteration as f64 * parameters.dt;
+        let (_, std_err) = std_dev_err[iteration];
+        let relative_diff = (expected - means[iteration]).powf(2.0) / std_err;
+        sum_relative_diffs += relative_diff;
     }
+    sum_relative_diffs /= means.len() as f64;
+    assert!(sum_relative_diffs < 0.15);
     Ok(())
 }
 
