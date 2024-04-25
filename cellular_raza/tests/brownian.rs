@@ -7,8 +7,8 @@ struct Parameters {
     domain_size: f64,
 
     dt: f64,
-    t_max: f64,
-    save_interval: f64,
+    n_steps: u64,
+    save_interval: u64,
 
     diffusion_constant: f64,
 
@@ -21,9 +21,12 @@ impl Default for Parameters {
             n_particles: 800,
             domain_size: 200.0,
 
-            dt: 0.1,
-            t_max: 100.0,
-            save_interval: 1.0,
+            dt: 1e-3,
+            #[cfg(debug_assertions)]
+            n_steps: 100,
+            #[cfg(not(debug_assertions))]
+            n_steps: 5_000,
+            save_interval: 50,
 
             diffusion_constant: 1.0,
             storage_name: "out/brownian".into(),
@@ -31,16 +34,17 @@ impl Default for Parameters {
     }
 }
 
+#[allow(unused)]
 fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
     let domain_size = parameters.domain_size;
     assert!(domain_size > 0.0);
     let domain =
         CartesianCuboid3New::from_boundaries_and_n_voxels([0.0; 3], [domain_size; 3], [3; 3])?;
 
-    let time = cellular_raza_core::time::FixedStepsize::from_partial_save_interval(
+    let time = cellular_raza_core::time::FixedStepsize::from_partial_save_steps(
         0.0,
         parameters.dt,
-        parameters.t_max,
+        parameters.n_steps,
         parameters.save_interval,
     )?;
 
