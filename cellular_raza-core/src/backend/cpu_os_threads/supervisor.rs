@@ -402,7 +402,7 @@ where
                 t_eval: Vec::new(),
             },
             meta_params: self.meta_params.clone(),
-            storage: self.storage.clone().de_init(),
+            storage: self.storage.clone(),
             controller: self.controller_box.lock().unwrap().controller.clone(),
         };
 

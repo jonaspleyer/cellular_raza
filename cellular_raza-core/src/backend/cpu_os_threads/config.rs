@@ -76,7 +76,7 @@ pub struct SimulationSetup<Dom, Cel, Cont = ()> {
     pub(crate) cells: Vec<Cel>,
     pub(crate) time: TimeSetup,
     pub(crate) meta_params: SimulationMetaParams,
-    pub(crate) storage: crate::storage::StorageBuilder,
+    pub(crate) storage: crate::storage::StorageBuilder<true>,
     pub(crate) controller: Cont,
 }
 
@@ -128,7 +128,7 @@ impl<Dom, Cel, Cont> SimulationSetup<Dom, Cel, Cont> {
         cells: V,
         time: TimeSetup,
         meta_params: SimulationMetaParams,
-        storage: crate::storage::StorageBuilder,
+        storage: crate::storage::StorageBuilder<true>,
         controller: Cont,
     ) -> SimulationSetup<Dom, Cel, Cont>
     where
