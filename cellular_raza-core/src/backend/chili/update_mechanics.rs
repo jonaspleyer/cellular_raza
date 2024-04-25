@@ -13,7 +13,7 @@ use cellular_raza_concepts::{
 /// Send about the position of cells between threads.
 ///
 /// This type is used during the update steps for cellular mechanics
-/// [update_mechanics_step_1](super::datastructures::SubDomainBox::update_mechanics_step_1).
+/// [update_mechanics_interaction_step_1](super::datastructures::SubDomainBox::update_mechanics_interaction_step_1).
 /// The response to [PosInformation] is the [ForceInformation] type.
 /// Upon requesting the acting force, by providing the information stored in this struct,
 /// the requester obtains the needed information about acting forces.
@@ -41,10 +41,10 @@ pub struct PosInformation<Pos, Vel, Inf> {
 /// Return type to the requested [PosInformation].
 ///
 /// This type is returned after performing all necessary force calculations in
-/// [update_mechanics_step_2](super::datastructures::SubDomainBox::update_mechanics_step_2).
+/// [update_mechanics_interaction_step_2](super::datastructures::SubDomainBox::update_mechanics_interaction_step_2).
 /// The received information is then used in combination with the already present information
 /// to update the position and velocity of cells in
-/// [update_mechanics_step_3](super::datastructures::SubDomainBox::update_mechanics_step_3).
+/// [update_mechanics_interaction_step_3](super::datastructures::SubDomainBox::update_mechanics_interaction_step_3).
 pub struct ForceInformation<For> {
     /// Overall force acting on cell.
     ///
@@ -163,7 +163,7 @@ where
     /// Then, threads will exchange information in the [PosInformation] format
     /// to calculate the forces acting on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_mechanics_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
+    pub fn update_mechanics_interaction_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -270,7 +270,7 @@ where
     /// and send back information about the acting force in the [ForceInformation] format.
     /// In addition, this method also applies the inverse force to local cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_mechanics_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
+    pub fn update_mechanics_interaction_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -342,33 +342,16 @@ where
     /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
     /// solver.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_mechanics_step_3<
+    pub fn update_mechanics_interaction_step_3<
         Pos,
         Vel,
         For,
-        Inf,
-        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
-        #[cfg(not(feature = "tracing"))] Float,
     >(
         &mut self,
-        dt: &Float,
     ) -> Result<(), SimulationError>
     where
         A: UpdateMechanics<Pos, Vel, For, 2>,
-        Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
-        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>
-            + Clone,
-        Float: num::Float + Copy + num::FromPrimitive,
-        Pos: core::ops::Mul<Float, Output = Pos>,
-        Pos: core::ops::Add<Pos, Output = Pos>,
-        Pos: core::ops::Sub<Pos, Output = Pos>,
-        Pos: Clone,
-        Vel: core::ops::Mul<Float, Output = Vel>,
-        Vel: core::ops::Add<Vel, Output = Vel>,
-        Vel: core::ops::Sub<Vel, Output = Vel>,
-        Vel: Clone,
     {
         // Update position and velocity of all cells with new information
         for obt_forces in
@@ -397,7 +380,33 @@ where
                 None => Err(cellular_raza_concepts::IndexError(error_2)),
             }?;
         }
+        Ok(())
+    }
 
+    /// TODO
+    pub fn update_mechanics_step_3<
+        Pos,
+        Vel,
+        For,
+        #[cfg(feature = "tracing")] Float: core::fmt::Debug,
+        #[cfg(not(feature = "tracing"))] Float,
+    >(
+        &mut self,
+        dt: &Float,
+    ) -> Result<(), SimulationError>
+    where
+        A: UpdateMechanics<Pos, Vel, For, 2>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float> + Clone,
+        Float: num::Float + Copy + num::FromPrimitive,
+        Pos: core::ops::Mul<Float, Output = Pos>,
+        Pos: core::ops::Add<Pos, Output = Pos>,
+        Pos: core::ops::Sub<Pos, Output = Pos>,
+        Pos: Clone,
+        Vel: core::ops::Mul<Float, Output = Vel>,
+        Vel: core::ops::Add<Vel, Output = Vel>,
+        Vel: core::ops::Sub<Vel, Output = Vel>,
+        Vel: Clone,
+    {
         for (cellbox, aux_storage) in self
             .voxels
             .iter_mut()
@@ -536,7 +545,7 @@ where
 /// function of the [Mechanics](cellular_raza_concepts::Mechanics) trait.
 pub fn local_mechanics_set_random_variable<C, A, Pos, Vel, For, Float, const N: usize>(
     cell: &mut C,
-    aux_storage: &mut A,
+    _aux_storage: &mut A,
     dt: Float,
     rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::RngError>
@@ -558,9 +567,9 @@ pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
 ) -> Result<(), cellular_raza_concepts::CalcError>
 where
     C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
-    // TODO this constraint is only here due to current implementation limitations we should try to
-    // remove this either by giving the option to specify types in the run_main! proc macro or by
-    // somehow inferring this type
+        // TODO this constraint is only here due to current implementation limitations we should try to
+        // remove this either by giving the option to specify types in the run_main! proc macro or by
+        // somehow inferring this type
         + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     A: UpdateInteraction,
 {
