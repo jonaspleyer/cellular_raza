@@ -447,8 +447,12 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
     {
-        step_1.extend(quote!(sbox.update_mechanics_step_1()?;));
-        step_2.extend(quote!(sbox.update_mechanics_step_2()?;));
+        step_1.extend(quote!(sbox.update_mechanics_interaction_step_1()?;));
+        step_2.extend(quote!(sbox.update_mechanics_interaction_step_2()?;));
+        step_3.extend(quote!(sbox.update_mechanics_interaction_step_3()?;));
+    }
+
+    if kwargs.aspects.contains(&Mechanics) {
         step_3.extend(quote!(sbox.update_mechanics_step_3(&next_time_point.increment)?;));
         step_3.extend(quote!(sbox.apply_boundary()?;));
     }
