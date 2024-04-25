@@ -67,10 +67,9 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         show_progressbar: false,
     };
 
-    let particles = (0..parameters.n_particles).map(|_| {
-        let pos = [domain_size / 2.0; 3];
-        Brownian3D::new(pos, parameters.diffusion_constant, 1.0)
-    });
+    let initial_position = nalgebra::Vector3::from([domain_size / 2.0; 3]);
+    let particles = (0..parameters.n_particles)
+        .map(|_| Brownian3D::new(initial_position.into(), parameters.diffusion_constant, 1.0));
 
     let storage_access = cellular_raza_core::backend::chili::run_simulation!(
         agents: particles,
@@ -94,8 +93,6 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect::<std::collections::HashMap<u64, _>>();
 
-    let min_iteration = *positions.keys().into_iter().min().unwrap();
-    let initial_positions = positions[&min_iteration].clone();
     let square_displacements = positions
         .into_iter()
         .map(|(iteration, positions)| {
@@ -103,7 +100,7 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
                 iteration,
                 positions
                     .into_iter()
-                    .map(|(id, pos)| (pos - initial_positions[&id]).norm_squared())
+                    .map(|(id, pos)| (pos - initial_position).norm_squared())
                     .collect::<Vec<_>>(),
             )
         })
