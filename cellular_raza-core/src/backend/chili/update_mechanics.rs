@@ -326,21 +326,7 @@ where
         Ok(())
     }
 
-    /// Update cells position and velocity
-    ///
-    /// We assume that cells implement the
-    /// [Mechanics](cellular_raza_concepts::Mechanics) and
-    /// [Interaction](cellular_raza_concepts::Interaction) traits.
-    /// In this last step, all [ForceInformation] are gathered and used to update the
-    /// cells positions and velocities.
-    ///
-    /// For the future, we hope to provide an abstracted method to use any of our implemented
-    /// solvers.
-    /// The solver currently limits the number of saved previous increments in the
-    /// [UpdateMechanics] trait.
-    ///
-    /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
-    /// solver.
+    /// Receive all calculated forces and include them for later update steps.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
     pub fn update_mechanics_interaction_step_3<Pos, Vel, For>(
         &mut self,
@@ -498,7 +484,19 @@ where
     }
 }
 
-/// TODO
+/// We assume that cells implement the
+/// [Mechanics](cellular_raza_concepts::Mechanics) and
+/// [Interaction](cellular_raza_concepts::Interaction) traits.
+/// In this last step, all [ForceInformation] are gathered and used to update the
+/// cells positions and velocities.
+///
+/// For the future, we hope to provide an abstracted method to use any of our implemented
+/// solvers.
+/// The solver currently limits the number of saved previous increments in the
+/// [UpdateMechanics] trait.
+///
+/// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
+    /// solver.
 pub fn local_mechanics_update_step_3<
     C,
     A,
