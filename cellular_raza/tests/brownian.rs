@@ -137,13 +137,15 @@ fn brownian(parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// TODO activate in the future #[test]
+#[test]
 fn brownian_1() {
-    let parameters = Parameters::default();
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/brownian_1".into();
+    parameters.diffusion_constant = 1.0;
     brownian(&parameters).unwrap();
 }
 
-// TODO activate in the future #[test]
+#[test]
 fn brownian_2() {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
@@ -151,7 +153,7 @@ fn brownian_2() {
     brownian(&parameters).unwrap();
 }
 
-// TODO activate in the future #[test]
+#[test]
 fn brownian_3() {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
