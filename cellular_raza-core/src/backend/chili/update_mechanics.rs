@@ -496,7 +496,7 @@ where
 /// [UpdateMechanics] trait.
 ///
 /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
-    /// solver.
+/// solver.
 pub fn local_mechanics_update_step_3<
     C,
     A,

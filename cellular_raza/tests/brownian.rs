@@ -124,7 +124,7 @@ macro_rules! test_brownian {
         assert!(domain_size > 0.0);
         let domain =
             $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
-    
+
         let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
         let particles = (0..$parameters.n_particles)
             .map(|_| $particle_name::new(
