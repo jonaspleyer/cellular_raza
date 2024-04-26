@@ -22,8 +22,6 @@ pub const N_CELLS_INITIAL_RECEIVER: u32 = 50;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_RADIUS: f64 = 12.0 * MICRO_METRE;
-pub const CELL_MECHANICS_RELATIVE_INTERACTION_RANGE: f64 = 1.6;
-// TODO this value probably needs to be adjusted :shrug:
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 =
     2.0 * MICRO_METRE * MICRO_METRE / (MINUTE * MINUTE);
 pub const CELL_MECHANICS_DAMPING: f64 = 2.0 / MINUTE;
@@ -68,7 +66,7 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     CartesianCuboid2::from_boundaries_and_interaction_ranges(
         [0.0; 2],
         [DOMAIN_SIZE, DOMAIN_SIZE],
-        [CELL_MECHANICS_RADIUS * CELL_MECHANICS_RELATIVE_INTERACTION_RANGE; 2],
+        [CELL_MECHANICS_RADIUS; 2],
     )
 }
 
@@ -103,7 +101,7 @@ fn main() -> Result<(), SimulationError> {
                     CELL_MECHANICS_RADIUS,
                     CELL_MECHANICS_POTENTIAL_STRENGTH,
                     1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_MECHANICS_RADIUS,
+                    CELL_MECHANICS_RADIUS,
                 )?,
                 interaction_extracellular: NoExtracellularGradientSensing,
                 cycle: NoCycle,
