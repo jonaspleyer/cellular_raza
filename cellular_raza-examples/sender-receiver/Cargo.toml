@@ -11,5 +11,6 @@ rand_chacha = { workspace = true }
 nalgebra = { version="0.32" }
 num = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
-plotters = { workspace = true }
+plotters = { workspace = true, features = ["default", "ttf"] }
 ode_integrate = "0.0.2"
+rayon = "1.10.0"
