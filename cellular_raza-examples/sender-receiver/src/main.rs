@@ -112,7 +112,7 @@ fn main() -> Result<(), SimulationError> {
                     sink_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
                     uptake: [CELL_LIGAND_UPTAKE_RATE].into(),
                 },
-                volume: 2.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
+                volume: std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
             })
         })
         .collect::<Result<Vec<_>, CalcError>>()?;
