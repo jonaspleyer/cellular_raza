@@ -68,7 +68,7 @@ pub struct ConcentrationController {
 
     pub previous_production_values: Vec<f64>,
 
-    pub with_mpc: bool,
+    pub control_method: ControlScheme,
     pub prediction_time: f64,
     pub sampling_prod_low: f64,
     pub sampling_prod_high: f64,
@@ -152,6 +152,14 @@ fn write_line_to_file(save_path: &std::path::Path, line: String) {
         .unwrap();
     let mut f = std::io::LineWriter::new(f);
     writeln!(f, "{}", line).unwrap();
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub enum ControlScheme {
+    PID,
+    DelayODE,
+    LinearFit,
+    ExponentialFit,
 }
 
 impl Controller<MyCellType, Observable> for ConcentrationController {
