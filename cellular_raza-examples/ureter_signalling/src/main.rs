@@ -300,7 +300,9 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageBuilder::new().location("out/ureter_signalling"),
+        StorageBuilder::new()
+            .location("out/ureter_signalling")
+            .init(),
         (),
     );
 

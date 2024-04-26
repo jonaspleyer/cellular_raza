@@ -266,7 +266,8 @@ pub fn run_simulation(
 
     let storage = StorageBuilder::new()
         .location(&meta_params.save_path)
-        .add_date(meta_params.save_add_date);
+        .add_date(meta_params.save_add_date)
+        .init();
     // storage.export_formats = vec![ExportOptions::Vtk];
 
     let simulation_setup = create_simulation_setup!(

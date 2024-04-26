@@ -196,7 +196,8 @@ fn main() {
             ..Default::default()
         },
         Storage: StorageBuilder::new()
-            .location("out/kidney_organoid_model"),
+            .location("out/kidney_organoid_model")
+            .init(),
     );
 
     let strategies = Strategies {
