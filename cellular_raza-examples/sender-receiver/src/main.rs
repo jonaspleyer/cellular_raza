@@ -29,7 +29,7 @@ pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 =
 pub const CELL_MECHANICS_DAMPING: f64 = 2.0 / MINUTE;
 
 // Reaction parameters of the cell
-pub const CELL_LIGAND_TURNOVER_RATE: f64 = 0.5 / MINUTE;
+pub const CELL_LIGAND_TURNOVER_RATE: f64 = 1.0 / MINUTE;
 pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.5 / MINUTE;
 pub const CELL_LIGAND_SECRETION_RATE: f64 = 0.5 / MINUTE;
 
@@ -37,15 +37,15 @@ pub const CELL_LIGAND_SECRETION_RATE: f64 = 0.5 / MINUTE;
 pub const DOMAIN_SIZE: f64 = 300.0;
 
 // Parameters for Voxel Reaction+Diffusion
-pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 4.0 * MICRO_METRE * MICRO_METRE / SECOND;
+pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 40.0 * MICRO_METRE * MICRO_METRE / SECOND;
 
 // Controller parameters
 pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
 
 // Time parameters
-pub const DT: f64 = 0.1 * SECOND;
+pub const DT: f64 = 1.0 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
-pub const T_END: f64 = 10.0 * MINUTE;
+pub const T_END: f64 = 40.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
@@ -154,10 +154,10 @@ fn main() -> Result<(), SimulationError> {
             with_mpc: true,
             previous_dus: vec![],
             previous_production_values: vec![],
-            prediction_time: 2.0 * MINUTE,
+            prediction_time: 1.0 * MINUTE,
             sampling_prod_low: 0.0 * MOLAR / SECOND,
-            sampling_prod_high: 0.0001 * MOLAR / SECOND,
-            sampling_steps: 5,
+            sampling_prod_high: 0.1 * MOLAR / SECOND,
+            sampling_steps: 10,
             save_path,
         },
     );

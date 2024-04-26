@@ -5,7 +5,10 @@ use num::Zero;
 use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 
-use crate::{CELL_LIGAND_TURNOVER_RATE, DT};
+use crate::{
+    CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS, DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER,
+    VOXEL_LIGAND_DIFFUSION_CONSTANT,
+};
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
 pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
@@ -98,8 +101,9 @@ fn predict(
     n_steps: usize,
     dt: f64,
 ) -> Result<Vec<DVector<f64>>, ControllerError> {
-    // Define initial values
-    let y0 = DVector::from_iterator(n_compartments + 1, (0..n_compartments + 1).map(|_| 2.0));
+    // Define initial values: interpolate between current production_rate_next * dt and the known
+    // current concentration at the position of the cells.
+    let y0 = DVector::from_iterator(n_compartments + 1, (0..n_compartments + 1).map(|_| 0.0));
     let time_to_step = |t: f64| (t / dt) as usize;
 
     let ode = |y: &DVector<f64>,
@@ -108,7 +112,7 @@ fn predict(
                p: &Parameters|
      -> Result<(), CalcError> {
         let max_len = y.len();
-        for i in 0..max_len - 1 {
+        for i in 0..max_len - 2 {
             dy[i + 1] = p.delay * (y[i] - y[i + 1])
         }
         let step = time_to_step(*t);
@@ -119,7 +123,7 @@ fn predict(
         } else {
             production_next
         };
-        dy[max_len - 1] -= p.sink * y[max_len - 1];
+        dy[max_len - 1] = p.delay * y[max_len - 2] - p.sink * y[max_len - 1];
         Ok(())
     };
 
@@ -137,6 +141,12 @@ fn predict(
         FixedStepSolvers::Rk4,
     )
     .or_else(|e| Err(cellular_raza::concepts::ControllerError(format!("{}", e))))?;
+    // for r in res.iter() {
+    //     for ri in r.iter() {
+    //         print!("{:9.4} ", ri);
+    //     }
+    //     println!("");
+    // }
     Ok(res)
 }
 
@@ -189,76 +199,78 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
         // Calculate difference
         let average_conc = total_conc / n_cells as f64;
 
-        let du = if self.with_mpc {
+        let new_production_term = if self.with_mpc {
             // Define parameters for prediction
+            let n_compartments = 6;
             let parameters = Parameters {
-                delay: 1.0,
-                sink: CELL_LIGAND_TURNOVER_RATE,
+                delay: VOXEL_LIGAND_DIFFUSION_CONSTANT / DOMAIN_SIZE.powf(2.0)
+                    * ((n_compartments + 1) as f64).powf(2.0),
+                sink: CELL_LIGAND_TURNOVER_RATE
+                    * N_CELLS_INITIAL_RECEIVER as f64
+                    * CELL_MECHANICS_RADIUS.powf(2.0)
+                    / DOMAIN_SIZE.powf(2.0)
+                    * ((n_compartments + 1) as f64).powf(2.0),
             };
-            let n_compartments = 10;
 
             // Make prediction
             let mut predicted_production_term = 0.0;
-            let mut current_cost = f64::INFINITY;
-            for i in 0..10 {
-                let new_production_term = i as f64 * 0.1;
+            let mut predicted_conc = 0.0;
+            let mut cost = f64::INFINITY;
+            for i in 0..self.sampling_steps {
+                let q = i as f64 / (self.sampling_steps - 1) as f64;
+                let tested_production_term =
+                    self.sampling_prod_low + q * (self.sampling_prod_high - self.sampling_prod_low);
                 let predicted_series = predict(
                     &self.previous_production_values,
-                    new_production_term,
+                    tested_production_term,
                     &parameters,
                     n_compartments,
-                    20,
+                    (self.prediction_time / DT).floor() as usize,
                     DT,
                 )?;
 
                 // Calculate difference to desired value
-                let du = self.target_average_conc
-                    - match predicted_series.last() {
-                        Some(p) => p[n_compartments - 1],
-                        None => average_conc,
-                    };
+                let current_predicted_conc = predicted_series.last().unwrap()[n_compartments];
+                let du = self.target_average_conc - predicted_conc;
+                let dv = self.target_average_conc - average_conc;
 
                 // Set up cost function
-                let cost = du.powf(2.0);
-                if cost < current_cost {
-                    current_cost = cost;
-                    predicted_production_term = new_production_term;
+                let current_cost = 0.75 * du.powf(2.0) + 0.25 * dv.powf(2.0);
+
+                println!("{}", current_cost);
+                if current_cost < cost {
+                    cost = current_cost;
+                    predicted_production_term = tested_production_term;
+                    predicted_conc = current_predicted_conc;
                 }
             }
 
             // Write results to file
             let line = format!(
                 "{},{},{},{}",
-                average_conc,
-                current_cost,
-                predicted_production_term,
-                self.previous_production_values
-                    .last()
-                    .or_else(|| Some(&0.0))
-                    .unwrap()
+                average_conc, cost, predicted_production_term, predicted_conc,
             );
             write_line_to_file(&self.save_path, line);
 
-            // Compare the predicted necessary production term with the last one which was active
-            let res = if self.previous_production_values.len() > 0 {
-                predicted_production_term
-                    - self.previous_production_values[self.previous_production_values.len() - 1]
+            // From that calculate the new production term
+            predicted_production_term
+        } else {
+            let du = self.target_average_conc - average_conc;
+            self.previous_dus.push(du);
+
+            // Calculate PID Controller
+            let pn = self.previous_dus.len();
+            let derivative = if pn > 1 {
+                (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
             } else {
                 0.0
             };
-            todo!("Something is missing here still");
-            res
-        } else {
-            self.target_average_conc - average_conc
-        };
-        self.previous_dus.push(du);
+            let integral = self.previous_dus.iter().sum::<f64>() * DT;
 
-        // Calculate PID Controller
-        let pn = self.previous_dus.len();
-        let derivative = if pn > 1 {
-            (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
-        } else {
-            0.0
+            let proportional = self.k_p * du;
+            let differential = self.k_p * self.t_d * derivative;
+            let integral = self.k_p * integral / self.t_i;
+            let controller_var = proportional + differential + integral;
 
             // Write results to file
             let line = format!(
@@ -267,35 +279,14 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
             );
             write_line_to_file(&self.save_path, line);
 
+            (self
+                .previous_production_values
+                .last()
+                .or_else(|| Some(&0.0))
+                .unwrap()
+                + controller_var)
+                .max(0.0)
         };
-        let integral = self.previous_dus.iter().sum::<f64>() * DT;
-
-        let proportional = self.k_p * du;
-        let differential = self.k_p * self.t_d * derivative;
-        let integral = self.k_p * integral / self.t_i;
-        let controller_var = proportional + differential + integral;
-
-        // Write results to file
-        use std::fs::File;
-        use std::io::Write;
-        let mut f = File::options()
-            .append(true)
-            .create(true)
-            .open("controller_logs.csv")
-            .unwrap();
-        let line = format!(
-            "{},{},{},{},{},{}\n",
-            average_conc, du, proportional, differential, integral, controller_var
-        );
-        f.write(line.as_bytes()).unwrap();
-
-        let new_production_term = (self
-            .previous_production_values
-            .last()
-            .or_else(|| Some(&0.0))
-            .unwrap()
-            + controller_var)
-            .max(0.0);
 
         // Push new production value
         self.previous_production_values.push(new_production_term);
