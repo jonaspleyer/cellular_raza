@@ -13,25 +13,18 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(2, 2)
 
-    # descr1 = [
-    #     "du",
-    #     "proportional",
-    #     "differential",
-    #     "integral",
-    # ]
-
-    descr2 = [
-        "current concentration",
+    descr = [
+        "current average concentration",
         "cost",
         "predicted production term",
-        "current production term",
+        "predicted concentration",
     ]
 
     for i in range(2):
         for j in range(2):
             if data.shape[1] > j*2+i:
                 ax[i,j].plot(data[:,j*2+i])
-                ax[i,j].set_title(descr2[j*2+i])
+                ax[i,j].set_title(descr[j*2+i])
 
     fig.tight_layout()
     fig.savefig(last_run_dir / "controller_logs.png")
