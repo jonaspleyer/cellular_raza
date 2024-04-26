@@ -30,8 +30,7 @@ pub const CELL_MECHANICS_DAMPING: f64 = 2.0 / MINUTE;
 
 // Reaction parameters of the cell
 pub const CELL_LIGAND_TURNOVER_RATE: f64 = 1.0 / MINUTE;
-pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.5 / MINUTE;
-pub const CELL_LIGAND_SECRETION_RATE: f64 = 0.5 / MINUTE;
+pub const CELL_LIGAND_UPTAKE_RATE: f64 = 5.0 / MINUTE;
 
 // Parameters for domain
 pub const DOMAIN_SIZE: f64 = 300.0;
@@ -58,11 +57,11 @@ mod plotting;
 use bacteria_properties::*;
 use plotting::*;
 
-fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>) {
+fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<1>) {
     voxel.diffusion_constant = [VOXEL_LIGAND_DIFFUSION_CONSTANT].into();
     voxel.extracellular_concentrations = [0.0 * MOLAR].into();
-    voxel.degradation_rate = ReactionVector::zero();
-    voxel.production_rate = ReactionVector::zero();
+    voxel.degradation_rate = [0.0].into();
+    voxel.production_rate = [0.0].into();
 }
 
 fn create_domain() -> Result<CartesianCuboid2, CalcError> {
@@ -110,11 +109,10 @@ fn main() -> Result<(), SimulationError> {
                 cycle: NoCycle,
                 cellular_reactions: OwnReactions {
                     species,
-                    intracellular_concentrations: [0.0 * MOLAR].into(),
-                    turnover_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
-                    production_term: [0.0 * MOLAR / SECOND].into(),
-                    secretion_rate: [CELL_LIGAND_SECRETION_RATE].into(),
-                    uptake_rate: [CELL_LIGAND_UPTAKE_RATE].into(),
+                    intracellular: [0.0].into(),
+                    production_term: [0.0].into(),
+                    sink_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
+                    uptake: [CELL_LIGAND_UPTAKE_RATE].into(),
                 },
                 volume: 2.0 * std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
             })

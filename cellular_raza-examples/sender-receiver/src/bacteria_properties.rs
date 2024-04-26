@@ -28,41 +28,33 @@ pub enum Species {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OwnReactions {
+    pub intracellular: ReactionVector,
     pub species: Species,
-    pub intracellular_concentrations: ReactionVector,
-    pub turnover_rate: ReactionVector,
+    pub sink_rate: ReactionVector,
     pub production_term: ReactionVector,
-    pub secretion_rate: ReactionVector,
-    pub uptake_rate: ReactionVector,
+    pub uptake: ReactionVector,
 }
 
 impl CellularReactions<ReactionVector> for OwnReactions {
     fn calculate_intra_and_extracellular_reaction_increment(
         &self,
-        internal_concentration_vector: &ReactionVector,
-        external_concentration_vector: &ReactionVector,
+        i: &ReactionVector,
+        e: &ReactionVector,
     ) -> Result<(ReactionVector, ReactionVector), CalcError> {
-        let mut increment_extracellular = ReactionVector::zero();
-        let mut increment_intracellular = ReactionVector::zero();
-
-        for i in 0..NUMBER_OF_REACTION_COMPONENTS {
-            let uptake = self.uptake_rate[i] * external_concentration_vector[i];
-            let secretion = self.secretion_rate[i] * internal_concentration_vector[i];
-            increment_extracellular[i] = secretion - uptake;
-            increment_intracellular[i] = self.production_term[i]
-                - increment_extracellular[i]
-                - self.turnover_rate[i] * internal_concentration_vector[i];
-        }
-
-        Ok((increment_intracellular, increment_extracellular))
+        Ok(match self.species {
+            Species::Sender => ([0.0].into(), self.production_term),
+            Species::Receiver => (
+                self.uptake * (e - i) - self.sink_rate * i,
+                -self.uptake * (e - i),
+            ),
+        })
     }
 
     fn get_intracellular(&self) -> ReactionVector {
-        self.intracellular_concentrations
+        self.intracellular
     }
-
-    fn set_intracellular(&mut self, concentration_vector: ReactionVector) {
-        self.intracellular_concentrations = concentration_vector;
+    fn set_intracellular(&mut self, c: ReactionVector) {
+        self.intracellular = c;
     }
 }
 
