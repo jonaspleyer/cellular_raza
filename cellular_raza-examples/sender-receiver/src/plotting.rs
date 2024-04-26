@@ -4,8 +4,10 @@ use plotters::{
     backend::BitMapBackend,
     coord::types::RangedCoordf64,
     prelude::{Cartesian2d, Circle, DrawingArea, ShapeStyle},
-    style::colors::colormaps::{ColorMap, DerivedColorMap, ViridisRGB},
-    style::RGBColor,
+    style::{
+        colors::colormaps::{ColorMap, DerivedColorMap},
+        RGBColor,
+    },
 };
 
 use crate::{bacteria_properties::*, TARGET_AVERAGE_CONC};
@@ -14,9 +16,11 @@ pub fn plot_voxel(
     voxel: &CartesianCuboidVoxel2<NUMBER_OF_REACTION_COMPONENTS>,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
+    use plotters::prelude::*;
+
     // Define lower and upper bounds for our values
     let lower_bound = 0.0;
-    let upper_bound = 3_000.0;
+    let upper_bound = 5.0 * TARGET_AVERAGE_CONC;
     let concentration = voxel.get_total_extracellular()[0];
 
     // This should give a nice colormap
@@ -29,6 +33,16 @@ pub fn plot_voxel(
         Into::<ShapeStyle>::into(&voxel_color).filled(),
     );
     root.draw(&rectangle)?;
+
+    let text = plotters::element::Text::new(
+        format!("{:6.3}", voxel.get_total_extracellular()[0]),
+        (
+            0.5 * (voxel.get_min()[0] + voxel.get_max()[0]),
+            0.5 * (voxel.get_min()[1] + voxel.get_max()[1]),
+        ),
+        TextStyle::from(("normal", 20).into_font()).color(&BLACK),
+    );
+    root.draw(&text)?;
     Ok(())
 }
 
@@ -36,26 +50,9 @@ pub fn plot_modular_cell(
     modular_cell: &MyCellType,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
-    let cell_border_color = plotters::prelude::BLACK;
-
-    let relative_border_thickness = 0.25;
-
-    // Plot the cell border
-    let dx = root.get_x_range().end - root.get_x_range().start;
-    let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
-
-    let s = modular_cell.interaction.radius / dx * dx_pix as f64;
-    let cell_border = Circle::new(
-        (modular_cell.pos().x, modular_cell.pos().y),
-        s,
-        Into::<ShapeStyle>::into(&cell_border_color).filled(),
-    );
-    root.draw(&cell_border)?;
-
+    // Define colormap
     let lower_bound = 0.0;
     let upper_bound = 5.0 * TARGET_AVERAGE_CONC;
-
-    // Define colormap
     let derived_colormap = DerivedColorMap::new(&[RGBColor(102, 52, 83), RGBColor(247, 126, 201)]);
 
     // Plot the inside of the cell
@@ -65,12 +62,16 @@ pub fn plot_modular_cell(
         upper_bound,
     );
 
-    // let cell_inside_color = Life::get_color_normalized(modular_cell.get_intracellular()[1], 0.0, modular_cell.cellular_reactions.intracellular_concentrations_saturation_level[1]);
-    let cell_inside = Circle::new(
+    // Plot the cell border
+    let dx = root.get_x_range().end - root.get_x_range().start;
+    let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
+
+    let s = modular_cell.interaction.radius / dx * dx_pix as f64;
+    let cell_border = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
-        s * (1.0 - relative_border_thickness),
-        Into::<ShapeStyle>::into(&cell_inside_color).filled(),
+        s,
+        Into::<ShapeStyle>::into(&cell_inside_color).stroke_width(4),
     );
-    root.draw(&cell_inside)?;
+    root.draw(&cell_border)?;
     Ok(())
 }
