@@ -149,6 +149,7 @@ fn main() -> Result<(), SimulationError> {
             t_i: 20.0 * MINUTE,
             control_method: ControlScheme::PID,
             previous_dus: vec![],
+            previous_dvs: vec![],
             previous_production_values: vec![],
             prediction_time: 1.0 * MINUTE,
             sampling_prod_low: 0.0 * MOLAR / SECOND,
