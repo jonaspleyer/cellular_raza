@@ -1,7 +1,6 @@
 use cellular_raza::prelude::*;
 
 use nalgebra::DVector;
-use num::Zero;
 use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 

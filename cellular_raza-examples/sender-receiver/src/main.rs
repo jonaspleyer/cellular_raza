@@ -40,9 +40,9 @@ pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 40.0 * MICRO_METRE * MICRO_METR
 pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
 
 // Time parameters
-pub const DT: f64 = 1.0 * SECOND;
+pub const DT: f64 = 0.5 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
-pub const T_END: f64 = 40.0 * MINUTE;
+pub const T_END: f64 = 120.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
@@ -151,10 +151,10 @@ fn main() -> Result<(), SimulationError> {
             previous_dus: vec![],
             previous_dvs: vec![],
             previous_production_values: vec![],
-            prediction_time: 1.0 * MINUTE,
+            prediction_time: DOMAIN_SIZE.powf(2.0) / (1.0 * VOXEL_LIGAND_DIFFUSION_CONSTANT),
             sampling_prod_low: 0.0 * MOLAR / SECOND,
-            sampling_prod_high: 0.1 * MOLAR / SECOND,
-            sampling_steps: 10,
+            sampling_prod_high: 2.0 * MOLAR / SECOND,
+            sampling_steps: 100,
             save_path,
         },
     );
