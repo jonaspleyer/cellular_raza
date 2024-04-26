@@ -31,7 +31,7 @@ pub const CELL_LIGAND_TURNOVER_RATE: f64 = 1.0 / MINUTE;
 pub const CELL_LIGAND_UPTAKE_RATE: f64 = 5.0 / MINUTE;
 
 // Parameters for domain
-pub const DOMAIN_SIZE: f64 = 300.0;
+pub const DOMAIN_SIZE: f64 = 300.0 * MICRO_METRE;
 
 // Parameters for Voxel Reaction+Diffusion
 pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 40.0 * MICRO_METRE * MICRO_METRE / SECOND;
