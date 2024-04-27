@@ -1,3 +1,4 @@
+use cellular_raza_concepts::domain_new::SubDomainMechanics;
 // Imports from this crate
 use cellular_raza_concepts::*;
 
@@ -397,6 +398,51 @@ where
             res.push((n_subdomain, subdomain, voxels));
         }
         Ok(res)
+    }
+}
+
+impl<Coord, F, const D: usize> SubDomainMechanics<Coord, Coord> for CartesianSubDomain<F, D>
+where
+    for<'a> &'a mut Coord: Into<[F; D]>,
+    Coord: From<[F; D]>,
+    Coord: std::fmt::Debug,
+    F: num::Float,
+{
+    fn apply_boundary(&self, pos: &mut Coord, vel: &mut Coord) -> Result<(), BoundaryError> {
+        let mut velocity: [F; D] = vel.into();
+        let mut position: [F; D] = pos.into();
+
+        // Define constant two
+        let two = F::one() + F::one();
+
+        // For each dimension
+        for i in 0..D {
+            // Check if the particle is below lower edge
+            if position[i] < self.min[i] {
+                position[i] = two * self.min[i] - position[i];
+                velocity[i] = velocity[i].abs();
+            }
+            // Check if the particle is over the edge
+            if position[i] > self.max[i] {
+                position[i] = two * self.max[i] - position[i];
+                velocity[i] = - velocity[i].abs();
+            }
+        }
+
+        // If new position is still out of boundary return error
+        for i in 0..D {
+            if position[i] < self.min[i] || position[i] > self.max[i] {
+                return Err(BoundaryError(format!(
+                    "Particle is out of domain at position {:?}",
+                    pos
+                )));
+            }
+        }
+
+        // Set the position and velocity
+        *pos = position.into();
+        *vel = velocity.into();
+        Ok(())
     }
 }
 
