@@ -301,6 +301,9 @@ pub struct CartesianSubDomain<F, const D: usize> {
     min: SVector<F, D>,
     max: SVector<F, D>,
     dx: SVector<F, D>,
+    voxels: Vec<SVector<usize, D>>,
+    domain_min: SVector<F, D>,
+    domain_max: SVector<F, D>,
 }
 
 impl<F, const D: usize>
@@ -387,6 +390,9 @@ where
                 min: min.into(),
                 max: max.into(),
                 dx: self.dx.clone(),
+                voxels: voxels.clone(),
+                domain_min: self.min,
+                domain_max: self.max,
             };
             res.push((n_subdomain, subdomain, voxels));
         }
