@@ -295,7 +295,9 @@ fn main() {
             n_threads: N_THREADS,
             ..Default::default()
         },
-        StorageBuilder::new().location("out/organoid_turing_growth").init(),
+        StorageBuilder::new()
+            .location("out/organoid_turing_growth")
+            .init(),
         (),
     );
 
