@@ -50,9 +50,11 @@ pub const N_THREADS: usize = 1;
 pub const N_PLOTTING_THREADS: usize = 14;
 
 mod bacteria_properties;
+mod controller;
 mod plotting;
 
 use bacteria_properties::*;
+use controller::*;
 use plotting::*;
 
 fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<1>) {
