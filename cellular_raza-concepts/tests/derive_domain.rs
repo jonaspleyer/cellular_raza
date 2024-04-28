@@ -78,15 +78,14 @@ fn derive_domain() {
     assert_eq!(decomposed_domain.rng_seed, 1);
 }
 
-impl SortCells<Agent, MySubDomain> for MyDomain {
+impl SortCells<Agent> for MyDomain {
     type Index = u8;
 
-    fn sort_cells<'a>(
+    fn get_index_of(
         &self,
-        cells: impl IntoIterator<Item = Agent>,
-        _sub_units: impl IntoIterator<Item = &'a MySubDomain>,
-    ) -> Result<impl IntoIterator<Item = (Self::Index, Agent)>, BoundaryError> {
-        Ok(cells.into_iter().map(|cell| (1, cell)))
+        _cell: &Agent,
+    ) -> Result<Self::Index, cellular_raza_concepts::BoundaryError> {
+        Ok(1)
     }
 }
 
@@ -105,16 +104,9 @@ fn derive_sort_cells() {
             x_max: 3000000.0,
         },
     };
-    let subdomains = vec![MySubDomain {
-        x_min: 0.0,
-        x_max: 3000000.0,
-    }];
-    let agents = vec![Agent { pos: 3.0 }];
-    let index_cells = domain.sort_cells(agents, subdomains.iter()).unwrap();
-    for (index, cell) in index_cells.into_iter() {
-        assert_eq!(index, 1);
-        assert_eq!(cell.pos, 3.0);
-    }
+    let agent = Agent { pos: 3.0 };
+    let index = domain.get_index_of(&agent);
+    assert!(index.is_ok_and(|x| x == 1));
 }
 
 impl DomainRngSeed for MyDomain {
