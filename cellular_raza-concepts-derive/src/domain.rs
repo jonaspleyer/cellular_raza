@@ -240,8 +240,10 @@ impl DomainImplementer {
             new_ident!(cell_iterator, "__cr_private_CellIterator");
             let tokens = quote::quote!(#cell, #subdomain, #cell_iterator);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, struct_name, DomainRngSeed, tokens);
+            let where_clause = match struct_where_clause {
+                Some(clause) => quote::quote!(#clause),
+                None => quote::quote!(where),
+            };
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
@@ -250,15 +252,22 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
-            impl #impl_generics Domain<#tokens> for #struct_name
-            // TODO #where_clause
-            where
-                Self: DomainRngSeed
-                    + DomainCreateSubDomains<#subdomain>
-                    + SortCells<#subdomain, Index = < as DomainCreateSubDomains<#subdomain>>::SubDomainIndex>,
-                #subdomain: SubDomain<VoxelIndex = Self::VoxelIndex>,
-                <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone + core::hash::Hash + Eq,
-                <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone + core::hash::Hash + Eq,
+            impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
+            #where_clause
+                Self: DomainRngSeed,
+                Self: DomainCreateSubDomains<#subdomain>,
+                Self: SortCells<
+                    #cell,
+                    #subdomain,
+                    Index = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex
+                >,
+                #subdomain: SubDomain<
+                    VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
+                >,
+                <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone
+                    + core::hash::Hash + Eq,
+                <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone
+                    + core::hash::Hash + Eq,
                 #cell_iterator: IntoIterator<Item = #cell>,
             {
                 type SubDomainIndex = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex;
@@ -267,34 +276,46 @@ impl DomainImplementer {
                 fn decompose(
                     self,
                     n_subdomains: core::num::NonZeroUsize,
-                    cells: Ci,
-                ) -> Result<DecomposedDomain<Self::SubDomainIndex, #subdomain, #cell>, DecomposeError> {
+                    cells: #cell_iterator,
+                ) -> Result<
+                    DecomposedDomain<Self::SubDomainIndex, #subdomain, #cell>,
+                    DecomposeError
+                > {
                     // Get all subdomains
-                    let subdomains = self.create_subdomains(n_subdomains)?;
+                    let subdomains: Vec<_> = self.create_subdomains(n_subdomains)?
+                        .into_iter()
+                        .collect();
 
                     // Build a map from a voxel_index to the subdomain_index in which it is
                     let mut voxel_index_to_subdomain_index =
-                        std::collections::HashMap::<Self::VoxelIndex, Self::SubDomainIndex>::new();
+                        ::std::collections::HashMap::<Self::VoxelIndex, Self::SubDomainIndex>::new();
 
                     // Build neighbor map
-                    let mut neighbor_map: HashMap<Self::SubDomainIndex, Vec<Self::SubDomainIndex>> =
-                        HashMap::new();
+                    let mut neighbor_map: ::std::collections::HashMap<
+                        Self::SubDomainIndex,
+                        Vec<Self::SubDomainIndex>
+                    > = ::std::collections::HashMap::new();
 
                     // Build index_subdomain_cells
                     let mut index_subdomain_cells = Vec::new();
 
                     // Sort cells into the subdomains
-                    let mut index_to_cells = HashMap::<_, Vec<C>>::new();
-                    for cell in cells {
-                        let index = self.get_index_of(&cell)?;
-                        let existing_cells = index_to_cells.get_mut(&index);
-                        match existing_cells {
-                            Some(cell_vec) => cell_vec.push(cell),
-                            None => {
-                                index_to_cells.insert(index, vec![cell]);
+                    let mut index_to_cells: ::std::collections::HashMap<_, Vec<#cell>> =
+                        self.sort_cells(cells, subdomains
+                            .iter()
+                            .map(|(_, s, _)| s)
+                        )?
+                        .into_iter()
+                        .fold(
+                            ::std::collections::HashMap::new(),
+                            |mut acc, (index, cell)| {
+                                acc
+                                    .entry(index)
+                                    .or_insert_with(|| Vec::new())
+                                    .push(cell);
+                                acc
                             }
-                        }
-                    }
+                        );
 
                     // Fill both with values
                     for (subdomain_index, subdomain, voxel_indices) in subdomains.into_iter() {
@@ -308,11 +329,11 @@ impl DomainImplementer {
                             ) {
                                 let neighbor_subdomain = voxel_index_to_subdomain_index
                                     .get(&neighbor_voxel_index)
-                                    .ok_or(DecomposeError::IndexError(crate::IndexError(format!(
+                                    .ok_or(DecomposeError::IndexError(IndexError(format!(
                                         "TODO"
                                     ))))?;
                                 let neighbors = neighbor_map.get_mut(&subdomain_index).ok_or(
-                                    DecomposeError::IndexError(crate::IndexError(format!("TODO"))),
+                                    DecomposeError::IndexError(IndexError(format!("TODO"))),
                                 )?;
                                 if neighbors.contains(neighbor_subdomain) {
                                     neighbors.push(neighbor_subdomain.clone());
@@ -351,6 +372,6 @@ pub fn derive_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     res.extend(domain_implementer.implement_sort_cells());
     res.extend(domain_implementer.implement_rng_seed());
     res.extend(domain_implementer.implement_create_subdomains());
-    // res.extend(domain_implementer.implement_derived_total());
+    res.extend(domain_implementer.implement_derived_total());
     super::cell_agent::wrap(res).into()
 }
