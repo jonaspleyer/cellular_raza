@@ -158,12 +158,18 @@ pub trait SubDomain {
 /// even if this index is inside another [SubDomain].
 /// This restriction might be lifted in the future but is still
 /// required now.
-pub trait SortCells<C> {
+pub trait SortCells<C, SV> {
     /// An index which determines to which next smaller unit the cell should be assigned.
     type Index;
 
     /// If given a cell, we can sort this cell into the corresponding sub unit.
-    fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError>;
+    fn sort_cells<'a>(
+        &self,
+        cells: impl IntoIterator<Item = C>,
+        sub_units: impl IntoIterator<Item = &'a SV>,
+    ) -> Result<impl IntoIterator<Item = (Self::Index, C)>, BoundaryError>
+    where
+        SV: 'a;
 }
 
 /// Apply boundary conditions to a cells position and velocity.
