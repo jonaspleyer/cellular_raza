@@ -15,6 +15,7 @@ pub struct DomainImplementer {
     sort_cells: Option<FieldInfo>,
     rng_seed: Option<FieldInfo>,
     create_subdomains: Option<FieldInfo>,
+    partial_derive: bool,
 }
 
 impl From<DomainParser> for DomainImplementer {
@@ -23,6 +24,15 @@ impl From<DomainParser> for DomainImplementer {
         let mut sort_cells = None;
         let mut rng_seed = None;
         let mut create_subdomains = None;
+        let mut partial_derive = false;
+
+        value.attrs.into_iter().for_each(|domain_property| {
+            match domain_property {
+                DomainProperty::DomainPartialDerive => {
+                    partial_derive = true},
+                _ => (),
+            }
+        });
 
         value
             .elements
@@ -42,6 +52,7 @@ impl From<DomainParser> for DomainImplementer {
                             DomainRngSeed => rng_seed = Some(field_info),
                             DomainCreateSubDomains => create_subdomains = Some(field_info),
                             SortCells => sort_cells = Some(field_info),
+                            _ => (),
                         }
                     })
             });
@@ -53,6 +64,7 @@ impl From<DomainParser> for DomainImplementer {
             sort_cells,
             rng_seed,
             create_subdomains,
+            partial_derive,
         }
     }
 }
@@ -219,8 +231,7 @@ impl DomainImplementer {
     }
 
     fn implement_derived_total(&self) -> proc_macro2::TokenStream {
-        if self.base.is_none() {
-            todo!();
+        if self.base.is_none() && !self.partial_derive {
             let struct_name = &self.name;
             let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
