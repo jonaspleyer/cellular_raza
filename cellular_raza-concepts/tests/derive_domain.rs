@@ -1,5 +1,5 @@
 use cellular_raza_concepts::domain_new::*;
-use cellular_raza_concepts::{BoundaryError, DecomposeError};
+use cellular_raza_concepts::{BoundaryError, DecomposeError, IndexError};
 
 #[allow(unused)]
 struct Agent {
@@ -91,6 +91,7 @@ impl SortCells<Agent, MySubDomain> for MyDomain {
 }
 
 #[derive(Domain)]
+#[DomainPartialDerive]
 struct DerivedDomain2 {
     #[SortCells]
     my_domain: MyDomain,
