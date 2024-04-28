@@ -1,7 +1,8 @@
 implement_parsing_of_derive_attributes!(
     DomainProperty,
-    [Base, DomainRngSeed, DomainCreateSubDomains, SortCells],
+    field_attributes: [Base, DomainRngSeed, DomainCreateSubDomains, SortCells],
     DomainPropertyField,
+    struct_attributes: [DomainPartialDerive],
     DomainParser
 );
 

@@ -1,12 +1,14 @@
 macro_rules! implement_parsing_of_derive_attributes(
     (
         $enum_name:ident,
-        [$($name:ident),*],
+        field_attributes: [$($name:ident),*],
         $field_struct:ident,
+        struct_attributes: [$($name2:ident),*],
         $parser:ident
     ) => {
         pub enum $enum_name {
-            $($name),*
+            $($name,)*
+            $($name2,)*
         }
 
         pub struct $field_struct {
@@ -22,6 +24,9 @@ macro_rules! implement_parsing_of_derive_attributes(
                     match p_string.as_str() {
                         $(
                             stringify!($name) => Some($enum_name::$name),
+                        )*
+                        $(
+                            stringify!($name2) => Some($enum_name::$name2),
                         )*
                         _ => None,
                     }
@@ -54,8 +59,7 @@ macro_rules! implement_parsing_of_derive_attributes(
                 let elements = field
                     .attrs
                     .iter()
-                    .map($enum_name::from_attribute)
-                    .filter_map(|s| s)
+                    .filter_map($enum_name::from_attribute)
                     .collect::<Vec<_>>();
                 Self { elements, field }
             }
@@ -63,7 +67,7 @@ macro_rules! implement_parsing_of_derive_attributes(
 
         #[allow(unused)]
         pub struct $parser {
-            attrs: Vec<syn::Attribute>,
+            attrs: Vec<$enum_name>,
             vis: syn::Visibility,
             struct_token: syn::Token![struct],
             name: syn::Ident,
@@ -74,7 +78,10 @@ macro_rules! implement_parsing_of_derive_attributes(
         impl syn::parse::Parse for $parser {
             fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
                 let item_struct: syn::ItemStruct = input.parse()?;
-                let attrs = item_struct.attrs;
+                let attrs = item_struct.attrs
+                    .into_iter()
+                    .filter_map(|attr| $enum_name::from_attribute(&attr))
+                    .collect();
                 let vis = item_struct.vis;
                 let struct_token = item_struct.struct_token;
                 let name = item_struct.ident;
@@ -97,8 +104,9 @@ macro_rules! implement_parsing_of_derive_attributes(
 
 implement_parsing_of_derive_attributes!(
     SubDomainAspect,
-    [Base, SortCells, Mechanics, Force, Reactions],
+    field_attributes: [Base, SortCells, Mechanics, Force, Reactions],
     SubDomainAspectField,
+    struct_attributes: [],
     SubDomainParser
 );
 
