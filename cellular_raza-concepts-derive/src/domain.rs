@@ -127,15 +127,13 @@ impl DomainImplementer {
             let field_type = &field_info.field_type;
             let field_name = &field_info.field_name;
             new_ident!(cell, "__cr_private_Cell");
-            new_ident!(sv, "__cr_private_SV");
-            let tokens = quote::quote!(#cell, #sv);
+            let tokens = quote::quote!(#cell);
 
             let where_clause =
                 append_where_clause!(struct_where_clause, field_type, SortCells, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
-            push_ident!(generics, sv);
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
@@ -144,19 +142,8 @@ impl DomainImplementer {
                 {
                     type Index = <#field_type as SortCells<#tokens>>::Index;
 
-                    fn sort_cells<'a>(
-                        &self,
-                        cells: impl IntoIterator<Item = #cell>,
-                        sub_units: impl IntoIterator<Item = &'a #sv>,
-                    ) -> Result<impl IntoIterator<Item = (Self::Index, #cell)>, BoundaryError>
-                    where
-                        #sv: 'a,
-                    {
-                        <#field_type as SortCells<#tokens>>::sort_cells(
-                            &self.#field_name,
-                            cells,
-                            sub_units
-                        )
+                    fn get_index_of(&self, cell: &#cell) -> Result<Self::Index, BoundaryError> {
+                        <#field_type as SortCells<#tokens>>::get_index_of(&self.#field_name, cell)
                     }
                 }
             )
