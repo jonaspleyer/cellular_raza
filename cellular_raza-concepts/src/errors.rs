@@ -49,6 +49,12 @@ impl From<BoundaryError> for DecomposeError {
     }
 }
 
+impl From<IndexError> for DecomposeError {
+    fn from(value: IndexError) -> Self {
+        DecomposeError::IndexError(value)
+    }
+}
+
 define_errors!(
     (SetupError, "Occurs during setup of a new simulation"),
     (CalcError, "General Calculation Error"),
