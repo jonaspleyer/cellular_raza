@@ -191,27 +191,33 @@ impl DomainImplementer {
             let tokens = quote::quote!(#subdomain);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Domain, tokens);
+                append_where_clause!(struct_where_clause, field_type, DomainCreateSubDomains, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, subdomain);
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
-                impl #impl_generics CreateSubDomains<#tokens> for #struct_name #struct_ty_generics
+                impl #impl_generics DomainCreateSubDomains<#tokens>
+                    for #struct_name #struct_ty_generics
                     #where_clause
                 {
-                    type SubDomainIndex = <#field_type as CreateSubDomains<#tokens>>::SubDomainIndex;
-                    type VoxelIndex = <#field_type as CreateSubDomains<#tokens>>::VoxelIndex;
+                    type SubDomainIndex = <#field_type as DomainCreateSubDomains<#tokens>>
+                        ::SubDomainIndex;
+                    type VoxelIndex = <#field_type as DomainCreateSubDomains<#tokens>>::VoxelIndex;
 
                     fn create_subdomains(
                         &self,
                         n_subdomains: core::num::NonZeroUsize,
                     ) -> Result<
-                        impl IntoIterator<Item = (Self::SubDomainIndex, S, Vec<Self::VoxelIndex>)>,
+                        impl IntoIterator<Item = (
+                            Self::SubDomainIndex,
+                            #subdomain,
+                            Vec<Self::VoxelIndex>
+                        )>,
                         DecomposeError,
                     > {
-                        <#field_type as CreateSubDomains<#tokens>>::create_subdomains(
+                        <#field_type as DomainCreateSubDomains<#tokens>>::create_subdomains(
                             &self.#field_name,
                             n_subdomains,
                         )
