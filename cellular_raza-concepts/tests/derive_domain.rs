@@ -157,3 +157,26 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
         }))
     }
 }
+
+#[derive(Domain)]
+#[DomainPartialDerive]
+struct DerivedDomain4 {
+    #[DomainCreateSubDomains]
+    domain: MyDomain,
+}
+
+#[test]
+fn derive_create_subdomains() {
+    let derived_domain = DerivedDomain4 {
+        domain: MyDomain {
+            x_min: -1000.0,
+            x_max: -1001.0,
+        },
+    };
+    let n_subdomains = 33;
+    let new_domains: Vec<_> = derived_domain.create_subdomains(n_subdomains.try_into().unwrap())
+        .unwrap()
+        .into_iter()
+        .collect();
+    assert_eq!(new_domains.len(), n_subdomains);
+}
