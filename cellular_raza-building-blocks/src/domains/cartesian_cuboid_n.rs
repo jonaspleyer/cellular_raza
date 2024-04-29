@@ -241,9 +241,9 @@ where
         + core::ops::SubAssign
         + nalgebra::ClosedDiv<F>,
 {
-    type Index = SVector<usize, D>;
+    type VoxelIndex = SVector<usize, D>;
 
-    fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError> {
+    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
         let pos = cell.pos();
         Self::check_min_max(&self.min.into(), &pos.into())?;
         let n_vox = (pos - self.min).component_div(&self.dx);
@@ -1313,9 +1313,9 @@ macro_rules! implement_cartesian_cuboid_domain_new {
             $float_type,
         >,
         {
-            type Index = [i64; $d];
+            type VoxelIndex = [i64; $d];
 
-            fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError> {
+            fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
                 let pos = cell.pos();
                 let mut out = [0; $d];
 

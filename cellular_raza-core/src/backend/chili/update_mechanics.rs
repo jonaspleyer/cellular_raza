@@ -401,8 +401,11 @@ where
     pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        S: cellular_raza_concepts::domain_new::SortCells<C, Index = S::VoxelIndex>,
-        S::VoxelIndex: Eq + core::hash::Hash,
+        S: cellular_raza_concepts::domain_new::SortCells<
+            C,
+            VoxelIndex = <S as SubDomain>::VoxelIndex,
+        >,
+        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
     {
         // Store all cells which need to find a new home in this variable
         let mut find_new_home_cells = Vec::<_>::new();
@@ -413,7 +416,7 @@ where
             let mut errors = Vec::new();
             let (new_voxel_cells, old_voxel_cells): (Vec<_>, Vec<_>) =
                 vox.cells.drain(..).partition(|(c, _)| {
-                    let cell_index = self.subdomain.get_index_of(&c);
+                    let cell_index = self.subdomain.get_voxel_index_of(&c);
                     match cell_index {
                         Ok(index) => {
                             let plain_index = self.voxel_index_to_plain_index[&index];
@@ -431,7 +434,7 @@ where
 
         // Send cells to other multivoxelcontainer or keep them here
         for (cell, aux_storage) in find_new_home_cells {
-            let ind = self.subdomain.get_index_of(&cell)?;
+            let ind = self.subdomain.get_voxel_index_of(&cell)?;
             let cell_index = self.voxel_index_to_plain_index[&ind];
             match self.voxels.get_mut(&cell_index) {
                 // If new voxel is in current multivoxelcontainer then save them there
@@ -459,8 +462,11 @@ where
     pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        S::VoxelIndex: Eq + core::hash::Hash,
-        S: cellular_raza_concepts::domain_new::SortCells<C, Index = S::VoxelIndex>,
+        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
+        S: cellular_raza_concepts::domain_new::SortCells<
+            C,
+            VoxelIndex = <S as SubDomain>::VoxelIndex,
+        >,
     {
         // Now receive new cells and insert them
         for sent_cell in
@@ -470,7 +476,8 @@ where
             .into_iter()
         {
             let SendCell(cell, aux_storage) = sent_cell;
-            let index = self.voxel_index_to_plain_index[&self.subdomain.get_index_of(&cell)?];
+            let index =
+                self.voxel_index_to_plain_index[&self.subdomain.get_voxel_index_of(&cell)?];
 
             match self.voxels.get_mut(&index) {
                 Some(vox) => Ok(vox.cells.push((cell, aux_storage))),

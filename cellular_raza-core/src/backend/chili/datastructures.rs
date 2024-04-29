@@ -61,8 +61,8 @@ where
     Ci: IntoIterator<Item = C>,
     D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
-    S::VoxelIndex: Eq + Hash + Ord + Clone,
-    S: cellular_raza_concepts::domain_new::SortCells<C, Index = <S as SubDomain>::VoxelIndex>
+    <S as SubDomain>::VoxelIndex: Eq + Hash + Ord + Clone,
+    S: cellular_raza_concepts::domain_new::SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>
         + cellular_raza_concepts::domain_new::SubDomain,
     A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
@@ -100,7 +100,7 @@ where
         .flatten()
         .enumerate()
         .map(|(i, x)| (x, VoxelPlainIndex(i)))
-        .collect::<HashMap<S::VoxelIndex, VoxelPlainIndex>>();
+        .collect::<HashMap<<S as SubDomain>::VoxelIndex, VoxelPlainIndex>>();
     let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
         .index_subdomain_cells
         .iter()
@@ -226,13 +226,16 @@ where
         new_cells: &mut Vec<(C, Option<A>)>,
     ) -> Result<(), cellular_raza_concepts::BoundaryError>
     where
-        S::VoxelIndex: Eq + Hash + Ord,
+        <S as SubDomain>::VoxelIndex: Eq + Hash + Ord,
         A: Default,
-        S: cellular_raza_concepts::domain_new::SortCells<C, Index = S::VoxelIndex>,
+        S: cellular_raza_concepts::domain_new::SortCells<
+            C,
+            VoxelIndex = <S as SubDomain>::VoxelIndex,
+        >,
     {
         use cellular_raza_concepts::BoundaryError;
         for (cell, aux_storage) in new_cells.drain(..) {
-            let voxel_index = self.subdomain.get_index_of(&cell)?;
+            let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];
             let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
                 "Could not find correct voxel for cell".to_owned(),

@@ -204,12 +204,12 @@ mod test {
     }
 
     impl cellular_raza_concepts::domain_new::SortCells<f64> for TestSubDomain {
-        type Index = usize;
+        type VoxelIndex = usize;
 
-        fn get_index_of(
+        fn get_voxel_index_of(
             &self,
             cell: &f64,
-        ) -> Result<Self::Index, cellular_raza_concepts::BoundaryError> {
+        ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
             for (index, voxel) in self.voxels.iter() {
                 if cell >= &voxel[0] && cell <= &voxel[1] {
                     return Ok(*index);
