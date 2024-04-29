@@ -140,10 +140,16 @@ impl DomainImplementer {
                 impl #impl_generics SortCells<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
-                    type Index = <#field_type as SortCells<#tokens>>::Index;
+                    type VoxelIndex = <#field_type as SortCells<#tokens>>::VoxelIndex;
 
-                    fn get_index_of(&self, cell: &#cell) -> Result<Self::Index, BoundaryError> {
-                        <#field_type as SortCells<#tokens>>::get_index_of(&self.#field_name, cell)
+                    fn get_voxel_index_of(&self, cell: &#cell) -> Result<
+                        Self::VoxelIndex,
+                        BoundaryError
+                    > {
+                        <#field_type as SortCells<#tokens>>::get_voxel_index_of(
+                            &self.#field_name,
+                            cell
+                        )
                     }
                 }
             )
@@ -202,7 +208,7 @@ impl DomainImplementer {
                         &self,
                         n_subdomains: core::num::NonZeroUsize,
                     ) -> Result<
-                        impl IntoIterator<Item = (Self::SubDOmainIndex, S, Vec<Self::VoxelIndex>)>,
+                        impl IntoIterator<Item = (Self::SubDomainIndex, S, Vec<Self::VoxelIndex>)>,
                         DecomposeError,
                     > {
                         <#field_type as CreateSubDomains<#tokens>>::create_subdomains(
@@ -245,8 +251,7 @@ impl DomainImplementer {
                 Self: DomainCreateSubDomains<#subdomain>,
                 Self: SortCells<
                     #cell,
-                    #subdomain,
-                    Index = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex
+                    VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
                 >,
                 #subdomain: SubDomain<
                     VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
@@ -275,7 +280,10 @@ impl DomainImplementer {
 
                     // Build a map from a voxel_index to the subdomain_index in which it is
                     let mut voxel_index_to_subdomain_index =
-                        ::std::collections::HashMap::<Self::VoxelIndex, Self::SubDomainIndex>::new();
+                        ::std::collections::HashMap::<
+                            Self::VoxelIndex,
+                            Self::SubDomainIndex
+                        >::new();
 
                     // Build neighbor map
                     let mut neighbor_map: ::std::collections::HashMap<
@@ -287,11 +295,16 @@ impl DomainImplementer {
                     let mut index_subdomain_cells = Vec::new();
 
                     // Sort cells into the subdomains
-                    let mut index_to_cells: ::std::collections::HashMap<_, Vec<#cell>> =
-                        self.sort_cells(cells, subdomains
-                            .iter()
-                            .map(|(_, s, _)| s)
+                    let mut index_to_cells: ::std::collections::HashMap<_, Vec<#cell>> = cells
+                        .into_iter()
+                        .map(|cell| Ok((voxel_index_to_subdomain_index.get(
+                            &self.get_voxel_index_of(&cell)?
+                            ).ok_or(DecomposeError::IndexError(
+                                IndexError(format!("could not find subdomain index"))
+                            )
                         )?
+                        .clone(), cell)))
+                        .collect::<Result<Vec<_>, DecomposeError>>()?
                         .into_iter()
                         .fold(
                             ::std::collections::HashMap::new(),
