@@ -160,10 +160,10 @@ pub trait SubDomain {
 /// required now.
 pub trait SortCells<C> {
     /// An index which determines to which next smaller unit the cell should be assigned.
-    type Index;
+    type VoxelIndex;
 
     /// If given a cell, we can sort this cell into the corresponding sub unit.
-    fn get_index_of(&self, cell: &C) -> Result<Self::Index, BoundaryError>;
+    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError>;
 }
 
 /// Apply boundary conditions to a cells position and velocity.

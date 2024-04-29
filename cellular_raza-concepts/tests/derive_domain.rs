@@ -79,12 +79,12 @@ fn derive_domain() {
 }
 
 impl SortCells<Agent> for MyDomain {
-    type Index = u8;
+    type VoxelIndex = u8;
 
-    fn get_index_of(
+    fn get_voxel_index_of(
         &self,
         _cell: &Agent,
-    ) -> Result<Self::Index, cellular_raza_concepts::BoundaryError> {
+    ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
         Ok(1)
     }
 }
@@ -105,7 +105,7 @@ fn derive_sort_cells() {
         },
     };
     let agent = Agent { pos: 3.0 };
-    let index = domain.get_index_of(&agent);
+    let index = domain.get_voxel_index_of(&agent);
     assert!(index.is_ok_and(|x| x == 1));
 }
 
