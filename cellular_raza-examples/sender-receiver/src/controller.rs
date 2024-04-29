@@ -31,7 +31,7 @@ pub struct PIDSettings {
     pub save_path: std::path::PathBuf,
 }
 
-fn write_line_to_file(save_path: &std::path::Path, line: String) {
+pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
     use std::fs::File;
     use std::io::Write;
     let f = File::options()

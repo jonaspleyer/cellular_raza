@@ -5,6 +5,7 @@ use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    write_line_to_file,
     CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS, DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER,
     VOXEL_LIGAND_DIFFUSION_CONSTANT,
 };
@@ -140,18 +141,6 @@ fn predict(
     //     println!("");
     // }
     Ok(res)
-}
-
-fn write_line_to_file(save_path: &std::path::Path, line: String) {
-    use std::fs::File;
-    use std::io::Write;
-    let f = File::options()
-        .append(true)
-        .create(true)
-        .open(save_path.join("controller_logs.csv"))
-        .unwrap();
-    let mut f = std::io::LineWriter::new(f);
-    writeln!(f, "{}", line).unwrap();
 }
 
 #[derive(Clone, Deserialize, Serialize)]
