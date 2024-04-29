@@ -144,12 +144,14 @@ fn main() -> Result<(), SimulationError> {
             ..Default::default()
         },
         storage,
-        SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
-            k_p: 0.1 * MOLAR / MINUTE,
-            t_d: 1.0 * MINUTE,
-            t_i: 20.0 * MINUTE,
-            save_path: save_path.join("pid_controller.csv"),
-        })),
+        // SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
+        //     k_p: 0.1 * MOLAR / MINUTE,
+        //     t_d: 1.0 * MINUTE,
+        //     t_i: 20.0 * MINUTE,
+        //     save_path: save_path.join("pid_controller.csv"),
+        // })),
+        SRController::new(TARGET_AVERAGE_CONC)
+            .strategy(ControlStrategy::DelayODE(DelayODESettings {})),
     );
 
     let strategies = Strategies {

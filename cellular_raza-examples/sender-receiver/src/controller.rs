@@ -14,6 +14,7 @@ pub struct SRController {
 #[derive(Clone, Deserialize, Serialize)]
 pub enum ControlStrategy {
     PID(PIDSettings),
+    DelayODE(DelayODESettings),
     Linear,
     Exponential,
     None,
@@ -30,6 +31,9 @@ pub struct PIDSettings {
     /// Path where to save results
     pub save_path: std::path::PathBuf,
 }
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct DelayODESettings {}
 
 pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
     use std::fs::File;
@@ -121,20 +125,38 @@ impl SRController {
         Ok(())
     }
 
-    fn linear_control(
+    fn delay_ode_control<'a, J>(
         &mut self,
         average_concentration: f64,
         n_cells: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+        settings: DelayODESettings,
+        cells: J,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        J: Iterator<
+            Item = (
+                &'a mut cellular_raza::prelude::CellAgentBox<MyCellType>,
+                &'a mut Vec<cellular_raza::prelude::CycleEvent>,
+            ),
+        >,
+    {
         Ok(())
+    }
+
+    fn linear_control(
+        &mut self,
+        _average_concentration: f64,
+        _n_cells: usize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        unimplemented!();
     }
 
     fn exponential_control(
         &mut self,
-        average_concentration: f64,
-        n_cells: usize,
+        _average_concentration: f64,
+        _n_cells: usize,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
+        unimplemented!();
     }
 }
 
@@ -191,6 +213,9 @@ impl Controller<MyCellType, SRObservable> for SRController {
         match &self.strategy {
             ControlStrategy::PID(pid_settings) => {
                 self.pid_control(average_concentration, n_cells, pid_settings.clone(), cells)
+            }
+            ControlStrategy::DelayODE(settings) => {
+                self.delay_ode_control(average_concentration, n_cells, settings.clone(), cells)
             }
             ControlStrategy::Linear => self.linear_control(average_concentration, n_cells),
             ControlStrategy::Exponential => {
