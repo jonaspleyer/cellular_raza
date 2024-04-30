@@ -1,6 +1,6 @@
 use cellular_raza::concepts::{CellularReactions, Controller};
+use nalgebra::{ComplexField, DVector};
 use serde::{Deserialize, Serialize};
-use nalgebra::DVector;
 
 use crate::*;
 
@@ -95,12 +95,11 @@ pub fn predict(
             production_next
         };
         dy[0] = alpha + p.diffusion / p.dx.powf(2.0) * (y[1] - y[0]);
-        dy[max_len - 1] =  - p.sink * y[max_len - 1]
+        dy[max_len - 1] = -p.sink * y[max_len - 1]
             + p.diffusion / p.dx.powf(2.0) * (y[max_len - 2] - y[max_len - 1]);
         for i in 1..max_len - 1 {
             dy[i] = p.diffusion / p.dx.powf(2.0) * (y[i + 1] - 2.0 * y[i] + y[i - 1]);
         }
-        println!("{} {}", alpha, p.sink);
         Ok(())
     };
 

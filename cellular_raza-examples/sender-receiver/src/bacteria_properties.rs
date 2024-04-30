@@ -111,4 +111,3 @@ impl CellularReactions<ReactionVector> for OwnReactions {
         self.intracellular = c;
     }
 }
-
