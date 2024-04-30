@@ -129,7 +129,8 @@ impl SRController {
         let parameters = ODEParameters {
             delay: VOXEL_LIGAND_DIFFUSION_CONSTANT / DOMAIN_SIZE.powf(2.0)
                 * ((n_compartments + 1) as f64).powf(2.0),
-            sink: 15.0 * CELL_LIGAND_TURNOVER_RATE
+            sink: 15.0
+                * CELL_LIGAND_TURNOVER_RATE
                 * N_CELLS_INITIAL_RECEIVER as f64
                 * CELL_MECHANICS_RADIUS.powf(2.0)
                 / DOMAIN_SIZE.powf(2.0)
@@ -156,8 +157,7 @@ impl SRController {
                 .unwrap();
 
                 // Calculate difference to desired value
-                let current_predicted_conc =
-                    predicted_series.last().unwrap()[n_compartments];
+                let current_predicted_conc = predicted_series.last().unwrap()[n_compartments];
                 let du = self.target_concentration - current_predicted_conc;
                 let dv = self.target_concentration - average_concentration;
 

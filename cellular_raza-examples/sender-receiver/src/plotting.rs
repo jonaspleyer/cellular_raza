@@ -85,7 +85,7 @@ pub fn plot_modular_cell(
     let cell_inside = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
         q,
-        Into::<ShapeStyle>::into(&cell_inside_color).filled()
+        Into::<ShapeStyle>::into(&cell_inside_color).filled(),
     );
 
     root.draw(&cell_border)?;
