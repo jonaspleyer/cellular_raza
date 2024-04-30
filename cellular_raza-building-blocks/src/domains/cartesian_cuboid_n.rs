@@ -340,7 +340,7 @@ fn generate_subdomains() {
     );
 }
 
-/// TODO
+/// Subdomain corresponding to the [CartesianCuboid] struct.
 #[derive(Clone, Debug)]
 pub struct CartesianSubDomain<F, const D: usize> {
     min: SVector<F, D>,
@@ -349,6 +349,49 @@ pub struct CartesianSubDomain<F, const D: usize> {
     voxels: Vec<[usize; D]>,
     domain_min: SVector<F, D>,
     domain_max: SVector<F, D>,
+    domain_n_voxels: SVector<usize, D>,
+}
+
+impl<F, const D: usize> CartesianSubDomain<F, D>
+where
+    F: Clone,
+{
+    /// Get the minimum boundary of the subdomain.
+    /// Note that not all voxels which could be in the space of the subdomain need to be in it.
+    pub fn get_min(&self) -> SVector<F, D> {
+        self.min.clone()
+    }
+
+    /// Get the maximum boundary of the subdomain.
+    /// Note that not all voxels which could be in the space of the subdomain need to be in it.
+    pub fn get_max(&self) -> SVector<F, D> {
+        self.max.clone()
+    }
+
+    /// Get the discretization used to generate voxels
+    pub fn get_dx(&self) -> SVector<F, D> {
+        self.dx.clone()
+    }
+
+    /// Get all voxel indices which are currently in this subdomain
+    pub fn get_voxels(&self) -> Vec<[usize; D]> {
+        self.voxels.clone()
+    }
+
+    /// See [CartesianCuboid::get_min].
+    pub fn get_domain_min(&self) -> SVector<F, D> {
+        self.domain_min.clone()
+    }
+
+    /// See [CartesianCuboid::get_max].
+    pub fn get_domain_max(&self) -> SVector<F, D> {
+        self.domain_max.clone()
+    }
+
+    /// See [CartesianCuboid::get_n_voxels].
+    pub fn get_domain_n_voxels(&self) -> SVector<usize, D> {
+        self.domain_n_voxels.clone()
+    }
 }
 
 impl<F, const D: usize>
@@ -438,6 +481,7 @@ where
                 voxels: voxels.clone(),
                 domain_min: self.min,
                 domain_max: self.max,
+                domain_n_voxels: self.n_voxels.clone(),
             };
             res.push((n_subdomain, subdomain, voxels));
         }
