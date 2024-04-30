@@ -6,6 +6,7 @@ use crate::*;
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SRController {
     pub target_concentration: f64,
+    pub production_value_max: f64,
     previous_dus: Vec<f64>,
     previous_production_values: Vec<f64>,
     pub strategy: ControlStrategy,
@@ -60,9 +61,10 @@ pub struct ODEParameters {
 }
 
 impl SRController {
-    pub fn new(target_concentration: f64) -> Self {
+    pub fn new(target_concentration: f64, production_value_max: f64) -> Self {
         Self {
             target_concentration,
+            production_value_max,
             previous_dus: Vec::new(),
             previous_production_values: Vec::new(),
             strategy: ControlStrategy::None,
@@ -269,7 +271,8 @@ impl Controller<MyCellType, SRObservable> for SRController {
             .into_iter()
             .for_each(|(cell, _)| match cell.cell.cellular_reactions.species {
                 Species::Sender => {
-                    cell.cell.cellular_reactions.production_term[0] = new_production_value;
+                    cell.cell.cellular_reactions.production_term[0] =
+                        new_production_value.min(self.production_value_max).max(0.0);
                 }
                 _ => (),
             });

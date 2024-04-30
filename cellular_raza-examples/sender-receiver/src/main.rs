@@ -143,7 +143,8 @@ fn main() -> Result<(), SimulationError> {
             ..Default::default()
         },
         storage,
-        SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
+        SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
+            ControlStrategy::PID(PIDSettings {
             k_p: 0.05 * MOLAR / MINUTE,
             t_d: 5.0 * MINUTE,
             t_i: 10.0 * MINUTE,
