@@ -216,12 +216,10 @@ impl SRController {
                 .unwrap();
 
                 // Calculate difference to desired value
+                // Set up cost function
                 let current_predicted_conc = predicted_series.last().unwrap()[n_compartments];
                 let du = self.target_concentration - current_predicted_conc;
-                let dv = self.target_concentration - average_concentration;
-
-                // Set up cost function
-                let current_cost = 0.75 * du.powf(2.0) + 0.25 * dv.powf(2.0);
+                let current_cost = du.powf(2.0);
 
                 (current_cost, tested_production_term, current_predicted_conc)
             })
