@@ -28,7 +28,10 @@ def plot_pid_controller():
         "total",
     ]
 
-    t = 0.25 / 60 * np.arange(len(data[:,0]))
+    # WARNING: This coincides with the time-increment of the simulation
+    # If we change this constant in the source code, we also have to change it here.
+    dt = 0.1
+    t = dt / 60 * np.arange(len(data[:,0]))
     for i in range(2):
         for j in range(3):
             if data.shape[1] > j*2+i:
@@ -40,7 +43,11 @@ def plot_pid_controller():
                     ax[k, 0].legend()
                     ax[k, 0].set_ylabel("Controller Response [nM/min]")
                 elif j*2+i == 0:
-                    ax[0,0].plot(t, 2 + 0*data[:,0], color="grey", linestyle="--")
+                    # WARNING: This 1 + 0*data[:,0] is a magic number!
+                    # It coincides with the target_concentration of the controller
+                    # If this number is changed in the source code, we also need to change
+                    # it here!
+                    ax[0,0].plot(t, 1 + 0*data[:,0], color="grey", linestyle="--")
                     ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
                     ax[k, i].set_ylabel("Concentration [nM]")
                 else:
