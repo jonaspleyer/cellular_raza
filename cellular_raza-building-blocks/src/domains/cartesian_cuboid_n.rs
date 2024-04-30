@@ -132,6 +132,23 @@ where
 
     /// Builds a new [CartesianCuboid] from given boundaries and maximum interaction ranges of the
     /// containing cells.
+    ///
+    /// ```
+    /// # use cellular_raza_building_blocks::CartesianCuboid;
+    /// let min = [2.0, 3.0, 1.0];
+    /// let max = [10.0, 10.0, 20.0];
+    /// let interaction_range = 2.0;
+    /// let domain = CartesianCuboid::from_boundaries_and_interaction_range(
+    ///     min,
+    ///     max,
+    ///     interaction_range
+    /// )?;
+    ///
+    /// assert_eq!(domain.get_n_voxels()[0], 4);
+    /// assert_eq!(domain.get_n_voxels()[1], 3);
+    /// assert_eq!(domain.get_n_voxels()[2], 9);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn from_boundaries_and_interaction_range(
         min: impl Into<[F; D]>,
         max: impl Into<[F; D]>,
@@ -148,7 +165,7 @@ where
         let mut n_voxels = [0; D];
         let mut dx = [F::zero(); D];
         for i in 0..D {
-            let n = ((max[i] - min[i]) / interaction_range).ceil();
+            let n = ((max[i] - min[i]) / interaction_range).floor();
             // This conversion should hopefully never fail.
             n_voxels[i] = n.to_usize().ok_or(BoundaryError(
                 cellular_raza_concepts::format_error_message!(
