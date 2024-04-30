@@ -41,12 +41,7 @@ pub struct MyInteraction {
     pub relative_interaction_range: f64,
 }
 
-impl Interaction<
-    nalgebra::Vector2<f64>,
-    nalgebra::Vector2<f64>,
-    nalgebra::Vector2<f64>,
-    f64
->
+impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, f64>
     for MyInteraction
 {
     fn calculate_force_between(

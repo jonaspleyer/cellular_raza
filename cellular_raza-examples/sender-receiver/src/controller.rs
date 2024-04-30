@@ -80,15 +80,15 @@ impl SRController {
         pid_settings: PIDSettings,
     ) -> Result<f64, Box<dyn std::error::Error>> {
         // Calculate PID Controller
-        let pn = self.previous_dus.len();
-        if pn == 0 {
+        let p_n = self.previous_dus.len();
+        if p_n == 0 {
             return Ok(0.0);
         }
-        let du = self.previous_dus[pn - 1];
+        let du = self.previous_dus[p_n - 1];
 
         // Calculate the derivative of the last two time points
-        let derivative = if pn > 1 {
-            (self.previous_dus[pn - 1] - self.previous_dus[pn - 2]) / DT
+        let derivative = if p_n > 1 {
+            (self.previous_dus[p_n - 1] - self.previous_dus[p_n - 2]) / DT
         } else {
             0.0
         };
