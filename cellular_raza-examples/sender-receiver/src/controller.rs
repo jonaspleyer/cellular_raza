@@ -73,25 +73,16 @@ impl SRController {
         Self { strategy, ..self }
     }
 
-    fn pid_control<'a, J>(
+    fn pid_control(
         &mut self,
         average_concentration: f64,
         _n_cells: usize,
         pid_settings: PIDSettings,
-        cells: J,
-    ) -> Result<(), Box<dyn std::error::Error>>
-    where
-        J: Iterator<
-            Item = (
-                &'a mut cellular_raza::prelude::CellAgentBox<MyCellType>,
-                &'a mut Vec<cellular_raza::prelude::CycleEvent>,
-            ),
-        >,
-    {
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         // Calculate PID Controller
         let pn = self.previous_dus.len();
         if pn == 0 {
-            return Ok(());
+            return Ok(0.0);
         }
         let du = self.previous_dus[pn - 1];
 
@@ -123,37 +114,16 @@ impl SRController {
             .unwrap()
             + controller_var)
             .max(0.0);
-        self.previous_production_values.push(new_production_term);
 
-        // Apply new term to cells
-        cells
-            .into_iter()
-            .for_each(|(cell, _)| match cell.cell.cellular_reactions.species {
-                Species::Sender => {
-                    cell.cell.cellular_reactions.production_term[0] = new_production_term
-                }
-                _ => (),
-            });
-        Ok(())
+        Ok(new_production_term)
     }
 
-    fn delay_ode_control<'a, J>(
+    fn delay_ode_control(
         &mut self,
         average_concentration: f64,
-        n_cells: usize,
+        _n_cells: usize,
         settings: DelayODESettings,
-        cells: J,
-    ) -> Result<(), Box<dyn std::error::Error>>
-    where
-        J: Iterator<
-            Item = (
-                &'a mut cellular_raza::prelude::CellAgentBox<MyCellType>,
-                &'a mut Vec<cellular_raza::prelude::CycleEvent>,
-            ),
-        >,
-    {
-        Ok(())
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         // Define parameters of the ODE we are solving
         let n_compartments = 6;
         let parameters = ODEParameters {
@@ -207,14 +177,14 @@ impl SRController {
             average_concentration, cost, predicted_production_term, predicted_conc,
         );
         write_line_to_file(&settings.save_path, line);
-        Ok(())
+        Ok(predicted_production_term)
     }
 
     fn linear_control(
         &mut self,
         _average_concentration: f64,
         _n_cells: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         unimplemented!();
     }
 
@@ -222,7 +192,7 @@ impl SRController {
         &mut self,
         _average_concentration: f64,
         _n_cells: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         unimplemented!();
     }
 }
@@ -277,22 +247,32 @@ impl Controller<MyCellType, SRObservable> for SRController {
         self.previous_dus.push(du);
 
         // Apply chosen control strategy
-        match &self.strategy {
+        let new_production_value = match &self.strategy {
             ControlStrategy::PID(pid_settings) => {
-                self.pid_control(average_concentration, n_cells, pid_settings.clone(), cells)
+                self.pid_control(average_concentration, n_cells, pid_settings.clone())
             }
             ControlStrategy::DelayODE(settings) => {
-                self.delay_ode_control(average_concentration, n_cells, settings.clone(), cells)
+                self.delay_ode_control(average_concentration, n_cells, settings.clone())
             }
             ControlStrategy::Linear => self.linear_control(average_concentration, n_cells),
             ControlStrategy::Exponential => {
                 self.exponential_control(average_concentration, n_cells)
             }
-            ControlStrategy::None => Ok(()),
+            ControlStrategy::None => Ok(0.0),
         }
         .unwrap();
 
-        // Write information to file
+        self.previous_production_values.push(new_production_value);
+
+        // Apply new term to cells
+        cells
+            .into_iter()
+            .for_each(|(cell, _)| match cell.cell.cellular_reactions.species {
+                Species::Sender => {
+                    cell.cell.cellular_reactions.production_term[0] = new_production_value;
+                }
+                _ => (),
+            });
         Ok(())
     }
 }
