@@ -87,8 +87,10 @@ pub fn predict(
         }
         let alpha = if production_history.len() == 0 {
             0.0
-        } else if current_step < production_history.len() {
-            production_history[production_history.len() - current_step - 1]
+        } else if current_step < production_history.len().min(n_steps) {
+            let start_index = production_history.len() - production_history.len().min(n_steps);
+            debug_assert!(start_index + current_step < production_history.len());
+            production_history[start_index + current_step]
         } else {
             production_next
         };
@@ -104,7 +106,7 @@ pub fn predict(
 
     // Define time
     let t0 = 0.0;
-    let total_steps = production_history.len().max(n_steps) + n_steps;
+    let total_steps = production_history.len().min(n_steps) + n_steps;
     let t_series = (0..total_steps)
         .map(|i| t0 + i as f64 * dt)
         .collect::<Vec<_>>();
