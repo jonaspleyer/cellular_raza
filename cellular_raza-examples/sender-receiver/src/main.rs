@@ -65,11 +65,7 @@ fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<1>) {
 }
 
 fn create_domain() -> Result<CartesianCuboid2, CalcError> {
-    CartesianCuboid2::from_boundaries_and_interaction_ranges(
-        [0.0; 2],
-        [DOMAIN_SIZE, DOMAIN_SIZE],
-        [CELL_MECHANICS_RADIUS; 2],
-    )
+    CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE, DOMAIN_SIZE], [12; 2])
 }
 
 fn main() -> Result<(), SimulationError> {
