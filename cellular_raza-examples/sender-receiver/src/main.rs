@@ -143,22 +143,23 @@ fn main() -> Result<(), SimulationError> {
             ..Default::default()
         },
         storage,
+        // SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
+        //     ControlStrategy::PID(PIDSettings {
+        //         k_p: 0.075 * MOLAR / MINUTE,
+        //         t_d: 1.0 * MINUTE,
+        //         t_i: 10.0 * MINUTE,
+        //         save_path: save_path.join("pid_controller.csv"),
+        //     }),
+        // ),
         SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
-            ControlStrategy::PID(PIDSettings {
-                k_p: 0.075 * MOLAR / MINUTE,
-                t_d: 1.0 * MINUTE,
-                t_i: 10.0 * MINUTE,
-                save_path: save_path.join("pid_controller.csv"),
+            ControlStrategy::DelayODE(DelayODESettings {
+                sampling_prod_low: 0.0 * MOLAR / SECOND,
+                sampling_prod_high: 0.4 * MOLAR / SECOND,
+                sampling_steps: 40,
+                prediction_time: 5.0 * MINUTE,
+                save_path: save_path.join("delay_ode_mpc.csv"),
             }),
         ),
-        // SRController::new(TARGET_AVERAGE_CONC)
-        //     .strategy(ControlStrategy::DelayODE(DelayODESettings {
-        //         sampling_prod_low: 0.0 * MOLAR / SECOND,
-        //         sampling_prod_high: 1.0 * MOLAR / SECOND,
-        //         sampling_steps: 10,
-        //         prediction_time: 10.0 * SECOND,
-        //         save_path: save_path.join("delay_ode_mpc.csv"),
-        //     })),
     );
 
     let strategies = Strategies {

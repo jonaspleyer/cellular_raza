@@ -189,15 +189,11 @@ impl SRController {
         settings: DelayODESettings,
     ) -> Result<f64, Box<dyn std::error::Error>> {
         // Define parameters of the ODE we are solving
-        let n_compartments = 6;
+        let n_compartments = 2;
         let parameters = ODEParameters {
             diffusion: VOXEL_LIGAND_DIFFUSION_CONSTANT,
             dx: DOMAIN_SIZE / 12.0,
-            sink: CELL_LIGAND_TURNOVER_RATE
-                * N_CELLS_INITIAL_RECEIVER as f64
-                * CELL_MECHANICS_RADIUS.powf(2.0)
-                / DOMAIN_SIZE.powf(2.0)
-                * ((n_compartments + 1) as f64).powf(2.0),
+            sink: CELL_LIGAND_TURNOVER_RATE,
         };
 
         // Make prediction
