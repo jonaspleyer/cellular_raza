@@ -47,6 +47,12 @@ pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
     writeln!(f, "{}", line).unwrap();
 }
 
+#[derive(Clone)]
+pub struct ODEParameters {
+    pub delay: f64,
+    pub sink: f64,
+}
+
 impl SRController {
     pub fn new(target_concentration: f64) -> Self {
         Self {

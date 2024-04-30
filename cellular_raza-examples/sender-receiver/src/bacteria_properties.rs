@@ -5,6 +5,7 @@ use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    ODEParameters,
     write_line_to_file,
     CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS, DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER,
     VOXEL_LIGAND_DIFFUSION_CONSTANT,
@@ -80,16 +81,10 @@ pub struct ConcentrationController {
 
 pub struct Observable(f64, usize);
 
-#[derive(Clone)]
-struct Parameters {
-    delay: f64,
-    sink: f64,
-}
-
-fn predict(
+pub fn predict(
     production_history: &Vec<f64>,
     production_next: f64,
-    parameters: &Parameters,
+    parameters: &ODEParameters,
     n_compartments: usize,
     n_steps: usize,
     dt: f64,
@@ -102,7 +97,7 @@ fn predict(
     let ode = |y: &DVector<f64>,
                dy: &mut DVector<f64>,
                t: &f64,
-               p: &Parameters|
+               p: &ODEParameters|
      -> Result<(), CalcError> {
         let max_len = y.len();
         for i in 0..max_len - 2 {
@@ -194,7 +189,7 @@ impl Controller<MyCellType, Observable> for ConcentrationController {
             DelayODE => {
                 // Define parameters for prediction
                 let n_compartments = 6;
-                let parameters = Parameters {
+                let parameters = ODEParameters {
                     delay: VOXEL_LIGAND_DIFFUSION_CONSTANT / DOMAIN_SIZE.powf(2.0)
                         * ((n_compartments + 1) as f64).powf(2.0),
                     sink: CELL_LIGAND_TURNOVER_RATE
