@@ -17,8 +17,8 @@ pub const SECOND: f64 = 1.0;
 pub const MOLAR: f64 = 1.0;
 
 // Number of cells to put into simulation in the Beginning
-pub const N_CELLS_INITIAL_SENDER: u32 = 50;
-pub const N_CELLS_INITIAL_RECEIVER: u32 = 50;
+pub const N_CELLS_INITIAL_SENDER: u32 = 20;
+pub const N_CELLS_INITIAL_RECEIVER: u32 = 20;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_RADIUS: f64 = 12.0 * MICRO_METRE;
@@ -144,9 +144,9 @@ fn main() -> Result<(), SimulationError> {
         },
         storage,
         SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
-            k_p: 0.1 * MOLAR / MINUTE,
-            t_d: 1.0 * MINUTE,
-            t_i: 20.0 * MINUTE,
+            k_p: 0.05 * MOLAR / MINUTE,
+            t_d: 5.0 * MINUTE,
+            t_i: 10.0 * MINUTE,
             save_path: save_path.join("pid_controller.csv"),
         })),
         // SRController::new(TARGET_AVERAGE_CONC)
