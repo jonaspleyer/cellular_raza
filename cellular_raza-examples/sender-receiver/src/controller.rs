@@ -33,7 +33,13 @@ pub struct PIDSettings {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct DelayODESettings {}
+pub struct DelayODESettings {
+    pub sampling_prod_low: f64,
+    pub sampling_prod_high: f64,
+    pub sampling_steps: usize,
+    pub prediction_time: f64,
+    pub save_path: std::path::PathBuf,
+}
 
 pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
     use std::fs::File;
@@ -146,6 +152,61 @@ impl SRController {
             ),
         >,
     {
+        Ok(())
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Define parameters of the ODE we are solving
+        let n_compartments = 6;
+        let parameters = ODEParameters {
+            delay: VOXEL_LIGAND_DIFFUSION_CONSTANT / DOMAIN_SIZE.powf(2.0)
+                * ((n_compartments + 1) as f64).powf(2.0),
+            sink: 15.0 * CELL_LIGAND_TURNOVER_RATE
+                * N_CELLS_INITIAL_RECEIVER as f64
+                * CELL_MECHANICS_RADIUS.powf(2.0)
+                / DOMAIN_SIZE.powf(2.0)
+                * ((n_compartments + 1) as f64).powf(2.0),
+        };
+
+        // Make prediction
+        use rayon::prelude::*;
+        use std::f64;
+        let (cost, predicted_production_term, predicted_conc) = (0..settings.sampling_steps)
+            .into_par_iter()
+            .map(|i| {
+                let q = i as f64 / (settings.sampling_steps - 1) as f64;
+                let tested_production_term = settings.sampling_prod_low
+                    + q * (settings.sampling_prod_high - settings.sampling_prod_low);
+                let predicted_series = predict(
+                    &self.previous_production_values,
+                    tested_production_term,
+                    &parameters,
+                    n_compartments,
+                    (settings.prediction_time / DT).floor() as usize,
+                    DT,
+                )
+                .unwrap();
+
+                // Calculate difference to desired value
+                let current_predicted_conc =
+                    predicted_series.last().unwrap()[n_compartments];
+                let du = self.target_concentration - current_predicted_conc;
+                let dv = self.target_concentration - average_concentration;
+
+                // Set up cost function
+                let current_cost = 0.75 * du.powf(2.0) + 0.25 * dv.powf(2.0);
+
+                (current_cost, tested_production_term, current_predicted_conc)
+            })
+            .reduce(
+                || (f64::INFINITY, 0.0, 0.0),
+                |x, y| if x.0 <= y.0 { x } else { y },
+            );
+
+        // Write results to file
+        let line = format!(
+            "{},{},{},{}",
+            average_concentration, cost, predicted_production_term, predicted_conc,
+        );
+        write_line_to_file(&settings.save_path, line);
         Ok(())
     }
 
