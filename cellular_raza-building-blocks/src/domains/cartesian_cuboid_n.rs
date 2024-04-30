@@ -560,6 +560,38 @@ where
     }
 }
 
+impl<F, const D: usize> cellular_raza_concepts::domain_new::SubDomain for CartesianSubDomain<F, D> {
+    type VoxelIndex = [usize; D];
+
+    fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
+        self.voxels.clone()
+    }
+
+    fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
+        // Create the bounds for the following creation of all the voxel indices
+        let mut bounds = [[0; 2]; D];
+        for i in 0..D {
+            bounds[i] = [
+                (voxel_index[i] as i64 - 1).max(0) as usize,
+                (voxel_index[i]+2).min(self.domain_n_voxels[i])
+            ];
+        }
+
+        // Create voxel indices
+        (0..D)
+            .map(|i| (bounds[i][0]..bounds[i][1]))
+            .multi_cartesian_product()
+            .map(|ind_v| {
+                let mut res = [0; D];
+                for i in 0..D {
+                    res[i] = ind_v[i];
+                }
+                res})
+            .filter(|ind| ind!=voxel_index)
+            .collect()
+    }
+}
+
 macro_rules! define_and_implement_cartesian_cuboid {
     ($d: expr, $name: ident, $($k: expr),+) => {
         /// Cuboid Domain with regular cartesian coordinates in
