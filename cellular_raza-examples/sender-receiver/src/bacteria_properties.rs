@@ -5,10 +5,8 @@ use ode_integrate::solvers::fixed_step::FixedStepSolvers;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ODEParameters,
-    write_line_to_file,
-    CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS, DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER,
-    VOXEL_LIGAND_DIFFUSION_CONSTANT,
+    write_line_to_file, ODEParameters, CELL_LIGAND_TURNOVER_RATE, CELL_MECHANICS_RADIUS,
+    DOMAIN_SIZE, DT, N_CELLS_INITIAL_RECEIVER, VOXEL_LIGAND_DIFFUSION_CONSTANT,
 };
 
 pub const NUMBER_OF_REACTION_COMPONENTS: usize = 1;
