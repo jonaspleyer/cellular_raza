@@ -73,7 +73,7 @@ pub fn predict(
     // Define initial values: interpolate between current production_rate_next * dt and the known
     // current concentration at the position of the cells.
     let y0 = DVector::from_iterator(n_compartments + 1, (0..n_compartments + 1).map(|_| 0.0));
-    let time_to_step = |t: f64| (t / dt) as usize;
+    let time_to_step = |t: f64| (t / dt).round() as usize;
 
     let ode = |y: &DVector<f64>,
                dy: &mut DVector<f64>,
@@ -82,6 +82,9 @@ pub fn predict(
      -> Result<(), CalcError> {
         let max_len = y.len();
         let current_step = time_to_step(*t);
+        if current_step == 0 {
+            debug_assert_eq!(*t, 0.0);
+        }
         let alpha = if production_history.len() == 0 {
             0.0
         } else if current_step < production_history.len() {
