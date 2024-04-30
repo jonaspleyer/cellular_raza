@@ -13,7 +13,7 @@ def plot_pid_controller():
 
     fig, ax = plt.subplots(
         2, 2,
-        figsize=(8,8),
+        figsize=(10,8),
         sharex=True,
         sharey='row',
         gridspec_kw={"wspace":0, "hspace":0}
@@ -28,20 +28,25 @@ def plot_pid_controller():
         "total",
     ]
 
+    t = 0.25 / 60 * np.arange(len(data[:,0]))
     for i in range(2):
         for j in range(3):
             if data.shape[1] > j*2+i:
+                k = min(j, 1)
                 if j*2+i > 0:
-                    ax[min(j,1), i].plot(0.0 * data[:,j*2+i], color="grey", linestyle="--")
+                    ax[k, i].plot(t, 0.0 * data[:,j*2+i], color="grey", linestyle="--")
                 if j*2+i == 3:
-                    ax[min(j, 1), 0].plot(data[:,j*2+i], label=descr[j*2+i])
-                    ax[min(j, 1), 0].legend()
+                    ax[k, 0].plot(t, data[:,j*2+i], label=descr[j*2+i])
+                    ax[k, 0].legend()
+                    ax[k, 0].set_ylabel("Controller Response [nM/min]")
                 elif j*2+i == 0:
-                    ax[0,0].plot(2 + 0*data[:,0], color="grey", linestyle="--")
-                    ax[min(j, 1), i].plot(data[:,j*2+i], label=descr[j*2+i])
+                    ax[0,0].plot(t, 2 + 0*data[:,0], color="grey", linestyle="--")
+                    ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
+                    ax[k, i].set_ylabel("Concentration [nM]")
                 else:
-                    ax[min(j, 1), i].plot(data[:,j*2+i], label=descr[j*2+i])
-                ax[min(j, 1), i].legend()
+                    ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
+                ax[k, i].legend()
+                ax[k, i].set_xlabel("Time [min]")
 
     fig.tight_layout()
     fig.savefig(last_run_dir / "pid_controller.png")
