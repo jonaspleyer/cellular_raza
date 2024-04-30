@@ -55,7 +55,7 @@ pub fn plot_modular_cell(
     let upper_bound = 5.0 * TARGET_AVERAGE_CONC;
     let derived_colormap = DerivedColorMap::new(&[RGBColor(102, 52, 83), RGBColor(247, 126, 201)]);
 
-    // Plot the inside of the cell
+    // Get inside color of the cell
     let cell_inside_color = derived_colormap.get_color_normalized(
         modular_cell.get_intracellular()[0],
         lower_bound,
@@ -70,8 +70,18 @@ pub fn plot_modular_cell(
     let cell_border = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
         s,
-        Into::<ShapeStyle>::into(&cell_inside_color).stroke_width(4),
+        Into::<ShapeStyle>::into(&plotters::prelude::BLACK).filled(),
     );
+
+    // Plot the inside of the cell
+    let q = 0.8 * s;
+    let cell_inside = Circle::new(
+        (modular_cell.pos().x, modular_cell.pos().y),
+        q,
+        Into::<ShapeStyle>::into(&cell_inside_color).filled()
+    );
+
     root.draw(&cell_border)?;
+    root.draw(&cell_inside)?;
     Ok(())
 }
