@@ -208,13 +208,13 @@ where
 }
 
 impl<F, const D: usize> CartesianCuboid<F, D> {
-    fn get_all_voxel_indices(&self) -> impl IntoIterator<Item = SVector<usize, D>> {
+    fn get_all_voxel_indices(&self) -> impl IntoIterator<Item = [usize; D]> {
         use itertools::*;
         (0..D)
             .map(|i| 0..self.n_voxels[i])
             .multi_cartesian_product()
             .map(|x| {
-                let mut index: SVector<usize, D> = [0; D].into();
+                let mut index = [0; D];
                 for j in 0..D {
                     index[j] = x[j];
                 }
@@ -268,7 +268,7 @@ where
         + core::ops::SubAssign
         + nalgebra::ClosedDiv<F>,
 {
-    type VoxelIndex = SVector<usize, D>;
+    type VoxelIndex = [usize; D];
 
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
         let pos = cell.pos();
@@ -329,7 +329,7 @@ pub struct CartesianSubDomain<F, const D: usize> {
     min: SVector<F, D>,
     max: SVector<F, D>,
     dx: SVector<F, D>,
-    voxels: Vec<SVector<usize, D>>,
+    voxels: Vec<[usize; D]>,
     domain_min: SVector<F, D>,
     domain_max: SVector<F, D>,
 }
@@ -341,7 +341,7 @@ where
     F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
 {
     type SubDomainIndex = usize;
-    type VoxelIndex = SVector<usize, D>;
+    type VoxelIndex = [usize; D];
 
     fn create_subdomains(
         &self,
