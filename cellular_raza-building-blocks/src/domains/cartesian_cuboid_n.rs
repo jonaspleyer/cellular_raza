@@ -73,7 +73,9 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
     None
 }
 
-/// TODO
+/// A generic Domain with a cuboid layout.
+///
+/// This struct can be used to define custom domains on top of its behaviour.
 #[derive(Clone, Debug)]
 pub struct CartesianCuboid<F, const D: usize> {
     min: SVector<F, D>,
@@ -82,6 +84,31 @@ pub struct CartesianCuboid<F, const D: usize> {
     n_voxels: SVector<usize, D>,
     /// Seed from which all random numbers will be initially drawn
     pub rng_seed: u64,
+}
+
+impl<F, const D: usize> CartesianCuboid<F, D>
+where
+    F: Clone,
+{
+    /// Get the minimum point which defines the simulation domain
+    pub fn get_min(&self) -> SVector<F, D> {
+        self.min.clone()
+    }
+
+    /// Get the maximum point which defines the simulation domain
+    pub fn get_max(&self) -> SVector<F, D> {
+        self.max.clone()
+    }
+
+    /// Get the discretization used to generate voxels
+    pub fn get_dx(&self) -> SVector<F, D> {
+        self.dx.clone()
+    }
+
+    /// Get the number of voxels in each dimension of the domain
+    pub fn get_n_voxels(&self) -> SVector<usize, D> {
+        self.n_voxels.clone()
+    }
 }
 
 impl<F, const D: usize> CartesianCuboid<F, D>
