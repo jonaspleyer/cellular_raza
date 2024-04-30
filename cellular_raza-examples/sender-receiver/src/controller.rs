@@ -1,5 +1,6 @@
 use cellular_raza::concepts::{CellularReactions, Controller};
 use serde::{Deserialize, Serialize};
+use nalgebra::DVector;
 
 use crate::*;
 
@@ -56,8 +57,65 @@ pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
 
 #[derive(Clone)]
 pub struct ODEParameters {
-    pub delay: f64,
     pub sink: f64,
+    pub diffusion: f64,
+    pub dx: f64,
+}
+
+pub fn predict(
+    production_history: &Vec<f64>,
+    production_next: f64,
+    parameters: &ODEParameters,
+    n_compartments: usize,
+    n_steps: usize,
+    dt: f64,
+) -> Result<Vec<DVector<f64>>, ControllerError> {
+    // Define initial values: interpolate between current production_rate_next * dt and the known
+    // current concentration at the position of the cells.
+    let y0 = DVector::from_iterator(n_compartments + 1, (0..n_compartments + 1).map(|_| 0.0));
+    let time_to_step = |t: f64| (t / dt) as usize;
+
+    let ode = |y: &DVector<f64>,
+               dy: &mut DVector<f64>,
+               t: &f64,
+               p: &ODEParameters|
+     -> Result<(), CalcError> {
+        let max_len = y.len();
+        let current_step = time_to_step(*t);
+        let alpha = if production_history.len() == 0 {
+            0.0
+        } else if current_step < production_history.len() {
+            production_history[production_history.len() - current_step - 1]
+        } else {
+            production_next
+        };
+        dy[0] = alpha + p.diffusion / p.dx.powf(2.0) * (y[1] - y[0]);
+        dy[max_len - 1] =  - p.sink * y[max_len - 1]
+            + p.diffusion / p.dx.powf(2.0) * (y[max_len - 2] - y[max_len - 1]);
+        for i in 1..max_len - 1 {
+            dy[i] = p.diffusion / p.dx.powf(2.0) * (y[i + 1] - 2.0 * y[i] + y[i - 1]);
+        }
+        println!("{} {}", alpha, p.sink);
+        Ok(())
+    };
+
+    // Define time
+    let t0 = 0.0;
+    let total_steps = production_history.len().max(n_steps) + n_steps;
+    let t_series = (0..total_steps)
+        .map(|i| t0 + i as f64 * dt)
+        .collect::<Vec<_>>();
+
+    // Solve the ode
+    let res = ode_integrate::prelude::solve_ode_time_series_single_step_add(
+        &y0,
+        &t_series,
+        &ode,
+        &parameters,
+        ode_integrate::prelude::Rk4,
+    )
+    .or_else(|e| Err(cellular_raza::concepts::ControllerError(format!("{}", e))))?;
+    Ok(res)
 }
 
 impl SRController {
@@ -129,10 +187,9 @@ impl SRController {
         // Define parameters of the ODE we are solving
         let n_compartments = 6;
         let parameters = ODEParameters {
-            delay: VOXEL_LIGAND_DIFFUSION_CONSTANT / DOMAIN_SIZE.powf(2.0)
-                * ((n_compartments + 1) as f64).powf(2.0),
-            sink: 15.0
-                * CELL_LIGAND_TURNOVER_RATE
+            diffusion: VOXEL_LIGAND_DIFFUSION_CONSTANT,
+            dx: DOMAIN_SIZE / 12.0,
+            sink: CELL_LIGAND_TURNOVER_RATE
                 * N_CELLS_INITIAL_RECEIVER as f64
                 * CELL_MECHANICS_RADIUS.powf(2.0)
                 / DOMAIN_SIZE.powf(2.0)
