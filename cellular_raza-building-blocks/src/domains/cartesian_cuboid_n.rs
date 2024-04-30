@@ -452,7 +452,7 @@ where
             // Check if the particle is over the edge
             if position[i] > self.max[i] {
                 position[i] = two * self.max[i] - position[i];
-                velocity[i] = - velocity[i].abs();
+                velocity[i] = -velocity[i].abs();
             }
         }
 
@@ -1072,7 +1072,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 ),+];
 
                 // Create voxel indices
-                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
+                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invocation
                     .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
                     .multi_cartesian_product()                  // all possible combinations
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
@@ -1084,7 +1084,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
 
             fn get_all_voxel_indices(&self) -> Vec<[i64; $d]> {
                 [$($k),+]
-                    .iter()                                     // indices supplied in macro invokation
+                    .iter()                                     // indices supplied in macro invocation
                     .map(|i| (0..self.n_voxels[*i]))            // ranges from self.n_vox
                     .multi_cartesian_product()                  // all possible combinations
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
@@ -1316,7 +1316,7 @@ macro_rules! implement_cartesian_cuboid_domain_new {
                 ),+];
 
                 // Create voxel indices
-                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invokation
+                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invocation
                     .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
                     .multi_cartesian_product()                  // all possible combinations
                     .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
