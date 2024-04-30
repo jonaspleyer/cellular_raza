@@ -52,21 +52,28 @@ pub fn plot_modular_cell(
 ) -> Result<(), DrawingError> {
     // Define colormap
     let lower_bound = 0.0;
-    let upper_bound = 5.0 * TARGET_AVERAGE_CONC;
-    let derived_colormap = DerivedColorMap::new(&[RGBColor(102, 52, 83), RGBColor(247, 126, 201)]);
+    let upper_bound = 2.0 * TARGET_AVERAGE_CONC;
+    let derived_colormap = DerivedColorMap::new(&[
+        RGBColor(168, 39, 60),
+        RGBColor(43, 168, 39),
+        RGBColor(168, 86, 39),
+    ]);
 
     // Get inside color of the cell
-    let cell_inside_color = derived_colormap.get_color_normalized(
-        modular_cell.get_intracellular()[0],
-        lower_bound,
-        upper_bound,
-    );
+    let cell_inside_color = match modular_cell.cellular_reactions.species {
+        Species::Sender => plotters::style::colors::full_palette::GREY,
+        Species::Receiver => derived_colormap.get_color_normalized(
+            modular_cell.get_intracellular()[0],
+            lower_bound,
+            upper_bound,
+        ),
+    };
 
     // Plot the cell border
     let dx = root.get_x_range().end - root.get_x_range().start;
     let dx_pix = root.get_x_axis_pixel_range().end - root.get_x_axis_pixel_range().start;
 
-    let s = modular_cell.interaction.radius / dx * dx_pix as f64;
+    let s = modular_cell.interaction.cell_radius / dx * dx_pix as f64;
     let cell_border = Circle::new(
         (modular_cell.pos().x, modular_cell.pos().y),
         s,
