@@ -7,6 +7,12 @@ def get_last_run_dir():
     folders = sorted(glob.glob("out/sender_receiver/*"))
     return Path(folders[-1])
 
+def create_time(n_steps):
+    dt = 0.1
+    t = dt / 60 * np.arange(n_steps)
+    return t
+
+
 def plot_pid_controller():
     last_run_dir = get_last_run_dir()
     data = np.genfromtxt(last_run_dir / "pid_controller.csv", delimiter=",")
@@ -30,8 +36,7 @@ def plot_pid_controller():
 
     # WARNING: This coincides with the time-increment of the simulation
     # If we change this constant in the source code, we also have to change it here.
-    dt = 0.1
-    t = dt / 60 * np.arange(len(data[:,0]))
+    t = create_time(len(data[:,0]))
     for i in range(2):
         for j in range(3):
             if data.shape[1] > j*2+i:
