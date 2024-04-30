@@ -27,8 +27,8 @@ pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 =
 pub const CELL_MECHANICS_DAMPING: f64 = 2.0 / MINUTE;
 
 // Reaction parameters of the cell
-pub const CELL_LIGAND_TURNOVER_RATE: f64 = 10.0 / MINUTE;
-pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.5 / MINUTE;
+pub const CELL_LIGAND_TURNOVER_RATE: f64 = 0.05 / SECOND;
+pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.1 / SECOND;
 
 // Parameters for domain
 pub const DOMAIN_SIZE: f64 = 300.0 * MICRO_METRE;
@@ -37,12 +37,12 @@ pub const DOMAIN_SIZE: f64 = 300.0 * MICRO_METRE;
 pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 100.0 * MICRO_METRE * MICRO_METRE / SECOND;
 
 // Controller parameters
-pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
+pub const TARGET_AVERAGE_CONC: f64 = 1.0 * MOLAR;
 
 // Time parameters
-pub const DT: f64 = 0.25 * SECOND;
+pub const DT: f64 = 0.1 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
-pub const T_END: f64 = 40.0 * MINUTE;
+pub const T_END: f64 = 60.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
@@ -145,11 +145,12 @@ fn main() -> Result<(), SimulationError> {
         storage,
         SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
             ControlStrategy::PID(PIDSettings {
-            k_p: 0.05 * MOLAR / MINUTE,
-            t_d: 5.0 * MINUTE,
-            t_i: 10.0 * MINUTE,
-            save_path: save_path.join("pid_controller.csv"),
-        })),
+                k_p: 0.075 * MOLAR / MINUTE,
+                t_d: 1.0 * MINUTE,
+                t_i: 10.0 * MINUTE,
+                save_path: save_path.join("pid_controller.csv"),
+            }),
+        ),
         // SRController::new(TARGET_AVERAGE_CONC)
         //     .strategy(ControlStrategy::DelayODE(DelayODESettings {
         //         sampling_prod_low: 0.0 * MOLAR / SECOND,
