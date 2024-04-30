@@ -394,6 +394,32 @@ where
     }
 }
 
+impl<F, const D: usize> CartesianSubDomain<F, D> {
+    /// Generic method to obtain the voxel index of any type that can be casted to an array.
+    pub fn get_index_of<P>(&self, pos: &P) -> Result<[usize; D], BoundaryError>
+    where
+        [F; D]: for<'a> From<&'a P>,
+        F: 'static + num::Float + core::fmt::Debug + core::ops::SubAssign + core::ops::DivAssign,
+    {
+        let pos: [F; D] = pos.into();
+        let mut res = [0usize; D];
+        for i in 0..D {
+            let n_vox = (pos[i] - self.min[i]) / self.dx[i];
+            res[i] = n_vox.to_usize().ok_or(BoundaryError(
+                cellular_raza_concepts::format_error_message!(
+                    "conversion error during domain setup",
+                    format!(
+                        "Cannot convert float {:?} of type {} to usize",
+                        n_vox,
+                        std::any::type_name::<F>()
+                    )
+                ),
+            ))?;
+        }
+        Ok(res)
+    }
+}
+
 impl<F, const D: usize>
     cellular_raza_concepts::domain_new::DomainCreateSubDomains<CartesianSubDomain<F, D>>
     for CartesianCuboid<F, D>
