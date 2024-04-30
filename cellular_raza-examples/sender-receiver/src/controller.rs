@@ -1,7 +1,7 @@
 use cellular_raza::concepts::{CellularReactions, Controller};
 use serde::{Deserialize, Serialize};
 
-use crate::{MyCellType, Species, DT};
+use crate::*;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SRController {

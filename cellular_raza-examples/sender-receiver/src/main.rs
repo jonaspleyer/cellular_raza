@@ -40,7 +40,7 @@ pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 100.0 * MICRO_METRE * MICRO_MET
 pub const TARGET_AVERAGE_CONC: f64 = 2.0 * MOLAR;
 
 // Time parameters
-pub const DT: f64 = 0.5 * SECOND;
+pub const DT: f64 = 0.25 * SECOND;
 pub const T_START: f64 = 0.0 * MINUTE;
 pub const T_END: f64 = 40.0 * MINUTE;
 pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
@@ -144,14 +144,20 @@ fn main() -> Result<(), SimulationError> {
             ..Default::default()
         },
         storage,
-        // SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
-        //     k_p: 0.1 * MOLAR / MINUTE,
-        //     t_d: 1.0 * MINUTE,
-        //     t_i: 20.0 * MINUTE,
-        //     save_path: save_path.join("pid_controller.csv"),
-        // })),
-        SRController::new(TARGET_AVERAGE_CONC)
-            .strategy(ControlStrategy::DelayODE(DelayODESettings {})),
+        SRController::new(TARGET_AVERAGE_CONC).strategy(ControlStrategy::PID(PIDSettings {
+            k_p: 0.1 * MOLAR / MINUTE,
+            t_d: 1.0 * MINUTE,
+            t_i: 20.0 * MINUTE,
+            save_path: save_path.join("pid_controller.csv"),
+        })),
+        // SRController::new(TARGET_AVERAGE_CONC)
+        //     .strategy(ControlStrategy::DelayODE(DelayODESettings {
+        //         sampling_prod_low: 0.0 * MOLAR / SECOND,
+        //         sampling_prod_high: 1.0 * MOLAR / SECOND,
+        //         sampling_steps: 10,
+        //         prediction_time: 10.0 * SECOND,
+        //         save_path: save_path.join("delay_ode_mpc.csv"),
+        //     })),
     );
 
     let strategies = Strategies {
