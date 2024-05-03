@@ -1,5 +1,5 @@
 use cellular_raza::concepts::{CellularReactions, Controller};
-use nalgebra::{ComplexField, DVector};
+use nalgebra::DVector;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -11,6 +11,8 @@ pub struct SRController {
     previous_dus: Vec<f64>,
     previous_production_values: Vec<f64>,
     pub strategy: ControlStrategy,
+    pub observer: Observer,
+    pub save_path: std::path::PathBuf,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -23,6 +25,12 @@ pub enum ControlStrategy {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
+pub enum Observer {
+    Standard,
+    Predictor,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct PIDSettings {
     /// Proportionality constant
     pub k_p: f64,
@@ -30,8 +38,6 @@ pub struct PIDSettings {
     pub t_d: f64,
     /// Time scale of the integral part
     pub t_i: f64,
-    /// Path where to save results
-    pub save_path: std::path::PathBuf,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -40,7 +46,40 @@ pub struct DelayODESettings {
     pub sampling_prod_high: f64,
     pub sampling_steps: usize,
     pub prediction_time: f64,
-    pub save_path: std::path::PathBuf,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct ExplicitSettings {
+    pid_settings: PIDSettings,
+}
+
+impl Default for PIDSettings {
+    fn default() -> Self {
+        PIDSettings {
+            k_p: 0.075 * MOLAR / MINUTE,
+            t_d: 1.0 * MINUTE,
+            t_i: 10.0 * MINUTE,
+        }
+    }
+}
+
+impl Default for DelayODESettings {
+    fn default() -> Self {
+        Self {
+            sampling_prod_low: 0.0 * MOLAR / SECOND,
+            sampling_prod_high: 0.4 * MOLAR / SECOND,
+            sampling_steps: 40,
+            prediction_time: 5.0 * MINUTE,
+        }
+    }
+}
+
+impl Default for ExplicitSettings {
+    fn default() -> Self {
+        Self {
+            pid_settings: PIDSettings::default(),
+        }
+    }
 }
 
 pub fn write_line_to_file(save_path: &std::path::Path, line: String) {
@@ -123,13 +162,19 @@ pub fn predict(
 }
 
 impl SRController {
-    pub fn new(target_concentration: f64, production_value_max: f64) -> Self {
+    pub fn new(
+        target_concentration: f64,
+        production_value_max: f64,
+        save_path: &std::path::Path,
+    ) -> Self {
         Self {
             target_concentration,
             production_value_max,
             previous_dus: Vec::new(),
             previous_production_values: Vec::new(),
             strategy: ControlStrategy::None,
+            observer: Observer::Standard,
+            save_path: save_path.into(),
         }
     }
 
@@ -137,10 +182,30 @@ impl SRController {
         Self { strategy, ..self }
     }
 
+    pub fn observer(self, observer: Observer) -> Self {
+        Self { observer, ..self }
+    }
+
+    fn observer_standard(&mut self, average_concentration: f64) -> f64 {
+        self.target_concentration - average_concentration
+    }
+
+    fn observer_predictor(&mut self, average_concentration: f64) -> f64 {
+        let alpha = self
+            .previous_production_values
+            .last()
+            .or_else(|| Some(&0.0))
+            .unwrap();
+        let beta = CELL_LIGAND_TURNOVER_RATE;
+        let predicted_conc = alpha / beta;
+        let dv = self.target_concentration - predicted_conc;
+        let du = self.target_concentration - average_concentration;
+        du + dv
+    }
+
     fn pid_control(
         &mut self,
         average_concentration: f64,
-        _n_cells: usize,
         pid_settings: PIDSettings,
     ) -> Result<f64, Box<dyn std::error::Error>> {
         // Calculate PID Controller
@@ -168,7 +233,7 @@ impl SRController {
             "{},{},{},{},{},{}",
             average_concentration, du, proportional, differential, integral, controller_var
         );
-        write_line_to_file(&pid_settings.save_path, line);
+        write_line_to_file(&self.save_path.join("pid_controller.csv"), line);
 
         // Calculate new production term by incrementing old one
         let new_production_term = (self
@@ -233,7 +298,7 @@ impl SRController {
             "{},{},{},{}",
             average_concentration, cost, predicted_production_term, predicted_conc,
         );
-        write_line_to_file(&settings.save_path, line);
+        write_line_to_file(&self.save_path.join("delay_ode_mpc.csv"), line);
         Ok(predicted_production_term)
     }
 
@@ -300,13 +365,17 @@ impl Controller<MyCellType, SRObservable> for SRController {
                 (total_conc + c1, n_cells + n1)
             });
         let average_concentration = total_concentration / n_cells as f64;
-        let du = self.target_concentration - average_concentration;
+        let du = match self.observer {
+            Observer::Standard => self.observer_standard(average_concentration),
+            Observer::Predictor => self.observer_predictor(average_concentration),
+        };
+        // let du = self.target_concentration - average_concentration;
         self.previous_dus.push(du);
 
         // Apply chosen control strategy
         let new_production_value = match &self.strategy {
             ControlStrategy::PID(pid_settings) => {
-                self.pid_control(average_concentration, n_cells, pid_settings.clone())
+                self.pid_control(average_concentration, pid_settings.clone())
             }
             ControlStrategy::DelayODE(settings) => {
                 self.delay_ode_control(average_concentration, n_cells, settings.clone())

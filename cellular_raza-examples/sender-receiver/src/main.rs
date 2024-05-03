@@ -68,7 +68,7 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE, DOMAIN_SIZE], [12; 2])
 }
 
-fn main() -> Result<(), SimulationError> {
+fn run_main(strategy: ControlStrategy, observer: Observer) -> Result<(), SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
@@ -139,23 +139,19 @@ fn main() -> Result<(), SimulationError> {
             ..Default::default()
         },
         storage,
+        SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND, &save_path)
+            .strategy(strategy)
+            .observer(observer),
+        // ControlStrategy::PID(PIDSettings::default_with_path(&save_path))),
         // SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
-        //     ControlStrategy::PID(PIDSettings {
-        //         k_p: 0.075 * MOLAR / MINUTE,
-        //         t_d: 1.0 * MINUTE,
-        //         t_i: 10.0 * MINUTE,
-        //         save_path: save_path.join("pid_controller.csv"),
+        //     ControlStrategy::DelayODE(DelayODESettings {
+        //         sampling_prod_low: 0.0 * MOLAR / SECOND,
+        //         sampling_prod_high: 0.4 * MOLAR / SECOND,
+        //         sampling_steps: 40,
+        //         prediction_time: 5.0 * MINUTE,
+        //         save_path: save_path.join("delay_ode_mpc.csv"),
         //     }),
         // ),
-        SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
-            ControlStrategy::DelayODE(DelayODESettings {
-                sampling_prod_low: 0.0 * MOLAR / SECOND,
-                sampling_prod_high: 0.4 * MOLAR / SECOND,
-                sampling_steps: 40,
-                prediction_time: 5.0 * MINUTE,
-                save_path: save_path.join("delay_ode_mpc.csv"),
-            }),
-        ),
     );
 
     let strategies = Strategies {
@@ -179,4 +175,13 @@ fn main() -> Result<(), SimulationError> {
     simulation_result
         .plot_spatial_all_iterations_custom_cell_voxel_functions(plot_modular_cell, plot_voxel)?;
     Ok(())
+}
+
+fn main() {
+    let strategies = [ControlStrategy::PID(PIDSettings::default())];
+    let observer = Observer::Predictor;
+
+    for strategy in strategies {
+        run_main(strategy, observer.clone()).unwrap();
+    }
 }
