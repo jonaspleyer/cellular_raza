@@ -64,7 +64,6 @@ def plot_pid_controller():
     fig.savefig(last_run_dir / "pid_controller.png")
     fig.savefig(last_run_dir / "pid_controller.pdf")
     plt.tight_layout()
-    plt.show()
     plt.close(fig)
 
 def plot_exponential_controller():
@@ -120,7 +119,6 @@ def plot_delay_ode_controller():
     fig.savefig(last_run_dir / "delay_ode_mpc.pdf")
 
     # Close plots and (hopefully) free memory
-    plt.show()
     plt.close(fig)
 
 if __name__ == "__main__":
