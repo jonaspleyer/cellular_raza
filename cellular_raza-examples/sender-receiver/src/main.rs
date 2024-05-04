@@ -68,7 +68,7 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE, DOMAIN_SIZE], [12; 2])
 }
 
-fn run_main(strategy: ControlStrategy, observer: Observer) -> Result<(), SimulationError> {
+fn run_main(strategy: &ControlStrategy, observer: &Observer) -> Result<(), SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
@@ -140,8 +140,8 @@ fn run_main(strategy: ControlStrategy, observer: Observer) -> Result<(), Simulat
         },
         storage,
         SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND, &save_path)
-            .strategy(strategy)
-            .observer(observer),
+            .strategy(strategy.clone())
+            .observer(observer.clone()),
         // ControlStrategy::PID(PIDSettings::default_with_path(&save_path))),
         // SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
         //     ControlStrategy::DelayODE(DelayODESettings {
