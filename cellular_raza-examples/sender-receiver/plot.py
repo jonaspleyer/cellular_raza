@@ -70,13 +70,6 @@ def plot_delay_ode_controller():
     last_run_dir = get_last_run_dir()
     data = np.genfromtxt(last_run_dir / "delay_ode_mpc.csv", delimiter=",")
 
-    descr = [
-        "average concentration",
-        "cost",
-        "predicted production term",
-        "predicted concentration",
-    ]
-
     # Create plotting base canvas
     fig, ax = plt.subplots(
         1, 2,
@@ -101,16 +94,6 @@ def plot_delay_ode_controller():
     ax[1].plot(t, 0.0 * data[:,0], color="grey", linestyle="--")
     ax[1].legend()
     ax[1].set_xlabel("Time [min]")
-
-    # ax[1,0].plot(t, data[:,2], label="Predited Production Term", color="k")
-    # ax[1,0].legend()
-    # ax[1,0].set_xlabel("Time [min]")
-    # ax[0,1].plot(t, data[:,1], "Cost", color="k")
-    # for i in range(2):
-    #     for j in range(2):
-    #         ax[j,i].plot(t, data[:,j*2+i], label=descr[j*2+i])
-    #         ax[j,i].legend()
-    #         ax[j,i].set_xlabel("Time [min]")
 
     fig.tight_layout()
 

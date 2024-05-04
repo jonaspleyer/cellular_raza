@@ -191,10 +191,10 @@ fn main() {
             ControlStrategy::PID(PIDSettings::default()),
             Observer::Standard,
         ),
-        // (
-        //     ControlStrategy::DelayODE(DelayODESettings::default()),
-        //     Observer::Standard,
-        // )
+        (
+            ControlStrategy::DelayODE(DelayODESettings::default()),
+            Observer::Standard,
+        )
     ];
 
     for (strategy, observer) in strategies_observers.iter() {
