@@ -42,7 +42,7 @@ def plot_pid_controller():
             if data.shape[1] > j*2+i:
                 k = min(j, 1)
                 if j*2+i > 0:
-                    ax[k, i].plot(t, 0.0 * data[:,j*2+i], color="grey", linestyle="--")
+                    ax[k, i].plot(t, 0.0 * data[:,j*2+i], color="grey", linestyle="--", label="target")
                 if j*2+i == 3:
                     ax[k, 0].plot(t, data[:,j*2+i], label=descr[j*2+i])
                     ax[k, 0].legend()
@@ -52,7 +52,7 @@ def plot_pid_controller():
                     # It coincides with the target_concentration of the controller
                     # If this number is changed in the source code, we also need to change
                     # it here!
-                    ax[0,0].plot(t, 1 + 0*data[:,0], color="grey", linestyle="--")
+                    ax[0,0].plot(t, 1 + 0*data[:,0], color="grey", linestyle="--", label="target")
                     ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
                     ax[k, i].set_ylabel("Concentration [nM]")
                 else:
@@ -85,13 +85,13 @@ def plot_delay_ode_controller():
     # Plot all exported data
     ax[0].plot(t, data[:,0], label="Average Concentration", color="k")
     ax[0].plot(t, data[:,3], label="Predicted Concentration", color="k", linestyle="--")
-    ax[0].plot(t, 1 + 0.0 * data[:,0], color="grey", linestyle="--")
+    ax[0].plot(t, 1 + 0.0 * data[:,0], color="grey", linestyle="-.", label="target")
     ax[0].legend()
     ax[0].set_xlabel("Time [min]")
     ax[0].set_ylabel("Concentration [nM]")
 
     ax[1].plot(t, data[:,1], label="Cost", color="k")
-    ax[1].plot(t, 0.0 * data[:,0], color="grey", linestyle="--")
+    ax[1].plot(t, 0.0 * data[:,0], color="grey", linestyle="-.", label="target")
     ax[1].legend()
     ax[1].set_xlabel("Time [min]")
 
