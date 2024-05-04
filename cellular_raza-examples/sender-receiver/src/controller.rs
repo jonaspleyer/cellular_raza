@@ -60,7 +60,7 @@ impl Default for DelayODESettings {
         Self {
             sampling_prod_low: 0.0 * MOLAR / SECOND,
             sampling_prod_high: 0.4 * MOLAR / SECOND,
-            sampling_steps: 40,
+            sampling_steps: 8,
             prediction_time: 5.0 * MINUTE,
         }
     }
