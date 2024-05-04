@@ -178,10 +178,34 @@ fn run_main(strategy: &ControlStrategy, observer: &Observer) -> Result<(), Simul
 }
 
 fn main() {
-    let strategies = [ControlStrategy::PID(PIDSettings::default())];
-    let observer = Observer::Predictor;
+    let strategies_observers = [
+        (
+            ControlStrategy::PID({
+                let mut pid_default = PIDSettings::default();
+                pid_default.t_d = 0.0;
+                pid_default
+            }),
+            Observer::Predictor { weighting: 0.9 },
+        ),
+        (
+            ControlStrategy::PID(PIDSettings::default()),
+            Observer::Standard,
+        ),
+        // (
+        //     ControlStrategy::DelayODE(DelayODESettings::default()),
+        //     Observer::Standard,
+        // )
+    ];
 
-    for strategy in strategies {
-        run_main(strategy, observer.clone()).unwrap();
+    for (strategy, observer) in strategies_observers.iter() {
+        run_main(strategy, observer).unwrap();
+        // Plot results
+        std::process::Command::new("sh")
+            .arg("-c")
+            .arg("python plot.py")
+            .spawn()
+            .unwrap()
+            .wait()
+            .unwrap();
     }
 }
