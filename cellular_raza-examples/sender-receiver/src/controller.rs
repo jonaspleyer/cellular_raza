@@ -177,10 +177,10 @@ impl Default for PIDSettings {
 impl Default for DelayODESettings {
     fn default() -> Self {
         Self {
-            sampling_prod_low: 0.0 * MOLAR / SECOND,
-            sampling_prod_high: 0.1 * MOLAR / SECOND,
-            sampling_steps: 6,
-            prediction_time: 5.0 * MINUTE,
+            sampling_prod_low: 0.04 * MOLAR / SECOND,
+            sampling_prod_high: 0.06 * MOLAR / SECOND,
+            sampling_steps: 3,
+            prediction_time: 4.0 * MINUTE,
         }
     }
 }
