@@ -66,9 +66,6 @@ def plot_pid_controller():
     plt.tight_layout()
     plt.close(fig)
 
-def plot_exponential_controller():
-    pass
-
 def plot_delay_ode_controller():
     last_run_dir = get_last_run_dir()
     data = np.genfromtxt(last_run_dir / "delay_ode_mpc.csv", delimiter=",")
@@ -127,11 +124,6 @@ if __name__ == "__main__":
         print("[x] pid_controller")
     except:
         print("[ ] pid_controller")
-    try:
-        plot_exponential_controller()
-        print("[x] exponential_controller")
-    except:
-        print("[ ] exponential_controller")
     try:
         plot_delay_ode_controller()
         print("[x] delay_ode_controller")
