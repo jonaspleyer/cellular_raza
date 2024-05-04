@@ -79,8 +79,8 @@ def plot_delay_ode_controller():
 
     # Create plotting base canvas
     fig, ax = plt.subplots(
-        2, 2,
-        figsize=(10,8),
+        1, 2,
+        figsize=(10,4),
         sharex=True,
         sharey="row",
         gridspec_kw={"wspace":0, "hspace":0}
@@ -90,18 +90,21 @@ def plot_delay_ode_controller():
     t = create_time(len(data[:,0]))
 
     # Plot all exported data
-    ax[0,0].plot(t, data[:,0], label="Average Concentration", color="k")
-    ax[0,0].plot(t, data[:,3], label="Predicted Concentration", color="k", linestyle="--")
-    ax[0,0].legend()
-    ax[0,0].set_xlabel("Time [min]")
+    ax[0].plot(t, data[:,0], label="Average Concentration", color="k")
+    ax[0].plot(t, data[:,3], label="Predicted Concentration", color="k", linestyle="--")
+    ax[0].plot(t, 1 + 0.0 * data[:,0], color="grey", linestyle="--")
+    ax[0].legend()
+    ax[0].set_xlabel("Time [min]")
+    ax[0].set_ylabel("Concentration [nM]")
 
-    ax[0,1].plot(t, data[:,1], label="Cost", color="k")
-    ax[0,1].legend()
-    ax[0,1].set_xlabel("Time [min]")
+    ax[1].plot(t, data[:,1], label="Cost", color="k")
+    ax[1].plot(t, 0.0 * data[:,0], color="grey", linestyle="--")
+    ax[1].legend()
+    ax[1].set_xlabel("Time [min]")
 
-    ax[1,0].plot(t, data[:,2], label="Predited Production Term", color="k")
-    ax[1,0].legend()
-    ax[1,0].set_xlabel("Time [min]")
+    # ax[1,0].plot(t, data[:,2], label="Predited Production Term", color="k")
+    # ax[1,0].legend()
+    # ax[1,0].set_xlabel("Time [min]")
     # ax[0,1].plot(t, data[:,1], "Cost", color="k")
     # for i in range(2):
     #     for j in range(2):
