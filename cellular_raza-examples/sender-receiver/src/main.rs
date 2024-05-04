@@ -47,7 +47,7 @@ pub const SAVE_INTERVAL: f64 = 0.5 * MINUTE;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
-pub const N_PLOTTING_THREADS: usize = 14;
+pub const N_PLOTTING_THREADS: usize = 4;
 
 mod bacteria_properties;
 mod controller;
@@ -116,6 +116,7 @@ fn run_main(
     };
 
     let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
+    supervisor.config.show_progressbar = false;
 
     let mut simulation_result = supervisor.run_full_sim()?;
 
