@@ -179,7 +179,8 @@ impl SRController {
             .previous_production_values
             .last()
             .or_else(|| Some(&0.0))
-            .unwrap();
+            .unwrap()
+            .min(self.production_value_max);
         let beta = CELL_LIGAND_TURNOVER_RATE;
         let predicted_conc = alpha / beta;
         let dv = self.target_concentration - predicted_conc;
