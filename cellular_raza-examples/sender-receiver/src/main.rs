@@ -69,10 +69,11 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
 }
 
 fn run_main(
+    n_run: usize,
     strategy: &ControlStrategy,
     observer: &Observer,
     spatial_setup: &SpatialSetup,
-) -> Result<(), SimulationError> {
+) -> Result<std::path::PathBuf, SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
@@ -85,7 +86,10 @@ fn run_main(
     // ## CREATE SUPERVISOR AND RUN SIMULATION ##
     // ##########################################
     let n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
-    let storage = StorageBuilder::new().location("out/sender_receiver").init();
+    let storage = StorageBuilder::new()
+        .location("out/sender_receiver")
+        .suffix(format!("{:05}", n_run))
+        .init();
     let save_path = storage.get_full_path();
     let setup = SimulationSetup::new(
         domain,
@@ -127,12 +131,12 @@ fn run_main(
         n_threads: Some(N_PLOTTING_THREADS),
         image_size: 1500,
         image_type: ImageType::BitMap,
-        ..Default::default()
+        show_progressbar: false,
     };
 
     simulation_result
         .plot_spatial_all_iterations_custom_cell_voxel_functions(plot_modular_cell, plot_voxel)?;
-    Ok(())
+    Ok(save_path)
 }
 
 fn main() {
@@ -162,17 +166,33 @@ fn main() {
         // SpatialSetup::Branch,
     ];
 
-    for (strategy, observer) in strategies_observers.iter() {
-        for spatial_setup in spatial_setups.iter() {
-            run_main(strategy, observer, spatial_setup).unwrap();
+    let all_combinations: Vec<_> = strategies_observers
+        .into_iter()
+        .map(|(strat, observer)| {
+            spatial_setups
+                .clone()
+                .into_iter()
+                .map(move |setup| (strat.clone(), observer.clone(), setup))
+        })
+        .flatten()
+        .collect();
+    let n_combinations = all_combinations.len();
+
+    use rayon::prelude::*;
+    kdam::par_tqdm!(all_combinations.into_par_iter()
+        .enumerate()
+        .map(|(n_run, (strategy, observer, spatial_setup))| {
+            // Run main simulation function
+            let output_dir = run_main(n_run, &strategy, &observer, &spatial_setup)?;
+
             // Plot results
-            std::process::Command::new("sh")
+            let mut command = std::process::Command::new("sh");
+            command
                 .arg("-c")
-                .arg("python plot.py")
-                .spawn()
-                .unwrap()
-                .wait()
-                .unwrap();
-        }
-    }
+                .arg(format!("python plot.py {}", output_dir.to_string_lossy()));
+            command.spawn().unwrap().wait().unwrap();
+            Ok(())
+        }), total = n_combinations)
+        .collect::<Result<Vec<_>, SimulationError>>()
+        .unwrap();
 }
