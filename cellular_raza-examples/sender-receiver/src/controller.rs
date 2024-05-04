@@ -19,9 +19,6 @@ pub struct SRController {
 pub enum ControlStrategy {
     PID(PIDSettings),
     DelayODE(DelayODESettings),
-    Linear,
-    Exponential,
-    None,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -48,11 +45,6 @@ pub struct DelayODESettings {
     pub prediction_time: f64,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
-pub struct ExplicitSettings {
-    pid_settings: PIDSettings,
-}
-
 impl Default for PIDSettings {
     fn default() -> Self {
         PIDSettings {
@@ -70,14 +62,6 @@ impl Default for DelayODESettings {
             sampling_prod_high: 0.4 * MOLAR / SECOND,
             sampling_steps: 40,
             prediction_time: 5.0 * MINUTE,
-        }
-    }
-}
-
-impl Default for ExplicitSettings {
-    fn default() -> Self {
-        Self {
-            pid_settings: PIDSettings::default(),
         }
     }
 }
@@ -172,7 +156,7 @@ impl SRController {
             production_value_max,
             previous_dus: Vec::new(),
             previous_production_values: Vec::new(),
-            strategy: ControlStrategy::None,
+            strategy: ControlStrategy::PID(PIDSettings::default()),
             observer: Observer::Standard,
             save_path: save_path.into(),
         }
@@ -301,22 +285,6 @@ impl SRController {
         write_line_to_file(&self.save_path.join("delay_ode_mpc.csv"), line);
         Ok(predicted_production_term)
     }
-
-    fn linear_control(
-        &mut self,
-        _average_concentration: f64,
-        _n_cells: usize,
-    ) -> Result<f64, Box<dyn std::error::Error>> {
-        unimplemented!();
-    }
-
-    fn exponential_control(
-        &mut self,
-        _average_concentration: f64,
-        _n_cells: usize,
-    ) -> Result<f64, Box<dyn std::error::Error>> {
-        unimplemented!();
-    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -380,11 +348,6 @@ impl Controller<MyCellType, SRObservable> for SRController {
             ControlStrategy::DelayODE(settings) => {
                 self.delay_ode_control(average_concentration, n_cells, settings.clone())
             }
-            ControlStrategy::Linear => self.linear_control(average_concentration, n_cells),
-            ControlStrategy::Exponential => {
-                self.exponential_control(average_concentration, n_cells)
-            }
-            ControlStrategy::None => Ok(0.0),
         }
         .unwrap();
 
