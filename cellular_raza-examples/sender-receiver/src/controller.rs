@@ -178,8 +178,8 @@ impl Default for DelayODESettings {
     fn default() -> Self {
         Self {
             sampling_prod_low: 0.0 * MOLAR / SECOND,
-            sampling_prod_high: 0.4 * MOLAR / SECOND,
-            sampling_steps: 8,
+            sampling_prod_high: 0.1 * MOLAR / SECOND,
+            sampling_steps: 6,
             prediction_time: 5.0 * MINUTE,
         }
     }
