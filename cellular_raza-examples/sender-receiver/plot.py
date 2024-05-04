@@ -2,10 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 from pathlib import Path
+import sys
 
 def get_last_run_dir():
     folders = sorted(glob.glob("out/sender_receiver/*"))
-    return Path(folders[-1])
+    all_folders = []
+    for folder in folders:
+        all_folders += glob.glob(str(folder) + "/*")
+    return Path(sorted(all_folders)[-1])
 
 def create_time(n_steps):
     dt = 0.1
@@ -13,8 +17,11 @@ def create_time(n_steps):
     return t
 
 
-def plot_pid_controller():
-    last_run_dir = get_last_run_dir()
+def plot_pid_controller(last_run_dir = None):
+    if last_run_dir == None:
+        last_run_dir = get_last_run_dir()
+    else:
+        last_run_dir = Path(last_run_dir)
     data = np.genfromtxt(last_run_dir / "pid_controller.csv", delimiter=",")
 
     fig, ax = plt.subplots(
@@ -66,8 +73,11 @@ def plot_pid_controller():
     plt.tight_layout()
     plt.close(fig)
 
-def plot_delay_ode_controller():
-    last_run_dir = get_last_run_dir()
+def plot_delay_ode_controller(last_run_dir = None):
+    if last_run_dir == None:
+        last_run_dir = get_last_run_dir()
+    else:
+        last_run_dir = Path(last_run_dir)
     data = np.genfromtxt(last_run_dir / "delay_ode_mpc.csv", delimiter=",")
 
     # Create plotting base canvas
@@ -106,13 +116,15 @@ def plot_delay_ode_controller():
 
 if __name__ == "__main__":
     try:
-        plot_pid_controller()
-        print("[x] pid_controller")
+        last_run_dir = sys.argv[1]
     except:
-        print("[ ] pid_controller")
+        last_run_dir = None
     try:
-        plot_delay_ode_controller()
-        print("[x] delay_ode_controller")
+        plot_pid_controller(last_run_dir)
     except:
-        print("[ ] delay_ode_controlle")
+        pass
+    try:
+        plot_delay_ode_controller(last_run_dir)
+    except:
+        pass
 
