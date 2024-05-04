@@ -24,7 +24,7 @@ pub enum ControlStrategy {
 #[derive(Clone, Deserialize, Serialize)]
 pub enum Observer {
     Standard,
-    Predictor,
+    Predictor { weighting: f64 },
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -174,7 +174,7 @@ impl SRController {
         self.target_concentration - average_concentration
     }
 
-    fn observer_predictor(&mut self, average_concentration: f64) -> f64 {
+    fn observer_predictor(&mut self, average_concentration: f64, weighting: f64) -> f64 {
         let alpha = self
             .previous_production_values
             .last()
@@ -184,7 +184,8 @@ impl SRController {
         let predicted_conc = alpha / beta;
         let dv = self.target_concentration - predicted_conc;
         let du = self.target_concentration - average_concentration;
-        du + dv
+        let q = weighting.min(1.0).max(0.0);
+        (q * du.powf(2.0) + (1.0 - q) * dv.powf(2.0)).sqrt() * (q * du + (1.0 - q) * dv).signum()
     }
 
     fn pid_control(
@@ -335,7 +336,9 @@ impl Controller<MyCellType, SRObservable> for SRController {
         let average_concentration = total_concentration / n_cells as f64;
         let du = match self.observer {
             Observer::Standard => self.observer_standard(average_concentration),
-            Observer::Predictor => self.observer_predictor(average_concentration),
+            Observer::Predictor { weighting } => {
+                self.observer_predictor(average_concentration, weighting)
+            }
         };
         // let du = self.target_concentration - average_concentration;
         self.previous_dus.push(du);
