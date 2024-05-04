@@ -1,8 +1,127 @@
-use cellular_raza::concepts::{CellularReactions, Controller};
+use cellular_raza::{
+    concepts::{CellularReactions, Controller},
+    prelude::SimulationError,
+};
 use nalgebra::DVector;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
+
+#[derive(Clone, Deserialize, Serialize)]
+pub enum SpatialSetup {
+    Default,
+    Circular,
+    CircularInverted,
+    Branch,
+}
+
+fn create_cell(pos: [f64; 2], species: Species) -> MyCellType {
+    let pos = Vector2::from(pos);
+    ModularCell {
+        mechanics: NewtonDamped2D {
+            pos,
+            vel: Vector2::zero(),
+            damping_constant: CELL_MECHANICS_DAMPING,
+            mass: 1.0,
+        },
+        interaction: MyInteraction {
+            cell_radius: CELL_MECHANICS_RADIUS,
+            potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+            relative_interaction_range: 1.5,
+        },
+        interaction_extracellular: NoExtracellularGradientSensing,
+        cycle: NoCycle,
+        cellular_reactions: OwnReactions {
+            species,
+            intracellular: [0.0].into(),
+            production_term: [0.0].into(),
+            sink_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
+            uptake: [CELL_LIGAND_UPTAKE_RATE].into(),
+        },
+        volume: std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
+    }
+}
+
+fn default_setup(
+    rng: &mut ChaCha8Rng,
+) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
+    let domain = create_domain()?;
+    let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
+        .map(|n_cell| {
+            let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
+            let (species, x) = if n_cell < N_CELLS_INITIAL_SENDER {
+                let x = DOMAIN_SIZE * rng.gen_range(0.0..0.2);
+                (Species::Sender, x)
+            } else {
+                let x = DOMAIN_SIZE * rng.gen_range(0.8..1.0);
+                (Species::Receiver, x)
+            };
+            create_cell([x, y], species)
+        })
+        .collect();
+    Ok((domain, cells))
+}
+
+fn circular_setup(
+    rng: &mut ChaCha8Rng,
+) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
+    let domain = create_domain()?;
+    let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
+        .map(|n_cell| {
+            let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+            let (species, r) = if n_cell < N_CELLS_INITIAL_SENDER {
+                let r = 0.5 * DOMAIN_SIZE * rng.gen_range(0.7..1.0);
+                (Species::Sender, r)
+            } else {
+                let r = 0.5 * DOMAIN_SIZE * rng.gen_range(0.0..0.3);
+                (Species::Receiver, r)
+            };
+            create_cell(
+                [
+                    0.5 * DOMAIN_SIZE + r * phi.cos(),
+                    0.5 * DOMAIN_SIZE + r * phi.sin(),
+                ],
+                species,
+            )
+        })
+        .collect();
+    Ok((domain, cells))
+}
+
+fn circular_inverted_setup(
+    rng: &mut ChaCha8Rng,
+) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
+    let spatial_setup = SpatialSetup::Circular;
+    let (domain, cells) = spatial_setup.generate_domain_cells(rng)?;
+    let cells = cells
+        .into_iter()
+        .map(|mut cell| match cell.cellular_reactions.species {
+            Species::Sender => {
+                cell.cellular_reactions.species = Species::Receiver;
+                cell
+            }
+            Species::Receiver => {
+                cell.cellular_reactions.species = Species::Sender;
+                cell
+            }
+        })
+        .collect();
+    Ok((domain, cells))
+}
+
+impl SpatialSetup {
+    pub fn generate_domain_cells(
+        &self,
+        rng: &mut ChaCha8Rng,
+    ) -> Result<(CartesianCuboid2, impl IntoIterator<Item = MyCellType>), SimulationError> {
+        match &self {
+            SpatialSetup::Default => default_setup(rng),
+            SpatialSetup::Circular => circular_setup(rng),
+            SpatialSetup::CircularInverted => circular_inverted_setup(rng),
+            SpatialSetup::Branch => unimplemented!(),
+        }
+    }
+}
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SRController {
