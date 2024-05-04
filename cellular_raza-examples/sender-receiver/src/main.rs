@@ -68,51 +68,18 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
     CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE, DOMAIN_SIZE], [12; 2])
 }
 
-fn run_main(strategy: &ControlStrategy, observer: &Observer) -> Result<(), SimulationError> {
+fn run_main(
+    strategy: &ControlStrategy,
+    observer: &Observer,
+    spatial_setup: &SpatialSetup,
+) -> Result<(), SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
     // ###########################
     // ## DEFINE DOMAIN & CELLS ##
     // ###########################
-    let domain = create_domain().unwrap();
-    let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
-        .map(|n_cell| {
-            let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
-            let (species, x) = if n_cell < N_CELLS_INITIAL_SENDER {
-                let x = DOMAIN_SIZE * rng.gen_range(0.0..0.2);
-                (Species::Sender, x)
-            } else {
-                let x = DOMAIN_SIZE * rng.gen_range(0.8..1.0);
-                (Species::Receiver, x)
-            };
-
-            let pos = Vector2::from([x, y]);
-            Ok(ModularCell {
-                mechanics: NewtonDamped2D {
-                    pos,
-                    vel: Vector2::zero(),
-                    damping_constant: CELL_MECHANICS_DAMPING,
-                    mass: 1.0,
-                },
-                interaction: MyInteraction {
-                    cell_radius: CELL_MECHANICS_RADIUS,
-                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    relative_interaction_range: 1.5,
-                },
-                interaction_extracellular: NoExtracellularGradientSensing,
-                cycle: NoCycle,
-                cellular_reactions: OwnReactions {
-                    species,
-                    intracellular: [0.0].into(),
-                    production_term: [0.0].into(),
-                    sink_rate: [CELL_LIGAND_TURNOVER_RATE].into(),
-                    uptake: [CELL_LIGAND_UPTAKE_RATE].into(),
-                },
-                volume: std::f64::consts::PI * CELL_MECHANICS_RADIUS.powf(2.0),
-            })
-        })
-        .collect::<Result<Vec<_>, CalcError>>()?;
+    let (domain, cells) = spatial_setup.generate_domain_cells(&mut rng)?;
 
     // ##########################################
     // ## CREATE SUPERVISOR AND RUN SIMULATION ##
@@ -142,16 +109,6 @@ fn run_main(strategy: &ControlStrategy, observer: &Observer) -> Result<(), Simul
         SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND, &save_path)
             .strategy(strategy.clone())
             .observer(observer.clone()),
-        // ControlStrategy::PID(PIDSettings::default_with_path(&save_path))),
-        // SRController::new(TARGET_AVERAGE_CONC, 0.1 * MOLAR / SECOND).strategy(
-        //     ControlStrategy::DelayODE(DelayODESettings {
-        //         sampling_prod_low: 0.0 * MOLAR / SECOND,
-        //         sampling_prod_high: 0.4 * MOLAR / SECOND,
-        //         sampling_steps: 40,
-        //         prediction_time: 5.0 * MINUTE,
-        //         save_path: save_path.join("delay_ode_mpc.csv"),
-        //     }),
-        // ),
     );
 
     let strategies = Strategies {
@@ -194,18 +151,27 @@ fn main() {
         (
             ControlStrategy::DelayODE(DelayODESettings::default()),
             Observer::Standard,
-        )
+        ),
+    ];
+
+    let spatial_setups = [
+        SpatialSetup::Default,
+        SpatialSetup::Circular,
+        SpatialSetup::CircularInverted,
+        // SpatialSetup::Branch,
     ];
 
     for (strategy, observer) in strategies_observers.iter() {
-        run_main(strategy, observer).unwrap();
-        // Plot results
-        std::process::Command::new("sh")
-            .arg("-c")
-            .arg("python plot.py")
-            .spawn()
-            .unwrap()
-            .wait()
-            .unwrap();
+        for spatial_setup in spatial_setups.iter() {
+            run_main(strategy, observer, spatial_setup).unwrap();
+            // Plot results
+            std::process::Command::new("sh")
+                .arg("-c")
+                .arg("python plot.py")
+                .spawn()
+                .unwrap()
+                .wait()
+                .unwrap();
+        }
     }
 }
