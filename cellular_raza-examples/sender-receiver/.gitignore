@@ -1,5 +1,6 @@
 target
 out
+extracted
 *.png
 *.mp4
 Cargo.lock
