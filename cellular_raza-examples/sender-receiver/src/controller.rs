@@ -11,7 +11,6 @@ use crate::*;
 pub enum SpatialSetup {
     Default,
     Circular,
-    CircularInverted,
     Branch,
 }
 
@@ -88,27 +87,6 @@ fn circular_setup(
     Ok((domain, cells))
 }
 
-fn circular_inverted_setup(
-    rng: &mut ChaCha8Rng,
-) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
-    let spatial_setup = SpatialSetup::Circular;
-    let (domain, cells) = spatial_setup.generate_domain_cells(rng)?;
-    let cells = cells
-        .into_iter()
-        .map(|mut cell| match cell.cellular_reactions.species {
-            Species::Sender => {
-                cell.cellular_reactions.species = Species::Receiver;
-                cell
-            }
-            Species::Receiver => {
-                cell.cellular_reactions.species = Species::Sender;
-                cell
-            }
-        })
-        .collect();
-    Ok((domain, cells))
-}
-
 impl SpatialSetup {
     pub fn generate_domain_cells(
         &self,
@@ -117,7 +95,6 @@ impl SpatialSetup {
         match &self {
             SpatialSetup::Default => default_setup(rng),
             SpatialSetup::Circular => circular_setup(rng),
-            SpatialSetup::CircularInverted => circular_inverted_setup(rng),
             SpatialSetup::Branch => unimplemented!(),
         }
     }

@@ -162,7 +162,6 @@ fn main() {
     let spatial_setups = [
         SpatialSetup::Default,
         SpatialSetup::Circular,
-        SpatialSetup::CircularInverted,
         // SpatialSetup::Branch,
     ];
 
