@@ -17,8 +17,8 @@ pub const SECOND: f64 = 1.0;
 pub const MOLAR: f64 = 1.0;
 
 // Number of cells to put into simulation in the Beginning
-pub const N_CELLS_INITIAL_SENDER: u32 = 20;
-pub const N_CELLS_INITIAL_RECEIVER: u32 = 20;
+pub const N_CELLS_INITIAL_SENDER: u32 = 200;
+pub const N_CELLS_INITIAL_RECEIVER: u32 = 200;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_RADIUS: f64 = 12.0 * MICRO_METRE;
@@ -31,10 +31,10 @@ pub const CELL_LIGAND_TURNOVER_RATE: f64 = 0.05 / SECOND;
 pub const CELL_LIGAND_UPTAKE_RATE: f64 = 0.1 / SECOND;
 
 // Parameters for domain
-pub const DOMAIN_SIZE: f64 = 300.0 * MICRO_METRE;
+pub const DOMAIN_SIZE: f64 = 1_000.0 * MICRO_METRE;
 
 // Parameters for Voxel Reaction+Diffusion
-pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 100.0 * MICRO_METRE * MICRO_METRE / SECOND;
+pub const VOXEL_LIGAND_DIFFUSION_CONSTANT: f64 = 1000.0 * MICRO_METRE * MICRO_METRE / SECOND;
 
 // Controller parameters
 pub const TARGET_AVERAGE_CONC: f64 = 1.0 * MOLAR;
