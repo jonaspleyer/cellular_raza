@@ -32,40 +32,34 @@ def plot_pid_controller(last_run_dir = None):
         gridspec_kw={"wspace":0, "hspace":0}
     )
 
-    descr = [
-        "average concentration",
-        "du",
-        "proportional",
-        "differential",
-        "integral",
-        "total",
-    ]
-
     # WARNING: This coincides with the time-increment of the simulation
     # If we change this constant in the source code, we also have to change it here.
     t = create_time(len(data[:,0]))
-    for i in range(2):
-        for j in range(3):
-            if data.shape[1] > j*2+i:
-                k = min(j, 1)
-                if j*2+i > 0:
-                    ax[k, i].plot(t, 0.0 * data[:,j*2+i], color="grey", linestyle="--", label="target")
-                if j*2+i == 3:
-                    ax[k, 0].plot(t, data[:,j*2+i], label=descr[j*2+i])
-                    ax[k, 0].legend()
-                    ax[k, 0].set_ylabel("Controller Response [nM/min]")
-                elif j*2+i == 0:
-                    # WARNING: This 1 + 0*data[:,0] is a magic number!
-                    # It coincides with the target_concentration of the controller
-                    # If this number is changed in the source code, we also need to change
-                    # it here!
-                    ax[0,0].plot(t, 1 + 0*data[:,0], color="grey", linestyle="--", label="target")
-                    ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
-                    ax[k, i].set_ylabel("Concentration [nM]")
-                else:
-                    ax[k, i].plot(t, data[:,j*2+i], label=descr[j*2+i])
-                ax[k, i].legend()
-                ax[k, i].set_xlabel("Time [min]")
+
+    ax[0,0].plot(t, data[:,0], label="Average Concentration")
+    ax[0,0].plot(t, 1 + 0*t, color="grey", linestyle="--", label="target")
+    ax[0,0].legend()
+    ax[0,0].set_xlabel("Time [min]")
+    ax[0,0].set_ylabel("Concentration [nM]")
+
+    ax[0,1].plot(t, data[:,1], label="Difference to set-point")
+    ax[0,1].set_xlabel("Time [min]")
+    ax[0,1].legend()
+
+    ax[1,0].plot(t, data[:,2], label="proportional")
+    ax[1,0].plot(t, data[:,3], label="differential")
+    ax[1,0].plot(t, data[:,4], label="integral")
+    ax[1,0].plot(t, 0.0 * t, color="grey", linestyle="--", label="target")
+    ax[1,0].legend()
+    ax[1,0].set_ylabel("Controller Response [nM/min]")
+
+
+    # WARNING: This 1 + 0*data[:,0] is a magic number!
+    # It coincides with the target_concentration of the controller
+    # If this number is changed in the source code, we also need to change
+    # it here!
+    ax[1,1].plot(t, 0.0 * t, color="grey", linestyle="--", label="target")
+    ax[1,1].legend()
 
     fig.tight_layout()
     fig.savefig(last_run_dir / "pid_controller.png")
