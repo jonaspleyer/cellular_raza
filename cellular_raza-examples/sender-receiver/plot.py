@@ -43,6 +43,7 @@ def plot_pid_controller(last_run_dir = None):
     ax[0,0].set_ylabel("Concentration [nM]")
 
     ax[0,1].plot(t, data[:,1], label="Difference to set-point")
+    ax[0,1].plot(t, 0*t, color="grey", linestyle="--", label="target")
     ax[0,1].set_xlabel("Time [min]")
     ax[0,1].legend()
 
@@ -53,12 +54,12 @@ def plot_pid_controller(last_run_dir = None):
     ax[1,0].legend()
     ax[1,0].set_ylabel("Controller Response [nM/min]")
 
-
     # WARNING: This 1 + 0*data[:,0] is a magic number!
     # It coincides with the target_concentration of the controller
     # If this number is changed in the source code, we also need to change
     # it here!
-    ax[1,1].plot(t, 0.0 * t, color="grey", linestyle="--", label="target")
+    ax[1,1].plot(t, data[:,5], label="total")
+    ax[1,1].plot(t, 0*t, color="grey", linestyle="--", label="target")
     ax[1,1].legend()
 
     fig.tight_layout()
