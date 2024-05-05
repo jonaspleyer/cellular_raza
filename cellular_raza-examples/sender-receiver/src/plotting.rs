@@ -34,15 +34,15 @@ pub fn plot_voxel(
     );
     root.draw(&rectangle)?;
 
-    let text = plotters::element::Text::new(
-        format!("{:6.3}", voxel.get_total_extracellular()[0]),
-        (
-            0.5 * (voxel.get_min()[0] + voxel.get_max()[0]),
-            0.5 * (voxel.get_min()[1] + voxel.get_max()[1]),
-        ),
-        TextStyle::from(("normal", 20).into_font()).color(&BLACK),
-    );
-    root.draw(&text)?;
+    // let text = plotters::element::Text::new(
+    //     format!("{:6.3}", voxel.get_total_extracellular()[0]),
+    //     (
+    //         0.5 * (voxel.get_min()[0] + voxel.get_max()[0]),
+    //         0.5 * (voxel.get_min()[1] + voxel.get_max()[1]),
+    //     ),
+    //     TextStyle::from(("normal", 20).into_font()).color(&BLACK),
+    // );
+    // root.draw(&text)?;
     Ok(())
 }
 
