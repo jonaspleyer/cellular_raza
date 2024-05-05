@@ -178,20 +178,23 @@ fn main() {
     let n_combinations = all_combinations.len();
 
     use rayon::prelude::*;
-    kdam::par_tqdm!(all_combinations.into_par_iter()
-        .enumerate()
-        .map(|(n_run, (strategy, observer, spatial_setup))| {
-            // Run main simulation function
-            let output_dir = run_main(n_run, &strategy, &observer, &spatial_setup)?;
+    kdam::par_tqdm!(
+        all_combinations.into_par_iter().enumerate().map(
+            |(n_run, (strategy, observer, spatial_setup))| {
+                // Run main simulation function
+                let output_dir = run_main(n_run, &strategy, &observer, &spatial_setup)?;
 
-            // Plot results
-            let mut command = std::process::Command::new("sh");
-            command
-                .arg("-c")
-                .arg(format!("python plot.py {}", output_dir.to_string_lossy()));
-            command.spawn().unwrap().wait().unwrap();
-            Ok(())
-        }), total = n_combinations)
-        .collect::<Result<Vec<_>, SimulationError>>()
-        .unwrap();
+                // Plot results
+                let mut command = std::process::Command::new("sh");
+                command
+                    .arg("-c")
+                    .arg(format!("python plot.py {}", output_dir.to_string_lossy()));
+                command.spawn().unwrap().wait().unwrap();
+                Ok(())
+            }
+        ),
+        total = n_combinations
+    )
+    .collect::<Result<Vec<_>, SimulationError>>()
+    .unwrap();
 }
