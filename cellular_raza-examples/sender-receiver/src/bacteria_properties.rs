@@ -78,10 +78,9 @@ impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vecto
                 .max(-bound);
 
         // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
+        let force = dir * strength * spatial_cutoff;
 
-        Ok(repelling_force + attracting_force)
+        Ok(force)
     }
 
     fn get_interaction_information(&self) -> f64 {
