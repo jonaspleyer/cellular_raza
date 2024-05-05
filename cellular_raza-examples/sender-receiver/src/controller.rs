@@ -333,7 +333,7 @@ impl SRController {
         let dv = self.target_concentration - predicted_conc;
         let du = self.target_concentration - average_concentration;
         let q = weighting.min(1.0).max(0.0);
-        (q * du.powf(2.0) + (1.0 - q) * dv.powf(2.0)).sqrt() * (q * du + (1.0 - q) * dv).signum()
+        q * du + (1.0 - q) * dv
     }
 
     fn pid_control(

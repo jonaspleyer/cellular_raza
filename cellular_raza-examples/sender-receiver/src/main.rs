@@ -151,7 +151,7 @@ fn main() {
                 pid_default.t_d = 0.0;
                 pid_default
             }),
-            Observer::Predictor { weighting: 0.9 },
+            Observer::Predictor { weighting: 0.6 },
         ),
         (
             ControlStrategy::PID(PIDSettings::default()),
