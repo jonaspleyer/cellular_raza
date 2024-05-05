@@ -87,6 +87,27 @@ fn circular_setup(
     Ok((domain, cells))
 }
 
+fn branch_setup(
+    rng: &mut ChaCha8Rng,
+) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
+    let domain = create_domain()?;
+    let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
+        .map(|n_cell| {
+            let (species, x, y) = if n_cell < N_CELLS_INITIAL_SENDER {
+                let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
+                let x = DOMAIN_SIZE * rng.gen_range(0.0..0.2);
+                (Species::Sender, x, y)
+            } else {
+                let x = rng.gen_range(0.0..0.4 * DOMAIN_SIZE);
+                let y = 0.5 * DOMAIN_SIZE + rng.gen_range(-1_f64..1_f64).signum() * x;
+                (Species::Receiver, DOMAIN_SIZE - x, y)
+            };
+            create_cell([x, y], species)
+        })
+        .collect();
+    Ok((domain, cells))
+}
+
 impl SpatialSetup {
     pub fn generate_domain_cells(
         &self,
@@ -95,7 +116,7 @@ impl SpatialSetup {
         match &self {
             SpatialSetup::Default => default_setup(rng),
             SpatialSetup::Circular => circular_setup(rng),
-            SpatialSetup::Branch => unimplemented!(),
+            SpatialSetup::Branch => branch_setup(rng),
         }
     }
 }

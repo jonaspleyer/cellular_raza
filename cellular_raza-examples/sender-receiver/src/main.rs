@@ -162,7 +162,7 @@ fn main() {
     let spatial_setups = [
         SpatialSetup::Default,
         SpatialSetup::Circular,
-        // SpatialSetup::Branch,
+        SpatialSetup::Branch,
     ];
 
     let all_combinations: Vec<_> = strategies_observers
