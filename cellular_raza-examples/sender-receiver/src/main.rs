@@ -69,7 +69,6 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
 }
 
 fn run_main(
-    n_run: usize,
     strategy: &ControlStrategy,
     observer: &Observer,
     spatial_setup: &SpatialSetup,
@@ -88,7 +87,12 @@ fn run_main(
     let n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
     let storage = StorageBuilder::new()
         .location("out/sender_receiver")
-        .suffix(format!("{:05}", n_run))
+        .suffix(format!(
+            "{}-{}-{}",
+            strategy.to_string(),
+            observer.to_string(),
+            spatial_setup.to_string(),
+        ))
         .init();
     let save_path = storage.get_full_path();
     let setup = SimulationSetup::new(
@@ -179,10 +183,11 @@ fn main() {
 
     use rayon::prelude::*;
     kdam::par_tqdm!(
-        all_combinations.into_par_iter().enumerate().map(
-            |(n_run, (strategy, observer, spatial_setup))| {
+        all_combinations
+            .into_par_iter()
+            .map(|(strategy, observer, spatial_setup)| {
                 // Run main simulation function
-                let output_dir = run_main(n_run, &strategy, &observer, &spatial_setup)?;
+                let output_dir = run_main(&strategy, &observer, &spatial_setup)?;
 
                 // Plot results
                 let mut command = std::process::Command::new("sh");
@@ -191,8 +196,7 @@ fn main() {
                     .arg(format!("python plot.py {}", output_dir.to_string_lossy()));
                 command.spawn().unwrap().wait().unwrap();
                 Ok(())
-            }
-        ),
+            }),
         total = n_combinations
     )
     .collect::<Result<Vec<_>, SimulationError>>()

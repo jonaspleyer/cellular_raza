@@ -119,6 +119,15 @@ impl SpatialSetup {
             SpatialSetup::Branch => branch_setup(rng),
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            SpatialSetup::Default => "spatial_default",
+            SpatialSetup::Circular => "spatial_circular",
+            SpatialSetup::Branch => "spatial_branch",
+        }
+        .to_owned()
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -138,10 +147,31 @@ pub enum ControlStrategy {
     DelayODE(DelayODESettings),
 }
 
+impl ControlStrategy {
+    pub fn to_string(&self) -> String {
+        match self {
+            ControlStrategy::DelayODE(_) => "delay_ode",
+            ControlStrategy::PID(_) => "pid",
+        }
+        .to_owned()
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize)]
 pub enum Observer {
     Standard,
     Predictor { weighting: f64 },
+}
+
+impl Observer {
+    pub fn to_string(&self) -> String {
+        match self {
+            Observer::Standard => "obs_standard",
+            #[allow(unused)]
+            Observer::Predictor { weighting } => "obs_predictor",
+        }
+        .to_owned()
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
