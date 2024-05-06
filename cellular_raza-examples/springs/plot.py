@@ -33,7 +33,7 @@ def load_cells_from_iteration(output_path: Path, iteration: int):
     if len(df) > 0:
         # Format individual entries for easier use later on
         df["identifier"] = df["identifier"].apply(lambda x: tuple(x))
-        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(3, -1))
+        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(2, -1))
         df["cell.vel"] = df["cell.vel"].apply(lambda x: np.array(x, dtype=float))
 
     return df
@@ -49,11 +49,11 @@ def plot_iteration(output_path: Path, iteration: int):
         pos = cell["cell.pos"]
         radius = cell["cell.radius"]
         patches += [
-            matplotlib.patches.Circle(pos[:-1,i], radius, color="k")
+            matplotlib.patches.Circle(pos[:2,i], radius, color="k")
             for i in range(pos.shape[1])
         ]
         patches += [
-            matplotlib.patches.Circle(pos[:-1,i], 0.9 * radius, color="green")
+            matplotlib.patches.Circle(pos[:2,i], 0.9 * radius, color="green")
             for i in range(pos.shape[1])
         ]
     patches = matplotlib.collections.PatchCollection(patches, match_original=True)
