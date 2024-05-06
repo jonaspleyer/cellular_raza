@@ -20,6 +20,7 @@ members = [
     "cellular_raza-examples/template",
     "cellular_raza-examples/ureter_signalling",
     "cellular_raza-examples/sender-receiver",
+    "cellular_raza-examples/springs",
 ]
 resolver = "2"
 
