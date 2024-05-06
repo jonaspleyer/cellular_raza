@@ -485,7 +485,9 @@ where
         // # Create all storage solutions
         // First initialize the builder
         let builder = setup.storage.init();
-        let meta_infos_builder = builder.clone().suffix("meta_infos");
+        let meta_infos_builder = builder
+            .clone()
+            .suffix(builder.get_suffix().join("meta_infos"));
         let meta_infos =
             StorageManager::<(), SimulationSetup<DomainBox<Dom>, Cel, Cont>>::open_or_create(
                 meta_infos_builder,
@@ -591,7 +593,9 @@ where
                     create_senders!(sender_receiver_pairs_boundary_concentrations);
 
                 // TODO catch these errors!
-                let storage_cells_builder = builder.clone().suffix("cell_storage");
+                let storage_cells_builder = builder
+                    .clone()
+                    .suffix(builder.get_suffix().join("cell_storage"));
 
                 let storage_cells =
                     StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
@@ -599,7 +603,9 @@ where
                         i as u64,
                     )
                     .unwrap();
-                let storage_voxels_builder = builder.clone().suffix("voxel_storage");
+                let storage_voxels_builder = builder
+                    .clone()
+                    .suffix(builder.get_suffix().join("voxel_storage"));
                 let storage_voxels =
                     StorageManager::<
                         PlainIndex,
