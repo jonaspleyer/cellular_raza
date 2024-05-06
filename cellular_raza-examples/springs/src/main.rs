@@ -263,13 +263,18 @@ impl<const D1: usize, const D2: usize> cellular_raza::concepts::domain_new::Sort
 }
 
 fn main() -> Result<(), chili::SimulationError> {
+    // Define the dimensionality of the problem
+    const D1: usize = 5;
+    const D2: usize = 2;
+
+    // Define initial random seed
     use rand::Rng;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(5);
 
-    // Agent<D1, D2>s setup
+    // Give agent default values
     let agent = Agent {
-        pos: nalgebra::Matrix5x3::zeros(),
-        vel: nalgebra::Matrix5x3::zeros(),
+        pos: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
+        vel: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         spring_tension: 2.0,
         angle_stiffness: 20.0,
         interaction_potential: 3.0,
@@ -279,10 +284,11 @@ fn main() -> Result<(), chili::SimulationError> {
         interaction_range: 1.5,
     };
 
+    // Place agents in simulation domain
     let domain_size = 100.0;
     let agents = (0..40).map(|_| {
         let mut new_agent = agent.clone();
-        let mut pos = nalgebra::Matrix5x3::zeros();
+        let mut pos = nalgebra::SMatrix::<f64, D1, D2>::zeros();
 
         let delta_x = agent.spring_length * pos.nrows() as f64;
         // let lower = domain_size / 2.0 - delta_x;
@@ -291,12 +297,20 @@ fn main() -> Result<(), chili::SimulationError> {
         let upper = domain_size - delta_x;
         pos[(0, 0)] = rng.gen_range(lower..upper);
         pos[(0, 1)] = rng.gen_range(lower..upper);
-        pos[(0, 2)] = domain_size / 20.0 + delta_x / 80.0 * rng.gen_range(-1.0..1.0);
+        if D2 > 2 {
+            pos[(0, 2)] = domain_size / 20.0 + delta_x / 80.0 * rng.gen_range(-1.0..1.0);
+        }
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =
                 theta + rng.gen_range(-std::f64::consts::FRAC_PI_4..std::f64::consts::FRAC_PI_4);
-            let direction = nalgebra::Vector3::from([phi.cos(), phi.sin(), 0.0]);
+            let mut direction = nalgebra::SVector::<f64, D2>::zeros();
+            if D2 > 0 {
+                direction[0] = phi.cos();
+            }
+            if D2 > 1 {
+                direction[1] = phi.sin();
+            }
             let new_pos = pos.row(i - 1) + agent.spring_length * (direction).transpose();
             use core::ops::AddAssign;
             pos.row_mut(i).add_assign(new_pos);
@@ -306,12 +320,12 @@ fn main() -> Result<(), chili::SimulationError> {
     });
 
     // Domain Setup
+    let mut domain_sizes = [domain_size; D2];
+    if D2 > 2 {
+        domain_sizes[2] /= 10.0;
+    }
     let domain = MyDomain {
-        cuboid: CartesianCuboid::from_boundaries_and_n_voxels(
-            [0.0; 3],
-            [domain_size, domain_size, domain_size / 10.0],
-            [4; 3],
-        )?,
+        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; D2], domain_sizes, [4; D2])?,
     };
 
     // Storage Setup
