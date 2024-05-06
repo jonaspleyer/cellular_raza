@@ -291,7 +291,7 @@ fn main() -> Result<(), chili::SimulationError> {
         let upper = domain_size - delta_x;
         pos[(0, 0)] = rng.gen_range(lower..upper);
         pos[(0, 1)] = rng.gen_range(lower..upper);
-        pos[(0, 2)] = domain_size/20.0 + delta_x / 80.0 * rng.gen_range(-1.0..1.0);
+        pos[(0, 2)] = domain_size / 20.0 + delta_x / 80.0 * rng.gen_range(-1.0..1.0);
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =

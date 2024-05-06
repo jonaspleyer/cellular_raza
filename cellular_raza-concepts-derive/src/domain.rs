@@ -26,13 +26,13 @@ impl From<DomainParser> for DomainImplementer {
         let mut create_subdomains = None;
         let mut partial_derive = false;
 
-        value.attrs.into_iter().for_each(|domain_property| {
-            match domain_property {
-                DomainProperty::DomainPartialDerive => {
-                    partial_derive = true},
+        value
+            .attrs
+            .into_iter()
+            .for_each(|domain_property| match domain_property {
+                DomainProperty::DomainPartialDerive => partial_derive = true,
                 _ => (),
-            }
-        });
+            });
 
         value
             .elements
@@ -190,8 +190,12 @@ impl DomainImplementer {
             new_ident!(subdomain, "__cr_private_SubDomain");
             let tokens = quote::quote!(#subdomain);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, DomainCreateSubDomains, tokens);
+            let where_clause = append_where_clause!(
+                struct_where_clause,
+                field_type,
+                DomainCreateSubDomains,
+                tokens
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, subdomain);

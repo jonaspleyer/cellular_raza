@@ -174,7 +174,8 @@ fn derive_create_subdomains() {
         },
     };
     let n_subdomains = 33;
-    let new_domains: Vec<_> = derived_domain.create_subdomains(n_subdomains.try_into().unwrap())
+    let new_domains: Vec<_> = derived_domain
+        .create_subdomains(n_subdomains.try_into().unwrap())
         .unwrap()
         .into_iter()
         .collect();

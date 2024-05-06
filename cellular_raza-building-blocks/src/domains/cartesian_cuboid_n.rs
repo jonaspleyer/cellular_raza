@@ -573,7 +573,7 @@ impl<F, const D: usize> cellular_raza_concepts::domain_new::SubDomain for Cartes
         for i in 0..D {
             bounds[i] = [
                 (voxel_index[i] as i64 - 1).max(0) as usize,
-                (voxel_index[i]+2).min(self.domain_n_voxels[i])
+                (voxel_index[i] + 2).min(self.domain_n_voxels[i]),
             ];
         }
 
@@ -586,8 +586,9 @@ impl<F, const D: usize> cellular_raza_concepts::domain_new::SubDomain for Cartes
                 for i in 0..D {
                     res[i] = ind_v[i];
                 }
-                res})
-            .filter(|ind| ind!=voxel_index)
+                res
+            })
+            .filter(|ind| ind != voxel_index)
             .collect()
     }
 }
