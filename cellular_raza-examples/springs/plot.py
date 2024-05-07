@@ -33,7 +33,7 @@ def load_cells_from_iteration(output_path: Path, iteration: int):
     if len(df) > 0:
         # Format individual entries for easier use later on
         df["identifier"] = df["identifier"].apply(lambda x: tuple(x))
-        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(2, -1))
+        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(3, -1))
         df["cell.vel"] = df["cell.vel"].apply(lambda x: np.array(x, dtype=float))
 
     return df

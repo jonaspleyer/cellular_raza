@@ -265,7 +265,7 @@ impl<const D1: usize, const D2: usize> cellular_raza::concepts::domain_new::Sort
 fn main() -> Result<(), chili::SimulationError> {
     // Define the dimensionality of the problem
     const D1: usize = 5;
-    const D2: usize = 2;
+    const D2: usize = 3;
 
     // Define initial random seed
     use rand::Rng;
@@ -335,7 +335,7 @@ fn main() -> Result<(), chili::SimulationError> {
     let t0 = 0.0;
     let dt = 0.0025;
     let save_interval = 0.2;
-    let t_max = 50.0;
+    let t_max = 250.0;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
         dt,
