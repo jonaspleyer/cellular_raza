@@ -70,16 +70,16 @@ fn circular_setup(
         .map(|n_cell| {
             let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
             let (species, r) = if n_cell < N_CELLS_INITIAL_SENDER {
-                let r = 0.5 * DOMAIN_SIZE * rng.gen_range(0.7..1.0);
+                let r = 0.5 * NEW_DOMAIN_SIZE * rng.gen_range(0.7..1.0);
                 (Species::Sender, r)
             } else {
-                let r = 0.5 * DOMAIN_SIZE * rng.gen_range(0.0..0.3);
+                let r = 0.5 * NEW_DOMAIN_SIZE * rng.gen_range(0.0..0.3);
                 (Species::Receiver, r)
             };
             create_cell(
                 [
-                    0.5 * DOMAIN_SIZE + r * phi.cos(),
-                    0.5 * DOMAIN_SIZE + r * phi.sin(),
+                    0.5 * NEW_DOMAIN_SIZE + r * phi.cos(),
+                    0.5 * NEW_DOMAIN_SIZE + r * phi.sin(),
                 ],
                 species,
             )
