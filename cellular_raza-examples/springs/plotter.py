@@ -103,6 +103,7 @@ if __name__ == "_main__":
     args = parser.parse_args()
 
 if __name__ == "__main__":
+    print("Plotting Individual Snapshots")
     output_path = get_last_output_path()
     plot_all_spheres(output_path)
     print("Generating Movie")
@@ -118,6 +119,7 @@ if __name__ == "__main__":
         -pix_fmt yuv420p\
         -strict -2 {output_path}/movie.mp4"
     os.system(bashcmd)
+    print("Playing Movie")
     bashcmd2 = f"vlc {output_path}/movie.mp4"
     os.system(bashcmd2)
 

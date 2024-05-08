@@ -236,6 +236,7 @@ fn main() -> Result<(), chili::SimulationError> {
         show_progressbar: true,
     };
 
+    println!("Running Simulation");
     let _storage = chili::run_simulation!(
         domain: domain,
         agents: agents,
