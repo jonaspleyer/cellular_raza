@@ -2,12 +2,14 @@ use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza::concepts::domain_new::*;
 use cellular_raza::concepts::{BoundaryError, CalcError, DecomposeError, IndexError, Mechanics};
 
-use crate::{Agent, METRE, SECOND};
+use crate::Agent;
 
 #[derive(Clone, Domain)]
 pub struct MyDomain<const D2: usize> {
     #[DomainRngSeed]
     pub cuboid: CartesianCuboid<f64, D2>,
+    pub gravity: f64,
+    pub damping: f64,
 }
 
 impl<const D2: usize> cellular_raza::concepts::domain_new::DomainCreateSubDomains<MySubDomain<D2>>
@@ -23,18 +25,17 @@ impl<const D2: usize> cellular_raza::concepts::domain_new::DomainCreateSubDomain
         impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain<D2>, Vec<Self::VoxelIndex>)>,
         DecomposeError,
     > {
+        let gravity = self.gravity;
+        let damping = self.damping;
         let subdomains = self.cuboid.create_subdomains(n_subdomains)?;
         Ok(subdomains
             .into_iter()
-            .map(|(subdomain_index, subdomain, voxels)| {
+            .map(move |(subdomain_index, subdomain, voxels)| {
                 (
                     subdomain_index,
                     MySubDomain {
                         subdomain,
-                        force: MySubDomainForce {
-                            gravity: 2e-7 * 9.81 * METRE / SECOND.powf(2.0),
-                            damping: 1.5 / SECOND,
-                        },
+                        force: MySubDomainForce { gravity, damping },
                     },
                     voxels,
                 )

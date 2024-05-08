@@ -205,6 +205,8 @@ fn main() -> Result<(), chili::SimulationError> {
     let domain_sizes = [domain_size; D2];
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; D2], domain_sizes, [4; D2])?,
+        gravity: 2e-7 * 9.81 * METRE / SECOND.powf(2.0),
+        damping: 1.5 / SECOND,
     };
 
     // Storage Setup
