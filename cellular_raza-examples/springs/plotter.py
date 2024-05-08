@@ -30,13 +30,26 @@ def get_cell_meshes(iteration: int, path: Path):
 def plot_spheres(iteration: int, path: Path, opath = None):
     cell_meshes = get_cell_meshes(iteration, path)
 
+    # General Settings
     plotter = pv.Plotter(off_screen=True)
     plotter.set_background([100, 100, 100])
+
+    # Draw box around everything
+    box = pv.Box(bounds=(0, 1e-4, 0, 1e-4, 0, 1e-4), level=3)
     for cell in cell_meshes:
         plotter.add_mesh(
             cell,
             show_edges=False,
         )
+    plotter.add_mesh(
+        box,
+        style="wireframe",
+    )
+
+    # Define camera
+    plotter.camera.position = (2.5e-4, 2.5e-4, 2.5e-4)
+    plotter.camera.focal_point = (5e-5, 5e-5, 5e-5)
+
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()
     if opath == None:
