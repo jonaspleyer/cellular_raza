@@ -180,12 +180,12 @@ fn main() -> Result<(), chili::SimulationError> {
         pos[(0, 0)] = rng.gen_range(lower..upper);
         pos[(0, 1)] = rng.gen_range(lower..upper);
         if D2 > 2 {
-            pos[(0, 2)] = domain_size - delta_x / 80.0 * rng.gen_range(0.0..1.0);
+            pos[(0, 2)] = rng.gen_range(0.0..0.25*domain_size);
         }
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =
-                theta + rng.gen_range(-std::f64::consts::FRAC_PI_4..std::f64::consts::FRAC_PI_4);
+                theta + rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
             let mut direction = nalgebra::SVector::<f64, D2>::zeros();
             if D2 > 0 {
                 direction[0] = phi.cos();
@@ -202,9 +202,14 @@ fn main() -> Result<(), chili::SimulationError> {
     });
 
     // Domain Setup
-    let domain_sizes = [domain_size; D2];
+    let mut domain_sizes = [domain_size; D2];
+    let mut domain_segments = [4; D2];
+    if D2 == 3 {
+        domain_sizes[2] /= 4.0;
+        domain_segments[2] = 1;
+    }
     let domain = MyDomain {
-        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; D2], domain_sizes, [4; D2])?,
+        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; D2], domain_sizes, domain_segments)?,
         gravity: 2e-7 * 9.81 * METRE / SECOND.powf(2.0),
         damping: 1.5 / SECOND,
     };
