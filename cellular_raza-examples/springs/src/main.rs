@@ -1,8 +1,5 @@
-use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
-use cellular_raza::concepts::domain_new::*;
-use cellular_raza::concepts::{
-    BoundaryError, CalcError, CellAgent, DecomposeError, IndexError, Mechanics,
-};
+use cellular_raza::building_blocks::CartesianCuboid;
+use cellular_raza::concepts::{CalcError, CellAgent, Mechanics};
 use cellular_raza::core::backend::chili;
 
 use rand::SeedableRng;

@@ -1,14 +1,8 @@
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza::concepts::domain_new::*;
-use cellular_raza::concepts::{
-    BoundaryError, CalcError, CellAgent, DecomposeError, IndexError, Mechanics,
-};
-use cellular_raza::core::backend::chili;
+use cellular_raza::concepts::{BoundaryError, CalcError, DecomposeError, IndexError, Mechanics};
 
-use rand::SeedableRng;
-use serde::{Deserialize, Serialize};
-
-use crate::{METRE, MILI_METRE, MICRO_METRE, SECOND, MINUTE, HOUR, Agent};
+use crate::{Agent, METRE, SECOND};
 
 #[derive(Clone, Domain)]
 pub struct MyDomain<const D2: usize> {
@@ -142,7 +136,7 @@ impl<const D1: usize, const D2: usize>
     ) -> Result<nalgebra::SMatrix<f64, D1, D2>, cellular_raza::concepts::CalcError> {
         let mut force = nalgebra::SMatrix::<f64, D1, D2>::zeros();
         // Gravity
-        force.column_mut(D2 - 1).add_scalar_mut(- self.gravity);
+        force.column_mut(D2 - 1).add_scalar_mut(-self.gravity);
 
         // Damping force
         force -= self.damping * vel;
