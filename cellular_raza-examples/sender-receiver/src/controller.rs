@@ -44,7 +44,7 @@ fn create_cell(pos: [f64; 2], species: Species) -> MyCellType {
 fn default_setup(
     rng: &mut ChaCha8Rng,
 ) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
-    let domain = create_domain()?;
+    let domain = create_domain(DOMAIN_SIZE)?;
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
             let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
@@ -64,7 +64,8 @@ fn default_setup(
 fn circular_setup(
     rng: &mut ChaCha8Rng,
 ) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
-    let domain = create_domain()?;
+    const NEW_DOMAIN_SIZE: f64 = 2.0 * DOMAIN_SIZE;
+    let domain = create_domain(NEW_DOMAIN_SIZE)?;
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
             let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
@@ -90,7 +91,7 @@ fn circular_setup(
 fn branch_setup(
     rng: &mut ChaCha8Rng,
 ) -> Result<(CartesianCuboid2, Vec<MyCellType>), SimulationError> {
-    let domain = create_domain()?;
+    let domain = create_domain(DOMAIN_SIZE)?;
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
             let (species, x, y) = if n_cell < N_CELLS_INITIAL_SENDER {

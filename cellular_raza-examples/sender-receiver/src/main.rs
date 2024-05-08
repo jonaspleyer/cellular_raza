@@ -64,8 +64,8 @@ fn voxel_definition_strategy(voxel: &mut CartesianCuboidVoxel2<1>) {
     voxel.production_rate = [0.0].into();
 }
 
-fn create_domain() -> Result<CartesianCuboid2, CalcError> {
-    CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE, DOMAIN_SIZE], [12; 2])
+fn create_domain(domain_size: f64) -> Result<CartesianCuboid2, CalcError> {
+    CartesianCuboid2::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [12; 2])
 }
 
 fn run_main(
