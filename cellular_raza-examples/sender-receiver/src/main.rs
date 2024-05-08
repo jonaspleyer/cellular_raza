@@ -171,11 +171,11 @@ fn main() {
 
     let all_combinations: Vec<_> = strategies_observers
         .into_iter()
-        .map(|(strat, observer)| {
+        .map(|(strategy, observer)| {
             spatial_setups
                 .clone()
                 .into_iter()
-                .map(move |setup| (strat.clone(), observer.clone(), setup))
+                .map(move |setup| (strategy.clone(), observer.clone(), setup))
         })
         .flatten()
         .collect();
