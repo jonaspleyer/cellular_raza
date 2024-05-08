@@ -160,12 +160,12 @@ fn main() -> Result<(), chili::SimulationError> {
     let agent = Agent {
         pos: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         vel: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
-        spring_tension: 2.0 / SECOND.powf(2.0),
+        spring_tension: 20.0 / SECOND.powf(2.0),
         angle_stiffness: 20.0 * MICRO_METRE / SECOND.powf(2.0),
-        interaction_potential: 2.0 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
+        interaction_potential: 6e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
         spring_length: 3.0 * MICRO_METRE,
         radius: 3.0 * MICRO_METRE,
-        interaction_range: 1.5 * MICRO_METRE,
+        interaction_range: 1.0 * MICRO_METRE,
     };
 
     // Place agents in simulation domain
