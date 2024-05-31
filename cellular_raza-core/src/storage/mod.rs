@@ -18,34 +18,36 @@
 //! We provide multiple storage options to choose from.
 //!
 //! ## Json
-//! Relies on the [serde_json] crate to serialize elements and store them as plain `.json` files.
-//! See [JsonStorageInterface](crate::storage::JsonStorageInterface).
+//! Relies on the [serde_json](https://docs.rs/serde_json/latest/serde_json/) crate to serialize
+//! elements and store them as plain `.json` files.
+//! See [JsonStorageInterface].
 //!
 //! ## Xml
-//! Uses the [quick_xml] crate to store results as `.xml` files.
-//! See [XmlStorageInterface](crate::storage::XmlStorageInterface)
+//! Uses the [quick_xml](https://docs.rs/quick-xml/latest/quick_xml/) crate to store results as
+//! `.xml` files.
+//! See [XmlStorageInterface]
 //!
 //! ## Sled
 //! Builds an embedded database at the specified location. This database is a key-value storage and
-//! can be accessed via the [sled] crate.
-//! See [SledStorageInterface](crate::storage::SledStorageInterface)
+//! can be accessed via the [sled](https://docs.rs/sled/latest/sled/) crate.
+//! See [SledStorageInterface]
 //!
 //! ## Sled (Temp)
 //! Identical to the previous item but will remove the database after it has dropped.
 //! This options is mostly required when performing analysis steps afterwards without saving the
 //! full simulation results.
-//! See [SledStorageInterface](crate::storage::SledStorageInterface)
+//! See [SledStorageInterface]
 
 /// Common interface for all storage solutions.
 mod concepts;
 
-/// Save elements as xml files via [quick_xml].
+/// Save elements as xml files via [quick_xml](https://docs.rs/quick-xml/latest/quick_xml/).
 mod quick_xml;
 
-/// Save elements as json files via [serde_json].
+/// Save elements as json files via [serde_json](https://docs.rs/serde_json/latest/serde_json/).
 mod serde_json;
 
-/// Save elements in the embedded database [sled].
+/// Save elements in the embedded database [sled](https://docs.rs/sled/latest/sled/).
 mod sled_database;
 
 mod test;

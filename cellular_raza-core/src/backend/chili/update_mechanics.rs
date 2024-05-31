@@ -392,7 +392,7 @@ where
     ///
     /// This step determines if a cell is still in its correct location
     /// after its position has changed. This can be due to the
-    /// [SubDomainBox::update_mechanics_step_3] method or due to other effects such as
+    /// [SubDomainBox::update_mechanics_interaction_step_3] method or due to other effects such as
     /// cell-division by the [cellular_raza_concepts::Cycle] trait.
     ///
     /// If the cell is not in the correct voxel, we either directly insert this cell into the voxel

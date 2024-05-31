@@ -754,7 +754,7 @@ pub trait StorageInterfaceLoad<Id, Element> {
         Ok(all_elements)
     }
 
-    /// Similarly to the [load_all_elements](StorageInterface::load_all_elements) function,
+    /// Similarly to the [load_all_elements](StorageInterfaceLoad::load_all_elements) function,
     /// but this function returns all elements as their histories.
     fn load_all_element_histories(&self) -> Result<HashMap<Id, HashMap<u64, Element>>, StorageError>
     where
