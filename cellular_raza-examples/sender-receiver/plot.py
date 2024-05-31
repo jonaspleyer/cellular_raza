@@ -53,6 +53,7 @@ def plot_pid_controller(last_run_dir = None):
     ax[1,0].plot(t, 0.0 * t, color="grey", linestyle="--", label="target")
     ax[1,0].legend()
     ax[1,0].set_ylabel("Controller Response [nM/min]")
+    ax[1,0].set_xlabel("Time [min]")
 
     # WARNING: This 1 + 0*data[:,0] is a magic number!
     # It coincides with the target_concentration of the controller
@@ -60,6 +61,7 @@ def plot_pid_controller(last_run_dir = None):
     # it here!
     ax[1,1].plot(t, data[:,5], label="total")
     ax[1,1].plot(t, 0*t, color="grey", linestyle="--", label="target")
+    ax[1,1].set_xlabel("Time [min]")
     ax[1,1].legend()
 
     fig.tight_layout()
