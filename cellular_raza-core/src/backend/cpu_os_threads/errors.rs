@@ -44,15 +44,6 @@ macro_rules! impl_from_error {
 /// Errors are separated by their ability to be recovered, ignored or handled otherwise.
 /// Since this crate aims to provide an adaptive solving approach, it is desired to have a fallback
 /// mechanism which can be called for errors which may arise due to precision problems.
-///
-/// The following table shows a summary of the errors currently supported and their handling
-/// approach.
-///
-/// | ErrorType | Possible Error Reasons | Handling Strategy |
-/// | --- | --- | --- |
-/// | BoundaryError | Solver Accuracy, Domain Implementation bug, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
-/// | CalcError | Solver Accuracy, Bug by user implementation of corresponding function, Internal engine error | [RevertChangeAccuracy](errors::HandlingStrategies::RevertChangeAccuracy) |
-// TODO implement the handling of these errors!
 #[derive(Debug)]
 pub enum SimulationError {
     // Very likely to be user errors
