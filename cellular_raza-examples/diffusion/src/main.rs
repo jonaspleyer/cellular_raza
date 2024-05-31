@@ -259,13 +259,15 @@ impl SubDomain {
     }
 }
 
-trait Reactions<I> {
+trait IncrementIntracellular<I> {
     fn increment_intracellular(&mut self, increment: &I);
+}
+
+trait Reactions<I>: IncrementIntracellular<I> {
     fn calculate_intracellular_increment(&self) -> Result<I, CalcError>;
 }
 
-trait ReactionsExtra<I, E> {
-    fn increment_intracellular(&mut self, increment: &I);
+trait ReactionsExtra<I, E>: IncrementIntracellular<I> {
     fn calculate_combined_increment(&self, extracellular: &E) -> Result<(I, E), CalcError>;
 }
 
@@ -288,11 +290,13 @@ struct MyCell {
 //     }
 // }
 
-impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
+impl IncrementIntracellular<ndarray::Array1<f64>> for MyCell {
     fn increment_intracellular(&mut self, increment: &ndarray::Array1<f64>) {
         self.intracellular += increment;
     }
+}
 
+impl ReactionsExtra<ndarray::Array1<f64>, ndarray::Array1<f64>> for MyCell {
     fn calculate_combined_increment(
         &self,
         _extracellular: &ndarray::Array1<f64>,
