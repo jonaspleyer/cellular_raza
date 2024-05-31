@@ -138,7 +138,7 @@ pub trait SubDomain {
     type VoxelIndex;
 
     /// Obtains the neighbor voxels of the specified voxel index. This function behaves similarly
-    /// to [SubDomainSortCells::get_voxel_index_of] in that it also has to return
+    /// to [SortCells::get_voxel_index_of] in that it also has to return
     /// indices which are in other [SubDomains](SubDomain).
     fn get_neighbor_voxel_indices(&self, voxel_index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex>;
 
@@ -148,7 +148,7 @@ pub trait SubDomain {
     fn get_all_indices(&self) -> Vec<Self::VoxelIndex>;
 }
 
-/// Assign an [Index](SortCells::Index) to a given cell.
+/// Assign an [VoxelIndex](SortCells::VoxelIndex) to a given cell.
 ///
 /// This trait is used by the [Domain] and [SubDomain] trait to assign a [Domain::SubDomainIndex]
 /// and [SubDomain::VoxelIndex] respectively.
@@ -273,7 +273,7 @@ pub trait SubDomainReactions {}
 /// | Attribute | Trait | Implemented |
 /// | ---  | --- |:---:|
 /// | `Base` | [SubDomain] | ✅ |
-/// | `SortCells` | [SubDomainSortCells] | ✅ |
+/// | `SortCells` | [SortCells] | ✅ |
 /// | `Mechanics` | [SubDomainMechanics] | ✅ |
 /// | `Force` | [SubDomainForce] | ✅  |
 /// | `Reactions` | [SubDomainReactions] | ❌ |
