@@ -32,8 +32,8 @@ table below.
 | --- | --- | --- |
 | [`cellular_raza`](/docs/cellular_raza) | - | Bundle together functionality of all other crates. |
 | [`concepts`](/docs/cellular_raza_concepts) | High | Collection of (mainly) traits which need to be implemented to yield a full simulation. |
-| [`building_blocks`](/docs/cellular_raza_building_blocks) | Intermediate | Predefined components of cell-agents and domains which can be put together to obtain a full simulation. |
 | [`core`](/docs/cellular_raza_core) | Intermediate-High | Contains numerical solvers, storage handlers and more to actually solve a given system. |
+| [`building_blocks`](/docs/cellular_raza_building_blocks) | Intermediate | Predefined components of cell-agents and domains which can be put together to obtain a full simulation. |
 | [`examples`](https://github.com/jonaspleyer/cellular_raza/tree/master/cellular_raza-examples) | Application | [Showcases](/showcase) and introductions to different simulation approaches. |
 | [`benchmarks`](/benchmarks) | Application | Performance testing of various configurations. |
 
