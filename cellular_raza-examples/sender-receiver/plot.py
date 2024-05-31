@@ -79,8 +79,8 @@ def plot_delay_ode_controller(last_run_dir = None):
 
     # Create plotting base canvas
     fig, ax = plt.subplots(
-        1, 2,
-        figsize=(10,4),
+        1, 1,
+        figsize=(5,4),
         sharex=True,
         sharey="row",
         gridspec_kw={"wspace":0, "hspace":0}
@@ -90,17 +90,12 @@ def plot_delay_ode_controller(last_run_dir = None):
     t = create_time(len(data[:,0]))
 
     # Plot all exported data
-    ax[0].plot(t, data[:,0], label="Average Concentration", color="k")
-    ax[0].plot(t, data[:,3], label="Predicted Concentration", color="k", linestyle="--")
-    ax[0].plot(t, 1 + 0.0 * data[:,0], color="grey", linestyle="-.", label="target")
-    ax[0].legend()
-    ax[0].set_xlabel("Time [min]")
-    ax[0].set_ylabel("Concentration [nM]")
-
-    ax[1].plot(t, data[:,1], label="Cost", color="k")
-    ax[1].plot(t, 0.0 * data[:,0], color="grey", linestyle="-.", label="target")
-    ax[1].legend()
-    ax[1].set_xlabel("Time [min]")
+    ax.plot(t, data[:,0], label="Average Concentration", color="k")
+    ax.plot(t, data[:,3], label="Predicted Concentration", color="k", linestyle="--")
+    ax.plot(t, 1 + 0.0 * data[:,0], color="grey", linestyle="-.", label="target")
+    ax.legend()
+    ax.set_xlabel("Time [min]")
+    ax.set_ylabel("Concentration [nM]")
 
     fig.tight_layout()
 
