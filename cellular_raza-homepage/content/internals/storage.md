@@ -11,7 +11,7 @@ Said feature is currently not available but part of our [roadmap](/internals/roa
 Furthermore, users retain full transparency of every cellular and domain parameter.
 
 # Options
-`cellular_raza` provides multiple storage options:
+`cellular_raza` provides multiple storage formats:
 
 - json
 - xml
