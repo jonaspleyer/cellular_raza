@@ -103,6 +103,7 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 pub use cellular_raza_core_proc_macro::Communicator;
 
 /// TODO
+#[doc(inline)]
 pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 
 #[doc(inline)]
