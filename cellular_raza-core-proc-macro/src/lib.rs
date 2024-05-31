@@ -174,7 +174,8 @@ pub fn run_simulation(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     run_sim::run_simulation(kwargs).into()
 }
 
-/// TODO
+/// Prepares communicator and auxiliary storage types with [build_communicator] and
+/// [build_aux_storage].
 #[proc_macro]
 pub fn prepare_types(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let kwargs = syn::parse_macro_input!(input as run_sim::KwargsPrepareTypesParsed);
@@ -182,7 +183,10 @@ pub fn prepare_types(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     run_sim::prepare_types(kwargs).into()
 }
 
-/// TODO
+/// Checks if defined types and concepts are compatible before actually executing the simulation.
+///
+/// This macro only serves the purpose for easy-to-read compiler errors.
+/// It has no runtime-overhead since it will be fully optimized away.
 #[proc_macro]
 pub fn test_compatibility(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let kwargs = syn::parse_macro_input!(input as run_sim::KwargsCompatibilityParsed);
@@ -190,7 +194,11 @@ pub fn test_compatibility(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     run_sim::test_compatibility(kwargs).into()
 }
 
-/// TODO
+/// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types].
+///
+/// This macro combines the [prepare_types], [test_compatibility] and [run_main] macros.
+/// To see a list of arguments, see their respective documentation.
+/// Arguments with the same name are identical.
 #[proc_macro]
 pub fn run_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let kwargs = syn::parse_macro_input!(input as run_sim::KwargsMainParsed);
