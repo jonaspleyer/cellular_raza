@@ -84,7 +84,11 @@ fn run_main(
     // ##########################################
     // ## CREATE SUPERVISOR AND RUN SIMULATION ##
     // ##########################################
-    let n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
+    let mut n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
+    match spatial_setup {
+        SpatialSetup::Circular => n_times *= 2,
+        _ => (),
+    }
     let storage = StorageBuilder::new()
         .location("out/sender_receiver")
         .suffix(format!(
