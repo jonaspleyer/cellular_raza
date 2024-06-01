@@ -3,7 +3,8 @@ title: Publications
 prev: /
 ---
 
-To cite `cellular_raza`, please use the following paper:
+We are eagerly moving forwards to get `cellular_raza` published.
+If you want to cite us now, please use our git repository:
 
 [github.com/jonaspleyer/cellular_raza](https://github.com/jonaspleyer/cellular_raza)
 
