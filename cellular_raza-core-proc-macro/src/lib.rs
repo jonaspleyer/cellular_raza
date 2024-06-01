@@ -48,7 +48,8 @@ pub fn build_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     communicator::construct_communicator(input)
 }
 
-#[allow(missing_docs)]
+/// Inserts as many blanks as generics were used to create the communicator struct by
+/// [build_communicator!].
 #[proc_macro]
 pub fn communicator_generics_placeholders(
     input: proc_macro::TokenStream,
@@ -194,11 +195,7 @@ pub fn test_compatibility(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     run_sim::test_compatibility(kwargs).into()
 }
 
-/// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types!].
-///
-/// This macro combines the [prepare_types!], [test_compatibility!] and [run_main!] macros.
-/// To see a list of arguments, see their respective documentation.
-/// Arguments with the same name are identical.
+#[allow(missing_docs)]
 #[proc_macro]
 pub fn run_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let kwargs = syn::parse_macro_input!(input as run_sim::KwargsMainParsed);
