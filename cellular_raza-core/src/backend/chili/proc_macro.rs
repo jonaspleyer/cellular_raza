@@ -102,7 +102,6 @@ pub use cellular_raza_core_proc_macro::build_communicator;
 /// needs to be replaced by `cellular_raza::core`.
 pub use cellular_raza_core_proc_macro::Communicator;
 
-/// TODO
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 
@@ -115,5 +114,73 @@ pub use cellular_raza_core_proc_macro::prepare_types;
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::test_compatibility;
 
-#[doc(inline)]
+/// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types!].
+///
+/// ```ignore
+/// run_main!(
+///     // Mandatory Arguments
+///     domain: $domain:ident,
+///     agents: $agents:ident,
+///     settings: $settings:ident,
+///     aspects: [$($asp:ident),*],
+///     // Optional Arguments
+///     $(core_path: $path:path,)?
+///     $(parallelizer: $parallelizer:ident,)?
+/// )
+/// ```
+///
+/// # Arguments
+/// | Keyword | Description | Default |
+/// | --- | --- | --- |
+/// | `domain` | An object implementing the [Domain](cellular_raza_concepts::domain_new::Domain) trait. | - |
+/// | `agents` | Iterable of cell-agents compatible with [Domain](cellular_raza_concepts::domain_new::Domain) | - |
+/// | `settings` | [Settings](crate::backend::chili::Settings) | - |
+/// | `aspects` | List of simulation aspects such as `[Mechanics, Interaction, ...]` See below. | - |
+/// | `core_path` | Path that points to the core module of `cellular_raza` | `cellular_raza::core` |
+/// | `parallelizer` | Method to parallelize the simulation (see below) | `OsThreads` |
+///
+/// # Simulation Aspects
+/// | Aspect | Trait(s) |
+/// | --- | --- |
+/// | `Mechanics` | [`Mechanics`](cellular_raza_concepts::Mechanics),[`SubDomainMechanics`](cellular_raza_concepts::domain_new::SubDomainMechanics)|
+/// | `Interaction` | [`Interaction`](cellular_raza_concepts::Interaction) |
+/// | `Cycle` | [`Cycle`](cellular_raza_concepts::Cycle) |
+/// | `Reactions`¹ | [`CellularReactions`](cellular_raza_concepts::CellularReactions) |
+/// | `DomainForce` | [`SubDomainForce`](cellular_raza_concepts::domain_new::SubDomainForce) |
+/// ¹Currently not working
+///
+/// ## Parallelization
+/// ### OsThreads
+/// This approach uses the provided threads from the standard library to parallelize execution of
+/// the simulation.
+/// We spawn multiple threads and store every storage instance when they have finished.
+/// ```
+/// # let n_threads = 3;
+/// # type SimulationError = std::io::Error;
+/// # fn main_code() -> Result<(), SimulationError> {Ok(())}
+/// let mut handles = Vec::new();
+///
+/// for key in 0..n_threads {
+///     let handle = std::thread::Builder::new()
+///         .name(format!("cellular_raza-worker_thread-{:03.0}", key))
+///         .spawn(move ||
+///     -> Result<_, SimulationError> {main_code()})?;
+///     handles.push(handle);
+/// }
+///
+/// // Join them when the simulation has finished
+/// let mut storage_accesses = vec![];
+/// for handle in handles {
+///     let result = handle
+///         .join()
+///         .expect("Could not join threads after simulation has finished")?;
+///     storage_accesses.push(result);
+/// }
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
+///
+/// ### Rayon
+/// This feature is currently not supported.
+/// In the future, we plan on supporting additional parallelization strategies such as
+/// [rayon](https://docs.rs/rayon/latest/rayon/).
 pub use cellular_raza_core_proc_macro::run_main;
