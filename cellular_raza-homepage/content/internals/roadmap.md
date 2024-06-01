@@ -18,7 +18,7 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 ### CellAgent (concepts + backend)
 - [x] mechanics via force interactions
 - [x] proliferation
-- [ ] death
+- [x] death
     - [x] immediate death
     - [x] phased death
     - [x] make it stochastic
@@ -30,17 +30,18 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Environment Fluid Dynamics
     - [x] PDE Diffusion
     - [ ] Lattice Boltzmann
-- [ ] Better concepts for domain decomposition
-    - [ ] Test currently proposed new design
-    - [ ] Efficiently implement this new concept and benchmark
+    - [ ] Particles
+- [x] Better concepts for domain decomposition
+    - [x] Test currently proposed new design
+    - [x] Efficiently implement this new concept and benchmark
 - [ ] Evaluate usage of associated types for some concepts
     - [ ] `CellularReactions` concept
-    - [ ] `Domain` concept
+    - [x] `Domain` concept
 
 ### Overall Design
 - [x] Parallelization of default backend
 - [x] Deterministic results (in default backend, even yield same binary output when changing number of threads)
-- [ ] Stabilize the new `chili` backend
+- [x] Stabilize the new `chili` backend
 
 ## Planned for the Future
 - [ ] Complete Deserialization of Simulation
