@@ -4,6 +4,13 @@ type: docs
 weight: 100
 ---
 
+## cellular_raza 0.0.9
+- major improvements to the [chili](/internals/backends/chili) backend
+    - stabilize main routines and macros
+    - tested workflow with actual examples
+- stabilize [new domain](/docs/cellular_raza_concepts/domain_new) traits
+- added more examples
+
 ## cellular_raza 0.0.8
 - Added documentation where needed
 - Fix public interface for cpu_os_threads backend
