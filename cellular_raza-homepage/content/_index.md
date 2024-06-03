@@ -15,13 +15,13 @@ parameter introduced.
 
 {{< cards >}}
     {{<
-        card link="free-motile-vertex-model"
+        card link="/showcase/free-motile-vertex-model"
         title="Free Motile Vertex Model"
         image="/showcase/free-motile-vertex-model/cells_at_iter_0000100000.png"
         subtitle="Cells Self-Organizing to Tissue-Like structure"
     >}}
     {{<
-        card link="cell-sorting"
+        card link="/showcase/cell-sorting"
         title="3D Cell-Sorting"
         image="/showcase/cell_sorting/0000006000.png"
         subtitle="Low-parametric autonomous cell-sorting in 3 dimensions"
