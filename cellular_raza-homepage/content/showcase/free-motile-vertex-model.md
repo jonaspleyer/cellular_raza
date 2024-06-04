@@ -104,7 +104,7 @@ ffmpeg -i output.mp4 -filter:v "setpts=PTS/3" movie.mp4
 ## Code
 
 The code for this simulation and the visualization can be found in the
-[examples](https://github.com/jonaspleyer/cellular_raza/tree/master/cellular_raza-examples/kidney_organoid_model)
+[examples](https://github.com/jonaspleyer/cellular_raza/tree/master/cellular_raza-examples/semi_vertex)
 folder of `cellular_raza`.
 
 ## References

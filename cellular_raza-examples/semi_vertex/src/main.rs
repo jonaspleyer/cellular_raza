@@ -59,13 +59,13 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 0.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 60.0;
 
 // Time parameters
-pub const N_TIMES: usize = 100_001;
+pub const N_TIMES: usize = 10_001;
 pub const DT: f64 = 0.02;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 40;
+pub const N_THREADS: usize = 14;
 
 mod cell_properties;
 mod plotting;
@@ -196,7 +196,7 @@ fn main() {
             ..Default::default()
         },
         Storage: StorageBuilder::new()
-            .location("out/kidney_organoid_model")
+            .location("out/semi_vertex")
             .init(),
     );
 

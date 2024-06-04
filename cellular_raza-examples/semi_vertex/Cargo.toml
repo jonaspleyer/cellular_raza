@@ -1,5 +1,5 @@
 [package]
-name = "cr_kidney_organoid"
+name = "cr_semi_vertex"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]

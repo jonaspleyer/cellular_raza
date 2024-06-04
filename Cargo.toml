@@ -14,7 +14,7 @@ members = [
     "cellular_raza-examples/cellular_raza-template-pyo3",
     "cellular_raza-examples/diffusion",
     "cellular_raza-examples/immersed_boundary",
-    "cellular_raza-examples/kidney_organoid_model",
+    "cellular_raza-examples/semi_vertex",
     "cellular_raza-examples/organoid_turing_growth",
     "cellular_raza-examples/pool_model_pyo3",
     "cellular_raza-examples/template",
