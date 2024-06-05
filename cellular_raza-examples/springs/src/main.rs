@@ -76,11 +76,12 @@ impl<const D1: usize, const D2: usize>
         ),
         CalcError,
     > {
-        // Calculate internal force between the two points of the Agent<D1, D2>
+        // Calculate internal force between the two points of the Agent
         let mut total_force = force;
 
         // Calculate force exerted by spring action between individual vertices
-        let dist_internal = self.pos.rows(0, 4) - self.pos.rows(1, 4);
+        let dist_internal =
+            self.pos.rows(0, self.pos.nrows() - 1) - self.pos.rows(1, self.pos.nrows() - 1);
         dist_internal.row_iter().enumerate().for_each(|(i, dist)| {
             let dir = dist.normalize();
             let force_internal = -self.spring_tension * (dist.norm() - self.spring_length) * dir;
