@@ -35,20 +35,16 @@ def plot_spheres(iteration: int, path: Path, opath = None):
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
-    box = pv.Box(bounds=(0, 1.5e-4, 0, 1.5e-4, 0, 1.5e-4), level=3)
     for cell in cell_meshes:
         plotter.add_mesh(
             cell,
             show_edges=False,
+            color=(69, 124, 214),
         )
-    plotter.add_mesh(
-        box,
-        style="wireframe",
-    )
 
     # Define camera
-    plotter.camera.position = (3.75e-4, 3.75e-4, 3.75e-4)
-    plotter.camera.focal_point = (7.5e-5, 7.5e-5, 7.5e-5)
+    plotter.camera.position = (-150e-6, -150e-6, 350e-6)
+    plotter.camera.focal_point = (50e-6, 50e-6, 50e-6)
 
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()
