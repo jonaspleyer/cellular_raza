@@ -30,8 +30,11 @@ pub const HOUR: f64 = 24.0 * MINUTE;
 /// ```
 #[derive(CellAgent, Clone, Deserialize, Serialize)]
 pub struct Agent<const D1: usize, const D2: usize> {
+    // Mechanics
     pos: nalgebra::SMatrix<f64, D1, D2>,
     vel: nalgebra::SMatrix<f64, D1, D2>,
+    random_velocity: nalgebra::SMatrix<f64, D1, D2>,
+    diffusion_constant: f64,
     spring_tension: f64,
     angle_stiffness: f64,
     interaction_potential: f64,
@@ -101,7 +104,21 @@ impl<const D1: usize, const D2: usize>
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-0.5 * force);
             });
-        Ok((self.vel.clone(), total_force))
+        Ok((self.vel.clone() + self.random_velocity, total_force))
+    }
+
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<(), cellular_raza::prelude::RngError> {
+        let distr = match rand_distr::Normal::new(0.0, dt.sqrt()) {
+            Ok(e) => Ok(e),
+            Err(e) => Err(cellular_raza::concepts::RngError(format!("{e}"))),
+        }?;
+        self.random_velocity = std::f64::consts::SQRT_2 * self.diffusion_constant * nalgebra::SMatrix::<f64, D1, D2>::from_distribution(&distr, rng) / dt;
+
+        Ok(())
     }
 }
 
@@ -160,6 +177,8 @@ fn main() -> Result<(), chili::SimulationError> {
     let agent = Agent {
         pos: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         vel: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
+        random_velocity: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
+        diffusion_constant: 0.1 * MICRO_METRE.powf(2.0) / SECOND,
         spring_tension: 20.0 / SECOND.powf(2.0),
         angle_stiffness: 20.0 * MICRO_METRE / SECOND.powf(2.0),
         interaction_potential: 6e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
