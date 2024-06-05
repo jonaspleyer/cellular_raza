@@ -10,6 +10,7 @@ members = [
     # "cellular_raza-examples/*",
     "cellular_raza-examples/bacteria_population",
     "cellular_raza-examples/cell_sorting",
+    "cellular_raza-examples/cell_sorting_brownian",
     "cellular_raza-examples/cellular_raza-template",
     "cellular_raza-examples/cellular_raza-template-pyo3",
     "cellular_raza-examples/diffusion",
