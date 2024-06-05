@@ -85,22 +85,12 @@ pub fn plot_modular_cell(
     );
     root.draw(&cell_border)?;
 
-    // Create colormap
-    let life_colormap = DerivedColorMap::new(&[
-        RGBColor(153, 0, 0),
-        RGBColor(255, 153, 51),
-        RGBColor(120, 255, 120),
-        RGBColor(51, 255, 51),
-    ]);
+    // Define color inside of cell
+    let cell_inside_color = match modular_cell.interaction.outside_interaction.species {
+        Species::One => RGBColor(28, 173, 28),
+        Species::Two => RGBColor(173, 122, 28),
+    };
 
-    // Plot the inside of the cell
-    let cell_inside_color = life_colormap.get_color_normalized(
-        modular_cell.get_intracellular()[1],
-        0.0,
-        modular_cell
-            .cellular_reactions
-            .intracellular_concentrations_saturation_level[1],
-    );
     let cell_inside = plotters::element::Polygon::new(
         path_points
             .clone()

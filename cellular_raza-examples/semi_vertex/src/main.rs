@@ -4,7 +4,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 // Number of cells
-pub const N_CELLS: usize = 1_720;
+pub const N_CELLS: usize = 2_025;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
@@ -59,13 +59,13 @@ pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f64 = 0.0;
 pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f64 = 60.0;
 
 // Time parameters
-pub const N_TIMES: usize = 10_001;
-pub const DT: f64 = 0.02;
+pub const N_TIMES: usize = 100_001;
+pub const DT: f64 = 0.05;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 14;
+pub const N_THREADS: usize = 32;
 
 mod cell_properties;
 mod plotting;
@@ -134,6 +134,11 @@ fn main() {
                     OutsideInteraction {
                         potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
                         interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+                        species: if rng.gen_bool(0.5) {
+                            Species::One
+                        } else {
+                            Species::Two
+                        },
                     },
                     InsideInteraction {
                         potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,

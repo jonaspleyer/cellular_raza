@@ -11,7 +11,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type InteractionInformation = ();
 pub type MyCellType = ModularCell<
     VertexMechanics2D<NUMBER_OF_VERTICES>,
-    VertexDerivedInteraction<OutsideInteraction, InsideInteraction>,
+    VertexDerivedInteraction<OutsideInteraction, InsideInteraction, Species>,
     OwnCycle,
     OwnReactions,
     GradientSensing,
@@ -24,10 +24,17 @@ pub struct DirectedSphericalMechanics {
     pub orientation: Unit<Vector2<f64>>,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, core::fmt::Debug)]
+pub enum Species {
+    One = 0,
+    Two = 1,
+}
+
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct OutsideInteraction {
     pub potential_strength: f64,
     pub interaction_range: f64,
+    pub species: Species,
 }
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
@@ -36,16 +43,14 @@ pub struct InsideInteraction {
     pub average_radius: f64,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
-    for OutsideInteraction
-{
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        _ext_info: &InteractionInformation,
+        ext_species: &Species,
     ) -> Result<Vector2<f64>, CalcError> {
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
@@ -61,10 +66,17 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
 
         // Calculate only attracting and repelling forces
         let force = -dir * strength * spatial_cutoff;
-        Ok(force)
+        if *ext_species != self.species {
+            use num::Zero;
+            Ok(Vector2::<f64>::zero())
+        } else {
+            Ok(force)
+        }
     }
 
-    fn get_interaction_information(&self) -> InteractionInformation {}
+    fn get_interaction_information(&self) -> Species {
+        self.species.clone()
+    }
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>
@@ -172,7 +184,7 @@ impl Cycle<MyCellType> for OwnCycle {
         // let r = c1.interaction.base_interaction.cell_radius;
 
         // Make both cells smaller
-        // ALso keep old cell larger
+        // Also keep old cell larger
         let relative_size_difference = 0.2;
         c1.mechanics.set_cell_area(
             c1.mechanics.get_cell_area() * (1.0 + relative_size_difference)
