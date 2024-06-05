@@ -1,4 +1,4 @@
-use super::{CellBox, CellIdentifier, SimulationError, SubDomainBox, UpdateCycle, Voxel};
+use super::{CellBox, SimulationError, SubDomainBox, UpdateCycle, Voxel};
 use cellular_raza_concepts::domain_new::SubDomain;
 
 pub use cellular_raza_concepts::CycleEvent;
@@ -16,15 +16,15 @@ impl<C, A> Voxel<C, A> {
         dt: &Float,
     ) -> Result<(), SimulationError>
     where
-        C: cellular_raza_concepts::Cycle<C, Float>
-            + cellular_raza_concepts::Id<Identifier = CellIdentifier>,
+        C: cellular_raza_concepts::Cycle<C, Float>,
         A: UpdateCycle + Default,
     {
+        use cellular_raza_concepts::Id;
         // Update the cell individual cells
         self.cells
             .iter_mut()
             .map(|(cbox, aux_storage)| {
-                // Check for cycle events and do update if necessary
+                // Check for cycle events and take action if necessary
                 let mut remaining_events = Vec::new();
                 for event in aux_storage.drain_cycle_events() {
                     match event {
@@ -39,21 +39,6 @@ impl<C, A> Voxel<C, A> {
                     };
                 }
                 aux_storage.set_cycle_events(remaining_events);
-                // Update the cell cycle
-                if aux_storage
-                    .get_cycle_events()
-                    .contains(&CycleEvent::PhasedDeath)
-                {
-                    match C::update_conditional_phased_death(&mut self.rng, dt, &mut cbox.cell)? {
-                        true => aux_storage.add_cycle_event(CycleEvent::Remove),
-                        false => (),
-                    }
-                } else {
-                    match C::update_cycle(&mut self.rng, dt, &mut cbox.cell) {
-                        Some(event) => aux_storage.add_cycle_event(event),
-                        None => (),
-                    }
-                }
                 Ok(())
             })
             .collect::<Result<(), SimulationError>>()?;
@@ -94,8 +79,7 @@ where
         dt: &F,
     ) -> Result<(), SimulationError>
     where
-        C: cellular_raza_concepts::Cycle<C, F>
-            + cellular_raza_concepts::Id<Identifier = CellIdentifier>,
+        C: cellular_raza_concepts::Cycle<C, F>,
         A: UpdateCycle + Default,
     {
         self.voxels
@@ -112,13 +96,23 @@ pub fn local_cycle_update<C, A, Float>(
     aux_storage: &mut A,
     dt: Float,
     rng: &mut rand_chacha::ChaCha8Rng,
-) -> Result<(), cellular_raza_concepts::RngError>
+) -> Result<(), cellular_raza_concepts::DeathError>
 where
     C: cellular_raza_concepts::Cycle<C, Float>,
     A: UpdateCycle,
 {
-    if let Some(event) = C::update_cycle(rng, &dt, cell) {
-        aux_storage.add_cycle_event(event);
+    // Update the cell cycle
+    if aux_storage
+        .get_cycle_events()
+        .contains(&CycleEvent::PhasedDeath)
+    {
+        if C::update_conditional_phased_death(rng, &dt, cell)? {
+            aux_storage.add_cycle_event(CycleEvent::Remove);
+        }
+    } else {
+        if let Some(event) = C::update_cycle(rng, &dt, cell) {
+            aux_storage.add_cycle_event(event);
+        }
     }
     Ok(())
 }
