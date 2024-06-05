@@ -396,9 +396,9 @@ where
 
 impl<F, const D: usize> CartesianSubDomain<F, D> {
     /// Generic method to obtain the voxel index of any type that can be casted to an array.
-    pub fn get_index_of<P>(&self, pos: &P) -> Result<[usize; D], BoundaryError>
+    pub fn get_index_of<P>(&self, pos: P) -> Result<[usize; D], BoundaryError>
     where
-        [F; D]: for<'a> From<&'a P>,
+        [F; D]: From<P>,
         F: 'static + num::Float + core::fmt::Debug + core::ops::SubAssign + core::ops::DivAssign,
     {
         let pos: [F; D] = pos.into();
