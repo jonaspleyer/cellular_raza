@@ -1,5 +1,5 @@
 use cellular_raza::building_blocks::CartesianCuboid;
-use cellular_raza::concepts::{CalcError, CellAgent, Mechanics};
+use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Mechanics};
 use cellular_raza::core::backend::chili;
 
 use rand::SeedableRng;
@@ -41,6 +41,10 @@ pub struct Agent<const D1: usize, const D2: usize> {
     spring_length: f64,
     radius: f64,
     interaction_range: f64,
+
+    // Cycle
+    growth_rate: f64,
+    max_spring_length: f64,
 }
 
 impl<const D1: usize, const D2: usize>
@@ -165,6 +169,63 @@ impl<const D1: usize, const D2: usize>
     }
 }
 
+impl<const D1: usize, const D2: usize> Cycle<Agent<D1, D2>> for Agent<D1, D2> {
+    fn update_cycle(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        dt: &f64,
+        cell: &mut Agent<D1, D2>,
+    ) -> Option<cellular_raza::prelude::CycleEvent> {
+        if cell.spring_length < cell.max_spring_length {
+            cell.spring_length += dt * cell.growth_rate;
+            None
+        } else {
+            Some(CycleEvent::Division)
+        }
+    }
+
+    fn divide(
+        rng: &mut rand_chacha::ChaCha8Rng,
+        cell: &mut Agent<D1, D2>,
+    ) -> Result<Agent<D1, D2>, cellular_raza::prelude::DivisionError> {
+        use rand::Rng;
+        let c1 = cell;
+        let mut c2 = c1.clone();
+
+        let base_rate = 1.0 * MICRO_METRE / MINUTE;
+        c1.growth_rate = rng.gen_range(0.8 * base_rate..1.2 * base_rate);
+        c2.growth_rate = rng.gen_range(0.8 * base_rate..1.2 * base_rate);
+
+        let n_rows = c1.pos.nrows();
+        // Calculate the fraction of how much we need to scale down the individual spring lengths
+        // in order for the distances to still work.
+        let div_factor = 0.5 - c1.radius / (n_rows as f64 * c1.spring_length);
+
+        // Shrink spring length
+        c1.spring_length *= div_factor;
+        c2.spring_length *= div_factor;
+
+        // Define new positions
+        let middle = c1.pos.row_mean();
+        let p1 = c1.pos.row(0).to_owned();
+        let p2 = c1.pos.row(n_rows - 1).to_owned();
+        let d1 = (p1 - middle) * (1.0 - div_factor);
+        let d2 = (p2 - middle) * (1.0 - div_factor);
+        c1.pos.row_iter_mut().for_each(|mut r| {
+            r -= middle;
+            r *= div_factor;
+            r += middle;
+            r += d1
+        });
+        c2.pos.row_iter_mut().for_each(|mut r| {
+            r -= middle;
+            r *= div_factor;
+            r += middle;
+            r += d2;
+        });
+        Ok(c2)
+    }
+}
+
 fn main() -> Result<(), chili::SimulationError> {
     // Define the dimensionality of the problem
     const D1: usize = 5;
@@ -184,8 +245,10 @@ fn main() -> Result<(), chili::SimulationError> {
         angle_stiffness: 20.0 * MICRO_METRE / SECOND.powf(2.0),
         interaction_potential: 6e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
         spring_length: 3.0 * MICRO_METRE,
+        max_spring_length: 3.0 * MICRO_METRE,
         radius: 3.0 * MICRO_METRE,
         interaction_range: 1.0 * MICRO_METRE,
+        growth_rate: 1.0 * MICRO_METRE / MINUTE,
     };
 
     // Place agents in simulation domain
@@ -261,7 +324,7 @@ fn main() -> Result<(), chili::SimulationError> {
         domain: domain,
         agents: agents,
         settings: settings,
-        aspects: [Mechanics, Interaction, DomainForce],
+        aspects: [Mechanics, Interaction, DomainForce, Cycle],
     )?;
 
     Ok(())
