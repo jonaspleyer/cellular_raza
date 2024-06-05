@@ -468,6 +468,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&Cycle) {
         local_func_names.push(quote!(#core_path::backend::chili::local_cycle_update));
+        step_3.extend(quote!(sbox.update_cell_cycle_3(&dt)?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
