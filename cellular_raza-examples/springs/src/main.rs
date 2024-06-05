@@ -37,8 +37,10 @@ pub struct Agent<const D1: usize, const D2: usize> {
     diffusion_constant: f64,
     spring_tension: f64,
     angle_stiffness: f64,
-    interaction_potential: f64,
     spring_length: f64,
+
+    // Interaction
+    interaction_potential: f64,
     radius: f64,
     interaction_range: f64,
 
@@ -243,7 +245,7 @@ fn main() -> Result<(), chili::SimulationError> {
         diffusion_constant: 0.1 * MICRO_METRE.powf(2.0) / SECOND,
         spring_tension: 20.0 / SECOND.powf(2.0),
         angle_stiffness: 20.0 * MICRO_METRE / SECOND.powf(2.0),
-        interaction_potential: 6e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
+        interaction_potential: 1e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
         spring_length: 3.0 * MICRO_METRE,
         max_spring_length: 3.0 * MICRO_METRE,
         radius: 3.0 * MICRO_METRE,
@@ -253,18 +255,17 @@ fn main() -> Result<(), chili::SimulationError> {
 
     // Place agents in simulation domain
     let domain_size = 100.0 * MICRO_METRE;
-    let agents = (0..40).map(|_| {
+    let agents = (0..20).map(|_| {
         let mut new_agent = agent.clone();
+        new_agent.spring_length = rng.gen_range(1.5..2.5) * MICRO_METRE;
         let mut pos = nalgebra::SMatrix::<f64, D1, D2>::zeros();
 
         let delta_x = agent.spring_length * pos.nrows() as f64;
-        let lower = delta_x;
-        let upper = domain_size - delta_x;
-        pos[(0, 0)] = rng.gen_range(lower..upper);
-        pos[(0, 1)] = rng.gen_range(lower..upper);
-        if D2 > 2 {
-            pos[(0, 2)] = rng.gen_range(0.0..0.25*domain_size);
-        }
+        // let lower = delta_x;
+        // let upper = domain_size - delta_x;
+        pos[(0, 0)] = rng.gen_range(delta_x..domain_size - delta_x);
+        pos[(0, 1)] = rng.gen_range(delta_x..domain_size - delta_x);
+        pos[(0, 2)] = rng.gen_range(delta_x..domain_size - delta_x);
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =
@@ -285,15 +286,16 @@ fn main() -> Result<(), chili::SimulationError> {
     });
 
     // Domain Setup
-    let mut domain_sizes = [domain_size; D2];
-    let mut domain_segments = [4; D2];
-    if D2 == 3 {
-        domain_sizes[2] /= 4.0;
-        domain_segments[2] = 1;
-    }
+    let domain_sizes = [domain_size; D2];
+    let domain_segments = [4; D2];
     let domain = MyDomain {
-        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; D2], domain_sizes, domain_segments)?,
-        gravity: 2e-7 * 9.81 * METRE / SECOND.powf(2.0),
+        cuboid: CartesianCuboid::from_boundaries_and_n_voxels(
+            [0.0; D2],
+            domain_sizes,
+            domain_segments,
+        )?,
+        // TODO enable this
+        gravity: 0.0 * 2e-7 * 9.81 * METRE / SECOND.powf(2.0),
         damping: 1.5 / SECOND,
     };
 
@@ -303,8 +305,8 @@ fn main() -> Result<(), chili::SimulationError> {
     // Time Setup
     let t0 = 0.0 * MINUTE;
     let dt = 0.025 * SECOND;
-    let save_interval = 0.2 * SECOND;
-    let t_max = 1.0 * MINUTE;
+    let save_interval = 1.0 * SECOND;
+    let t_max = 12.0 * MINUTE;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
         dt,
