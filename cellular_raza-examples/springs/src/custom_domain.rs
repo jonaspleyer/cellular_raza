@@ -151,16 +151,8 @@ impl<const D1: usize, const D2: usize> cellular_raza::concepts::domain_new::Sort
     type VoxelIndex = [usize; D2];
 
     fn get_voxel_index_of(&self, cell: &Agent<D1, D2>) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos();
-        let mut out = [0; D2];
-
-        for i in 0..pos.ncols() {
-            out[i] = ((pos[i] - self.subdomain.get_domain_min()[0]) / self.subdomain.get_dx()[i])
-                as usize;
-            out[i] = out[i]
-                .min(self.subdomain.get_domain_n_voxels()[i] - 1)
-                .max(0);
-        }
-        Ok(out.into())
+        let pos: [f64; D2] = cell.pos().row_mean().transpose().into();
+        let index = self.subdomain.get_index_of(pos)?;
+        Ok(index)
     }
 }
