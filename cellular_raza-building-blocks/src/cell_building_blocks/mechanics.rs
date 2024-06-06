@@ -515,11 +515,13 @@ define_langevin_nd!(Langevin3DF32, 3, f32);
 pub struct VertexMechanics2D<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
     velocity: nalgebra::SMatrix<f64, D, 2>,
+    random_vector: nalgebra::SMatrix<f64, D, 2>,
     cell_boundary_lengths: nalgebra::SVector<f64, D>,
     spring_tensions: nalgebra::SVector<f64, D>,
     cell_area: f64,
     central_pressure: f64,
     damping_constant: f64,
+    diffusion_constant: f64,
 }
 
 /// Alias for the spatial representation of a cell
@@ -556,6 +558,7 @@ impl<const D: usize> VertexMechanics2D<D> {
         spring_tensions: f64,
         central_pressure: f64,
         damping_constant: f64,
+        diffusion_constant: f64,
         randomize: Option<(f64, rand_chacha::ChaCha8Rng)>,
     ) -> Self {
         use rand::Rng;
@@ -601,11 +604,13 @@ impl<const D: usize> VertexMechanics2D<D> {
         VertexMechanics2D {
             points,
             velocity: VertexVector2::<D>::zeros(),
+            random_vector: VertexVector2::<D>::zeros(),
             cell_boundary_lengths,
             spring_tensions: VertexConnections2::<D>::from_element(spring_tensions),
             cell_area,
             central_pressure,
             damping_constant,
+            diffusion_constant,
         }
     }
 
@@ -629,6 +634,7 @@ impl<const D: usize> VertexMechanics2D<D> {
                     self.spring_tensions.sum() / self.spring_tensions.len() as f64,
                     self.central_pressure,
                     self.damping_constant,
+                    self.diffusion_constant,
                     None,
                 );
                 *self = new_interaction_parameters;
@@ -652,6 +658,7 @@ impl VertexMechanics2D<4> {
         spring_tensions: f64,
         central_pressure: f64,
         damping_constant: f64,
+        diffusion_constant: f64,
         rectangle: [SVector<f64, 2>; 2],
     ) -> Vec<Self> {
         let cell_side_length: f64 = cell_area.sqrt();
@@ -695,11 +702,13 @@ impl VertexMechanics2D<4> {
                 VertexMechanics2D {
                     points,
                     velocity: VertexVector2::<4>::zeros(),
+                    random_vector: VertexVector2::<4>::zeros(),
                     cell_boundary_lengths,
                     spring_tensions: VertexConnections2::<4>::from_element(spring_tensions),
                     cell_area,
                     central_pressure,
                     damping_constant,
+                    diffusion_constant,
                 }
             })
             .collect::<Vec<_>>();
@@ -771,8 +780,24 @@ impl<const D: usize> Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2
             // Combine forces
             force_2 += force1 + force2 + force3;
         }
-        let dx = self.velocity.clone();
+        let dx = self.velocity.clone() + self.random_vector;
         let dv = force + internal_force - self.damping_constant * self.velocity.clone();
         Ok((dx, dv))
+    }
+
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<(), RngError> {
+        if dt != 0.0 {
+            let random_vector: nalgebra::SVector<f64, 2> =
+                generate_random_vector(rng, dt.sqrt())? / dt;
+            self.random_vector.row_iter_mut().for_each(|mut r| {
+                r *= 0.0;
+                r += random_vector.transpose();
+            });
+        }
+        Ok(())
     }
 }
