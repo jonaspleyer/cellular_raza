@@ -13,7 +13,7 @@ pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 3.0;
-pub const CELL_MECHANICS_DAMPENING_CONSTANT: f64 = 1.0;
+pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
 pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.004;
 
 // Reaction parameters of the cell
@@ -41,13 +41,6 @@ pub const CELL_CYCLE_FOOD_DIVISION_THRESHOLD: f64 = CELL_FOOD_SATURATION * 0.6;
 // Parameters for domain
 pub const DOMAIN_SIZE_X: f64 = 1_200.0;
 pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
-
-// Where will the cells be placed initially
-// Define a polygon by points
-pub const STARTING_DOMAIN_X_LOW: f64 = 0.5 * DOMAIN_SIZE_X - 75.0;
-pub const STARTING_DOMAIN_X_HIGH: f64 = 0.5 * DOMAIN_SIZE_X + 75.0;
-pub const STARTING_DOMAIN_Y_LOW: f64 = 150.0;
-pub const STARTING_DOMAIN_Y_HIGH: f64 = DOMAIN_SIZE_Y - 25.0;
 
 // Parameters for Voxel Reaction+Diffusion
 pub const VOXEL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE: f64 = 0.003;
@@ -128,7 +121,7 @@ fn main() {
                     rng.gen_range(0.0..2.0 * std::f64::consts::PI),
                     CELL_MECHANICS_SPRING_TENSION,
                     CELL_MECHANICS_CENTRAL_PRESSURE,
-                    CELL_MECHANICS_DAMPENING_CONSTANT,
+                    CELL_MECHANICS_DAMPING_CONSTANT,
                     CELL_MECHANICS_DIFFUSION_CONSTANT,
                     None,
                 ),
