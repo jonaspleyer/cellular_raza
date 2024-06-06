@@ -14,6 +14,7 @@ pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 3.0;
 pub const CELL_MECHANICS_DAMPENING_CONSTANT: f64 = 1.0;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.004;
 
 // Reaction parameters of the cell
 pub const CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION: f64 = 10.0;
@@ -128,6 +129,7 @@ fn main() {
                     CELL_MECHANICS_SPRING_TENSION,
                     CELL_MECHANICS_CENTRAL_PRESSURE,
                     CELL_MECHANICS_DAMPENING_CONSTANT,
+                    CELL_MECHANICS_DIFFUSION_CONSTANT,
                     None,
                 ),
                 interaction: VertexDerivedInteraction::from_two_forces(
