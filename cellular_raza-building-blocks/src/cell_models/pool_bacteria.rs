@@ -174,7 +174,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         ext_radius: &f64,
-    ) -> Result<Vector2<f64>, CalcError> {
+    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         let z = ext_pos - own_pos;
         let r = z.norm();
         let sigma = r / (self.cell_radius() + ext_radius);
@@ -182,9 +182,10 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
             let q = 0.2;
             let dir = z.normalize();
             let modifier = (1.0 + q) / (q + sigma);
-            Ok(self.potential_strength * dir * modifier)
+            let force = self.potential_strength * dir * modifier;
+            Ok((-force, force))
         } else {
-            Ok(Vector2::zero())
+            Ok((Vector2::zero(), Vector2::zero()))
         }
     }
 }

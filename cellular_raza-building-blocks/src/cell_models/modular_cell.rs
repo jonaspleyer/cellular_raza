@@ -103,7 +103,7 @@ where
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_information: &Inf,
-    ) -> Result<For, CalcError> {
+    ) -> Result<(For, For), CalcError> {
         self.interaction.calculate_force_between(
             own_pos,
             own_vel,

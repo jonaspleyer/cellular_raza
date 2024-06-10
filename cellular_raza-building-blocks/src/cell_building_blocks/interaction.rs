@@ -22,8 +22,8 @@ where
         _: &Pos,
         _: &Vel,
         _ext_information: &(),
-    ) -> Result<For, CalcError> {
-        Ok(For::zero())
+    ) -> Result<(For, For), CalcError> {
+        Ok((For::zero(), For::zero()))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -113,7 +113,7 @@ macro_rules! implement_bound_lennard_jones(
                 ext_pos: &SVector<$float_type, D>,
                 _ext_vel: &SVector<$float_type, D>,
                 _ext_information: &(),
-            ) -> Result<SVector<$float_type, D>, CalcError> {
+            ) -> Result<(SVector<$float_type, D>, SVector<$float_type, D>), CalcError> {
                 let z = own_pos - ext_pos;
                 let r = z.norm();
                 let dir = z / r;
@@ -121,7 +121,7 @@ macro_rules! implement_bound_lennard_jones(
                     * (12.0 * (self.sigma / r).powf(11.0) - 6.0 * (self.sigma / r).powf(5.0));
                 let max = self.bound / r;
                 let q = if self.cutoff >= r { 1.0 } else { 0.0 };
-                Ok(dir * q * max.min(val))
+                Ok((- dir * q * max.min(val), dir * q * max.min(val)))
             }
 
             fn get_interaction_information(&self) -> () {}
@@ -238,7 +238,7 @@ pub fn calculate_morse_interaction<F, const D: usize>(
     length_attracting: F,
     strength_repelling: F,
     strength_attracting: F,
-) -> Result<nalgebra::SVector<F, D>, CalcError>
+) -> Result<(nalgebra::SVector<F, D>, nalgebra::SVector<F, D>), CalcError>
 where
     F: Copy + nalgebra::RealField,
 {
@@ -248,7 +248,10 @@ where
     // If the distance between the two objects is greater than the cutoff, we
     // immediately return zero.
     if dist > cutoff {
-        return Ok([F::zero(); D].into());
+        return Ok((
+            nalgebra::SVector::<F, D>::zeros(),
+            nalgebra::SVector::<F, D>::zeros(),
+        ));
     }
     let lr = length_repelling;
     let la = length_attracting;
@@ -256,7 +259,7 @@ where
     let ca = strength_attracting;
     let lr_combined = *ext_length_repelling + length_repelling;
     let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
-    Ok(dir * force)
+    Ok((-dir * force, dir * force))
 }
 
 fn product_log<F>(x: F, n_steps: usize) -> F
@@ -280,7 +283,7 @@ pub fn calculate_morse_interaction_cell_radii<F, const D: usize>(
     interaction_range: F,
     strength_repelling: F,
     strength_attracting: F,
-) -> Result<nalgebra::SVector<F, D>, CalcError>
+) -> Result<(nalgebra::SVector<F, D>, nalgebra::SVector<F, D>), CalcError>
 where
     F: Copy + nalgebra::RealField,
 {
@@ -326,7 +329,10 @@ macro_rules! implement_morse_potential(
                 ext_pos: &nalgebra::SVector<$float_type, D>,
                 _ext_vel: &nalgebra::SVector<$float_type, D>,
                 ext_info: &$float_type,
-            ) -> Result<nalgebra::SVector<$float_type, D>, CalcError> {
+            ) -> Result<
+                (nalgebra::SVector<$float_type, D>, nalgebra::SVector<$float_type, D>),
+                CalcError
+            > {
                 calculate_morse_interaction(
                     own_pos,
                     ext_pos,
@@ -463,7 +469,7 @@ where
         ext_pos: &SVector<F, D>,
         _ext_vel: &SVector<F, D>,
         ext_radius: &F,
-    ) -> Result<SVector<F, D>, CalcError> {
+    ) -> Result<(SVector<F, D>, SVector<F, D>), CalcError> {
         let z = own_pos - ext_pos;
         let r = z.norm();
         if r == F::zero() {
@@ -472,7 +478,7 @@ where
             )));
         }
         if r > self.cutoff {
-            return Ok([F::zero(); D].into());
+            return Ok((SVector::<F, D>::zeros(), SVector::<F, D>::zeros()));
         }
         let dir = z / r;
         let x = (self.radius + *ext_radius) / r;
@@ -483,7 +489,7 @@ where
             self.en * (sigma.powf(self.en + F::one()) - x.powf(self.em + F::one()));
         let force = self.potential_strength * mie_constant * potential_part;
         let force = force.min(self.bound);
-        Ok(dir * force)
+        Ok((-dir * force, dir * force))
     }
 
     fn get_interaction_information(&self) -> F {
@@ -651,7 +657,13 @@ where
         ext_pos: &super::mechanics::VertexVector2<D>,
         ext_vel: &super::mechanics::VertexVector2<D>,
         ext_information: &(I1, I2),
-    ) -> Result<super::mechanics::VertexVector2<D>, CalcError> {
+    ) -> Result<
+        (
+            super::mechanics::VertexVector2<D>,
+            super::mechanics::VertexVector2<D>,
+        ),
+        CalcError,
+    > {
         // TODO Reformulate this code:
         // Do not calculate interactions between vertices but rather between
         // edges of polygons.
@@ -749,7 +761,7 @@ where
 
             if external_point_is_in_polygon {
                 // Calculate the force inside the cell
-                let calc = self.inside_interaction.calculate_force_between(
+                let (calc, _) = self.inside_interaction.calculate_force_between(
                     &middle_own,
                     &average_vel_own,
                     &middle_ext,
@@ -762,7 +774,7 @@ where
                 if let Some((_, nearest_point)) =
                     nearest_point_from_point_to_multiple_lines(&point, &own_polygon_lines)
                 {
-                    let calc = self.outside_interaction.calculate_force_between(
+                    let (calc, _) = self.outside_interaction.calculate_force_between(
                         &nearest_point,
                         &average_vel_own,
                         &point,
@@ -773,7 +785,7 @@ where
                 }
             };
         }
-        Ok(total_force)
+        Ok((- total_force, total_force))
     }
 }
 
