@@ -381,7 +381,7 @@ impl AgentImplementer {
                         ext_pos: &#position,
                         ext_vel: &#velocity,
                         ext_info: &#information,
-                    ) -> Result<#force, CalcError> {
+                    ) -> Result<(#force, #force), CalcError> {
                         <#field_type as Interaction<#tokens>>::calculate_force_between(
                             &self.#field_name,
                             own_pos,

@@ -3,11 +3,15 @@ use crate::errors::CalcError;
 /// Trait describing force-interactions between cellular agents.
 pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     /// Get additional information of cellular properties (ie. for cell-specific interactions).
-    /// For now, this can also be used to get the mass of the other cell-agent. In the future, we will probably provide a custom function for this.
+    /// For now, this can also be used to get the mass of the other cell-agent.
+    /// In the future, we will probably provide a custom function for this.
     fn get_interaction_information(&self) -> Inf;
 
-    /// Calculates the force (velocity-derivative) on the corresponding external position given external velocity.
+    /// Calculates the forces (velocity-derivative) on the corresponding external position given
+    /// external velocity.
     /// By providing velocities, we can calculate terms that are related to friction.
+    /// The function returns two forces, one acting on the current agent and the other on the
+    /// external agent.
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
@@ -15,7 +19,7 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_info: &Inf,
-    ) -> Result<Force, CalcError>;
+    ) -> Result<(Force, Force), CalcError>;
 
     /// Checks if the other cell represented by position and information is a neighbor to the current one or not.
     #[allow(unused)]

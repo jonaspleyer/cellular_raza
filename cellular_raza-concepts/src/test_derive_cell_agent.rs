@@ -59,4 +59,30 @@ fn derive_cycle() {}
 #[allow(unused)]
 fn derive_mechanics() {}
 
-// TODO test derivation of more concepts!
+///```
+/// use cellular_raza_concepts_derive::CellAgent;
+/// use cellular_raza_concepts::*;
+/// use rand_chacha::ChaCha8Rng;
+/// struct InteractionModel;
+/// impl cellular_raza_concepts::Interaction<f32, f32, f32> for InteractionModel {
+///     fn get_interaction_information(&self) -> () {}
+///     fn calculate_force_between(
+///         &self,
+///         own_pos: &f32,
+///         ext_pos: &f32,
+///         own_vel: &f32,
+///         ext_vel: &f32,
+///         ext_info: &()
+///     ) -> Result<(f32, f32), CalcError> {
+///         unimplemented!()
+///     }
+/// }
+/// #[derive(CellAgent)]
+/// struct NewAgent1 {
+///     #[Interaction]
+///     mechanics: InteractionModel,
+/// }
+// ```
+#[doc(hidden)]
+#[allow(unused)]
+fn derive_interaction() {}
