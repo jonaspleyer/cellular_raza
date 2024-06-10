@@ -75,7 +75,7 @@ def __plot_spheres_helper(args):
 
 def plot_all_spheres(path: Path):
     iterations = [it[0] for it in get_all_iterations(path)]
-    pool = mp.Pool(20)
+    pool = mp.Pool()
     list(
         tqdm.tqdm(
             pool.imap_unordered(
