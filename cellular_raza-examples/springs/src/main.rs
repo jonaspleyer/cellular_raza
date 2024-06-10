@@ -144,9 +144,16 @@ impl<const D1: usize, const D2: usize>
         ext_pos: &nalgebra::SMatrix<f64, D1, D2>,
         _ext_vel: &nalgebra::SMatrix<f64, D1, D2>,
         ext_radius: &f64,
-    ) -> Result<nalgebra::SMatrix<f64, D1, D2>, CalcError> {
+    ) -> Result<
+        (
+            nalgebra::SMatrix<f64, D1, D2>,
+            nalgebra::SMatrix<f64, D1, D2>,
+        ),
+        CalcError,
+    > {
         use core::ops::AddAssign;
-        let mut force = nalgebra::SMatrix::<f64, D1, D2>::zeros();
+        let mut force_own = nalgebra::SMatrix::<f64, D1, D2>::zeros();
+        let mut force_ext = nalgebra::SMatrix::<f64, D1, D2>::zeros();
         for (i, p1) in own_pos.row_iter().enumerate() {
             for (j, p2) in ext_pos.row_iter().enumerate() {
                 let dist = p1 - p2;
@@ -154,16 +161,16 @@ impl<const D1: usize, const D2: usize>
                 if r < ext_radius + self.radius + self.interaction_range {
                     let sigma = r / (self.radius + ext_radius);
                     let strength = (1.0 / sigma.powf(4.0) - 1.0 / sigma.powf(2.0)).min(0.2);
-                    force
+                    force_own
                         .row_mut(i)
                         .add_assign(-self.interaction_potential * strength * dist.normalize());
-                    force
+                    force_ext
                         .row_mut(j)
                         .add_assign(-self.interaction_potential * strength * dist.normalize());
                 }
             }
         }
-        Ok(force)
+        Ok((-force_own, force_ext))
     }
 
     fn get_interaction_information(&self) -> f64 {

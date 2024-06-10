@@ -44,7 +44,7 @@ impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vecto
         ext_pos: &nalgebra::Vector2<f64>,
         _ext_vel: &nalgebra::Vector2<f64>,
         ext_radius: &f64,
-    ) -> Result<nalgebra::Vector2<f64>, CalcError> {
+    ) -> Result<(nalgebra::Vector2<f64>, nalgebra::Vector2<f64>), CalcError> {
         let min_relative_distance_to_center = 0.3162277660168379;
         let (r, dir) =
             match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
@@ -56,7 +56,7 @@ impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vecto
                 true => {
                     let dir = match own_pos == ext_pos {
                         true => {
-                            return Ok([0.0; 2].into());
+                            return Ok((nalgebra::Vector2::zeros(), nalgebra::Vector2::zeros()));
                         }
                         false => (own_pos - ext_pos).normalize(),
                     };
@@ -80,7 +80,7 @@ impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vecto
         // Calculate only attracting and repelling forces
         let force = dir * strength * spatial_cutoff;
 
-        Ok(force)
+        Ok((-force, force))
     }
 
     fn get_interaction_information(&self) -> f64 {

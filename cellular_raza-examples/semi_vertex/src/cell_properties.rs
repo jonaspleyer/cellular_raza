@@ -51,11 +51,11 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideI
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         ext_species: &Species,
-    ) -> Result<Vector2<f64>, CalcError> {
+    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
         let r = z.norm();
-        let dir = z / r;
+        let dir = z.normalize();
 
         // Introduce Non-dimensional length variable
         let sigma = r / (self.interaction_range);
@@ -67,10 +67,9 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideI
         // Calculate only attracting and repelling forces
         let force = -dir * strength * spatial_cutoff;
         if *ext_species != self.species {
-            use num::Zero;
-            Ok(Vector2::<f64>::zero())
+            Ok((Vector2::zeros(), Vector2::zeros()))
         } else {
-            Ok(force)
+            Ok((-force, force))
         }
     }
 
@@ -89,13 +88,14 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformatio
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
         _ext_info: &InteractionInformation,
-    ) -> Result<Vector2<f64>, CalcError> {
+    ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         // Calculate direction between own and other point
         let z = ext_pos - own_pos;
         let r = z.norm();
         let dir = z.normalize();
 
-        Ok(self.potential_strength * dir / (0.5 + 0.5 * r / self.average_radius))
+        let force = self.potential_strength * dir / (0.5 + 0.5 * r / self.average_radius);
+        Ok((-force, force))
     }
 
     fn get_interaction_information(&self) -> InteractionInformation {}
