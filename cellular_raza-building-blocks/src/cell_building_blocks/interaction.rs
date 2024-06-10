@@ -709,18 +709,16 @@ where
         let point_outside_polygon = 2.0 * vec_on_edge - middle_own;
 
         // Store the total calculated force here
-        let mut total_force = ext_pos.clone() * 0.0;
+        let mut total_force_own = ext_pos.clone() * 0.0;
+        let mut total_force_ext = ext_pos.clone() * 0.0;
 
         // Match the obtained interaction information
         let (inf1, inf2) = ext_information;
 
         // Pick one point from the external positions
         // and calculate which would be the nearest point on the own positions
-        for (point, mut force) in ext_pos
-            .row_iter()
-            .map(|vec| vec.transpose())
-            .zip(total_force.row_iter_mut())
-        {
+        for (n_row_ext, point_ext) in ext_pos.row_iter().enumerate() {
+            let point_ext = point_ext.transpose();
             // Check if the point is inside the polygon.
             // If this is the case, do not calculate any attracting force.
 
@@ -736,10 +734,10 @@ where
                 },
             );
 
-            let point_is_out_of_bounding_box = point.x < bounding_box[0][0]
-                || point.x > bounding_box[0][1]
-                || point.y < bounding_box[1][0]
-                || point.y > bounding_box[1][1];
+            let point_is_out_of_bounding_box = point_ext.x < bounding_box[0][0]
+                || point_ext.x > bounding_box[0][1]
+                || point_ext.y < bounding_box[1][0]
+                || point_ext.y > bounding_box[1][1];
 
             let external_point_is_in_polygon = match point_is_out_of_bounding_box {
                 true => false,
@@ -749,7 +747,7 @@ where
                     let n_intersections: usize = own_polygon_lines
                         .iter()
                         .map(|line| {
-                            ray_intersects_line_segment(&(point, point_outside_polygon), line)
+                            ray_intersects_line_segment(&(point_ext, point_outside_polygon), line)
                                 as usize
                         })
                         .sum();
@@ -762,31 +760,43 @@ where
 
             if external_point_is_in_polygon {
                 // Calculate the force inside the cell
-                let (calc, _) = self.inside_interaction.calculate_force_between(
+                let (calc_own, calc_ext) = self.inside_interaction.calculate_force_between(
                     &middle_own,
                     &average_vel_own,
-                    &middle_ext,
+                    &point_ext,
                     &average_vel_ext,
                     &inf2,
                 )?;
-                force += calc.transpose();
+                let dir = (middle_ext - middle_own).normalize();
+                let calc_own = - calc_own.norm() * dir;
+                let calc_ext = calc_ext.norm() * dir;
+                let mut force_ext = total_force_ext.row_mut(n_row_ext);
+                force_ext += calc_ext.transpose();
+                total_force_own
+                    .row_iter_mut()
+                    .for_each(|mut r| r += calc_own.transpose() / D as f64);
             } else {
                 // Calculate the force outside
-                if let Some((_, nearest_point)) =
-                    nearest_point_from_point_to_multiple_lines(&point, &own_polygon_lines)
+                if let Some((n_row_nearest, (_, nearest_point, t_frac))) =
+                    nearest_point_from_point_to_multiple_lines(&point_ext, &own_polygon_lines)
                 {
-                    let (calc, _) = self.outside_interaction.calculate_force_between(
+                    let (calc_own, calc_ext) = self.outside_interaction.calculate_force_between(
                         &nearest_point,
                         &average_vel_own,
-                        &point,
+                        &point_ext,
                         &average_vel_ext,
                         &inf1,
                     )?;
-                    force += calc.transpose();
+                    let mut force_ext = total_force_ext.row_mut(n_row_ext);
+                    force_ext += calc_ext.transpose();
+                    let mut force_own_n = total_force_own.row_mut(n_row_nearest);
+                    force_own_n += (1.0 - t_frac) * calc_own.transpose();
+                    let mut force_own_n1 = total_force_own.row_mut((n_row_nearest+1) % D);
+                    force_own_n1 += t_frac * calc_own.transpose();
                 }
             };
         }
-        Ok((- total_force, total_force))
+        Ok((total_force_own, total_force_ext))
     }
 }
 
