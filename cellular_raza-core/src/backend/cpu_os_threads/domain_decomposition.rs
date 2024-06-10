@@ -350,18 +350,18 @@ where
                 let v2 = c2.velocity();
                 let i2 = c2.get_interaction_information();
 
-                let force = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
-                aux1.force -= force.clone() * 0.5;
-                aux2.force += force * 0.5;
+                let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
+                aux1.force += force1 * 0.5;
+                aux2.force += force2 * 0.5;
 
                 match c1.is_neighbour(&p1, &p2, &i2)? {
                     true => aux1.neighbour_count += 1,
                     false => (),
                 }
 
-                let force = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.force += force.clone() * 0.5;
-                aux2.force -= force * 0.5;
+                let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
+                aux1.force += force1 * 0.5;
+                aux2.force += force2 * 0.5;
 
                 match c2.is_neighbour(&p2, &p1, &i1)? {
                     true => aux2.neighbour_count += 1,
@@ -389,15 +389,15 @@ where
     {
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
-            let f = cell.calculate_force_between(
+            let (f1, f2) = cell.calculate_force_between(
                 &cell.pos(),
                 &cell.velocity(),
                 &ext_pos,
                 &ext_vel,
                 &ext_inf,
             )?;
-            aux_storage.force -= f.clone() * 0.5;
-            force += f * 0.5;
+            aux_storage.force += f1;
+            force += f2;
 
             match cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
                 true => aux_storage.neighbour_count += 1,

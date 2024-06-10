@@ -97,13 +97,13 @@ impl<C, A> Voxel<C, A> {
                 let v2 = c2.velocity();
                 let i2 = c2.get_interaction_information();
 
-                let force = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
-                aux1.add_force(-force.clone() * one_half);
-                aux2.add_force(force * one_half);
+                let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
+                aux1.add_force(force1 * one_half);
+                aux2.add_force(force2 * one_half);
 
-                let force = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.add_force(force.clone() * one_half);
-                aux2.add_force(-force * one_half);
+                let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
+                aux1.add_force(force1 * one_half);
+                aux2.add_force(force2 * one_half);
             }
         }
         Ok(())
@@ -137,15 +137,15 @@ impl<C, A> Voxel<C, A> {
         let one_half = Float::one() / (Float::one() + Float::one());
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
-            let f = cell.calculate_force_between(
+            let (f1, f2) = cell.calculate_force_between(
                 &cell.pos(),
                 &cell.velocity(),
                 &ext_pos,
                 &ext_vel,
                 &ext_inf,
             )?;
-            aux_storage.add_force(-f.clone() * one_half);
-            force += f * one_half;
+            aux_storage.add_force(f1 * one_half);
+            force += f2 * one_half;
         }
         Ok(force)
     }
