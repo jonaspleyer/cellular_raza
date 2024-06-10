@@ -123,7 +123,10 @@ impl<const D1: usize, const D2: usize>
             Ok(e) => Ok(e),
             Err(e) => Err(cellular_raza::concepts::RngError(format!("{e}"))),
         }?;
-        self.random_velocity = std::f64::consts::SQRT_2 * self.diffusion_constant * nalgebra::SMatrix::<f64, D1, D2>::from_distribution(&distr, rng) / dt;
+        self.random_velocity = std::f64::consts::SQRT_2
+            * self.diffusion_constant
+            * nalgebra::SMatrix::<f64, D1, D2>::from_distribution(&distr, rng)
+            / dt;
 
         Ok(())
     }
