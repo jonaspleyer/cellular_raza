@@ -780,7 +780,7 @@ impl<const D: usize> Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2
             // Combine forces
             force_2 += force1 + force2 + force3;
         }
-        let dx = self.velocity.clone() + self.random_vector;
+        let dx = self.velocity.clone() + self.diffusion_constant * self.random_vector;
         let dv = force + internal_force - self.damping_constant * self.velocity.clone();
         Ok((dx, dv))
     }
