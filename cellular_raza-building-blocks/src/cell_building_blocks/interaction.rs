@@ -563,22 +563,23 @@ use nalgebra::Vector2;
 fn nearest_point_from_point_to_line(
     point: &Vector2<f64>,
     line: (Vector2<f64>, Vector2<f64>),
-) -> (f64, Vector2<f64>) {
+) -> (f64, Vector2<f64>, f64) {
     let ab = line.1 - line.0;
     let ap = point - line.0;
     let t = (ab.dot(&ap) / ab.norm_squared()).clamp(0.0, 1.0);
     let nearest_point = (1.0 - t) * line.0 + t * line.1;
-    ((point - nearest_point).norm(), nearest_point)
+    ((point - nearest_point).norm(), nearest_point, t)
 }
 
 fn nearest_point_from_point_to_multiple_lines(
     point: &Vector2<f64>,
     polygon_lines: &[(Vector2<f64>, Vector2<f64>)],
-) -> Option<(f64, Vector2<f64>)> {
+) -> Option<(usize, (f64, Vector2<f64>, f64))> {
     polygon_lines
         .iter()
-        .map(|&line| nearest_point_from_point_to_line(point, line))
-        .min_by(|(distance1, _), (distance2, _)| distance1.total_cmp(&distance2))
+        .enumerate()
+        .map(|(n_row, &line)| (n_row, nearest_point_from_point_to_line(point, line)))
+        .min_by(|(_, (distance1, _, _)), (_, (distance2, _, _))| distance1.total_cmp(&distance2))
 }
 
 fn ray_intersects_line_segment(
@@ -816,7 +817,7 @@ mod test {
 
         // Check if the distance and point are matching
         for (q, r, d) in test_points.iter() {
-            let (dist, nearest_point) = super::nearest_point_from_point_to_line(&q, (p1, p2));
+            let (dist, nearest_point, _) = super::nearest_point_from_point_to_line(&q, (p1, p2));
             assert_eq!(dist, *d);
             assert_eq!(nearest_point, *r);
         }
