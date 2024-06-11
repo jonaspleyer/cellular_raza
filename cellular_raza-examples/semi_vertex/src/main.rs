@@ -44,7 +44,6 @@ fn main() -> Result<(), chili::SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
-    // ###################################### DEFINE SIMULATION DOMAIN ######################################
     // Define the simulation domain
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_interaction_range(
@@ -55,8 +54,7 @@ fn main() -> Result<(), chili::SimulationError> {
         )?,
     };
 
-    // ###################################### DEFINE CELLS IN SIMULATION ######################################
-
+    // Define cell agents
     let dx = 0.95 * CELL_MECHANICS_AREA.sqrt();
     let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
     let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
@@ -69,8 +67,6 @@ fn main() -> Result<(), chili::SimulationError> {
                     [
                         0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
                         0.1 * DOMAIN_SIZE_Y + n_y * dx,
-                        // rng.gen_range(0.2 * DOMAIN_SIZE_X..0.8 * DOMAIN_SIZE_X),
-                        // rng.gen_range(0.2 * DOMAIN_SIZE_Y..0.8 * DOMAIN_SIZE_Y),
                     ]
                     .into(),
                     CELL_MECHANICS_AREA,
@@ -95,7 +91,7 @@ fn main() -> Result<(), chili::SimulationError> {
         })
         .collect::<Vec<_>>();
 
-    // RUN SIMULATION
+    // Define settings for storage and time solving
     let settings = chili::Settings {
         time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
         n_threads: N_THREADS.try_into().unwrap(),
@@ -103,18 +99,13 @@ fn main() -> Result<(), chili::SimulationError> {
         storage: StorageBuilder::new().location("out/semi_vertex"),
     };
 
+    // Run the simulation
     let storager = chili::run_simulation!(
         agents: cells,
         domain: domain,
         settings: settings,
         aspects: [Mechanics, Interaction],
     )?;
-    // TODO
-    /* storager.plot_all_iterations(
-        &plot_modular_cell,
-        &plot_subdomain,
-    )?;*/
-    Ok(())
 
     // ###################################### PLOT THE RESULTS ######################################
     /* simulation_result.plotting_config = PlottingConfig {
