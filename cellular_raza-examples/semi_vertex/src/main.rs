@@ -14,9 +14,9 @@ pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 3.0;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
 pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
-pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.004;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.2;
 
 // Parameters for domain
 pub const DOMAIN_SIZE_X: f64 = 1_200.0;
@@ -24,12 +24,12 @@ pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
 
 // Time parameters
 pub const N_TIMES: usize = 100_001;
-pub const DT: f64 = 0.05;
+pub const DT: f64 = 0.04;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: usize = 50;
+pub const SAVE_INTERVAL: u64 = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 32;
+pub const N_THREADS: usize = 1;
 
 mod cell_properties;
 mod custom_domain;
