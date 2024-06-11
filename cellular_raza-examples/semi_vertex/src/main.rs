@@ -1,6 +1,7 @@
 use backend::chili;
 use cellular_raza::prelude::*;
 
+use plotters::drawing::IntoDrawingArea;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
@@ -107,15 +108,36 @@ fn main() -> Result<(), chili::SimulationError> {
         aspects: [Mechanics, Interaction],
     )?;
 
-    // ###################################### PLOT THE RESULTS ######################################
-    /* simulation_result.plotting_config = PlottingConfig {
-        n_threads: Some(20),
-        image_size: 1500,
-        image_type: ImageType::BitMap,
-        ..Default::default()
-    };
+    // Plot the results
+    let save_path = storager.get_path()?.join("images");
+    std::fs::create_dir(&save_path)?;
+    let all_iterations = storager.cells.get_all_iterations()?;
 
-    simulation_result
-        .plot_spatial_all_iterations_custom_cell_voxel_functions(&plot_modular_cell, &plot_voxel)
-        .unwrap();*/
+    println!("");
+    use rayon::prelude::*;
+    kdam::par_tqdm!(all_iterations.into_par_iter()).map(move |iteration| -> Result<(), chili::SimulationError> {
+        let cells = storager.cells.load_all_elements_at_iteration(iteration)?;
+        let img_path = save_path
+            .join(format!("snapshot_{:08}.png", iteration));
+        let domain_size_x = DOMAIN_SIZE_X.round() as u32;
+        let domain_size_y = DOMAIN_SIZE_Y.round() as u32;
+        let root =
+            plotters::prelude::BitMapBackend::new(&img_path, (domain_size_x, domain_size_y))
+                .into_drawing_area();
+        root.fill(&plotters::prelude::WHITE)?;
+        let mut root = root.apply_coord_spec(plotters::prelude::Cartesian2d::<
+            plotters::coord::types::RangedCoordf64,
+            plotters::coord::types::RangedCoordf64,
+        >::new(
+            0.0..DOMAIN_SIZE_X,
+            0.0..DOMAIN_SIZE_X,
+            (0..domain_size_x as i32, 0..domain_size_y as i32),
+        ));
+        for (_, (cell, _)) in cells {
+            plot_cell(&cell.cell, &mut root)?;
+        }
+        root.present()?;
+        Ok(())
+    }).collect::<Result<Vec<_>, chili::SimulationError>>()?;
+    Ok(())
 }
