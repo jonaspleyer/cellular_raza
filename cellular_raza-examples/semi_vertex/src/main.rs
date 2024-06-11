@@ -38,8 +38,9 @@ mod plotting;
 use cell_properties::*;
 use custom_domain::*;
 use plotting::*;
+use time::FixedStepsize;
 
-fn main() {
+fn main() -> Result<(), chili::SimulationError> {
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
@@ -94,35 +95,25 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    // ###################################### CREATE SUPERVISOR AND RUN SIMULATION ######################################
-    let setup = create_simulation_setup!(
-        Domain: domain,
-        Cells: cells,
-        Time: TimeSetup {
-            t_start: 0.0,
-            t_eval: (0..N_TIMES)
-                .map(|i| (T_START + DT * i as f64, i % SAVE_INTERVAL == 0))
-                .collect::<Vec<(f64, bool)>>(),
-        },
-        MetaParams: SimulationMetaParams {
-            n_threads: N_THREADS,
-            ..Default::default()
-        },
-        Storage: StorageBuilder::new()
-            .location("out/semi_vertex")
-            .init(),
-    );
-
-    let strategies = Strategies {
-        voxel_definition_strategies: &voxel_definition_strategy,
+    // RUN SIMULATION
+    let settings = chili::Settings {
+        time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
+        n_threads: N_THREADS.try_into().unwrap(),
+        show_progressbar: true,
+        storage: StorageBuilder::new().location("out/semi_vertex"),
     };
 
-    let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
+    let storager = chili::run_simulation!(
+        agents: cells,
+        domain: domain,
+        settings: settings,
+        aspects: [Mechanics, Interaction],
+    )?;
+    Ok(())
 
-    let mut simulation_result = supervisor.run_full_sim().unwrap();
 
     // ###################################### PLOT THE RESULTS ######################################
-    simulation_result.plotting_config = PlottingConfig {
+    /* simulation_result.plotting_config = PlottingConfig {
         n_threads: Some(20),
         image_size: 1500,
         image_type: ImageType::BitMap,
@@ -131,5 +122,5 @@ fn main() {
 
     simulation_result
         .plot_spatial_all_iterations_custom_cell_voxel_functions(&plot_modular_cell, &plot_voxel)
-        .unwrap();
+        .unwrap();*/
 }
