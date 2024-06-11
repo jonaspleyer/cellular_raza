@@ -3,7 +3,7 @@
 FOLDERS=($(ls "out/semi_vertex"))
 LAST_FOLDER=${FOLDERS[-1]}
 
-echo $LAST_FOLDER
+python plot.py
 
 ffmpeg \
     -y \
