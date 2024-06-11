@@ -416,7 +416,7 @@ where
         ];
 
         // Create voxel indices
-        let v: Vec<[i64; 2]> = (0..2) // indices supplied in macro invokation
+        let v: Vec<[i64; 2]> = (0..2) // indices supplied in macro invocation
             .map(|i| (bounds[i][0]..bounds[i][1])) // ranges from bounds
             .multi_cartesian_product() // all possible combinations
             .map(|ind_v| [ind_v[0], ind_v[1]]) // multi_cartesian_product gives us vector elements. We map them to arrays.
@@ -431,7 +431,7 @@ where
         n_regions: usize,
     ) -> Result<Vec<Vec<([i64; 2], CartesianCuboidVoxel2Vertex<D, N>)>>, CalcError> {
         // Get all voxel indices
-        let indices: Vec<[i64; 2]> = (0..2) // indices supplied in macro invokation
+        let indices: Vec<[i64; 2]> = (0..2) // indices supplied in macro invocation
             .map(|i| (0..self.n_vox[i])) // ranges from self.n_vox
             .multi_cartesian_product() // all possible combinations
             .map(|ind_v| [ind_v[0], ind_v[1]]) // multi_cartesian_product gives us vector elements. We map them to arrays.

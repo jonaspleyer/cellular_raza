@@ -768,7 +768,7 @@ where
                     &inf2,
                 )?;
                 let dir = (middle_ext - middle_own).normalize();
-                let calc_own = - calc_own.norm() * dir;
+                let calc_own = -calc_own.norm() * dir;
                 let calc_ext = calc_ext.norm() * dir;
                 let mut force_ext = total_force_ext.row_mut(n_row_ext);
                 force_ext += calc_ext.transpose();
@@ -791,7 +791,7 @@ where
                     force_ext += calc_ext.transpose();
                     let mut force_own_n = total_force_own.row_mut(n_row_nearest);
                     force_own_n += (1.0 - t_frac) * calc_own.transpose();
-                    let mut force_own_n1 = total_force_own.row_mut((n_row_nearest+1) % D);
+                    let mut force_own_n1 = total_force_own.row_mut((n_row_nearest + 1) % D);
                     force_own_n1 += t_frac * calc_own.transpose();
                 }
             };

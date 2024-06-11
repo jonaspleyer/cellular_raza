@@ -109,8 +109,12 @@ fn main() -> Result<(), chili::SimulationError> {
         settings: settings,
         aspects: [Mechanics, Interaction],
     )?;
+    // TODO
+    /* storager.plot_all_iterations(
+        &plot_modular_cell,
+        &plot_subdomain,
+    )?;*/
     Ok(())
-
 
     // ###################################### PLOT THE RESULTS ######################################
     /* simulation_result.plotting_config = PlottingConfig {
