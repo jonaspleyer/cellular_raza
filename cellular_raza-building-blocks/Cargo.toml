@@ -30,7 +30,7 @@ pyo3 = { version = "0.21", optional=true, features=["serde"] }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.0.9"
+version = "0.0.10"
 
 [features]
 default = ["gradients"]
