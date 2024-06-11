@@ -4,7 +4,7 @@ use plotters::{
     backend::BitMapBackend,
     coord::types::RangedCoordf64,
     prelude::{Cartesian2d, DrawingArea, ShapeStyle},
-    style::colors::colormaps::{ColorMap, DerivedColorMap, ViridisRGB},
+    style::colors::colormaps::ViridisRGB,
     style::RGBColor,
 };
 
