@@ -272,10 +272,8 @@ mod test_domain_setup {
     }
 }
 
-impl<C, F, const D: usize> cellular_raza_concepts::domain_new::SortCells<C>
-    for CartesianCuboid<F, D>
+impl<F, const D: usize> CartesianCuboid<F, D>
 where
-    C: Mechanics<SVector<F, D>, SVector<F, D>, SVector<F, D>>,
     F: 'static
         + num::Float
         + Copy
@@ -285,11 +283,11 @@ where
         + core::ops::SubAssign
         + nalgebra::ClosedDiv<F>,
 {
-    type VoxelIndex = [usize; D];
-
-    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos();
-        Self::check_min_max(&self.min.into(), &pos.into())?;
+    /// Obtains the voxel index given a regular vector
+    ///
+    /// This function can be used in derivatives of this type.
+    pub fn get_voxel_index_of_raw(&self, pos: &SVector<F, D>) -> Result<[usize; D], BoundaryError> {
+        Self::check_min_max(&self.min.into(), &(*pos).into())?;
         let n_vox = (pos - self.min).component_div(&self.dx);
         let mut res = [0usize; D];
         for i in 0..D {
@@ -305,6 +303,27 @@ where
             ))?;
         }
         Ok(res.into())
+    }
+}
+
+impl<C, F, const D: usize> cellular_raza_concepts::domain_new::SortCells<C>
+    for CartesianCuboid<F, D>
+where
+    F: 'static
+        + num::Float
+        + Copy
+        + core::fmt::Debug
+        + num::FromPrimitive
+        + num::ToPrimitive
+        + core::ops::SubAssign
+        + nalgebra::ClosedDiv<F>,
+    C: Mechanics<SVector<F, D>, SVector<F, D>, SVector<F, D>>,
+{
+    type VoxelIndex = [usize; D];
+
+    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
+        let pos = cell.pos();
+        self.get_voxel_index_of_raw(&pos)
     }
 }
 
