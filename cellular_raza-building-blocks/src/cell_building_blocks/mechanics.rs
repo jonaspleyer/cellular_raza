@@ -526,8 +526,6 @@ pub struct VertexMechanics2D<const D: usize> {
 
 /// Alias for the spatial representation of a cell
 pub type VertexVector2<const D: usize> = nalgebra::SMatrix<f64, D, 2>;
-/// Alias for a connection quantity between two individual vertices
-pub type VertexConnections2<const D: usize> = nalgebra::SVector<f64, D>;
 
 impl<const D: usize> VertexMechanics2D<D> {
     /// Creates a new vertex model in equilibrium conditions.
@@ -595,7 +593,7 @@ impl<const D: usize> VertexMechanics2D<D> {
                 .flatten(),
         );
         // Randomize the boundary lengths
-        let cell_boundary_lengths = VertexConnections2::<D>::from_iterator(
+        let cell_boundary_lengths = SVector::<f64, D>::from_iterator(
             points
                 .row_iter()
                 .circular_tuple_windows()
@@ -606,7 +604,7 @@ impl<const D: usize> VertexMechanics2D<D> {
             velocity: VertexVector2::<D>::zeros(),
             random_vector: VertexVector2::<D>::zeros(),
             cell_boundary_lengths,
-            spring_tensions: VertexConnections2::<D>::from_element(spring_tensions),
+            spring_tensions: SVector::<f64, D>::from_element(spring_tensions),
             cell_area,
             central_pressure,
             damping_constant,
@@ -696,15 +694,16 @@ impl VertexMechanics2D<4> {
                     corner.0,
                     corner.1 + cell_side_length,
                 ]);
-                let cell_boundary_lengths =
-                    VertexConnections2::<4>::from_iterator((0..2 * 4).map(|_| cell_side_length));
+                let cell_boundary_lengths = nalgebra::SVector::<f64, 4>::from_iterator(
+                    (0..2 * 4).map(|_| cell_side_length),
+                );
 
                 VertexMechanics2D {
                     points,
                     velocity: VertexVector2::<4>::zeros(),
                     random_vector: VertexVector2::<4>::zeros(),
                     cell_boundary_lengths,
-                    spring_tensions: VertexConnections2::<4>::from_element(spring_tensions),
+                    spring_tensions: nalgebra::SVector::<f64, 4>::from_element(spring_tensions),
                     cell_area,
                     central_pressure,
                     damping_constant,
@@ -717,29 +716,33 @@ impl VertexMechanics2D<4> {
     }
 }
 
-impl<const D: usize> Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>
-    for VertexMechanics2D<D>
+impl<const D: usize>
+    Mechanics<
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+    > for VertexMechanics2D<D>
 {
-    fn pos(&self) -> VertexVector2<D> {
+    fn pos(&self) -> nalgebra::SMatrix<f64, D, 2> {
         self.points.clone()
     }
 
-    fn velocity(&self) -> VertexVector2<D> {
+    fn velocity(&self) -> nalgebra::SMatrix<f64, D, 2> {
         self.velocity.clone()
     }
 
-    fn set_pos(&mut self, pos: &VertexVector2<D>) {
+    fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D, 2>) {
         self.points = pos.clone();
     }
 
-    fn set_velocity(&mut self, velocity: &VertexVector2<D>) {
+    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D, 2>) {
         self.velocity = velocity.clone();
     }
 
     fn calculate_increment(
         &self,
-        force: VertexVector2<D>,
-    ) -> Result<(VertexVector2<D>, VertexVector2<D>), CalcError> {
+        force: nalgebra::SMatrix<f64, D, 2>,
+    ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), CalcError> {
         // Calculate the total internal force
         let middle = self.points.row_sum() / self.points.shape().0 as f64;
         let current_ara: f64 = 0.5_f64
