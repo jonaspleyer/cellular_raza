@@ -23,7 +23,7 @@ pub const DOMAIN_SIZE_X: f64 = 1_200.0;
 pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
 
 // Time parameters
-pub const N_TIMES: usize = 100_001;
+pub const N_TIMES: u64 = 1_001;
 pub const DT: f64 = 0.04;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: u64 = 50;
