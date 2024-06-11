@@ -86,11 +86,7 @@ pub fn plot_modular_cell(
     root.draw(&cell_border)?;
 
     // Define color inside of cell
-    let cell_inside_color = match modular_cell.interaction.outside_interaction.species {
-        Species::One => RGBColor(28, 173, 28),
-        Species::Two => RGBColor(173, 122, 28),
-    };
-
+    let cell_inside_color = RGBColor(28, 173, 28);
     let cell_inside = plotters::element::Polygon::new(
         path_points
             .clone()

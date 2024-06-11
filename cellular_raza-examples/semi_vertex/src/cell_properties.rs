@@ -11,7 +11,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 pub type InteractionInformation = ();
 pub type MyCellType = ModularCell<
     VertexMechanics2D<NUMBER_OF_VERTICES>,
-    VertexDerivedInteraction<OutsideInteraction, InsideInteraction, Species>,
+    VertexDerivedInteraction<OutsideInteraction, InsideInteraction>,
     OwnCycle,
     OwnReactions,
     GradientSensing,
@@ -24,17 +24,10 @@ pub struct DirectedSphericalMechanics {
     pub orientation: Unit<Vector2<f64>>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, core::fmt::Debug)]
-pub enum Species {
-    One = 0,
-    Two = 1,
-}
-
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct OutsideInteraction {
     pub potential_strength: f64,
     pub interaction_range: f64,
-    pub species: Species,
 }
 
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
@@ -50,7 +43,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideI
         _own_vel: &Vector2<f64>,
         ext_pos: &Vector2<f64>,
         _ext_vel: &Vector2<f64>,
-        ext_species: &Species,
+        _ext_info: &(),
     ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
@@ -66,16 +59,10 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideI
 
         // Calculate only attracting and repelling forces
         let force = -dir * strength * spatial_cutoff;
-        if *ext_species != self.species {
-            Ok((Vector2::zeros(), Vector2::zeros()))
-        } else {
-            Ok((-force, force))
-        }
+        Ok((-force, force))
     }
 
-    fn get_interaction_information(&self) -> Species {
-        self.species.clone()
-    }
+    fn get_interaction_information(&self) -> () {}
 }
 
 impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, InteractionInformation>

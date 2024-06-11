@@ -129,11 +129,6 @@ fn main() {
                     OutsideInteraction {
                         potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
                         interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
-                        species: if rng.gen_bool(0.5) {
-                            Species::One
-                        } else {
-                            Species::Two
-                        },
                     },
                     InsideInteraction {
                         potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
