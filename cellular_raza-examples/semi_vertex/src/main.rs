@@ -32,28 +32,12 @@ pub const SAVE_INTERVAL: usize = 50;
 pub const N_THREADS: usize = 32;
 
 mod cell_properties;
+mod custom_domain;
 mod plotting;
 
 use cell_properties::*;
+use custom_domain::*;
 use plotting::*;
-
-fn voxel_definition_strategy(
-    voxel: &mut CartesianCuboidVoxel2Vertex<NUMBER_OF_VERTICES, NUMBER_OF_REACTION_COMPONENTS>,
-) {
-    voxel.diffusion_constant = ReactionVector::from([
-        VOXEL_SPATIAL_SIGNALLING_MOLECULE_DIFFUSION_CONSTANT,
-        VOXEL_FOOD_DIFFUSION_CONSTANT,
-    ]);
-    voxel.extracellular_concentrations = ReactionVector::from([
-        VOXEL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCNENTRATION,
-        VOXEL_FOOD_INITIAL_CONCENTRATION,
-    ]);
-    voxel.degradation_rate = ReactionVector::from([
-        VOXEL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
-        VOXEL_FOOD_DEGRADATION_RATE,
-    ]);
-    voxel.production_rate = ReactionVector::from([0.0, VOXEL_FOOD_PRODUCTION_RATE]);
-}
 
 fn main() {
     // Fix random seed
@@ -61,13 +45,14 @@ fn main() {
 
     // ###################################### DEFINE SIMULATION DOMAIN ######################################
     // Define the simulation domain
-    let domain = CartesianCuboid2Vertex::from_boundaries_and_interaction_ranges(
-        [0.0; 2],
-        [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-        [2.0 * CELL_MECHANICS_INTERACTION_RANGE
-            .max((CELL_MECHANICS_AREA / std::f64::consts::PI).sqrt()); 2],
-    )
-    .unwrap();
+    let domain = MyDomain {
+        cuboid: CartesianCuboid::from_boundaries_and_interaction_range(
+            [0.0; 2],
+            [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
+            2.0 * CELL_MECHANICS_INTERACTION_RANGE
+                .max((CELL_MECHANICS_AREA / std::f64::consts::PI).sqrt()),
+        )?,
+    };
 
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
 
