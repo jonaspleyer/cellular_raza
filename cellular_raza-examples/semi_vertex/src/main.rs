@@ -1,7 +1,9 @@
+use backend::chili;
 use cellular_raza::prelude::*;
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use serde::{Deserialize, Serialize};
 
 // Number of cells
 pub const N_CELLS: usize = 2_025;
@@ -108,8 +110,8 @@ fn main() {
         .map(|n_cell| {
             let n_x = n_cell as f64 % n_x_max;
             let n_y = (n_cell as f64 / n_y_max).floor();
-            ModularCell {
-                mechanics: VertexMechanics2D::new(
+            MyCell {
+                mechanics: VertexMechanics2D::<6>::new(
                     [
                         0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
                         0.1 * DOMAIN_SIZE_Y + n_y * dx,
@@ -135,43 +137,6 @@ fn main() {
                         average_radius: CELL_MECHANICS_AREA.sqrt(),
                     },
                 ),
-                interaction_extracellular: GradientSensing {},
-                cycle: OwnCycle::new(
-                    n_cell as u64,
-                    rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
-                    CELL_MECHANICS_MAXIMUM_AREA * rng.gen_range(0.9..1.0),
-                    CELL_CYCLE_GROWTH_RATE,
-                    CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
-                    CELL_CYCLE_FOOD_DEATH_THRESHOLD,
-                    CELL_CYCLE_FOOD_DIVISION_THRESHOLD,
-                ),
-                cellular_reactions: OwnReactions {
-                    intracellular_concentrations: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_INITIAL_CONCENTRATION,
-                        CELL_FOOD_INITIAL_CONCENTRATION,
-                    ]),
-                    intracellular_concentrations_saturation_level: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,
-                        CELL_FOOD_SATURATION,
-                    ]),
-                    production_term: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_PRODUCTION_RATE,
-                        -CELL_FOOD_CONSUMPTION_RATE,
-                    ]),
-                    degradation_rate: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_DEGRADATION_RATE,
-                        0.0,
-                    ]),
-                    secretion_rate: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_SECRETION_RATE,
-                        CELL_FOOD_SECRETION_RATE,
-                    ]),
-                    uptake_rate: ReactionVector::from([
-                        CELL_SPATIAL_SIGNALLING_MOLECULE_UPTAKE_RATE,
-                        CELL_FOOD_UPTAKE_RATE,
-                    ]),
-                },
-                volume: CELL_MECHANICS_AREA, // TODO
             }
         })
         .collect::<Vec<_>>();

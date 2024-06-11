@@ -36,7 +36,15 @@ pub struct InsideInteraction {
     pub average_radius: f64,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, Species> for OutsideInteraction {
+#[derive(Serialize, Deserialize, CellAgent, Clone, core::fmt::Debug)]
+pub struct MyCell<const D: usize> {
+    #[Mechanics]
+    pub mechanics: VertexMechanics2D<D>,
+    #[Interaction]
+    pub interaction: VertexDerivedInteraction<OutsideInteraction, InsideInteraction>,
+}
+
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for OutsideInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
