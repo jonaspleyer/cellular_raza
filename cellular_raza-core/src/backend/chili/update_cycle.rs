@@ -13,7 +13,6 @@ impl<C, A> Voxel<C, A> {
         #[cfg(not(feature = "tracing"))] Float,
     >(
         &mut self,
-        dt: &Float,
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>,
@@ -76,7 +75,6 @@ where
         #[cfg(not(feature = "tracing"))] F,
     >(
         &mut self,
-        dt: &F,
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, F>,
@@ -84,7 +82,7 @@ where
     {
         self.voxels
             .iter_mut()
-            .map(|(_, vox)| vox.update_cell_cycle_3(dt))
+            .map(|(_, vox)| vox.update_cell_cycle_3())
             .collect::<Result<(), SimulationError>>()?;
         Ok(())
     }
