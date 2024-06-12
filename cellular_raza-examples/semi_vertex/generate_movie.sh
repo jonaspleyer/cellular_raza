@@ -11,3 +11,5 @@ ffmpeg \
     -i "out/semi_vertex/"$LAST_FOLDER'/images/*.png' \
     -c:v libx264 \
     -pix_fmt yuv420p "out/semi_vertex/"$LAST_FOLDER'/output.mp4'
+
+firefox "out/semi_vertex/"$LAST_FOLDER'/output.mp4'
