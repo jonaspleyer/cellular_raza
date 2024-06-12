@@ -42,6 +42,8 @@ def plot_spheres(iteration: int, path: Path, opath = None):
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
+    box = pv.Box(bounds=(0, 200e-6, 0, 50e-6, 0, 45e-6))
+    plotter.add_mesh(box, style="wireframe")
     for cell in cell_meshes:
         plotter.add_mesh(
             cell,
