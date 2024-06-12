@@ -311,9 +311,14 @@ impl DomainImplementer {
                         Vec<Self::SubDomainIndex>
                     > = subdomains
                         .iter()
-                        .map(|(subdomain_index, _, voxels)| voxels
+                        .map(|(subdomain_index, subdomain, voxels)| voxels
                             .into_iter()
-                            .map(|voxel_index| (subdomain_index.clone(), voxel_index)))
+                            .map(|voxel_index| subdomain.get_neighbor_voxel_indices(&voxel_index))
+                            .flatten()
+                            .map(|neighbor_voxel_index| (
+                                subdomain_index.clone(),
+                                neighbor_voxel_index
+                            )))
                         .flatten()
                         .fold(
                             ::std::collections::HashMap::<
@@ -321,14 +326,16 @@ impl DomainImplementer {
                                 Vec<Self::SubDomainIndex>
                                 >::new(),
                             |mut acc, (subdomain_index, voxel_index)| {
-                            acc
+                            let mut values = acc
                                 .entry(subdomain_index.clone())
-                                .or_insert(Vec::new())
-                                .push(
-                                    voxel_index_to_subdomain_index
-                                        .get(&voxel_index)
-                                        .ok_or(DecomposeError::IndexError(IndexError(format!(
-                                        "could not find subdomain index")))).unwrap().clone());
+                                .or_insert(Vec::new());
+                            let subdomain_index = voxel_index_to_subdomain_index
+                                .get(&voxel_index)
+                                .ok_or(DecomposeError::IndexError(IndexError(format!(
+                                "could not find subdomain index")))).unwrap().clone();
+                            if !values.contains(&subdomain_index) {
+                                values.push(subdomain_index);
+                            }
                             acc
                         });
 
