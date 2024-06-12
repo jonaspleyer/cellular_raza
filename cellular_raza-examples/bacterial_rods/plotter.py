@@ -50,8 +50,8 @@ def plot_spheres(iteration: int, path: Path, opath = None):
         )
 
     # Define camera
-    plotter.camera.position = (-150e-6, -150e-6, 350e-6)
-    plotter.camera.focal_point = (50e-6, 50e-6, 50e-6)
+    plotter.camera.position = (100e-6, -250e-6, 250e-6)
+    plotter.camera.focal_point = (100e-6, 25e-6, 22.5e-6)
 
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()

@@ -272,18 +272,15 @@ fn main() -> Result<(), chili::SimulationError> {
     };
 
     // Place agents in simulation domain
-    let domain_size = 100.0 * MICRO_METRE;
-    let agents = (0..20).map(|_| {
+    let domain_size = 50.0 * MICRO_METRE;
+    let delta_x = agent.spring_length * D1 as f64;
+    let agents = (0..5).map(|_| {
         let mut new_agent = agent.clone();
         new_agent.spring_length = rng.gen_range(1.5..2.5) * MICRO_METRE;
         let mut pos = nalgebra::SMatrix::<f64, D1, D2>::zeros();
-
-        let delta_x = agent.spring_length * pos.nrows() as f64;
-        // let lower = delta_x;
-        // let upper = domain_size - delta_x;
-        pos[(0, 0)] = rng.gen_range(delta_x..domain_size - delta_x);
+        pos[(0, 0)] = rng.gen_range(delta_x..2.0 * delta_x);
         pos[(0, 1)] = rng.gen_range(delta_x..domain_size - delta_x);
-        pos[(0, 2)] = rng.gen_range(delta_x..domain_size - delta_x);
+        pos[(0, 2)] = rng.gen_range(delta_x..2.0 * delta_x);
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =
@@ -304,8 +301,8 @@ fn main() -> Result<(), chili::SimulationError> {
     });
 
     // Domain Setup
-    let domain_sizes = [domain_size; D2];
-    let domain_segments = [4; D2];
+    let domain_sizes = [4.0 * domain_size, 3.0 * delta_x, 3.0 * delta_x];
+    let domain_segments = [8, 2, 2];
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels(
             [0.0; D2],
@@ -333,7 +330,7 @@ fn main() -> Result<(), chili::SimulationError> {
     )?;
 
     let settings = chili::Settings {
-        n_threads: 1.try_into().unwrap(),
+        n_threads: 8.try_into().unwrap(),
         time: time_stepper,
         storage: storage_builder,
         show_progressbar: true,
