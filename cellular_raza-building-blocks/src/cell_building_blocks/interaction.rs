@@ -560,10 +560,39 @@ impl<A, R, I1, I2> VertexDerivedInteraction<A, R, I1, I2> {
 use itertools::Itertools;
 use nalgebra::Vector2;
 
-fn nearest_point_from_point_to_line(
-    point: &Vector2<f64>,
-    line: (Vector2<f64>, Vector2<f64>),
-) -> (f64, Vector2<f64>, f64) {
+/// Calculate the point on a line which is closest to an external given point.
+///
+/// This function takes an external point $\vec{p}$ and a line segment described by two points
+/// $\vec{p}_1,\vec{p}_2$.
+/// It returns a tuple $(d, \vec{x}, q)$ which contains the distance $d$ between the calculated
+/// nearest point and the external point, the calculated point $\vec{x}$ and a fractional value
+/// $0\leq q\leq 1$ which is the relative length of the calculated nearest point between the
+/// points of the given line segment given by:
+/// $$\vec{x} = (1-q)\vec{p}_1 + q\vec{p}_2$$
+///
+/// ```
+/// use nalgebra::Vector2;
+/// # use cellular_raza_building_blocks::nearest_point_from_point_to_line;
+///
+/// let external_point = Vector2::from([0f64; 2]);
+/// let line_segment = (
+///     Vector2::from([1.0, 0.0]),
+///     Vector2::from([0.0, 1.0]),
+/// );
+/// let (dist, point, rel_length) = nearest_point_from_point_to_line(
+///     &external_point,
+///     line_segment,
+/// );
+///
+/// assert!((dist - 1.0/2f64.sqrt()).abs() < 1e-10);
+/// assert!((rel_length - 0.5).abs() < 1e-10);
+/// assert!((point.x - 0.5).abs() < 1e-10);
+/// assert!((point.y - 0.5).abs() < 1e-10);
+/// ```
+pub fn nearest_point_from_point_to_line<const D: usize>(
+    point: &SVector<f64, D>,
+    line: (SVector<f64, D>, SVector<f64, D>),
+) -> (f64, SVector<f64, D>, f64) {
     let ab = line.1 - line.0;
     let ap = point - line.0;
     let t = (ab.dot(&ap) / ab.norm_squared()).clamp(0.0, 1.0);
