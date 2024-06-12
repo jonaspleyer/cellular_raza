@@ -211,7 +211,7 @@ impl<const D1: usize, const D2: usize> Cycle<Agent<D1, D2>> for Agent<D1, D2> {
         let c1 = cell;
         let mut c2 = c1.clone();
 
-        let base_rate = 1.0 * MICRO_METRE / MINUTE;
+        let base_rate = 1.5 * MICRO_METRE / MINUTE;
         c1.growth_rate = rng.gen_range(0.8 * base_rate..1.2 * base_rate);
         c2.growth_rate = rng.gen_range(0.8 * base_rate..1.2 * base_rate);
 
@@ -262,13 +262,13 @@ fn main() -> Result<(), chili::SimulationError> {
         random_velocity: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         diffusion_constant: 0.1 * MICRO_METRE.powf(2.0) / SECOND,
         spring_tension: 20.0 / SECOND.powf(2.0),
-        angle_stiffness: 20.0 * MICRO_METRE / SECOND.powf(2.0),
-        interaction_potential: 1e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
+        angle_stiffness: 2.0 * MICRO_METRE / SECOND.powf(2.0),
+        interaction_potential: 3e6 * MICRO_METRE.powf(2.0) / SECOND.powf(2.0),
         spring_length: 3.0 * MICRO_METRE,
-        max_spring_length: 3.0 * MICRO_METRE,
+        max_spring_length: 6.0 * MICRO_METRE,
         radius: 3.0 * MICRO_METRE,
-        interaction_range: 1.0 * MICRO_METRE,
-        growth_rate: 1.0 * MICRO_METRE / MINUTE,
+        interaction_range: 0.25 * MICRO_METRE,
+        growth_rate: 3.0 * MICRO_METRE / MINUTE,
     };
 
     // Place agents in simulation domain
@@ -319,9 +319,9 @@ fn main() -> Result<(), chili::SimulationError> {
 
     // Time Setup
     let t0 = 0.0 * MINUTE;
-    let dt = 0.025 * SECOND;
+    let dt = 0.05 * SECOND;
     let save_interval = 1.0 * SECOND;
-    let t_max = 12.0 * MINUTE;
+    let t_max = 30.0 * MINUTE;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
         dt,
