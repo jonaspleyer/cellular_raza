@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import itertools
 import tqdm
+import concurrent.futures
 
 from plot import *
 
@@ -71,15 +72,11 @@ def plot_all_spheres(path: Path, n_threads: Optional[int] = None):
     iterations = [it for it in get_all_iterations(path)[1]]
     if n_threads==None:
         n_threads = mp.cpu_count()-2
-    pool = mp.Pool(n_threads)
-    list(
-        tqdm.tqdm(
-            pool.imap_unordered(
-                __plot_spheres_helper,
-                zip(iterations, itertools.repeat(path)),
-            ),
-            total=len(iterations)
-    ))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=n_threads) as executor:
+        _ = list(tqdm.tqdm(executor.map(
+            __plot_spheres_helper,
+            zip(iterations, itertools.repeat(path))
+        ), total=len(iterations)))
 
 if __name__ == "_main__":
     parser = argparse.ArgumentParser(
