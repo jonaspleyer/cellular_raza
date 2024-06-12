@@ -12,19 +12,26 @@ def get_cell_meshes(iteration: int, path: Path):
     radii = np.array([x for x in cells["cell.radius"]], dtype=float)
     cell_surfaces = []
     for i, p in enumerate(positions):
-        spheres = []
-        for j in range(p.shape[1]):
-            pos = p[:,j]
-            sphere = pv.Sphere(center=pos, radius=radii[i])
-            spheres.append(sphere)
-        merged = pv.MultiBlock(spheres).combine().extract_surface().clean()
-        cell_surfaces.append(merged)
-    # pset = pv.PolyData([np.array(x[0]) for x in position_radius_species])
-    # pset.point_data["diameter"] = 2.0 * radii
+        meshes = []
+        # Add the sphere at the first point
+        meshes.append(pv.Sphere(center=p[:,0], radius=radii[i]))
+        for j in range(max(p.shape[1]-1,0)):
+            # Add a sphere for each following point
+            meshes.append(pv.Sphere(center=p[:,j+1], radius=radii[i]))
 
-    # sphere = pv.Sphere()
-    # spheres = pset.glyph(geom=sphere, scale="diameter", orient=False)
-    # return spheres
+            # Otherwise add cylinders
+            pos1 = p[:,j]
+            pos2 = p[:,j+1]
+            center = 0.5 * (pos1 + pos2)
+            direction = pos2 - center
+            radius = radii[i]
+            height = np.linalg.norm(pos1 - pos2)
+            # sphere = pv.Sphere(center=pos, radius=radii[i])
+            # meshes.append(sphere)
+            cylinder = pv.Cylinder(center, direction, radius, height)
+            meshes.append(cylinder)
+        merged = pv.MultiBlock(meshes).combine().extract_surface().clean()
+        cell_surfaces.append(merged)
     return cell_surfaces
 
 def plot_spheres(iteration: int, path: Path, opath = None):
