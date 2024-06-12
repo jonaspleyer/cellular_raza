@@ -123,7 +123,7 @@ if __name__ == "__main__":
         -pix_fmt yuv420p\
         -strict -2 {output_path}/movie.mp4"
     os.system(bashcmd)
-    # print("Playing Movie")
-    # bashcmd2 = f"vlc {output_path}/movie.mp4"
-    # os.system(bashcmd2)
+    print("Playing Movie")
+    bashcmd2 = f"firefox {output_path}/movie.mp4"
+    os.system(bashcmd2)
 
