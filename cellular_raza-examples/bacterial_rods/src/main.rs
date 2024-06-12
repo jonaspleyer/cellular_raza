@@ -1,4 +1,4 @@
-use cellular_raza::building_blocks::CartesianCuboid;
+use cellular_raza::building_blocks::{nearest_point_from_point_to_line, CartesianCuboid};
 use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Mechanics};
 use cellular_raza::core::backend::chili;
 
@@ -157,19 +157,27 @@ impl<const D1: usize, const D2: usize>
         use core::ops::AddAssign;
         let mut force_own = nalgebra::SMatrix::<f64, D1, D2>::zeros();
         let mut force_ext = nalgebra::SMatrix::<f64, D1, D2>::zeros();
+        use itertools::Itertools;
         for (i, p1) in own_pos.row_iter().enumerate() {
-            for (j, p2) in ext_pos.row_iter().enumerate() {
-                let dist = p1 - p2;
+            for (j, (p2_n0, p2_n1)) in ext_pos.row_iter().tuple_windows::<(_, _)>().enumerate() {
+                // Calculate the closest point of the external position
+                let (_, nearest_point, rel_length) = nearest_point_from_point_to_line(
+                    &p1.transpose(),
+                    (p2_n0.transpose(), p2_n1.transpose()),
+                );
+                let dist = p1 - nearest_point.transpose();
                 let r = dist.norm();
                 if r < ext_radius + self.radius + self.interaction_range {
                     let sigma = r / (self.radius + ext_radius);
                     let strength = (1.0 / sigma.powf(4.0) - 1.0 / sigma.powf(2.0)).min(0.2);
-                    force_own
-                        .row_mut(i)
-                        .add_assign(-self.interaction_potential * strength * dist.normalize());
+                    let force_strength = self.interaction_potential * strength * dist.normalize();
+                    force_own.row_mut(i).add_assign(-force_strength);
                     force_ext
                         .row_mut(j)
-                        .add_assign(-self.interaction_potential * strength * dist.normalize());
+                        .add_assign(-(1.0 - rel_length) / 2.0 * force_strength);
+                    force_ext
+                        .row_mut((j + 1) % D1)
+                        .add_assign(-rel_length / 2.0 * force_strength);
                 }
             }
         }
