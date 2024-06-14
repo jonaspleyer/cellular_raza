@@ -101,7 +101,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Cycle],
+        aspects: [Mechanics, Cycle, Interaction],
     )?;
 
     // Plot the results
