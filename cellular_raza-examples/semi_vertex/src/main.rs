@@ -56,41 +56,34 @@ fn main() -> Result<(), chili::SimulationError> {
     };
 
     // Define cell agents
-    let dx = 0.95 * CELL_MECHANICS_AREA.sqrt();
-    let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
-    let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
-        .map(|n_cell| {
-            let n_x = n_cell as f64 % n_x_max;
-            let n_y = (n_cell as f64 / n_y_max).floor();
-            MyCell {
-                mechanics: VertexMechanics2D::<6>::new(
-                    [
-                        0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
-                        0.1 * DOMAIN_SIZE_Y + n_y * dx,
-                    ]
-                    .into(),
-                    CELL_MECHANICS_AREA,
-                    rng.gen_range(0.0..2.0 * std::f64::consts::PI),
-                    CELL_MECHANICS_SPRING_TENSION,
-                    CELL_MECHANICS_CENTRAL_PRESSURE,
-                    CELL_MECHANICS_DAMPING_CONSTANT,
-                    CELL_MECHANICS_DIFFUSION_CONSTANT,
-                    None,
-                ),
-                interaction: VertexDerivedInteraction::from_two_forces(
-                    OutsideInteraction {
-                        potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-                        interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
-                    },
-                    InsideInteraction {
-                        potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
-                        average_radius: CELL_MECHANICS_AREA.sqrt(),
-                    },
-                ),
-                growth_factor: 3.0,
-                division_area_threshold: 2.0 * CELL_MECHANICS_AREA,
-            }
+        .map(|_| MyCell {
+            mechanics: VertexMechanics2D::<6>::new(
+                [
+                    rng.gen_range(0.4 * DOMAIN_SIZE_X..0.6 * DOMAIN_SIZE_X),
+                    rng.gen_range(0.4 * DOMAIN_SIZE_Y..0.6 * DOMAIN_SIZE_Y),
+                ]
+                .into(),
+                CELL_MECHANICS_AREA,
+                rng.gen_range(0.0..2.0 * std::f64::consts::PI),
+                CELL_MECHANICS_SPRING_TENSION,
+                CELL_MECHANICS_CENTRAL_PRESSURE,
+                CELL_MECHANICS_DAMPING_CONSTANT,
+                CELL_MECHANICS_DIFFUSION_CONSTANT,
+                Some((0.05, rng.clone())),
+            ),
+            interaction: VertexDerivedInteraction::from_two_forces(
+                OutsideInteraction {
+                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+                },
+                InsideInteraction {
+                    potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    average_radius: CELL_MECHANICS_AREA.sqrt(),
+                },
+            ),
+            growth_factor: 3.0,
+            division_area_threshold: 2.0 * CELL_MECHANICS_AREA,
         })
         .collect::<Vec<_>>();
 
