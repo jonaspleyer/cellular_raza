@@ -32,6 +32,7 @@ pub const SAVE_INTERVAL: u64 = 25;
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
 
+mod alternative_vertex_mechanics;
 mod cell_properties;
 mod custom_domain;
 mod plotting;
