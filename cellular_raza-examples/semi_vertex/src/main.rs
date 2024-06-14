@@ -88,6 +88,8 @@ fn main() -> Result<(), chili::SimulationError> {
                         average_radius: CELL_MECHANICS_AREA.sqrt(),
                     },
                 ),
+                growth_factor: 3.0,
+                division_area_threshold: 2.0 * CELL_MECHANICS_AREA,
             }
         })
         .collect::<Vec<_>>();
@@ -105,7 +107,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics],
+        aspects: [Mechanics, Cycle],
     )?;
 
     // Plot the results
