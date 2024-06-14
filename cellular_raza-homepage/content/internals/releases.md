@@ -4,6 +4,16 @@ type: docs
 weight: 100
 ---
 
+## cellular_raza 0.0.10
+_11th June 2024_
+- change [Interaction](/internals/concepts/cell/interaction) concept to return two force values for
+  own and other cell.
+- fix some bugs in [chili](/internals/backends/chili) backend (mainly related to
+  [Cycle](/internals/concepts/cell/cycle) concept)
+- migrate some examples from old `cpu_os_threads` to new [chili](/internals/backends/chili) backend
+- change [VertexDerivedInteraction](/docs/cellular_raza_building_blocks/struct.VertexDerivedInteraction.html)
+  to use closest point on external polygon
+
 ## cellular_raza 0.0.9
 _1st June 2024_
 - major improvements to the [chili](/internals/backends/chili) backend
