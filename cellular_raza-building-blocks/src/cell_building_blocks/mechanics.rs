@@ -612,6 +612,49 @@ impl<const D: usize> VertexMechanics2D<D> {
         }
     }
 
+    /// Calculates the boundary length of the regular polygon given the total area in equilibrium.
+    ///
+    /// The formula used is
+    /// $$\\begin{align}
+    ///     A &= \frac{L^2}{4n\tan\left(\frac{\pi}{n}\right)}\\\\
+    ///     L &= \sqrt{4An\tan\left(\frac{\pi}{n}\right)}
+    /// \\end{align}$$
+    /// where $A$ is the total area, $n$ is the number of vertices and $L$ is the total boundary
+    /// length.
+    pub fn calculate_boundary_length(cell_area: f64) -> f64 {
+        (4.0 * cell_area * (std::f64::consts::PI / D as f64).tan() * D as f64).sqrt()
+    }
+
+    /// Calculates the cell area of the regular polygon in equilibrium.
+    ///
+    /// The formula used is identical the the one of [Self::calculate_boundary_length].
+    pub fn calculate_cell_area(boundary_length: f64) -> f64 {
+        D as f64 * boundary_length.powf(2.0) / (4.0 * (std::f64::consts::PI / D as f64).tan())
+    }
+
+    /// Calculates the current area of the cell
+    pub fn get_current_cell_area(&self) -> f64 {
+        0.5_f64
+            * self
+                .points
+                .row_iter()
+                .circular_tuple_windows()
+                .map(|(p1, p2)| p1.transpose().perp(&p2.transpose()))
+                .sum::<f64>()
+    }
+
+    /// Calculate the current polygons boundary length
+    pub fn calculate_current_boundary_length(&self) -> f64 {
+        self.points
+            .row_iter()
+            .tuple_windows::<(_, _)>()
+            .map(|(p1, p2)| {
+                let dist = (p2 - p1).norm();
+                dist
+            })
+            .sum::<f64>()
+    }
+
     /// Obtain current cell area
     pub fn get_cell_area(&self) -> f64 {
         self.cell_area
