@@ -80,8 +80,55 @@ $$\\begin{equation}
 \\end{equation}$$
 
 ### Interaction
+Cell-agents are interacting via forces $\vec{F}(\vec{p},\vec{q})$ which are dependent on two points
+$\vec{p}$ and $\vec{q}$ in either cell.
+The mechanical model we are currently using does not fully capture the essence of these cellular
+interactions.
+In principle, we would have to calculate the total force $\vec{F}'$ by integrating over all points
+either inside the cell or on its boundary but for the sake of simplicity we consider a different
+approach.
+Let us denote the vertices of the two cells in question with $\\{\vec{v}_i\\}$ and
+$\\{\vec{w}_j\\}$.
+
+#### Case 1: Outside Interaction
+In this case, we assume that the vertex $\vec{v}_i$ in question is not inside the other cell.
+We make the simplified assumption that each vertex $\vec{v}_i$ is interacting with the closest
+point on the outer edge of the other cell.
+Given these sets of vertices, we calculate for each vertex $\vec{v}_i$ the closest
+point
+$$\\begin{equation}\vec{p} = (1-q)\vec{w}_j + q\vec{w}\_{j+1}\\end{equation}$$
+(assuming that we set $\vec{w}\_{j+1}=\vec{w}\_1$ when $j=N\_\text{vertices}$)
+on the edge and then the force acting on this vertex can be calculated
+$$\\begin{equation}\vec{F}\_{\text{outside},i} = \vec{F}(\vec{v}_i, \vec{p})\\end{equation}$$
+by applying $\vec{F}$ on them.
+The force acting on the other cell acts on the vertices $j$ and $j+1$ with relative strength $1-q$
+and $q$ respectively.
+$$\\begin{alignat}{5}
+&\vec{F}\_{\text{outside},j} &=& - &(1-q)&\vec{F}(\vec{v}_i,\vec{p})\\\\
+&\vec{F}\_{\text{outside},j+1} &=& &-q&\vec{F}(\vec{v}_i,\vec{p})
+\\end{alignat}$$
+
+{{<callout type="info" >}}
+In the actual implementation of this approach, we additionally use a bounding box around each cell
+to quickly identify if a given vertex is outside the other cell.
+{{< /callout >}}
+
+#### Case 2: Inside Interaction
+In the second case, a vertex of the other cell $\vec{w}_j$ has managed to move inside.
+Here, a different force $\vec{W}$ acts which is responsible for pushing the vertex outwards.
+The force is calculated between the center of our cell
+$$\\begin{equation}\vec{v}_c = \frac{1}{N\_\text{vertices}}\sum\limits_i \vec{v}_i\\end{equation}$$
+and the external vertex in question.
+The force which is calculated this way acts in equal parts on all vertices.
+$$\\begin{alignat}{5}
+&\vec{F}\_{\text{inside},j} &=& \frac{1}{N\_\text{vertices}}\vec{W}(\vec{v}\_c,\vec{w}_j)\\\\
+&\vec{F}\_{\text{inside},i} &=&
+\\end{alignat}$$
 
 ## Parameters
+| Parameter | Symbol | Value |
+| --------- | ------ | ----- |
+
 
 ## Initial State
 
@@ -92,14 +139,6 @@ $$\\begin{equation}
 <video controls>
     <source src="/showcase/free-motile-vertex-model/movie.mp4">
 </video>
-
-{{< callout type="info" >}}
-Note: Compared to the script which was used to generate this movie, the final result was again speed up by a factor of 3 with the following command:
-
-```bash
-ffmpeg -i output.mp4 -filter:v "setpts=PTS/3" movie.mp4
-```
-{{< /callout >}}
 
 ## Code
 
