@@ -61,9 +61,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for OutsideInteractio
     fn get_interaction_information(&self) -> () {}
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>>
-    for InsideInteraction
-{
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for InsideInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
