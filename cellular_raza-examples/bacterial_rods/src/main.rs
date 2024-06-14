@@ -187,6 +187,32 @@ impl<const D1: usize, const D2: usize>
     fn get_interaction_information(&self) -> f64 {
         self.radius
     }
+
+    fn is_neighbour(
+        &self,
+        own_pos: &nalgebra::SMatrix<f64, D1, D2>,
+        ext_pos: &nalgebra::SMatrix<f64, D1, D2>,
+        _ext_inf: &f64,
+    ) -> Result<bool, CalcError> {
+        for own_point in own_pos.row_iter() {
+            for ext_point in ext_pos.row_iter() {
+                if (own_point - ext_point).norm() < 2.0 * self.radius * D1 as f64 {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+        let base_rate = 1.5 * MICRO_METRE / MINUTE;
+        if neighbours > 0 {
+            self.growth_rate = (base_rate * (5 - neighbours) as f64 / 5.0).max(0.0);
+        } else {
+            self.growth_rate = base_rate;
+        }
+        Ok(())
+    }
 }
 
 impl<const D1: usize, const D2: usize> Cycle<Agent<D1, D2>> for Agent<D1, D2> {
