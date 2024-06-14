@@ -537,9 +537,6 @@ pub struct VertexMechanics2D<const D: usize> {
     diffusion_constant: f64,
 }
 
-/// Alias for the spatial representation of a cell
-pub type VertexVector2<const D: usize> = nalgebra::SMatrix<f64, D, 2>;
-
 impl<const D: usize> VertexMechanics2D<D> {
     /// Creates a new vertex model in equilibrium conditions.
     ///
