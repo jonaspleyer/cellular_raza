@@ -2,7 +2,6 @@
 use cellular_raza_concepts::*;
 
 use super::cartesian_cuboid_n::get_decomp_res;
-use crate::cell_building_blocks::VertexVector2;
 
 // Imports from std and core
 use core::cmp::{max, min};
@@ -167,7 +166,10 @@ impl<const D: usize, const N: usize> CartesianCuboidVoxel2Vertex<D, N> {
         self.dx
     }
 
-    fn position_is_in_domain(&self, pos: &VertexVector2<D>) -> Result<(), RequestError> {
+    fn position_is_in_domain(
+        &self,
+        pos: &nalgebra::SMatrix<f64, D, 2>,
+    ) -> Result<(), RequestError> {
         let middle = pos.row_sum() / pos.shape().0 as f64;
         match middle
             .iter()
@@ -198,8 +200,12 @@ impl<const D: usize, const N: usize> CartesianCuboidVoxel2Vertex<D, N> {
 
 // Implement the Voxel trait for our n-dim voxel
 impl<const D: usize, const N: usize>
-    Voxel<[i64; 2], VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>
-    for CartesianCuboidVoxel2Vertex<D, N>
+    Voxel<
+        [i64; 2],
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+    > for CartesianCuboidVoxel2Vertex<D, N>
 {
     fn get_index(&self) -> [i64; 2] {
         self.index
@@ -209,7 +215,7 @@ impl<const D: usize, const N: usize>
 impl<const D: usize, const N: usize>
     ExtracellularMechanics<
         [i64; 2],
-        VertexVector2<D>,
+        nalgebra::SMatrix<f64, D, 2>,
         SVector<f64, N>,
         SVector<SVector<f64, 2>, N>,
         SVector<f64, N>,
@@ -218,7 +224,7 @@ impl<const D: usize, const N: usize>
 {
     fn get_extracellular_at_point(
         &self,
-        pos: &VertexVector2<D>,
+        pos: &nalgebra::SMatrix<f64, D, 2>,
     ) -> Result<SVector<f64, N>, RequestError> {
         self.position_is_in_domain(pos)?;
         Ok(self.extracellular_concentrations)
@@ -259,7 +265,7 @@ impl<const D: usize, const N: usize>
     #[cfg(feature = "gradients")]
     fn get_extracellular_gradient_at_point(
         &self,
-        _pos: &VertexVector2<D>,
+        _pos: &nalgebra::SMatrix<f64, D, 2>,
     ) -> Result<SVector<SVector<f64, 2>, N>, RequestError> {
         Ok(self.extracellular_gradient)
     }
@@ -274,7 +280,7 @@ impl<const D: usize, const N: usize>
     fn calculate_increment(
         &self,
         total_extracellular: &SVector<f64, N>,
-        point_sources: &[(VertexVector2<D>, SVector<f64, N>)],
+        point_sources: &[(nalgebra::SMatrix<f64, D, 2>, SVector<f64, N>)],
         boundaries: &[([i64; 2], BoundaryCondition<SVector<f64, N>>)],
     ) -> Result<SVector<f64, N>, CalcError> {
         let mut inc = SVector::<f64, N>::from_element(0.0);
@@ -339,7 +345,11 @@ impl<Cel, const D: usize, const N: usize> Domain<Cel, [i64; 2], CartesianCuboidV
     for CartesianCuboid2Vertex
 // Position, Force and Velocity are all Vector2 supplied by the Nalgebra crate
 where
-    Cel: Mechanics<VertexVector2<D>, VertexVector2<D>, VertexVector2<D>>,
+    Cel: Mechanics<
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+    >,
 {
     fn apply_boundary(&self, cell: &mut Cel) -> Result<(), BoundaryError> {
         let mut pos_single = cell.pos();

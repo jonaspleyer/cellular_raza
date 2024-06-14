@@ -665,9 +665,9 @@ fn ray_intersects_line_segment(
 
 impl<A, R, I1, I2, const D: usize>
     Interaction<
-        super::mechanics::VertexVector2<D>,
-        super::mechanics::VertexVector2<D>,
-        super::mechanics::VertexVector2<D>,
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
         (I1, I2),
     > for VertexDerivedInteraction<A, R, I1, I2>
 where
@@ -682,18 +682,12 @@ where
 
     fn calculate_force_between(
         &self,
-        own_pos: &super::mechanics::VertexVector2<D>,
-        own_vel: &super::mechanics::VertexVector2<D>,
-        ext_pos: &super::mechanics::VertexVector2<D>,
-        ext_vel: &super::mechanics::VertexVector2<D>,
+        own_pos: &nalgebra::SMatrix<f64, D, 2>,
+        own_vel: &nalgebra::SMatrix<f64, D, 2>,
+        ext_pos: &nalgebra::SMatrix<f64, D, 2>,
+        ext_vel: &nalgebra::SMatrix<f64, D, 2>,
         ext_information: &(I1, I2),
-    ) -> Result<
-        (
-            super::mechanics::VertexVector2<D>,
-            super::mechanics::VertexVector2<D>,
-        ),
-        CalcError,
-    > {
+    ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), CalcError> {
         // TODO Reformulate this code:
         // Do not calculate interactions between vertices but rather between
         // edges of polygons.

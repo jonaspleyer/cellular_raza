@@ -578,7 +578,7 @@ impl<const D: usize> VertexMechanics2D<D> {
         // Calculate the radius from cell area
         let radius = (cell_area / D as f64 / angle_fraction.sin() / angle_fraction.cos()).sqrt();
         // TODO this needs to be calculated again
-        let points = VertexVector2::<D>::from_row_iterator(
+        let points = nalgebra::SMatrix::<f64, D, 2>::from_row_iterator(
             (0..D)
                 .map(|n| {
                     let angle = rotation_angle
@@ -601,8 +601,8 @@ impl<const D: usize> VertexMechanics2D<D> {
         );
         VertexMechanics2D {
             points,
-            velocity: VertexVector2::<D>::zeros(),
-            random_vector: VertexVector2::<D>::zeros(),
+            velocity: nalgebra::SMatrix::<f64, D, 2>::zeros(),
+            random_vector: nalgebra::SMatrix::<f64, D, 2>::zeros(),
             cell_boundary_lengths,
             spring_tensions: SVector::<f64, D>::from_element(spring_tensions),
             cell_area,
@@ -733,7 +733,7 @@ impl VertexMechanics2D<4> {
                     start_y + (j as f64) * cell_side_length_padded,
                 );
 
-                let points = VertexVector2::<4>::from_row_iterator([
+                let points = nalgebra::SMatrix::<f64, 4, 2>::from_row_iterator([
                     corner.0,
                     corner.1,
                     corner.0 + cell_side_length,
@@ -749,8 +749,8 @@ impl VertexMechanics2D<4> {
 
                 VertexMechanics2D {
                     points,
-                    velocity: VertexVector2::<4>::zeros(),
-                    random_vector: VertexVector2::<4>::zeros(),
+                    velocity: nalgebra::SMatrix::<f64, 4, 2>::zeros(),
+                    random_vector: nalgebra::SMatrix::<f64, 4, 2>::zeros(),
                     cell_boundary_lengths,
                     spring_tensions: nalgebra::SVector::<f64, 4>::from_element(spring_tensions),
                     cell_area,
@@ -843,8 +843,7 @@ impl<const D: usize>
         dt: f64,
     ) -> Result<(), RngError> {
         if dt != 0.0 {
-            let random_vector: nalgebra::SVector<f64, 2> =
-                generate_random_vector(rng, dt.sqrt())? / dt;
+            let random_vector: SVector<f64, 2> = generate_random_vector(rng, dt.sqrt())? / dt;
             self.random_vector.row_iter_mut().for_each(|mut r| {
                 r *= 0.0;
                 r += random_vector.transpose();
