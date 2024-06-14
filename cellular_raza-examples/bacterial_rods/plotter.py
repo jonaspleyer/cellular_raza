@@ -35,7 +35,12 @@ def get_cell_meshes(iteration: int, path: Path):
         cell_surfaces.append(merged)
     return cell_surfaces
 
-def plot_spheres(iteration: int, path: Path, opath = None):
+def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] = None, overwrite:bool = False):
+    if opath == None:
+        opath = path / "images/{:010}.png".format(iteration)
+        opath.parent.mkdir(parents=True, exist_ok=True)
+    if os.path.isfile(opath) and overwrite==False:
+        return None
     cell_meshes = get_cell_meshes(iteration, path)
 
     # General Settings
@@ -58,24 +63,27 @@ def plot_spheres(iteration: int, path: Path, opath = None):
 
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()
-    if opath == None:
-        opath = path / "images/{:010}.png".format(iteration)
-        opath.parent.mkdir(parents=True, exist_ok=True)
     img = plotter.screenshot(opath)
     plotter.close()
     return img
 
 def __plot_spheres_helper(args):
-    plot_spheres(*args)
+    (args, kwargs) = args
+    plot_spheres(*args, **kwargs)
 
-def plot_all_spheres(path: Path, n_threads: Optional[int] = None):
+def plot_all_spheres(path: Path, n_threads: Optional[int] = None, overwrite:bool=False):
     iterations = [it for it in get_all_iterations(path)[1]]
     if n_threads==None:
         n_threads = mp.cpu_count()-2
+    args = [(it,) for it in iterations]
+    kwargs = {
+        "path": path,
+        "overwrite": overwrite,
+    }
     with concurrent.futures.ProcessPoolExecutor(max_workers=n_threads) as executor:
         _ = list(tqdm.tqdm(executor.map(
             __plot_spheres_helper,
-            zip(iterations, itertools.repeat(path))
+            zip(args, itertools.repeat(kwargs))
         ), total=len(iterations)))
 
 if __name__ == "_main__":
