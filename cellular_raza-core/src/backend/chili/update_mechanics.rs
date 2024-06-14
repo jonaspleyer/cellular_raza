@@ -78,6 +78,7 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateInteraction,
         For: Clone + core::ops::Mul<Float, Output = For> + core::ops::Neg<Output = For>,
         Float: num::Float,
     {
@@ -104,6 +105,14 @@ impl<C, A> Voxel<C, A> {
                 let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
                 aux1.add_force(force1 * one_half);
                 aux2.add_force(force2 * one_half);
+
+                // Also check for neighbours
+                if c1.is_neighbour(&p1, &p2, &i2)? {
+                    aux1.incr_current_neighbours(1);
+                }
+                if c2.is_neighbour(&p2, &p1, &i1)? {
+                    aux2.incr_current_neighbours(1);
+                }
             }
         }
         Ok(())
@@ -132,6 +141,7 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateInteraction,
         Float: num::Float,
     {
         let one_half = Float::one() / (Float::one() + Float::one());
@@ -146,6 +156,11 @@ impl<C, A> Voxel<C, A> {
             )?;
             aux_storage.add_force(f1 * one_half);
             force += f2 * one_half;
+
+            // Check for neighbours
+            if cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
+                aux_storage.incr_current_neighbours(1);
+            }
         }
         Ok(force)
     }
@@ -173,6 +188,7 @@ where
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateInteraction,
         For: Clone
             + core::ops::AddAssign
             + core::ops::Mul<Float, Output = For>
@@ -282,6 +298,7 @@ where
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateInteraction,
         Float: num::Float,
         Pos: Clone,
         Vel: Clone,
@@ -559,7 +576,7 @@ where
 /// TODO
 pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
     cell: &mut C,
-    aux_storage: &A,
+    aux_storage: &mut A,
     _dt: Float,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::CalcError>
@@ -572,5 +589,6 @@ where
     A: UpdateInteraction,
 {
     cell.react_to_neighbours(aux_storage.get_current_neighbours())?;
+    aux_storage.set_current_neighbours(0);
     Ok(())
 }
