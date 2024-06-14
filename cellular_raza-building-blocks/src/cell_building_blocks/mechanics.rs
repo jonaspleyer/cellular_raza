@@ -331,7 +331,9 @@ macro_rules! implement_brownian_mechanics(
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 use num::Zero;
                 let dx = self.diffusion_constant / self.kb_temperature * force
-                    + (2.0 as $float_type).sqrt() * self.diffusion_constant.sqrt() * self.random_vector;
+                    + (2.0 as $float_type).sqrt()
+                    * self.diffusion_constant.sqrt()
+                    * self.random_vector;
                 Ok((dx, SVector::<$float_type, $d>::zero()))
             }
         }
@@ -380,7 +382,12 @@ macro_rules! define_langevin_nd(
             random_vector: SVector<$float_type, $d>,
         }
 
-        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type> for $struct_name {
+        impl Mechanics<
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            $float_type
+        > for $struct_name {
             fn pos(&self) -> SVector<$float_type, $d> {
                 self.pos
             }
@@ -415,7 +422,8 @@ macro_rules! define_langevin_nd(
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 let dx = self.vel;
                 let dv =
-                    -self.damping / self.mass * self.vel + 1.0 / self.mass * (self.random_vector + force);
+                    -self.damping / self.mass * self.vel
+                    + 1.0 / self.mass * (self.random_vector + force);
                 Ok((dx, dv))
             }
         }
@@ -537,7 +545,8 @@ impl<const D: usize> VertexMechanics2D<D> {
     ///
     /// The specified parameters are then used to carefully calculate relating properties of the model.
     /// We outline the formulas used.
-    /// Given the number of vertices \\(N\\) in our model (specified by the const generic argument of the [VertexMechanics2D] struct),
+    /// Given the number of vertices \\(N\\) in our model (specified by the const generic argument
+    /// of the [VertexMechanics2D] struct),
     /// the resulting average angle when all nodes are equally distributed is
     /// \\[
     ///     \Delta\varphi = \frac{2\pi}{N}
