@@ -7,7 +7,7 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 // Number of cells
-pub const N_CELLS: usize = 2_025;
+pub const N_CELLS: usize = 1;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
@@ -15,19 +15,19 @@ pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
-pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
-pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.2;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 0.0;
+pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.2;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 1_200.0;
-pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
+pub const DOMAIN_SIZE_X: f64 = 300.0;
+pub const DOMAIN_SIZE_Y: f64 = 300.0;
 
 // Time parameters
 pub const N_TIMES: u64 = 10_001;
 pub const DT: f64 = 0.02;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: u64 = 50;
+pub const SAVE_INTERVAL: u64 = 25;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
@@ -105,7 +105,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction],
+        aspects: [Mechanics],
     )?;
 
     // Plot the results
