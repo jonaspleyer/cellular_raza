@@ -48,7 +48,7 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
-    box = pv.Box(bounds=(0, 200e-6, 0, 50e-6, 0, 45e-6))
+    box = pv.Box(bounds=(0, 200e-6, 0, 25e-6, 0, 45e-6))
     plotter.add_mesh(box, style="wireframe")
     for cell in cell_meshes:
         plotter.add_mesh(
@@ -58,7 +58,7 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
         )
 
     # Define camera
-    plotter.camera.position = (100e-6, -250e-6, 250e-6)
+    plotter.camera.position = (100e-6, 250e-6, -250e-6)
     plotter.camera.focal_point = (100e-6, 25e-6, 22.5e-6)
 
     plotter.enable_ssao(radius=12)
