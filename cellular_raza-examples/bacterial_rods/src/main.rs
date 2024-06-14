@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use cellular_raza::building_blocks::{nearest_point_from_point_to_line, CartesianCuboid};
 use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Mechanics};
 use cellular_raza::core::backend::chili;
@@ -251,7 +253,11 @@ impl<const D1: usize, const D2: usize> Cycle<Agent<D1, D2>> for Agent<D1, D2> {
         c2.spring_length *= div_factor;
 
         // Define new positions
-        let middle = c1.pos.row_mean();
+        let middle = if D1 % 2 == 0 {
+            1.0 * c1.pos.row(D1.div(2))
+        } else {
+            0.5 *(c1.pos.row(D1.div(2)) + c1.pos.row(D1.div(2) + 1))
+        };
         let p1 = c1.pos.row(0).to_owned();
         let p2 = c1.pos.row(n_rows - 1).to_owned();
         let d1 = (p1 - middle) * (1.0 - div_factor);
