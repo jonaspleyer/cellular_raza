@@ -660,8 +660,9 @@ impl<const D: usize> VertexMechanics2D<D> {
         self.cell_area
     }
 
-    /// Set the current cell area
-    pub fn set_cell_area(&mut self, cell_area: f64) {
+    /// Set the current cell area and adjust the length of edges such that the cell is still in
+    /// equilibrium.
+    pub fn set_cell_area_and_boundary_length(&mut self, cell_area: f64) {
         // Calculate the relative difference to current area
         match self.cell_area {
             a if a == 0.0 => {
@@ -689,6 +690,11 @@ impl<const D: usize> VertexMechanics2D<D> {
                 self.cell_area = cell_area;
             }
         };
+    }
+
+    /// Change the internal cell area
+    pub fn set_cell_area(&mut self, cell_area: f64) {
+        self.cell_area = cell_area;
     }
 }
 
