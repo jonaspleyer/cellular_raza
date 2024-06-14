@@ -170,7 +170,12 @@ implement_newton_damped_mechanics!(NewtonDamped1DF32, 1, f32);
 implement_newton_damped_mechanics!(NewtonDamped2DF32, 2, f32);
 implement_newton_damped_mechanics!(NewtonDamped3DF32, 3, f32);
 
-fn generate_random_vector<F: num::Float, const D: usize>(
+/// Generates a random vector from a normal distribution given a standard deviation.
+///
+/// This function is often used to calculate the Wiener Process of stochastic motion of agents.
+/// Therefore, we still need to divide by the time increment `dt` after having generated the
+/// vector.
+pub fn generate_random_vector<F: num::Float, const D: usize>(
     rng: &mut rand_chacha::ChaCha8Rng,
     std_dev: F,
 ) -> Result<SVector<F, D>, RngError>
