@@ -10,34 +10,6 @@ import os
 import tqdm
 import multiprocessing as mp
 
-def get_last_output_path():
-    return Path(sorted(glob.glob("out/*"))[-1])
-
-def get_all_iterations(output_path: Optional[Path] = None):
-    if output_path == None:
-        output_path = get_last_output_path()
-    folders = glob.glob(str(output_path / "cells/json") + "/*")
-    iterations = [int(Path(fi).name) for fi in folders]
-    return output_path, iterations
-
-def load_cells_from_iteration(output_path: Path, iteration: int):
-    load_path = Path(output_path) / "cells/json/{:020}".format(iteration)
-    results = []
-    for file in glob.glob(str(load_path) + "/*"):
-        f = open(file)
-        elements = json.load(f)["data"]
-        elements = [element["element"][0] for element in elements]
-        results.extend(elements)
-    df = pd.json_normalize(results)
-
-    if len(df) > 0:
-        # Format individual entries for easier use later on
-        df["identifier"] = df["identifier"].apply(lambda x: tuple(x))
-        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(3, -1))
-        df["cell.vel"] = df["cell.vel"].apply(lambda x: np.array(x, dtype=float))
-
-    return df
-
 def plot_iteration(output_path: Path, iteration: int):
     cells = load_cells_from_iteration(output_path, iteration)
 
