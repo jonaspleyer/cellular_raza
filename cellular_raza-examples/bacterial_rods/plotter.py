@@ -11,6 +11,7 @@ def get_cell_meshes(iteration: int, path: Path):
     cells = load_cells_from_iteration(path, iteration)
     positions = np.array([x for x in cells["cell.pos"]], dtype=float)
     radii = np.array([x for x in cells["cell.radius"]], dtype=float)
+    growth_rate = np.array([x for x in cells["cell.growth_rate"]], dtype=float)
     cell_surfaces = []
     for i, p in enumerate(positions):
         meshes = []
@@ -32,7 +33,7 @@ def get_cell_meshes(iteration: int, path: Path):
             cylinder = pv.Cylinder(center, direction, radius, height)
             meshes.append(cylinder)
         merged = pv.MultiBlock(meshes).combine().extract_surface().clean()
-        cell_surfaces.append(merged)
+        cell_surfaces.append((merged, growth_rate[i]))
     return cell_surfaces
 
 def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] = None, overwrite:bool = False):
@@ -50,11 +51,15 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
     # Draw box around everything
     box = pv.Box(bounds=(0, 200e-6, 0, 25e-6, 0, 45e-6))
     plotter.add_mesh(box, style="wireframe")
-    for cell in cell_meshes:
+    color_min = np.array([69, 124, 214])
+    color_max = np.array([82, 191, 106])
+    for (cell, growth_rate) in cell_meshes:
+        q = growth_rate / (3e-6 / 60)
+        color = (1-q) * color_min + q * color_max
         plotter.add_mesh(
             cell,
             show_edges=False,
-            color=(69, 124, 214),
+            color=(int(color[0]), int(color[1]), int(color[2])),
         )
 
     # Define camera
