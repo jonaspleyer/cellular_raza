@@ -141,9 +141,7 @@ impl<const D: usize> Cycle<MyCell<D>> for MyCell<D> {
             //    \|/
             // The cell-division axis has one vertex right in the middle and another one which is
             // newly introduced on the edge (plot upper middle).
-            let mut new_pos1 = cell_pos.clone();
-            let mut new_pos2 = cell_pos.clone();
-            (new_pos1, new_pos2)
+            todo!();
         };
         cell1
             .mechanics
