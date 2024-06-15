@@ -352,7 +352,7 @@ fn main() -> Result<(), chili::SimulationError> {
     // Time Setup
     let t0 = 0.0 * MINUTE;
     let dt = 0.05 * SECOND;
-    let save_interval = 1.0 * SECOND;
+    let save_interval = 2.0 * SECOND;
     let t_max = 30.0 * MINUTE;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
