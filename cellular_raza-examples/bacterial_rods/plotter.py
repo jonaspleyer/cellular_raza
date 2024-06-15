@@ -49,7 +49,8 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
-    box = pv.Box(bounds=(0, 200e-6, 0, 25e-6, 0, 45e-6))
+    dx = 3e-6
+    box = pv.Box(bounds=(-dx, 200e-6+dx, 0-dx, 15e-6+dx, 0-dx, 45e-6+dx))
     plotter.add_mesh(box, style="wireframe")
     color_min = np.array([69, 124, 214])
     color_max = np.array([82, 191, 106])
@@ -63,7 +64,7 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
         )
 
     # Define camera
-    plotter.camera.position = (100e-6, 250e-6, -250e-6)
+    plotter.camera.position = (100e-6, -250e-6, -250e-6)
     plotter.camera.focal_point = (100e-6, 25e-6, 22.5e-6)
 
     plotter.enable_ssao(radius=12)

@@ -311,7 +311,7 @@ fn main() -> Result<(), chili::SimulationError> {
         new_agent.spring_length = rng.gen_range(1.5..2.5) * MICRO_METRE;
         let mut pos = nalgebra::SMatrix::<f64, D1, D2>::zeros();
         pos[(0, 0)] = rng.gen_range(delta_x..2.0 * delta_x);
-        pos[(0, 1)] = rng.gen_range(delta_x..domain_size - delta_x);
+        pos[(0, 1)] = rng.gen_range(delta_x / 3.0..delta_x * 2.0 / 3.0);
         pos[(0, 2)] = rng.gen_range(delta_x..2.0 * delta_x);
         let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
@@ -333,8 +333,8 @@ fn main() -> Result<(), chili::SimulationError> {
     });
 
     // Domain Setup
-    let domain_sizes = [4.0 * domain_size, 3.0 * delta_x, 3.0 * delta_x];
-    let domain_segments = [8, 2, 2];
+    let domain_sizes = [4.0 * domain_size, delta_x, 3.0 * delta_x];
+    let domain_segments = [8, 1, 2];
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels(
             [0.0; D2],
