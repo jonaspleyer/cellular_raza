@@ -5,6 +5,12 @@ title: Showcase
 
 {{< cards >}}
     {{<
+        card link="bacterial-rods"
+        title="Soft Bacterial Rods"
+        image="/showcase/bacterial-rods/snapshot_00040000.png"
+        subtitle="test"
+    >}}
+    {{<
         card link="autophagy-protein-clustering"
         title="Autophagy Protein Clustering"
         image="/showcase/autophagy-protein-clustering/with-avidity/snapshot_00040000.png"
