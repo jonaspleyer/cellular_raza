@@ -87,6 +87,7 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
     color_min = np.array([69, 124, 214])
     color_max = np.array([82, 191, 106])
     for (cell, growth_rate) in cell_meshes:
+        # TODO MAGIC NUMBERS
         q = growth_rate / (3e-6 / 60)
         color = (1-q) * color_min + q * color_max
         plotter.add_mesh(
@@ -96,6 +97,7 @@ def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] 
         )
 
     # Define camera
+    # TODO MAGIC NUMBERS
     plotter.camera.position = (100e-6, -250e-6, -250e-6)
     plotter.camera.focal_point = (100e-6, 25e-6, 22.5e-6)
 
@@ -124,6 +126,7 @@ def plot_all_spheres(path: Path, n_threads: Optional[int] = None, overwrite:bool
             zip(args, itertools.repeat(kwargs))
         ), total=len(iterations)))
 
+# TODO actually use this
 if __name__ == "_main__":
     parser = argparse.ArgumentParser(
         prog="Plotter",
