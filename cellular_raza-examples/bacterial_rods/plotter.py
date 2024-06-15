@@ -9,6 +9,7 @@ from pathlib import Path
 import glob
 import json
 import os
+import pandas as pd
 
 def get_last_output_path():
     return Path(sorted(glob.glob("out/*"))[-1])
@@ -111,7 +112,7 @@ def __plot_spheres_helper(args):
 def plot_all_spheres(path: Path, n_threads: Optional[int] = None, overwrite:bool=False):
     iterations = [it for it in get_all_iterations(path)[1]]
     if n_threads==None:
-        n_threads = mp.cpu_count()-2
+        n_threads = os.cpu_count()-2
     args = [(it,) for it in iterations]
     kwargs = {
         "path": path,
