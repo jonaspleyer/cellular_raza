@@ -36,6 +36,7 @@ pub struct VertexMechanics2DAlternative<const D: usize> {
 
 impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// Setter for the individual boundary lengths of the cell
+    #[allow(unused)]
     pub fn set_boundary_length(&mut self, boundary_length: f64) {
         self.cell_boundary_length = boundary_length;
     }
@@ -63,6 +64,7 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// From these points, their distance is calculated and passed as the individual boundary lengths.
     /// When randomization is turned on, these points will be slightly randomized in their radius and angle which might lead to non-equilibrium configurations.
     /// Pressure, damping and spring tensions are not impacted by randomization.
+    #[allow(unused)]
     pub fn new(
         middle: SVector<f64, 2>,
         cell_area: f64,
@@ -131,6 +133,7 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// \\end{align}$$
     /// where $A$ is the total area, $n$ is the number of vertices and $L$ is the total boundary
     /// length.
+    #[allow(unused)]
     pub fn calculate_boundary_length(cell_area: f64) -> f64 {
         (4.0 * cell_area * (std::f64::consts::PI / D as f64).tan() * D as f64).sqrt()
     }
@@ -138,11 +141,13 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// Calculates the cell area of the regular polygon in equilibrium.
     ///
     /// The formula used is identical the the one of [Self::calculate_boundary_length].
+    #[allow(unused)]
     pub fn calculate_cell_area(boundary_length: f64) -> f64 {
         D as f64 * boundary_length.powf(2.0) / (4.0 * (std::f64::consts::PI / D as f64).tan())
     }
 
     /// Calculates the current area of the cell
+    #[allow(unused)]
     pub fn get_current_cell_area(&self) -> f64 {
         0.5_f64
             * self
@@ -166,12 +171,14 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     }
 
     /// Obtain current cell area
+    #[allow(unused)]
     pub fn get_cell_area(&self) -> f64 {
         self.cell_area
     }
 
     /// Set the current cell area and adjust the length of edges such that the cell is still in
     /// equilibrium.
+    #[allow(unused)]
     pub fn set_cell_area_and_boundary_length(&mut self, cell_area: f64) {
         // Calculate the relative difference to current area
         match self.cell_area {
@@ -202,6 +209,7 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     }
 
     /// Change the internal cell area
+    #[allow(unused)]
     pub fn set_cell_area(&mut self, cell_area: f64) {
         self.cell_area = cell_area;
     }
@@ -209,6 +217,7 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
 
 impl VertexMechanics2DAlternative<4> {
     /// Fill a specified rectangle with cells of 4 vertices
+    #[allow(unused)]
     pub fn fill_rectangle(
         cell_area: f64,
         boundary_tension: f64,
