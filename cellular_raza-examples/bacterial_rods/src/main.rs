@@ -256,7 +256,7 @@ impl<const D1: usize, const D2: usize> Cycle<Agent<D1, D2>> for Agent<D1, D2> {
         let middle = if D1 % 2 == 0 {
             1.0 * c1.pos.row(D1.div(2))
         } else {
-            0.5 *(c1.pos.row(D1.div(2)) + c1.pos.row(D1.div(2) + 1))
+            0.5 * (c1.pos.row(D1.div(2)) + c1.pos.row(D1.div(2) + 1))
         };
         let p1 = c1.pos.row(0).to_owned();
         let p2 = c1.pos.row(n_rows - 1).to_owned();
