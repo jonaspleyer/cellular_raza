@@ -70,7 +70,8 @@ vertex $\vec{w}\_i,\vec{w}\_{i+1}$ with relative strength $(1-q)$ and $q$.
 $$\begin{align}
     \vec{F}\_{i,\text{External}} = \vec{F}(\vec{v}\_i,\vec{p})
 \end{align}$$
-For this example, we reused the interaction of the [cell-sorting](/showcase/cell-sorting) example.
+For this example, we reused the interaction shape of the [cell-sorting](/showcase/cell-sorting)
+example ignoring the species aspect.
 
 ### Cycle
 To simulate proliferation, we introduce a growth term for the spring lengths $l\_i$
