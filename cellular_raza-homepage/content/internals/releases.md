@@ -4,6 +4,14 @@ type: docs
 weight: 100
 ---
 
+## cellular_raza 0.0.11
+_18th June 2024_
+- corretly treat interaction functions related to neighbours
+  [`is_neighbour`](/docs/cellular_raza_concepts/trait.Interaction.html#method.is_neighbour) and
+  [`react_to_neighbours`](/docs/cellular_raza_concepts/trait.Interaction.html#method.react_to_neighbours)
+  in the [chili](/internals/backends/chili) backend.
+- modifications to examples
+
 ## cellular_raza 0.0.10
 _11th June 2024_
 - change [Interaction](/internals/concepts/cell/interaction) concept to return two force values for
