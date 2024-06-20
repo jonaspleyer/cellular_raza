@@ -84,6 +84,7 @@ impl<const D1: usize, const D2: usize>
         ),
         CalcError,
     > {
+        use core::ops::AddAssign;
         // Calculate internal force between the two points of the Agent
         let mut total_force = force;
 
@@ -93,7 +94,6 @@ impl<const D1: usize, const D2: usize>
         dist_internal.row_iter().enumerate().for_each(|(i, dist)| {
             let dir = dist.normalize();
             let force_internal = -self.spring_tension * (dist.norm() - self.spring_length) * dir;
-            use core::ops::AddAssign;
             total_force.row_mut(i).add_assign(0.5 * force_internal);
             total_force.row_mut(i + 1).add_assign(-0.5 * force_internal);
         });
@@ -108,7 +108,6 @@ impl<const D1: usize, const D2: usize>
                 let angle = conn1.angle(&-conn2);
                 let force_direction = (conn1.normalize() - conn2.normalize()).normalize();
                 let force = self.angle_stiffness * (std::f64::consts::PI - angle) * force_direction;
-                use core::ops::AddAssign;
                 total_force.row_mut(i).add_assign(-0.5 * force);
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-0.5 * force);
