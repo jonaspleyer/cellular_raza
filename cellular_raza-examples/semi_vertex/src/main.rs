@@ -6,28 +6,34 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
+pub const MICRON: f64 = 1e-0;
+
+pub const SECOND: f64 = 1e0;
+pub const MINUTE: f64 = 60e0;
+
 // Number of cells
 pub const N_CELLS: usize = 1;
 
 // Mechanical parameters
-pub const CELL_MECHANICS_AREA: f64 = 500.0;
-pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
-pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
-pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
-pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 0.0;
-pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.2;
-pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0;
+pub const CELL_MECHANICS_AREA: f64 = 500.0 * MICRON * MICRON;
+pub const CELL_MECHANICS_SPRING_TENSION: f64 = 0.0001;
+pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.0001;
+pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0 * MICRON;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 1.0;
+pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.01 / SECOND;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0 * MICRON * MICRON / SECOND;
+
+// Cycle
+pub const CELL_CYCLE_GROWTH_FACTOR: f64 = 0.0 * MICRON * MICRON / SECOND;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 300.0;
-pub const DOMAIN_SIZE_Y: f64 = 300.0;
+pub const DOMAIN_SIZE_X: f64 = 600.0 * MICRON;
+pub const DOMAIN_SIZE_Y: f64 = 600.0 * MICRON;
 
 // Time parameters
-pub const N_TIMES: u64 = 10_001;
-pub const DT: f64 = 0.02;
-pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: u64 = 25;
+pub const DT: f64 = 0.01 * SECOND;
+pub const T_END: f64 = 10.0 * MINUTE;
+pub const SAVE_INTERVAL: f64 = 4.0 * SECOND;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
@@ -37,6 +43,7 @@ mod cell_properties;
 mod custom_domain;
 mod plotting;
 
+use alternative_vertex_mechanics::VertexMechanics2DAlternative;
 use cell_properties::*;
 use custom_domain::*;
 use plotting::*;
@@ -59,7 +66,7 @@ fn main() -> Result<(), chili::SimulationError> {
     // Define cell agents
     let cells = (0..N_CELLS)
         .map(|_| MyCell {
-            mechanics: VertexMechanics2D::<6>::new(
+            mechanics: VertexMechanics2DAlternative::<6>::new(
                 [
                     rng.gen_range(0.4 * DOMAIN_SIZE_X..0.6 * DOMAIN_SIZE_X),
                     rng.gen_range(0.4 * DOMAIN_SIZE_Y..0.6 * DOMAIN_SIZE_Y),
@@ -71,7 +78,7 @@ fn main() -> Result<(), chili::SimulationError> {
                 CELL_MECHANICS_CENTRAL_PRESSURE,
                 CELL_MECHANICS_DAMPING_CONSTANT,
                 CELL_MECHANICS_DIFFUSION_CONSTANT,
-                Some((0.05, rng.clone())),
+                Some((0.3, rng.clone())),
             ),
             interaction: VertexDerivedInteraction::from_two_forces(
                 OutsideInteraction {
@@ -83,14 +90,14 @@ fn main() -> Result<(), chili::SimulationError> {
                     average_radius: CELL_MECHANICS_AREA.sqrt(),
                 },
             ),
-            growth_factor: 3.0,
+            growth_factor: CELL_CYCLE_GROWTH_FACTOR,
             division_area_threshold: 2.0 * CELL_MECHANICS_AREA,
         })
         .collect::<Vec<_>>();
 
     // Define settings for storage and time solving
     let settings = chili::Settings {
-        time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
+        time: FixedStepsize::from_partial_save_interval(0.0, DT, T_END, SAVE_INTERVAL)?,
         n_threads: N_THREADS.try_into().unwrap(),
         show_progressbar: true,
         storage: StorageBuilder::new().location("out/semi_vertex"),
@@ -101,7 +108,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Cycle, Interaction],
+        aspects: [Mechanics, Interaction],
     )?;
 
     // Plot the results

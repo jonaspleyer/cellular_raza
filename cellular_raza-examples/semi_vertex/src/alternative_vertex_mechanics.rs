@@ -13,6 +13,8 @@ use nalgebra::SVector;
 /// or smaller than the desired one.
 /// Each vertex is damped individually by the same constant.
 // TODO include more formulas for this model
+///
+/// See also [https://en.wikipedia.org/wiki/Regular_polygon].
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VertexMechanics2DAlternative<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
@@ -24,8 +26,6 @@ pub struct VertexMechanics2DAlternative<const D: usize> {
     pub cell_area: f64,
     /// TODO
     pub boundary_tension: f64,
-    /// TODO
-    pub angle_tension: f64,
     /// TODO
     pub central_pressure: f64,
     /// TODO
@@ -70,12 +70,12 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
         cell_area: f64,
         rotation_angle: f64,
         boundary_tension: f64,
-        angle_tension: f64,
         central_pressure: f64,
         damping_constant: f64,
         diffusion_constant: f64,
         randomize: Option<(f64, rand_chacha::ChaCha8Rng)>,
     ) -> Self {
+        let n_rows = D;
         use rand::Rng;
         // Restrict the randomize variable between 0 and 1
         let r = match randomize {
@@ -91,15 +91,14 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
         // Randomize the overall rotation angle
         let rotation_angle = (1.0 - r * rng.clone()()) * rotation_angle;
         // Calculate the angle fraction used to determine the points of the polygon
-        let angle_fraction = std::f64::consts::PI / D as f64;
+        let side_length = Self::calculate_single_side_length(cell_area);
+        let radius = Self::calculate_outside_radius(cell_area);
         // Calculate the radius from cell area
-        let radius = (cell_area / D as f64 / angle_fraction.sin() / angle_fraction.cos()).sqrt();
-        // TODO this needs to be calculated again
         let points = nalgebra::SMatrix::<f64, D, 2>::from_row_iterator(
-            (0..D)
+            (0..n_rows)
                 .map(|n| {
                     let angle = rotation_angle
-                        + 2.0 * angle_fraction * n as f64 * (1.0 - r * rng.clone()());
+                        + 2.0 * Self::angle_fraction() * n as f64 * (1.0 - r * rng.clone()());
                     let radius_modified = radius * (1.0 + 0.5 * r * (1.0 - rng.clone()()));
                     [
                         middle.x + radius_modified * angle.cos(),
@@ -110,18 +109,48 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
                 .flatten(),
         );
         let cell_boundary_length = Self::calculate_boundary_length(cell_area);
-        VertexMechanics2DAlternative {
+        let calculated_cell_area =
+            0.5 * n_rows as f64 * side_length * radius * Self::angle_fraction().cos();
+        debug_assert!((cell_boundary_length - n_rows as f64 * side_length).abs() < 1e-3);
+        debug_assert!(
+            (0.25 * n_rows as f64 * side_length.powf(2.0) / Self::angle_fraction().tan()
+                - cell_area)
+                .abs()
+                < 1e-3
+        );
+        debug_assert!((calculated_cell_area - cell_area).abs() < 1e-3);
+        debug_assert!((Self::calculate_cell_area(cell_boundary_length) - cell_area).abs() < 1e-3);
+        let res = VertexMechanics2DAlternative {
             points,
             velocity: nalgebra::SMatrix::<f64, D, 2>::zeros(),
             random_vector: nalgebra::SMatrix::<f64, D, 2>::zeros(),
             cell_boundary_length,
             boundary_tension,
-            angle_tension,
             cell_area,
             central_pressure,
             damping_constant,
             diffusion_constant,
+        };
+        if r == 0.0 {
+            debug_assert!(
+                (res.calculate_current_boundary_length() - cell_boundary_length).abs() < 1e-3
+            );
+            debug_assert!((res.get_current_cell_area() - res.cell_area).abs() < 1e-3);
         }
+        res
+    }
+
+    pub fn angle_fraction() -> f64 {
+        std::f64::consts::PI / D as f64
+    }
+
+    pub fn calculate_outside_radius(cell_area: f64) -> f64 {
+        0.5 * Self::calculate_single_side_length(cell_area) / Self::angle_fraction().sin()
+    }
+
+    pub fn calculate_single_side_length(cell_area: f64) -> f64 {
+        let n_rows = D as f64;
+        (4.0 * cell_area * Self::angle_fraction().tan() / n_rows).sqrt()
     }
 
     /// Calculates the boundary length of the regular polygon given the total area in equilibrium.
@@ -135,7 +164,8 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// length.
     #[allow(unused)]
     pub fn calculate_boundary_length(cell_area: f64) -> f64 {
-        (4.0 * cell_area * (std::f64::consts::PI / D as f64).tan() * D as f64).sqrt()
+        let n_rows = D as f64;
+        Self::calculate_single_side_length(cell_area) * n_rows
     }
 
     /// Calculates the cell area of the regular polygon in equilibrium.
@@ -143,30 +173,34 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
     /// The formula used is identical the the one of [Self::calculate_boundary_length].
     #[allow(unused)]
     pub fn calculate_cell_area(boundary_length: f64) -> f64 {
-        D as f64 * boundary_length.powf(2.0) / (4.0 * (std::f64::consts::PI / D as f64).tan())
+        let n_rows = D as f64;
+        boundary_length.powf(2.0) / (4.0 * Self::angle_fraction().tan()) / n_rows
     }
 
     /// Calculates the current area of the cell
     #[allow(unused)]
     pub fn get_current_cell_area(&self) -> f64 {
-        0.5_f64
-            * self
-                .points
-                .row_iter()
-                .circular_tuple_windows()
-                .map(|(p1, p2)| p1.transpose().perp(&p2.transpose()))
-                .sum::<f64>()
+        // TODO this is only correct for convex polygons
+        let middle = self.pos().row_mean();
+        0.5 * self
+            .points
+            .row_iter()
+            .circular_tuple_windows()
+            .map(|(p1, p2)| {
+                (p1 - middle)
+                    .transpose()
+                    .perp(&(p2 - middle).transpose())
+                    .abs()
+            })
+            .sum::<f64>()
     }
 
     /// Calculate the current polygons boundary length
     pub fn calculate_current_boundary_length(&self) -> f64 {
         self.points
             .row_iter()
-            .tuple_windows::<(_, _)>()
-            .map(|(p1, p2)| {
-                let dist = (p2 - p1).norm();
-                dist
-            })
+            .circular_tuple_windows::<(_, _)>()
+            .map(|(p1, p2)| (p2 - p1).norm())
             .sum::<f64>()
     }
 
@@ -191,7 +225,6 @@ impl<const D: usize> VertexMechanics2DAlternative<D> {
                     cell_area,
                     0.0,
                     self.boundary_tension,
-                    self.angle_tension,
                     self.central_pressure,
                     self.damping_constant,
                     self.diffusion_constant,
@@ -221,7 +254,6 @@ impl VertexMechanics2DAlternative<4> {
     pub fn fill_rectangle(
         cell_area: f64,
         boundary_tension: f64,
-        angle_tension: f64,
         central_pressure: f64,
         damping_constant: f64,
         diffusion_constant: f64,
@@ -269,7 +301,6 @@ impl VertexMechanics2DAlternative<4> {
                     random_vector: nalgebra::SMatrix::<f64, 4, 2>::zeros(),
                     cell_boundary_length: 4.0 * cell_side_length,
                     boundary_tension,
-                    angle_tension,
                     cell_area,
                     central_pressure,
                     damping_constant,
@@ -317,7 +348,6 @@ impl<const D: usize>
                 new_pos.set_row(n, &pos.row(n_vertex));
             }
         }
-        // println!("");
         self.points = new_pos.clone();
     }
 
@@ -330,55 +360,47 @@ impl<const D: usize>
         force: nalgebra::SMatrix<f64, D, 2>,
     ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), CalcError> {
         // Calculate the total internal force
-        let middle = self.points.row_sum() / self.points.shape().0 as f64;
-        let current_area = self.get_current_cell_area();
+        let area_diff = self.cell_area - self.get_current_cell_area();
+        let boundary_diff = self.cell_boundary_length - self.calculate_current_boundary_length();
 
         // Calculate the difference of the current boundary to the specified one
-        let boundary_diff = self.cell_boundary_length - self.calculate_current_boundary_length();
+        let mut center_force = nalgebra::RowSVector::<f64, 2>::zeros();
         let mut internal_force = self.points.clone() * 0.0;
-        for (n_index, (point_1, point_2, point_3)) in self
+        for (n_index, (point_1, point_2)) in self
             .points
             .row_iter()
-            .circular_tuple_windows::<(_, _, _)>()
+            .circular_tuple_windows::<(_, _)>()
             .enumerate()
         {
             // Calculate forces arising from springs between points
             let p_21 = point_1 - point_2;
-            let p_23 = point_3 - point_2;
-            let force1 =
-                p_21.normalize() * (boundary_diff / D as f64 - p_21.norm()) * self.boundary_tension;
-            let force2 =
-                p_23.normalize() * (boundary_diff / D as f64 - p_23.norm()) * self.boundary_tension;
+            let dir = p_21.normalize();
+            let force1 = dir * boundary_diff * self.boundary_tension;
             let mut f1 = 0.5 * force1;
-            let mut f2 = -0.5 * (force1 + force2);
-            let mut f3 = 0.5 * force2;
-
-            // Calculate point due to angle at each vertex
-            let angle: f64 = p_21.angle(&p_23);
-            let force_direction = (p_21.normalize() + p_23.normalize()).normalize();
-            if force_direction.norm() > 0.0 {
-                let angle_diff = (std::f64::consts::PI * (1.0 - 1.0 / D as f64) - angle).abs()
-                    / std::f64::consts::PI;
-                let force = self.angle_tension * angle_diff * force_direction;
-                f1 += -0.5 * force;
-                f2 += force;
-                f3 += -0.5 * force;
-            }
+            let mut f2 = -0.5 * force1;
 
             // Calculate force arising from internal pressure
-            let middle_to_point_2 = point_2 - middle;
-            f2 += middle_to_point_2.normalize()
-                * (self.cell_area - current_area)
-                * self.central_pressure;
+            {
+                // Calculate the vector perpendicular to p_21 pointing outwards of the polygon
+                let new_dir: nalgebra::RowSVector<f64, 2> = [-dir.y, dir.x].into();
+                let force = new_dir * area_diff * self.central_pressure * p_21.norm();
+                f1 += 0.5 * force;
+                f2 += 0.5 * force;
+                center_force -= force;
+            }
 
             // Combine forces
             use core::ops::AddAssign;
             internal_force.row_mut(n_index).add_assign(&f1);
             internal_force.row_mut((n_index + 1) % D).add_assign(&f2);
-            internal_force.row_mut((n_index + 2) % D).add_assign(&f3);
         }
+        internal_force.row_iter_mut().for_each(|mut r| r += center_force);
+        debug_assert!(internal_force.row_sum().norm() < 1e-5);
         let dx = self.velocity.clone() + self.diffusion_constant * self.random_vector;
         let dv = force + internal_force - self.damping_constant * self.velocity.clone();
+        if dx.iter().any(|xi| xi.is_nan()) {
+            return Err(CalcError(format!("stopping sim due to nan value")));
+        }
         Ok((dx, dv))
     }
 
@@ -395,5 +417,54 @@ impl<const D: usize>
             });
         }
         Ok(())
+    }
+}
+
+mod test {
+    #[test]
+    fn check_equilibrium_properties() {
+        let middle = [0.0; 2].into();
+        let cell_area = 150.0;
+        let rotation_angle = 0.0;
+        let boundary_tension = 0.1;
+        let central_pressure = 0.1;
+        let damping_constant = 0.1;
+        let diffusion_constant = 0.01;
+        let randomize = None;
+        let mut cell = super::VertexMechanics2DAlternative::<4>::new(
+            middle,
+            cell_area,
+            rotation_angle,
+            boundary_tension,
+            central_pressure,
+            damping_constant,
+            diffusion_constant,
+            randomize,
+        );
+
+        let do_asserts = |cell: &super::VertexMechanics2DAlternative<4>| {
+            assert_eq!(cell.get_cell_area(), cell_area);
+            assert!((cell.get_current_cell_area() - cell_area).abs() < 1e-8);
+            assert!(
+                (cell.calculate_current_boundary_length() - 4.0 * cell_area.sqrt()).abs() < 1e-5
+            );
+        };
+        do_asserts(&cell);
+
+        use cellular_raza::concepts::Mechanics;
+        /// Advance time a bit without external force
+        /// This makes sure that we really are in the equilibrium
+        use num::Zero;
+        let dt = 0.01;
+        for _ in 0..1_000 {
+            let pos = cell.pos();
+            let vel = cell.velocity();
+            let (dx, dv) = cell
+                .calculate_increment(nalgebra::SMatrix::<f64, 4, 2>::zero())
+                .unwrap();
+            cell.set_pos(&(pos + dt * dx));
+            cell.set_velocity(&(vel + dt * dv));
+            do_asserts(&cell);
+        }
     }
 }
