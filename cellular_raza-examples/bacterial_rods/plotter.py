@@ -4,7 +4,6 @@ import argparse
 import itertools
 import tqdm
 import concurrent.futures
-from typing import Optional
 from pathlib import Path
 import glob
 import json
@@ -14,8 +13,8 @@ import pandas as pd
 def get_last_output_path():
     return Path(sorted(glob.glob("out/*"))[-1])
 
-def get_all_iterations(output_path: Optional[Path] = None):
-    if output_path == None:
+def get_all_iterations(output_path: Path | None = None):
+    if output_path is None:
         output_path = get_last_output_path()
     folders = glob.glob(str(output_path / "cells/json") + "/*")
     iterations = [int(Path(fi).name) for fi in folders]
@@ -59,22 +58,29 @@ def get_cell_meshes(iteration: int, path: Path):
             center = 0.5 * (pos1 + pos2)
             direction = pos2 - center
             radius = radii[i]
-            height = np.linalg.norm(pos1 - pos2)
+            height = float(np.linalg.norm(pos1 - pos2))
             # sphere = pv.Sphere(center=pos, radius=radii[i])
             # meshes.append(sphere)
             cylinder = pv.Cylinder(center, direction, radius, height)
             meshes.append(cylinder)
-        merged = pv.MultiBlock(meshes).combine().extract_surface().clean()
+        combined = pv.MultiBlock(meshes).combine()
+        if combined is None:
+            return None
+        merged = combined.extract_surface()
+        if merged is None:
+            return None
+        merged = merged.clean()
         cell_surfaces.append((merged, growth_rate[i]))
     return cell_surfaces
 
-def plot_spheres(iteration: int, path: Path = Path("./"), opath: Optional[Path] = None, overwrite:bool = False):
-    if opath == None:
+def plot_spheres(iteration: int, path: Path = Path("./"), opath: Path | None = None, overwrite:bool = False):
+    if opath is None:
         opath = path / "images/{:010}.png".format(iteration)
         opath.parent.mkdir(parents=True, exist_ok=True)
-    if os.path.isfile(opath) and overwrite==False:
+    if os.path.isfile(opath) and overwrite is False:
         return None
     cell_meshes = get_cell_meshes(iteration, path)
+    cell_meshes = cell_meshes if cell_meshes is not None else []
 
     # General Settings
     plotter = pv.Plotter(off_screen=True)
@@ -111,10 +117,14 @@ def __plot_spheres_helper(args):
     (args, kwargs) = args
     plot_spheres(*args, **kwargs)
 
-def plot_all_spheres(path: Path, n_threads: Optional[int] = None, overwrite:bool=False):
+def plot_all_spheres(path: Path, n_threads: int | None = None, overwrite:bool=False):
     iterations = [it for it in get_all_iterations(path)[1]]
-    if n_threads==None:
-        n_threads = os.cpu_count()-2
+    if n_threads is None:
+        n_cpu = os.cpu_count()
+        if n_cpu is not None and n_cpu > 2:
+            n_threads = n_cpu -2
+        else:
+            n_threads = 1
     args = [(it,) for it in iterations]
     kwargs = {
         "path": path,
