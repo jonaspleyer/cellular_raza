@@ -73,7 +73,12 @@ def get_cell_meshes(iteration: int, path: Path):
         cell_surfaces.append((merged, growth_rate[i]))
     return cell_surfaces
 
-def plot_spheres(iteration: int, path: Path = Path("./"), opath: Path | None = None, overwrite:bool = False):
+def plot_spheres(
+        iteration: int,
+        path: Path = Path("./"),
+        opath: Path | None = None,
+        overwrite:bool = False
+    ):
     if opath is None:
         opath = path / "images/{:010}.png".format(iteration)
         opath.parent.mkdir(parents=True, exist_ok=True)
@@ -154,7 +159,7 @@ if __name__ == "_main__":
     parser.add_argument(
         "-i",
         "--input",
-        help=f"Input path of files. If not given,\
+        help="Input path of files. If not given,\
             it will be determined automatically by searching in './out/'"
     )
     parser.add_argument(
