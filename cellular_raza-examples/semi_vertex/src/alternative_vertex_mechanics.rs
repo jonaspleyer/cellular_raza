@@ -1,4 +1,4 @@
-use cellular_raza::building_blocks::generate_random_vector;
+use cellular_raza::building_blocks::wiener_process;
 use cellular_raza::concepts::{CalcError, Mechanics, RngError};
 use serde::{Deserialize, Serialize};
 
@@ -410,7 +410,7 @@ impl<const D: usize>
         dt: f64,
     ) -> Result<(), RngError> {
         if dt != 0.0 {
-            let random_vector: SVector<f64, 2> = generate_random_vector(rng, dt.sqrt())? / dt;
+            let random_vector: SVector<f64, 2> = wiener_process(rng, dt)?;
             self.random_vector.row_iter_mut().for_each(|mut r| {
                 r *= 0.0;
                 r += random_vector.transpose();

@@ -170,25 +170,26 @@ implement_newton_damped_mechanics!(NewtonDamped1DF32, 1, f32);
 implement_newton_damped_mechanics!(NewtonDamped2DF32, 2, f32);
 implement_newton_damped_mechanics!(NewtonDamped3DF32, 3, f32);
 
-/// Generates a random vector from a normal distribution given a standard deviation.
+/// Generate a vector corresponding to a wiener process.
 ///
-/// This function is often used to calculate the Wiener Process of stochastic motion of agents.
-/// Therefore, we still need to divide by the time increment `dt` after having generated the
-/// vector.
-pub fn generate_random_vector<F: num::Float, const D: usize>(
+/// This function calculates a statically sized random vector with dimension `D`.
+/// It uses a [rand_distr::StandardNormal] distribution and divides the result by `dt` such that
+/// the correct incremental wiener process is obtained.
+pub fn wiener_process<F, const D: usize>(
     rng: &mut rand_chacha::ChaCha8Rng,
-    std_dev: F,
+    dt: F,
 ) -> Result<SVector<F, D>, RngError>
 where
-    F: nalgebra::Scalar,
+    F: core::ops::DivAssign + nalgebra::Scalar + num::Float,
     rand_distr::StandardNormal: rand_distr::Distribution<F>,
 {
+    let std_dev = dt.sqrt();
     let distr = match rand_distr::Normal::new(F::zero(), std_dev) {
         Ok(e) => Ok(e),
         Err(e) => Err(RngError(format!("{e}"))),
     }?;
     let random_dir = SVector::<F, D>::from_distribution(&distr, rng);
-    Ok(random_dir)
+    Ok(random_dir / dt)
 }
 
 macro_rules! implement_brownian_mechanics(
@@ -318,10 +319,10 @@ macro_rules! implement_brownian_mechanics(
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
             ) -> Result<(), RngError> {
-                self.random_vector = generate_random_vector(
+                self.random_vector = wiener_process(
                     rng,
-                    dt.sqrt()
-                )? / dt;
+                    dt
+                )?;
                 Ok(())
             }
 
@@ -409,10 +410,10 @@ macro_rules! define_langevin_nd(
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
             ) -> Result<(), RngError> {
-                self.random_vector = generate_random_vector(
+                self.random_vector = wiener_process(
                     rng,
-                    dt.sqrt()
-                )? / dt;
+                    dt
+                )?;
                 Ok(())
             }
 
@@ -854,7 +855,7 @@ impl<const D: usize>
         dt: f64,
     ) -> Result<(), RngError> {
         if dt != 0.0 {
-            let random_vector: SVector<f64, 2> = generate_random_vector(rng, dt.sqrt())? / dt;
+            let random_vector: SVector<f64, 2> = wiener_process(rng, dt)?;
             self.random_vector.row_iter_mut().for_each(|mut r| {
                 r *= 0.0;
                 r += random_vector.transpose();
