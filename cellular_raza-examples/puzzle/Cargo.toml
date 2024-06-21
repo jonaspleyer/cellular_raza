@@ -1,0 +1,19 @@
+[package]
+name = "cr_puzzle_cells"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+
+[dependencies]
+serde = { workspace = true }
+rand = { workspace = true, features=["small_rng"] }
+rand_chacha = { workspace = true }
+nalgebra = { version="0.32" }
+cellular_raza = { path="../../cellular_raza", features=["default"] }
+plotters = { workspace = true }
+num = { workspace = true }
+kdam = "0.5.2"
+rayon = "1.10.0"
+itertools.workspace = true
+rand_distr = "0.4.3"
+geo = { version = "0.28.0", features = ["earcutr"] }
