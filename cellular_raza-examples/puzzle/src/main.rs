@@ -95,30 +95,44 @@ impl SubDomainMechanics<Vertices<f64>, Vertices<f64>> for MySubDomain {
     }
 }
 
+fn generate_initial_points(domain_size: f64) -> Vec<nalgebra::Vector2<f64>> {
+    use nalgebra::Vector2;
+    let dx = domain_size / 3.0;
+    vec![
+        Vector2::from([1.0 * dx, 1.0 * dx]),
+        Vector2::from([2.0 * dx, 1.0 * dx]),
+        Vector2::from([1.0 * dx, 2.0 * dx]),
+        Vector2::from([2.0 * dx, 2.0 * dx]),
+    ]
+}
+
 fn main() -> Result<(), chili::SimulationError> {
     let domain_size = 100.0;
-    let n_vertices = 20;
+    let n_vertices = 40;
     let angle_stiffness = 1.0;
     let surface_tension = 0.05;
-    let boundary_length = 25.0;
-    let cell_area = 60.0;
-    let internal_pressure = 0.0025;
+    let boundary_length = 50.0;
+    let cell_area = 300.0;
+    let internal_pressure = 0.00025;
     let diffusion_constant = 0.0;
     let damping = 0.5;
-    let agents = (0..1).map(|n_agent| Agent {
-        mechanics: Puzzle::new_equilibrium(
-            nalgebra::Vector2::from([domain_size / 2.0; 2]),
-            n_vertices,
-            angle_stiffness,
-            surface_tension,
-            boundary_length,
-            cell_area,
-            internal_pressure,
-            diffusion_constant,
-            damping,
-            Some((0.5, n_agent as u64)),
-        ),
-    });
+    let agents = generate_initial_points(domain_size)
+        .into_iter()
+        .enumerate()
+        .map(|(n_agent, middle)| Agent {
+            mechanics: Puzzle::new_equilibrium(
+                middle,
+                n_vertices,
+                angle_stiffness,
+                surface_tension,
+                boundary_length,
+                cell_area,
+                internal_pressure,
+                diffusion_constant,
+                damping,
+                Some((0.5, 10 * n_agent as u64)),
+            ),
+        });
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [1; 2])?,
     };

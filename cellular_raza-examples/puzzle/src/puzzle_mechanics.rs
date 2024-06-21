@@ -285,7 +285,7 @@ where
                     let r = randomizer(n as u64);
                     SVector::<F, 2>::from([
                         middle[0] + r * radius * <F as num::Float>::cos(alpha * n_float),
-                        middle[0] + r * radius * <F as num::Float>::sin(alpha * n_float),
+                        middle[1] + r * radius * <F as num::Float>::sin(alpha * n_float),
                     ])
                 })
                 .collect();
@@ -454,11 +454,11 @@ where
             }
         }
         internal_force.0.iter_mut().for_each(|f| *f += center_force);
-        println!("{:8.2} {:8.2} {:8.2}",
-            area_diff,
-            self.boundary_length,
-            current_boundary_length,
-        );
+        // println!("{}", self.pos().mean());
+        // println!(
+        //     "{:8.2} {:8.2} {:8.2}",
+        //     area_diff, self.boundary_length, current_boundary_length,
+        // );
 
         Ok((
             self.velocity.clone() + self.random_velocity.clone(),
