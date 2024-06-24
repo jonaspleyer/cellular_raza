@@ -1,5 +1,6 @@
 use super::{Agent, Force, InteractionInformation, Position, Velocity};
 use cellular_raza_concepts::*;
+use cellular_raza_concepts::domain_old::*;
 
 use super::errors::*;
 use crate::storage::StorageManager;
@@ -33,9 +34,9 @@ impl<Dom> From<Dom> for DomainBox<Dom> {
     }
 }
 
-impl<Cel, Ind, Vox, Dom> Domain<CellAgentBox<Cel>, Ind, Vox> for DomainBox<Dom>
+impl<Cel, Ind, Vox, Dom> cellular_raza_concepts::domain_old::Domain<CellAgentBox<Cel>, Ind, Vox> for DomainBox<Dom>
 where
-    Dom: Domain<Cel, Ind, Vox>,
+    Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
     Vox: Send + Sync,
     Cel: Send + Sync,
 {
@@ -601,7 +602,7 @@ where
     // (eg. mechanics, interaction, etc...)
     Ind: Index + Serialize + for<'a> Deserialize<'a>,
     Vox: Voxel<Ind, Pos, Vel, For>,
-    Dom: Domain<Cel, Ind, Vox>,
+    Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
     Pos: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
     For: Force + Serialize + for<'a> Deserialize<'a>,
@@ -635,6 +636,7 @@ where
         self.voxels
             .iter_mut()
             .map(|(_, vox)| {
+                use cellular_raza_concepts::domain_old::Domain;
                 // Update all local functions inside the voxel
                 vox.update_cell_cycle(dt)?;
 
@@ -731,7 +733,7 @@ where
                         // TODO these reactions are currently on the same timescale as the
                         // fluid-dynamics but we should consider how this may change if we have
                         // different time-scales here
-                        // ALso the solver is currently simply an euler stepper.
+                        // Also the solver is currently simply an euler stepper.
                         // This should be altered to have something like an (adaptive) Runge Kutta
                         // or Dopri (or better)
                         cellbox.cell.set_intracellular(
@@ -751,6 +753,7 @@ where
         cell: CellAgentBox<Cel>,
         aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     ) -> Result<(), SimulationError> {
+        use cellular_raza_concepts::domain_old::Domain;
         let index = self.index_to_plain_index[&self.domain.get_voxel_index(&cell)];
 
         match self.voxels.get_mut(&index) {
@@ -858,8 +861,8 @@ where
         dt: &f64,
     ) -> Result<(), SimulationError>
     where
-        ConcVecExtracellular: Concentration,
-        ConcTotalExtracellular: Concentration,
+        ConcVecExtracellular: cellular_raza_concepts::domain_old::Concentration,
+        ConcTotalExtracellular: cellular_raza_concepts::domain_old::Concentration,
         Vox: ExtracellularMechanics<
             Ind,
             Pos,
@@ -1128,6 +1131,7 @@ where
             // TODO use drain_filter when stabilized
             let (new_voxel_cells, old_voxel_cells): (Vec<_>, Vec<_>) =
                 vox.cells.drain(..).partition(|(c, _)| {
+                    use cellular_raza_concepts::domain_old::Domain;
                     match self
                         .index_to_plain_index
                         .get(&self.domain.get_voxel_index(&c))
@@ -1142,6 +1146,7 @@ where
 
         // Send cells to other multivoxelcontainer or keep them here
         for (cell, aux_storage) in find_new_home_cells {
+            use cellular_raza_concepts::domain_old::Domain;
             let ind = self.domain.get_voxel_index(&cell);
             let new_thread_index = self.index_to_thread[&ind];
             let cell_index = self.index_to_plain_index[&ind];
@@ -1236,8 +1241,8 @@ where
         Inf: Send + Sync + core::fmt::Debug,
         Pos: Position,
         Vel: Velocity,
-        ConcVecExtracellular: Concentration,
-        ConcTotalExtracellular: Concentration,
+        ConcVecExtracellular: cellular_raza_concepts::domain_old::Concentration,
+        ConcTotalExtracellular: cellular_raza_concepts::domain_old::Concentration,
         ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
             + Add<ConcVecIntracellular, Output = ConcVecIntracellular>
             + AddAssign<ConcVecIntracellular>,

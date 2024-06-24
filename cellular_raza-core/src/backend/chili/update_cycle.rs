@@ -1,5 +1,5 @@
 use super::{CellBox, SimulationError, SubDomainBox, UpdateCycle, Voxel};
-use cellular_raza_concepts::domain_new::SubDomain;
+use cellular_raza_concepts::SubDomain;
 
 pub use cellular_raza_concepts::CycleEvent;
 

@@ -24,13 +24,16 @@
 
 /// 🐧 Use multiple os-threads and cpu-only resources
 ///
-/// Parallelization is achieved by splitting the simualtion domain into as many chunks as
+/// Parallelization is achieved by splitting the simulation domain into as many chunks as
 /// threads are desired. Communication between threads is handled by
 /// [crossbeam_channel](https://docs.rs/crossbeam-channel/latest/crossbeam_channel/)
 /// and synchronization by [hurdles::Barrier](https://docs.rs/hurdles/latest/hurdles/).
 ///
-/// The user can manage the simulation flow by means of individual funtions or by creating a
+/// The user can manage the simulation flow by means of individual functions or by creating a
 /// [SimulationSupervisor](cpu_os_threads::SimulationSupervisor).
+// TODO deprecate this!
+// #[deprecated]
+// #[allow(deprecated)]
 pub mod cpu_os_threads;
 
 /// 🌶️ A modular, reusable, general purpose backend

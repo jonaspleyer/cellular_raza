@@ -1,4 +1,4 @@
-use cellular_raza_concepts::domain_new::SubDomain;
+use cellular_raza_concepts::*;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "tracing")]
@@ -59,11 +59,11 @@ pub fn construct_simulation_runner<D, S, C, A, Com, Sy, Ci>(
 >
 where
     Ci: IntoIterator<Item = C>,
-    D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
+    D: Domain<C, S, Ci>,
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     <S as SubDomain>::VoxelIndex: Eq + Hash + Ord + Clone,
-    S: cellular_raza_concepts::domain_new::SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>
-        + cellular_raza_concepts::domain_new::SubDomain,
+    S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>
+        + SubDomain,
     A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
@@ -228,7 +228,7 @@ where
     where
         <S as SubDomain>::VoxelIndex: Eq + Hash + Ord,
         A: Default,
-        S: cellular_raza_concepts::domain_new::SortCells<
+        S: SortCells<
             C,
             VoxelIndex = <S as SubDomain>::VoxelIndex,
         >,

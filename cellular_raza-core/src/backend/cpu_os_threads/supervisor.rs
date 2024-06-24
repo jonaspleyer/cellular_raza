@@ -1,5 +1,6 @@
 use super::{Agent, Force, InteractionInformation, Position, Velocity};
 use cellular_raza_concepts::*;
+use cellular_raza_concepts::domain_old::*;
 use kdam::BarExt;
 
 use super::errors::*;
@@ -150,7 +151,7 @@ where
         &mut self,
     ) -> Result<(), SimulationError>
     where
-        Dom: Domain<Cel, Ind, Vox>,
+        Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
         Pos: Position,
         For: Force,
         Inf: InteractionInformation,
@@ -315,7 +316,7 @@ where
         SimulationError,
     >
     where
-        Dom: Domain<Cel, Ind, Vox>,
+        Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
         Pos: Position,
         For: Force,
         Inf: InteractionInformation,

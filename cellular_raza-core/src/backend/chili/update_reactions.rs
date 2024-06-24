@@ -1,6 +1,6 @@
 use super::{SimulationError, SubDomainBox};
 // TODO use cellular_raza_concepts::reactions_new::CellularReactions;
-use cellular_raza_concepts::domain_new::SubDomain;
+use cellular_raza_concepts::SubDomain;
 
 #[cfg(feature = "tracing")]
 use tracing::instrument;

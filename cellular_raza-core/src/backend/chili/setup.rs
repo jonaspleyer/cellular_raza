@@ -1,4 +1,3 @@
-use cellular_raza_concepts::domain_new::*;
 use cellular_raza_concepts::*;
 
 use serde::{Deserialize, Serialize};
@@ -42,7 +41,7 @@ impl<C, D> SimulationSetup<C, D> {
         n_subdomains: core::num::NonZeroUsize,
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
-        D: cellular_raza_concepts::domain_new::Domain<C, S>,
+        D: Domain<C, S>,
         S: SubDomain,
     {
         self.domain.decompose(n_subdomains, self.cells)
@@ -57,7 +56,7 @@ impl<C, D> SimulationSetup<C, D> {
         self,
     ) -> Result<DecomposedDomain<D::SubDomainIndex, S, C>, DecomposeError>
     where
-        D: cellular_raza_concepts::domain_new::Domain<C, S>,
+        D: Domain<C, S>,
         S: SubDomain,
     {
         todo!();
@@ -100,7 +99,7 @@ mod test {
         total_voxels: usize,
     }
 
-    impl cellular_raza_concepts::domain_new::Domain<f64, TestSubDomain> for TestDomain {
+    impl Domain<f64, TestSubDomain> for TestDomain {
         type SubDomainIndex = usize;
         type VoxelIndex = VoxelIndex;
 
@@ -203,7 +202,7 @@ mod test {
         }
     }
 
-    impl cellular_raza_concepts::domain_new::SortCells<f64> for TestSubDomain {
+    impl SortCells<f64> for TestSubDomain {
         type VoxelIndex = usize;
 
         fn get_voxel_index_of(
@@ -221,7 +220,7 @@ mod test {
         }
     }
 
-    impl cellular_raza_concepts::domain_new::SubDomainMechanics<f64, f64> for TestSubDomain {
+    impl SubDomainMechanics<f64, f64> for TestSubDomain {
         fn apply_boundary(
             &self,
             pos: &mut f64,

@@ -5,10 +5,7 @@ use super::{
     CellBox, Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateInteraction,
     UpdateMechanics, Voxel, VoxelPlainIndex,
 };
-use cellular_raza_concepts::{
-    domain_new::{SubDomain, SubDomainMechanics},
-    BoundaryError, CalcError,
-};
+use cellular_raza_concepts::*;
 
 /// Send about the position of cells between threads.
 ///
@@ -250,7 +247,7 @@ where
         Ok(())
     }
 
-    /// Calculates the custom [force](cellular_raza_concepts::domain_new::SubDomainForce) of
+    /// Calculates the custom [force](SubDomainForce) of
     /// the domain on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn calculate_custom_domain_force<Pos, Vel, For, Float, const N: usize>(
@@ -261,7 +258,7 @@ where
         Vel: Clone,
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         A: UpdateMechanics<Pos, Vel, For, N>,
-        S: cellular_raza_concepts::domain_new::SubDomainForce<Pos, Vel, For>,
+        S: SubDomainForce<Pos, Vel, For>,
     {
         for (cell, aux) in self
             .voxels
@@ -418,7 +415,7 @@ where
     pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        S: cellular_raza_concepts::domain_new::SortCells<
+        S: SortCells<
             C,
             VoxelIndex = <S as SubDomain>::VoxelIndex,
         >,
@@ -480,7 +477,7 @@ where
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
-        S: cellular_raza_concepts::domain_new::SortCells<
+        S: SortCells<
             C,
             VoxelIndex = <S as SubDomain>::VoxelIndex,
         >,

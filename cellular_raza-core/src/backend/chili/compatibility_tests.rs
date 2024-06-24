@@ -5,10 +5,12 @@
 //! generic error messages which are hard to read.
 //! Eventually, we might opt to also implement custom error messages.
 
+use cellular_raza_concepts::*;
+
 #[allow(unused)]
 pub fn domain_agents<D, C, S, Ci>(domain: &D, agents: &Ci)
 where
-    D: cellular_raza_concepts::domain_new::Domain<C, S, Ci>,
+    D: Domain<C, S, Ci>,
     Ci: IntoIterator<Item = C>,
 {
 }
