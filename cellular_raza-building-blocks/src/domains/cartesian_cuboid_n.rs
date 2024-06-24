@@ -536,14 +536,15 @@ where
 
 impl<Coord, F, const D: usize> SubDomainMechanics<Coord, Coord> for CartesianSubDomain<F, D>
 where
-    for<'a> &'a mut Coord: Into<[F; D]>,
+    Coord: Clone,
+    [F; D]: From<Coord>,
     Coord: From<[F; D]>,
     Coord: std::fmt::Debug,
     F: num::Float,
 {
     fn apply_boundary(&self, pos: &mut Coord, vel: &mut Coord) -> Result<(), BoundaryError> {
-        let mut velocity: [F; D] = vel.into();
-        let mut position: [F; D] = pos.into();
+        let mut velocity: [F; D] = vel.clone().into();
+        let mut position: [F; D] = pos.clone().into();
 
         // Define constant two
         let two = F::one() + F::one();
