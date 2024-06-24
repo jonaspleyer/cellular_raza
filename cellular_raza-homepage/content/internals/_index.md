@@ -44,4 +44,8 @@ flowchart LR
 
 # Development
 
+
 <video src="cellular_raza-development-gource.mp4" controls style="width: minmax(100%, 1280px);">
+</video>
+
+{{< load_table file_name = "/static/internals/scc-table.html" >}}

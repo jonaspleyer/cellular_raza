@@ -63,6 +63,16 @@ movie() {
     mv cellular_raza-development-gource.mp4 cellular_raza-homepage/static/internals/
 }
 
+scc_table() {
+    scc \
+        --exclude-dir cellular_raza-homepage \
+        --exclude-dir target \
+        --no-size \
+        -f html-table \
+        -s lines \
+        -o cellular_raza-homepage/static/internals/scc-table.html
+}
+
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo "Options:"
@@ -70,6 +80,7 @@ usage() {
     echo " -d --doc         Generate rust documentation"
     echo " -w --website     Build website"
     echo " -m --movie       Generate Movie of cellular_raza development"
+    echo "    --scc         Create scc table"
     echo " -u --upload      Upload to server"
     echo " -a --all         Do a full build with upload. Same as -d -w -u"
 }
@@ -107,9 +118,14 @@ handle_options() {
                 movie
                 exit 0
                 ;;
+            --scc)
+                scc_table
+                exit 0
+                ;;
             -a | --all)
                 generate_docs
                 build_website
+                scc_table
                 upload
                 exit 0
                 ;;
