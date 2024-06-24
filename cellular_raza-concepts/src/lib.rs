@@ -13,7 +13,7 @@
 //!
 //! While a point of the simulation in general is not additive in the general theoretical formulation (due to boundaries for
 //! example), it is necessary to have an additive type to effectively use adaptive solvers. We thus
-//! need to check and apply boundary conditions independantly.
+//! need to check and apply boundary conditions independently.
 //!
 //! # [Interaction]
 //! Interactions can arise due to many different mechanisms. The following table shows a short
@@ -41,8 +41,8 @@
 //! For Backends it may be useful to define a singular error type (eg. `SimulationError`) which should be derivable from errors
 //! arising during the simulation process.
 //! It is required for custom error types `MyCustomError` of the engine to implement the `From<MyCustomError> for SimulationError`.
-//! Errors should be seperated by their ability to be recovered, ignored or handled otherwise.
-//! Since this crate aims to provide an adaptive solving aproach, it is desired to have a fallback
+//! Errors should be separated by their ability to be recovered, ignored or handled otherwise.
+//! Since this crate aims to provide an adaptive solving approach, it is desired to have a fallback
 //! mechanism which can be called for errors which may arise due to precision problems.
 //!
 //! The following table shows a summary of the errors currently supported.
@@ -51,7 +51,7 @@
 //!
 //! | ErrorType | Possible Error Reasons |
 //! | --- | --- |
-//! | BoundaryError | Solver Accuracy, Domain Implementaion bug, Internal engine error |
+//! | BoundaryError | Solver Accuracy, Domain Implementation bug, Internal engine error |
 //! | CalcError | Solver Accuracy, Bug by user implementation of corresponding function, Internal engine error |
 // TODO implement the handling of these errors!
 //! Captures traits and types related to interactions between cells.
@@ -62,8 +62,10 @@
 mod cell;
 mod cycle;
 mod domain;
+
 /// Traits and types which will eventually replace the old [Domain] definition.
-pub mod domain_new;
+// TODO #[deprecated]
+pub mod domain_old;
 mod errors;
 mod interaction;
 mod mechanics;
