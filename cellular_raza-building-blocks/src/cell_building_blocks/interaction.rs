@@ -611,7 +611,34 @@ fn nearest_point_from_point_to_multiple_lines(
         .min_by(|(_, (distance1, _, _)), (_, (distance2, _, _))| distance1.total_cmp(&distance2))
 }
 
-fn ray_intersects_line_segment(
+/// Implements the ray-casting algorithm to check if a ray intersects with a given line segment.
+///
+/// This method can be applied to polygons to calculate if a point is inside of a given polygon or
+/// outside of it.
+/// ```
+/// # use cellular_raza_building_blocks::ray_intersects_line_segment;
+/// use nalgebra::Vector2;
+/// let line_segment = (
+///     Vector2::from([1.0, 3.0]),
+///     Vector2::from([1.0, 1.0]),
+/// );
+/// let ray = (
+///     Vector2::from([4.0, 1.5]),
+///     Vector2::from([2.0, 1.5]),
+/// );
+/// // This should look something like this:
+/// // |
+/// // |  <------
+/// // |
+/// assert!(ray_intersects_line_segment(&ray, &line_segment));
+/// // Chaning the order of arguments will look like this
+/// // |
+/// // |  ------
+/// // |
+/// // v
+/// assert!(!ray_intersects_line_segment(&line_segment, &ray));
+/// ```
+pub fn ray_intersects_line_segment(
     ray: &(Vector2<f64>, Vector2<f64>),
     line_segment: &(Vector2<f64>, Vector2<f64>),
 ) -> bool {
