@@ -1,6 +1,5 @@
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
-use cellular_raza::concepts::domain_new::*;
-use cellular_raza::concepts::{BoundaryError, CalcError, DecomposeError, IndexError, Mechanics};
+use cellular_raza::concepts::*;
 
 use crate::Agent;
 
@@ -12,7 +11,7 @@ pub struct MyDomain<const D2: usize> {
     pub damping: f64,
 }
 
-impl<const D2: usize> cellular_raza::concepts::domain_new::DomainCreateSubDomains<MySubDomain<D2>>
+impl<const D2: usize> DomainCreateSubDomains<MySubDomain<D2>>
     for MyDomain<D2>
 {
     type SubDomainIndex = usize;
@@ -43,7 +42,7 @@ impl<const D2: usize> cellular_raza::concepts::domain_new::DomainCreateSubDomain
     }
 }
 
-impl<const D1: usize, const D2: usize> cellular_raza::concepts::domain_new::SortCells<Agent<D1, D2>>
+impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>>
     for MyDomain<D2>
 {
     type VoxelIndex = [usize; D2];
@@ -66,7 +65,7 @@ pub struct MySubDomain<const D2: usize> {
 }
 
 impl<const D1: usize, const D2: usize>
-    cellular_raza::concepts::domain_new::SubDomainMechanics<
+    SubDomainMechanics<
         nalgebra::SMatrix<f64, D1, D2>,
         nalgebra::SMatrix<f64, D1, D2>,
     > for MySubDomain<D2>
@@ -145,7 +144,7 @@ impl<const D1: usize, const D2: usize>
     }
 }
 
-impl<const D1: usize, const D2: usize> cellular_raza::concepts::domain_new::SortCells<Agent<D1, D2>>
+impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>>
     for MySubDomain<D2>
 {
     type VoxelIndex = [usize; D2];

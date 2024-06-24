@@ -7,7 +7,6 @@ use cellular_raza::concepts::{CalcError, Interaction, Mechanics};
 
 use itertools::Itertools;
 use nalgebra::{SVector, Vector2};
-use num::Zero;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
@@ -402,7 +401,7 @@ where
                 .get_mut(n1)
                 .unwrap()
                 .add_assign(-one_half * force_curvature);
-            // We made sure by using the modulus operator that these indices to not overflow
+            // We made sure by using the modulus operator that these indices do not overflow
             internal_force
                 .0
                 .get_mut(n2)

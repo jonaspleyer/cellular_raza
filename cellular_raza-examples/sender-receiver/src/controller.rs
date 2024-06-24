@@ -1,5 +1,5 @@
 use cellular_raza::{
-    concepts::{CellularReactions, Controller},
+    concepts::{CellularReactions, domain_old::Controller},
     prelude::SimulationError,
 };
 use nalgebra::DVector;

@@ -1,4 +1,5 @@
 use cellular_raza::prelude::*;
+use cellular_raza::building_blocks::cartesian_cuboid_n_old::{CartesianCuboid2, CartesianCuboidVoxel2};
 
 use num::Zero;
 
