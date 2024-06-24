@@ -1,23 +1,88 @@
+use std::marker::PhantomData;
+
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza::concepts::domain_new::*;
 use cellular_raza::concepts::{
-    BoundaryError, CalcError, CellAgent, DecomposeError, IndexError, Mechanics, RngError,
+    BoundaryError, CalcError, CellAgent, DecomposeError, IndexError, Interaction, Mechanics,
+    RngError,
 };
 use cellular_raza::core::backend::chili;
 use cellular_raza::core::time::FixedStepsize;
 use cellular_raza::prelude::StorageBuilder;
-use rand::SeedableRng;
+use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
 mod puzzle_mechanics;
-// mod two_three_tree;
 
 use puzzle_mechanics::*;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct InsideInteraction<F> {
+    pub strength: F,
+    pub radius: F,
+}
+
+impl<F> Interaction<Vector2<F>, Vector2<F>, Vector2<F>> for InsideInteraction<F>
+where
+    F: Copy + nalgebra::RealField,
+{
+    fn calculate_force_between(
+        &self,
+        own_pos: &Vector2<F>,
+        _own_vel: &Vector2<F>,
+        ext_pos: &Vector2<F>,
+        _ext_vel: &Vector2<F>,
+        _ext_info: &(),
+    ) -> Result<(Vector2<F>, Vector2<F>), CalcError> {
+        let dir = own_pos - ext_pos;
+        let r2 = dir.norm_squared() / self.radius.powf(F::one() + F::one());
+        let force: Vector2<F> = if !r2.is_zero() {
+            dir * self.strength / r2
+        } else {
+            Vector2::zeros()
+        };
+        Ok((force, -force))
+    }
+
+    fn get_interaction_information(&self) -> () {}
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct OutsideInteraction<F> {
+    pub attraction: F,
+}
+
+impl<F> Interaction<Vector2<F>, Vector2<F>, Vector2<F>> for OutsideInteraction<F>
+where
+    F: Copy + nalgebra::RealField,
+    Vector2<F>: core::ops::Mul<F, Output = Vector2<F>>,
+{
+    fn calculate_force_between(
+        &self,
+        own_pos: &Vector2<F>,
+        _own_vel: &Vector2<F>,
+        ext_pos: &Vector2<F>,
+        _ext_vel: &Vector2<F>,
+        _ext_info: &(),
+    ) -> Result<(Vector2<F>, Vector2<F>), CalcError> {
+        let dir = own_pos - ext_pos;
+        let r = dir.norm();
+        let force = if !r.is_zero() {
+            dir * self.attraction / r
+        } else {
+            Vector2::zeros()
+        };
+        Ok((-force, force))
+    }
+
+    fn get_interaction_information(&self) -> () {}
+}
 
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 pub struct Agent {
     #[Mechanics]
-    mechanics: Puzzle<f64>,
+    #[Interaction]
+    mechanics: PuzzleInteraction<f64, InsideInteraction<f64>, OutsideInteraction<f64>, (), ()>,
 }
 
 #[derive(Clone, Domain)]
@@ -97,48 +162,62 @@ impl SubDomainMechanics<Vertices<f64>, Vertices<f64>> for MySubDomain {
 
 fn generate_initial_points(domain_size: f64) -> Vec<nalgebra::Vector2<f64>> {
     use nalgebra::Vector2;
-    let dx = domain_size / 3.0;
-    vec![
-        Vector2::from([1.0 * dx, 1.0 * dx]),
-        Vector2::from([2.0 * dx, 1.0 * dx]),
-        Vector2::from([1.0 * dx, 2.0 * dx]),
-        Vector2::from([2.0 * dx, 2.0 * dx]),
-    ]
+    let n_grid = 3;
+    let dx = domain_size / n_grid as f64;
+    let mut positions = vec![];
+    for i in 0..(n_grid - 1) {
+        for j in 0..(n_grid - 1) {
+            let pos = Vector2::from([(1 + i) as f64 * dx, (1 + j) as f64 * dx]);
+            positions.push(pos);
+        }
+    }
+    positions
 }
 
 fn main() -> Result<(), chili::SimulationError> {
-    let domain_size = 100.0;
-    let n_vertices = 40;
-    let angle_stiffness = 1.0;
-    let surface_tension = 0.05;
-    let boundary_length = 50.0;
-    let cell_area = 300.0;
-    let internal_pressure = 0.00025;
+    let domain_size = 40.0;
+    let n_vertices = 20;
+    let angle_stiffness = 0.03;
+    let surface_tension = 0.01;
+    let boundary_length = 60.0;
+    let cell_area = 150.0;
+    let internal_pressure = 2.5e-3;
     let diffusion_constant = 0.0;
-    let damping = 0.5;
+    let damping = 0.1;
     let agents = generate_initial_points(domain_size)
         .into_iter()
         .enumerate()
         .map(|(n_agent, middle)| Agent {
-            mechanics: Puzzle::new_equilibrium(
-                middle,
-                n_vertices,
-                angle_stiffness,
-                surface_tension,
-                boundary_length,
-                cell_area,
-                internal_pressure,
-                diffusion_constant,
-                damping,
-                Some((0.5, 10 * n_agent as u64)),
-            ),
+            mechanics: PuzzleInteraction {
+                puzzle: Puzzle::new_equilibrium(
+                    middle,
+                    n_vertices,
+                    angle_stiffness,
+                    surface_tension,
+                    boundary_length,
+                    cell_area,
+                    internal_pressure,
+                    diffusion_constant,
+                    damping,
+                    Some((0.1, 10 * n_agent as u64)),
+                ),
+                bounding_min: [std::f64::NEG_INFINITY; 2].into(),
+                bounding_max: [std::f64::INFINITY; 2].into(),
+                inside_force: InsideInteraction {
+                    strength: 1e-6,
+                    radius: cell_area.sqrt(),
+                },
+                outside_force: OutsideInteraction { attraction: 0.0 },
+                phantom_inf_outside: PhantomData,
+                phantom_inf_inside: PhantomData,
+            },
         });
     let domain = MyDomain {
-        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [1; 2])?,
+        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [3; 2])?,
     };
     let settings = chili::Settings {
         n_threads: 1.try_into().unwrap(),
-        time: FixedStepsize::from_partial_save_interval(0.0, 1e-1, 1e2, 5e-1)?,
+        time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 1e4, 2e1)?,
         storage: StorageBuilder::new().location("out/puzzles"),
         show_progressbar: true,
     };
@@ -146,7 +225,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: agents,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics],
+        aspects: [Mechanics, Interaction],
     )?;
     Ok(())
 }

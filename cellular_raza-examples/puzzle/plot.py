@@ -43,7 +43,7 @@ def extract_vertices(cells: list[dict] | None) -> list[np.ndarray] | None:
         return None
     vertices = []
     for cell in cells:
-        vertices.append(np.array(cell["mechanics"]["vertices"]))
+        vertices.append(np.array(cell["mechanics"]["puzzle"]["vertices"]))
     return vertices
 
 def plot_vertices(vertices: list[np.ndarray] | None) -> matplotlib.figure.Figure:
@@ -51,8 +51,8 @@ def plot_vertices(vertices: list[np.ndarray] | None) -> matplotlib.figure.Figure
         return None
     fig, ax = plt.subplots(figsize=(8, 8))
     # TODO magic numbers
-    ax.set_xlim([0, 100])
-    ax.set_ylim([0, 100])
+    ax.set_xlim([0, 40])
+    ax.set_ylim([0, 40])
     for cell_vertices in vertices:
         polygon = matplotlib.patches.Polygon(
             cell_vertices,
@@ -87,11 +87,13 @@ def save_plot_all_iterations(opath: Path | None = None) -> int | None:
         return None
     iterations = get_iterations(opath)
 
+    print("Plotting Results")
+    import tqdm
     with mp.Pool(mp.cpu_count()) as pool:
-        results = list(pool.imap(
+        results = list(tqdm.tqdm(pool.imap_unordered(
             _concurrent_single_iter_plotter,
             zip(iterations, itertools.repeat(spath))
-        ))
+        ), total=len(iterations)))
         return len(results)
 
 def generate_movie(opath: Path | None = None, play_movie: bool = True):
