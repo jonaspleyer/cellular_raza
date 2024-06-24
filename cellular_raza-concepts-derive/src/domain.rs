@@ -300,10 +300,6 @@ impl DomainImplementer {
                         )
                         .flatten()
                         .collect();
-                        // ::std::collections::HashMap::<
-                        //     Self::VoxelIndex,
-                        //     Self::SubDomainIndex
-                        // >::new();
 
                     // Build neighbor map
                     let mut neighbor_map: ::std::collections::HashMap<
@@ -313,7 +309,16 @@ impl DomainImplementer {
                         .iter()
                         .map(|(subdomain_index, subdomain, voxels)| voxels
                             .into_iter()
-                            .map(|voxel_index| subdomain.get_neighbor_voxel_indices(&voxel_index))
+                            .map(|voxel_index| {
+                                let neighbors = subdomain.get_neighbor_voxel_indices(&voxel_index);
+                                // This covers an edge case where when no neighbors are given the
+                                // overall map between subdomains is not set up correctly.
+                                if neighbors.len() == 0 {
+                                    vec![voxel_index.clone()]
+                                } else {
+                                    neighbors
+                                }
+                            })
                             .flatten()
                             .map(|neighbor_voxel_index| (
                                 subdomain_index.clone(),
