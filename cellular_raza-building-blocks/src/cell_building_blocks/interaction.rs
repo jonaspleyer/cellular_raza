@@ -589,14 +589,17 @@ use nalgebra::Vector2;
 /// assert!((point.x - 0.5).abs() < 1e-10);
 /// assert!((point.y - 0.5).abs() < 1e-10);
 /// ```
-pub fn nearest_point_from_point_to_line<const D: usize>(
-    point: &SVector<f64, D>,
-    line: (SVector<f64, D>, SVector<f64, D>),
-) -> (f64, SVector<f64, D>, f64) {
+pub fn nearest_point_from_point_to_line<F, const D: usize>(
+    point: &SVector<F, D>,
+    line: (SVector<F, D>, SVector<F, D>),
+) -> (F, SVector<F, D>, F)
+where
+    F: Copy + nalgebra::RealField,
+{
     let ab = line.1 - line.0;
     let ap = point - line.0;
-    let t = (ab.dot(&ap) / ab.norm_squared()).clamp(0.0, 1.0);
-    let nearest_point = (1.0 - t) * line.0 + t * line.1;
+    let t = (ab.dot(&ap) / ab.norm_squared()).clamp(F::zero(), F::one());
+    let nearest_point = line.0 * (F::one() - t) + line.1 * t;
     ((point - nearest_point).norm(), nearest_point, t)
 }
 
