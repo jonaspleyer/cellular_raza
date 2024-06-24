@@ -1,5 +1,4 @@
-use cellular_raza_concepts::domain_new::*;
-use cellular_raza_concepts::{BoundaryError, DecomposeError, IndexError};
+use cellular_raza_concepts::*;
 
 #[allow(unused)]
 struct Agent {

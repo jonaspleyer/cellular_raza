@@ -92,7 +92,7 @@ pub struct DecomposedDomain<I, S, C> {
 ///
 /// # Derivation
 /// ```
-/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::*;
 /// struct MySubDomain {
 ///     x_min: f32,
 ///     x_max: f32,
@@ -170,7 +170,7 @@ pub trait SortCells<C> {
 ///
 /// # Derivation
 /// ```
-/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::*;
 /// # use cellular_raza_concepts::BoundaryError;
 /// struct MyMechanics {
 ///     x_min: f64,
@@ -218,8 +218,7 @@ pub trait SubDomainMechanics<Pos, Vel> {
 ///
 /// # Derivation
 /// ```
-/// # use cellular_raza_concepts::domain_new::*;
-/// # use cellular_raza_concepts::CalcError;
+/// # use cellular_raza_concepts::*;
 /// struct MyForce {
 ///     damping: f64,
 /// }
@@ -252,7 +251,7 @@ pub trait SubDomainForce<Pos, Vel, For> {
 ///
 /// # Derivation
 /// ```compile_fail
-/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::*;
 /// struct MyReactions;
 ///
 /// impl SubDomainReactions for MyReactions {}
@@ -280,7 +279,7 @@ pub trait SubDomainReactions {}
 ///
 /// # Example Usage
 /// ```
-/// # use cellular_raza_concepts::domain_new::*;
+/// # use cellular_raza_concepts::*;
 /// # struct MySubDomain;
 /// # impl SubDomain for MySubDomain {
 /// #     type VoxelIndex = usize;
