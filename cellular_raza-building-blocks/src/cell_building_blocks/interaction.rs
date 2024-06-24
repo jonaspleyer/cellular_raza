@@ -603,7 +603,8 @@ where
     ((point - nearest_point).norm(), nearest_point, t)
 }
 
-fn nearest_point_from_point_to_multiple_lines(
+/// Generalizes the [nearest_point_from_point_to_line] function for a collection of line segments.
+pub fn nearest_point_from_point_to_multiple_lines(
     point: &Vector2<f64>,
     polygon_lines: &[(Vector2<f64>, Vector2<f64>)],
 ) -> Option<(usize, (f64, Vector2<f64>, f64))> {
@@ -641,10 +642,13 @@ fn nearest_point_from_point_to_multiple_lines(
 /// // v
 /// assert!(!ray_intersects_line_segment(&line_segment, &ray));
 /// ```
-pub fn ray_intersects_line_segment(
-    ray: &(Vector2<f64>, Vector2<f64>),
-    line_segment: &(Vector2<f64>, Vector2<f64>),
-) -> bool {
+pub fn ray_intersects_line_segment<F>(
+    ray: &(Vector2<F>, Vector2<F>),
+    line_segment: &(Vector2<F>, Vector2<F>),
+) -> bool
+where
+    F: Copy + nalgebra::RealField + PartialOrd,
+{
     // Calculate the intersection point as if the ray and line were infinite
     let (r1, r2) = ray;
     let (l1, l2) = line_segment;
@@ -674,13 +678,13 @@ pub fn ray_intersects_line_segment(
     // If the denominators are zero, the following possibilities arise
     // 1) Either r1 and r2 are identical or l1 and l2
     // 2) The lines are parallel and cannot intersect
-    if t_denom == 0.0 || u_denom == 0.0 {
+    if t_denom.is_zero() || u_denom.is_zero() {
         // We can directly test if some of the points are on the same line
         // Test this by calculating the dot product of r1-l1 with l2-l1.
         // This value must be between the norm of l2-l1 squared
         let d = (r1 - l1).dot(&(l2 - l1));
         let e = (l2 - l1).norm_squared();
-        return 0.0 <= d && d <= e;
+        return F::zero() <= d && d <= e;
     }
 
     // Handles the case where the points for the ray were layed on top of each other.
@@ -690,7 +694,7 @@ pub fn ray_intersects_line_segment(
 
     // In order to be on the line-segment, we require that u is between 0.0 and 1.0
     // Additionally for p to be on the ray, we require t >= 0.0
-    0.0 <= u && u < 1.0 && 0.0 <= t
+    F::zero() <= u && u < F::one() && F::zero() <= t
 }
 
 impl<A, R, I1, I2, const D: usize>
