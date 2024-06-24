@@ -471,7 +471,7 @@ where
         // TODO Currently we are not splitting the voxels apart efficiently
         // These are subdomains which contain n voxels
         let switcher = n * average_len;
-        let indices_grouped = indices.into_iter().enumerate().group_by(|(i, _)| {
+        let indices_grouped = indices.into_iter().enumerate().chunk_by(|(i, _)| {
             use num::Integer;
             if *i < switcher {
                 i.div_rem(&average_len).0

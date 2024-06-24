@@ -37,7 +37,7 @@ homepage = "https://cellular-raza.com/"
 
 [workspace.dependencies]
 num = "0.4"
-itertools = "0.12"
+itertools = "0.13"
 plotters = { version="0.3", default-features = false, features=[
         "bitmap_backend", "bitmap_encoder", "bitmap_gif",
         "svg_backend",
