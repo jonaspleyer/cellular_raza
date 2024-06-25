@@ -604,15 +604,64 @@ where
 }
 
 /// Generalizes the [nearest_point_from_point_to_line] function for a collection of line segments.
-pub fn nearest_point_from_point_to_multiple_lines(
-    point: &Vector2<f64>,
-    polygon_lines: &[(Vector2<f64>, Vector2<f64>)],
-) -> Option<(usize, (f64, Vector2<f64>, f64))> {
+/// ```
+/// # use cellular_raza_building_blocks::nearest_point_from_point_to_multiple_lines;
+/// # use nalgebra::Vector2;
+/// # use itertools::Itertools;
+/// let point = Vector2::from([0.5; 2]);
+/// let polygon = vec![
+///     Vector2::from([0.0, 0.0]),
+///     Vector2::from([0.5, 0.0]),
+///     Vector2::from([0.7, 0.4]),
+///     Vector2::from([0.9, 0.8]),
+/// ];
+/// let lines = polygon.clone().into_iter().tuple_windows::<(_, _)>().collect::<Vec<_>>();
+/// // This looks something like this:
+/// //             3
+/// //            /
+/// //       p   /
+/// //          2
+/// //         /
+/// //        /
+/// // 0 --- 1
+/// let (n, (dist, calculated_point, t)) = nearest_point_from_point_to_multiple_lines(
+///     &point,
+///     &lines,
+/// ).unwrap();
+/// assert_eq!(n, 1);
+/// let test_dist: f64 = (calculated_point - point).norm();
+/// assert!((dist - test_dist).abs() < 1e-6);
+/// let (v1, v2) = lines[n];
+/// assert!((calculated_point - ((1.0 - t)*v1 + t*v2)).norm() < 1e-6);
+/// for p in polygon {
+///     assert!(dist <= (p - point).norm());
+/// }
+/// ```
+pub fn nearest_point_from_point_to_multiple_lines<'a, F>(
+    point: &Vector2<F>,
+    polygon_lines: impl IntoIterator<Item = &'a (Vector2<F>, Vector2<F>)>,
+) -> Option<(usize, (F, Vector2<F>, F))>
+where
+    F: Copy + nalgebra::RealField,
+{
     polygon_lines
-        .iter()
+        .into_iter()
         .enumerate()
-        .map(|(n_row, &line)| (n_row, nearest_point_from_point_to_line(point, line)))
-        .min_by(|(_, (distance1, _, _)), (_, (distance2, _, _))| distance1.total_cmp(&distance2))
+        .map(|(n_row, line)| (n_row, nearest_point_from_point_to_line(point, &line)))
+        .fold(None, |acc, v| {
+            let distance_v = v.1.0;
+            match acc {
+                None => Some(v),
+                Some(e) => {
+                    let distance_acc = e.1.0;
+                    if distance_v < distance_acc {
+                        Some(v)
+                    } else {
+                        acc
+                    }
+                }
+            }
+        })
 }
 
 /// Implements the ray-casting algorithm to check if a ray intersects with a given line segment.
