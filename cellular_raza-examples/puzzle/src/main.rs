@@ -31,13 +31,13 @@ where
         _ext_info: &(),
     ) -> Result<(Vector2<F>, Vector2<F>), CalcError> {
         let dir = own_pos - ext_pos;
-        let r2 = dir.norm_squared() / self.radius.powf(F::one() + F::one());
-        let force: Vector2<F> = if !r2.is_zero() {
-            dir * self.strength / r2
+        let r = dir.norm() / self.radius;
+        let force: Vector2<F> = if !r.is_zero() {
+            dir / r * self.strength * (F::one() + r.powf(F::one() + F::one()))
         } else {
             Vector2::zeros()
         };
-        Ok((force, -force))
+        Ok((-force, force))
     }
 
     fn get_interaction_information(&self) -> () {}
@@ -46,6 +46,8 @@ where
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct OutsideInteraction<F> {
     pub attraction: F,
+    pub radius: F,
+    pub cutoff: F,
 }
 
 impl<F> Interaction<Vector2<F>, Vector2<F>, Vector2<F>> for OutsideInteraction<F>
@@ -62,9 +64,9 @@ where
         _ext_info: &(),
     ) -> Result<(Vector2<F>, Vector2<F>), CalcError> {
         let dir = own_pos - ext_pos;
-        let r = dir.norm();
-        let force = if !r.is_zero() {
-            dir * self.attraction / r
+        let r = dir.norm() / self.radius;
+        let force = if !r.is_zero() && r < self.cutoff {
+            dir * self.attraction / (F::one() + r)
         } else {
             Vector2::zeros()
         };
