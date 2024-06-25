@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use cellular_raza::building_blocks::{
-    nearest_point_from_point_to_line, ray_intersects_line_segment,
+    nearest_point_from_point_to_multiple_lines, ray_intersects_line_segment,
 };
 use cellular_raza::concepts::{CalcError, Interaction, Mechanics};
 
@@ -414,8 +414,9 @@ where
                 .add_assign(-one_half * force_curvature);
 
             // Calculate surface tension contribution
-            let force_surf_tension =
-                self.surface_tension * (F::one() - current_boundary_length / self.boundary_length);
+            let force_surf_tension = self.surface_tension
+                * (F::one()
+                    - v21.norm() / self.boundary_length * F::from_usize(n_vertices).unwrap());
             internal_force
                 .0
                 .get_mut(n1)
@@ -621,96 +622,76 @@ where
         // of outside interactions
         let boxes_do_not_intersect = self.bounding_boxes_do_not_intersect(&min_ext, &max_ext);
         let mut point_outside_polygon = self.bounding_min;
+        // TODO think about using something else than one here
         point_outside_polygon.x -= F::one();
-        let middle_own = own_pos.mean();
-        let average_vel = own_vel.mean();
 
         for (m, point_ext) in ext_pos.0.iter().enumerate() {
-            for &(n1, n2, n3) in self.puzzle.triangulation.get_triangles()? {
-                let v1 = own_pos.0[n1];
-                let v2 = own_pos.0[n2];
-                let v3 = own_pos.0[n3];
+            let ext_point_in_polygon = if !boxes_do_not_intersect {
+                // Check if vertex is inside of other triangle.
+                // If the bounding box was not successful,
+                // we use the ray-casting algorithm to check.
+                let n_intersections: usize = self
+                    .puzzle
+                    .vertices
+                    .0
+                    .iter()
+                    .circular_tuple_windows::<(_, _)>()
+                    .map(|line| {
+                        ray_intersects_line_segment(
+                            &(*point_ext, point_outside_polygon),
+                            &(*line.0, *line.1),
+                        ) as usize
+                    })
+                    .sum();
+                // An even number means that the point was outside
+                // while odd numbers mean that the point was inside.
+                n_intersections % 2 == 1
+            } else {
+                false
+            };
 
-                let ext_point_in_triangle = if !boxes_do_not_intersect {
-                    // Check if vertex is inside of other triangle.
-                    // If the bounding box was not successful,
-                    // we use the ray-casting algorithm to check.
-                    let n_intersections: usize = self
-                        .puzzle
-                        .vertices
-                        .0
-                        .iter()
-                        .circular_tuple_windows::<(_, _)>()
-                        .map(|line| {
-                            ray_intersects_line_segment(
-                                &(*point_ext, point_outside_polygon),
-                                &(*line.0, *line.1),
-                            ) as usize
-                        })
-                        .sum();
-                    // An even number means that the point was outside
-                    // while odd numbers mean that the point was inside.
-                    n_intersections % 2 == 1
-                } else {
-                    false
-                };
-
-                if ext_point_in_triangle {
-                    // If so, calculate the inside interaction
-                    let three = F::one() + F::one() + F::one();
-                    let (f1, f2) = self.inside_force.calculate_force_between(
-                        &middle_own,
-                        &average_vel,
-                        &point_ext,
-                        &ext_vel.0[m],
-                        &ext_info.2,
-                    )?;
-                    if let Some(x) = total_force1.0.get_mut(n1) {
-                        *x += f1 / three;
-                    }
-                    if let Some(x) = total_force1.0.get_mut(n2) {
-                        *x += f1 / three;
-                    }
-                    if let Some(x) = total_force1.0.get_mut(n3) {
-                        *x += f1 / three;
-                    }
-                    if let Some(x) = total_force2.0.get_mut(m) {
-                        *x += f2;
-                    }
-                } else {
-                    // otherwise the outside interaction
-                    let calculated_distances = [
-                        nearest_point_from_point_to_line(point_ext, (v1, v2)),
-                        nearest_point_from_point_to_line(point_ext, (v2, v3)),
-                        nearest_point_from_point_to_line(point_ext, (v3, v1)),
-                    ];
-                    let (n_min, (_, point, t)) = calculated_distances
-                        .into_iter()
-                        .enumerate()
-                        .min_by(|x1, x2| x1.1 .0.partial_cmp(&x2.1 .0).unwrap())
-                        .unwrap();
-                    // Calculate the indices which were obtained by the minimization procedure
-                    let nn1 = (n1 + n_min) % own_pos.0.len();
-                    let nn2 = (n1 + n_min + 1) % own_pos.0.len();
-                    let average_vel = own_vel.0[nn1] * t + own_vel.0[nn2] * (F::one() - t);
-                    let (f1, f2) = self.outside_force.calculate_force_between(
+            // Find closest point on edge
+            if let Some((n, (_, point, t))) = nearest_point_from_point_to_multiple_lines(
+                &point_ext,
+                &self
+                    .puzzle
+                    .vertices
+                    .0
+                    .iter()
+                    .circular_tuple_windows::<(_, _)>()
+                    .map(|(&x, &y)| (x, y))
+                    .collect::<Vec<_>>(),
+            ) {
+                let n1 = n;
+                let n2 = (n + 1) % self.puzzle.vertices.0.len();
+                let average_vel = own_vel.0[n1] * (F::one() - t) + own_vel.0[n2] * t;
+                let (f1, f2) = if ext_point_in_polygon {
+                    // Inside Interaction
+                    self.inside_force.calculate_force_between(
                         &point,
                         &average_vel,
                         &point_ext,
-                        &ext_vel.0[m],
+                        &ext_vel.0[n1],
+                        &ext_info.2,
+                    )?
+                } else {
+                    // Outside Interaction
+                    self.outside_force.calculate_force_between(
+                        &point,
+                        &average_vel,
+                        &point_ext,
+                        &ext_vel.0[n1],
                         &ext_info.3,
-                    )?;
-
-                    if let Some(x) = total_force1.0.get_mut(nn1) {
-                        *x += f1 * t;
-                    }
-                    if let Some(x) = total_force1.0.get_mut(nn2) {
-                        *x += f1 * (F::one() - t);
-                    }
-                    if let Some(x) = total_force2.0.get_mut(m) {
-                        *x += f2;
-                    }
-                }
+                    )?
+                };
+                let n_vertices1 = F::from_usize(total_force1.0.len()).unwrap();
+                let n_vertices2 = F::from_usize(total_force2.0.len()).unwrap();
+                let x1 = total_force1.0.get_mut(n1).unwrap();
+                *x1 += f1 * (F::one() - t) / n_vertices1;
+                let x2 = total_force1.0.get_mut(n2).unwrap();
+                let y1 = total_force2.0.get_mut(m).unwrap();
+                *x2 += f1 * t / n_vertices1;
+                *y1 += f2 / n_vertices2;
             }
         }
         Ok((total_force1, total_force2))
