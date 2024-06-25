@@ -158,15 +158,17 @@ impl SubDomainMechanics<Vertices<f64>, Vertices<f64>> for MySubDomain {
     }
 }
 
-fn generate_initial_points(domain_size: f64) -> Vec<nalgebra::Vector2<f64>> {
+fn generate_initial_points(n_cells: usize, domain_size: f64) -> Vec<nalgebra::Vector2<f64>> {
     use nalgebra::Vector2;
-    let n_grid = 3;
-    let dx = domain_size / n_grid as f64;
+    let n_grid: usize = (n_cells as f64).sqrt().ceil() as usize;
+    let dx = domain_size / (n_grid + 1) as f64;
     let mut positions = vec![];
-    for i in 0..(n_grid - 1) {
-        for j in 0..(n_grid - 1) {
-            let pos = Vector2::from([(1 + i) as f64 * dx, (1 + j) as f64 * dx]);
-            positions.push(pos);
+    for i in 0..n_grid {
+        for j in 0..n_grid {
+            if i * n_grid + j < n_cells {
+                let pos = Vector2::from([(1 + i) as f64 * dx, (j + 1) as f64 * dx]);
+                positions.push(pos);
+            }
         }
     }
     positions
