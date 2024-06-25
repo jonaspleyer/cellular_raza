@@ -581,7 +581,7 @@ use nalgebra::Vector2;
 /// );
 /// let (dist, point, rel_length) = nearest_point_from_point_to_line(
 ///     &external_point,
-///     line_segment,
+///     &line_segment,
 /// );
 ///
 /// assert!((dist - 1.0/2f64.sqrt()).abs() < 1e-10);
@@ -591,7 +591,7 @@ use nalgebra::Vector2;
 /// ```
 pub fn nearest_point_from_point_to_line<F, const D: usize>(
     point: &SVector<F, D>,
-    line: (SVector<F, D>, SVector<F, D>),
+    line: &(SVector<F, D>, SVector<F, D>),
 ) -> (F, SVector<F, D>, F)
 where
     F: Copy + nalgebra::RealField,
@@ -884,7 +884,7 @@ mod test {
 
         // Check if the distance and point are matching
         for (q, r, d) in test_points.iter() {
-            let (dist, nearest_point, _) = super::nearest_point_from_point_to_line(&q, (p1, p2));
+            let (dist, nearest_point, _) = super::nearest_point_from_point_to_line(&q, &(p1, p2));
             assert_eq!(dist, *d);
             assert_eq!(nearest_point, *r);
         }
