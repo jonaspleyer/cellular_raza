@@ -175,16 +175,17 @@ fn generate_initial_points(n_cells: usize, domain_size: f64) -> Vec<nalgebra::Ve
 }
 
 fn main() -> Result<(), chili::SimulationError> {
-    let domain_size = 40.0;
-    let n_vertices = 20;
+    let radius = 5.0;
+    let domain_size = 35.0;
+    let n_vertices = 100;
     let angle_stiffness = 0.03;
-    let surface_tension = 0.01;
-    let boundary_length = 60.0;
-    let cell_area = 150.0;
-    let internal_pressure = 2.5e-3;
+    let surface_tension = 0.1;
+    let boundary_length = 1.2 * 2.0 * std::f64::consts::PI * radius;
+    let cell_area = std::f64::consts::PI * radius.powf(2.0);
+    let internal_pressure = 2.5e-2;
     let diffusion_constant = 0.0;
     let damping = 0.1;
-    let agents = generate_initial_points(domain_size)
+    let agents = generate_initial_points(9, domain_size)
         .into_iter()
         .enumerate()
         .map(|(n_agent, middle)| Agent {
@@ -204,10 +205,14 @@ fn main() -> Result<(), chili::SimulationError> {
                 bounding_min: [std::f64::NEG_INFINITY; 2].into(),
                 bounding_max: [std::f64::INFINITY; 2].into(),
                 inside_force: InsideInteraction {
-                    strength: 1e-6,
-                    radius: cell_area.sqrt(),
+                    strength: 5e-3,
+                    radius,
                 },
-                outside_force: OutsideInteraction { attraction: 0.0 },
+                outside_force: OutsideInteraction {
+                    attraction: 3e-4,
+                    radius,
+                    cutoff: 0.3 * radius,
+                },
                 phantom_inf_outside: PhantomData,
                 phantom_inf_inside: PhantomData,
             },
@@ -216,8 +221,8 @@ fn main() -> Result<(), chili::SimulationError> {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [3; 2])?,
     };
     let settings = chili::Settings {
-        n_threads: 1.try_into().unwrap(),
-        time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 1e4, 2e1)?,
+        n_threads: 4.try_into().unwrap(),
+        time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 4e4, 4e1)?,
         storage: StorageBuilder::new().location("out/puzzles"),
         show_progressbar: true,
     };
