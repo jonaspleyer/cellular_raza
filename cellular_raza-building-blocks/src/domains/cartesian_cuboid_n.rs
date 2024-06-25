@@ -541,20 +541,20 @@ where
         // For each dimension
         for i in 0..D {
             // Check if the particle is below lower edge
-            if position[i] < self.min[i] {
-                position[i] = two * self.min[i] - position[i];
+            if position[i] < self.domain_min[i] {
+                position[i] = two * self.domain_min[i] - position[i];
                 velocity[i] = velocity[i].abs();
             }
             // Check if the particle is over the edge
-            if position[i] > self.max[i] {
-                position[i] = two * self.max[i] - position[i];
+            if position[i] > self.domain_max[i] {
+                position[i] = two * self.domain_max[i] - position[i];
                 velocity[i] = -velocity[i].abs();
             }
         }
 
         // If new position is still out of boundary return error
         for i in 0..D {
-            if position[i] < self.min[i] || position[i] > self.max[i] {
+            if position[i] < self.domain_min[i] || position[i] > self.domain_max[i] {
                 return Err(BoundaryError(format!(
                     "Particle is out of domain at position {:?}",
                     pos
