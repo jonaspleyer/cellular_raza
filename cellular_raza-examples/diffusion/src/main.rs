@@ -218,13 +218,13 @@ impl SubDomain {
         Ok(index)
     }
 
-    pub fn plot_result(&self, iteration: usize) {
+    pub fn plot_result(&self, n_domain: usize, iteration: usize) {
         let s = self.total_concentration.shape();
         let n_lattice_points_x = s[0];
         let n_lattice_points_y = s[1];
 
         use plotters::prelude::*;
-        let name = format!("output_{:08.0}.png", iteration);
+        let name = format!("output_{:03.0}_{:08.0}.png", n_domain, iteration);
         let root = plotters::backend::BitMapBackend::new(&name, (400, 400)).into_drawing_area();
         root.fill(&plotters::style::colors::WHITE).unwrap();
         let mut chart = ChartBuilder::on(&root)
@@ -368,9 +368,9 @@ fn main() {
     let start = std::time::Instant::now();
     for n in 0..1_000 {
         if n % 20 == 0 {
-            // for subdomain in subdomains.iter() {
-            //     subdomain.plot_result(n);
-            // }
+            for (n_domain, (subdomain, _)) in subdomains_agents.iter().enumerate() {
+                subdomain.plot_result(n_domain, n);
+            }
         }
         // Ask other neighboring subdomains for neighbor values by giving them the border
         // information
