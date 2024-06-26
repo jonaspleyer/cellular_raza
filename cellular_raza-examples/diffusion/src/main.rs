@@ -359,36 +359,51 @@ fn main() {
         max,
         dx: (max - min).component_div(&n_lattice_points.cast()),
     };
-
-    let neighbours = vec![CartesianNeighbor {
-        border: CartesianBorder {
-            min: [-10.0, -7.0].into(),
-            max: [-5.0, 9.0].into(),
-        },
-        concentrations: ndarray::Array3::ones([5, 16, n_components]),
-    }];
+    let mut subdomain1 = subdomain0.clone();
+    subdomain1.min = subdomain0.max;
+    subdomain1.max = subdomain0.max + (subdomain0.max - subdomain0.min);
+    let mut subdomains_agents = vec![(subdomain0, agents), (subdomain1, vec![])];
 
     let dt = 0.01;
     let start = std::time::Instant::now();
     for n in 0..1_000 {
         if n % 20 == 0 {
-            subdomain.plot_result(n);
+            // for subdomain in subdomains.iter() {
+            //     subdomain.plot_result(n);
+            // }
         }
-        let sources = agents
-            .iter_mut()
-            .map(|a| {
-                let pos = a.pos();
-                let extracellular = subdomain.get_concentration_at_pos(&pos)?;
-                let (intra, extra) = a.calculate_combined_increment(&extracellular)?;
-                a.increment_intracellular(&(dt * &intra));
-                Ok((pos, extra))
-            })
-            .collect::<Result<Vec<_>, CalcError>>()
-            .unwrap();
-
-        subdomain
-            .update_fluid_dynamics(dt, &neighbours, &sources)
-            .unwrap();
+        // Ask other neighboring subdomains for neighbor values by giving them the border
+        // information
+        // TODO
+        let border_infos = subdomains_agents
+            .iter()
+            .map(|(sdm, _)| sdm.get_border_info())
+            .collect::<Vec<_>>();
+        for (subdomain, agents) in subdomains_agents.iter_mut() {
+            // TODO use the border_infos from before here
+            let neighbor_values = vec![];
+            // CartesianNeighbor {
+            //     border: CartesianBorder {
+            //         min: [-10.0, -7.0].into(),
+            //         max: [-5.0, 9.0].into(),
+            //     },
+            //     concentrations: ndarray::Array3::ones([5, 16, n_components]),
+            // }];
+            let sources = agents
+                .iter_mut()
+                .map(|a| {
+                    let pos = a.pos();
+                    let extracellular = subdomain.get_extracellular_at_pos(&pos)?;
+                    let (intra, extra) = a.calculate_combined_increment(&extracellular)?;
+                    a.increment_intracellular(&(dt * &intra));
+                    Ok((pos, extra))
+                })
+                .collect::<Result<Vec<_>, CalcError>>()
+                .unwrap();
+            subdomain
+                .update_fluid_dynamics(dt, neighbor_values, &sources)
+                .unwrap();
+        }
     }
 
     let duration = start.elapsed();
