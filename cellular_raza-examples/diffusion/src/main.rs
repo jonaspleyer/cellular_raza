@@ -35,6 +35,7 @@ trait FluidDynamics<Pos, Conc, Float> {
 
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
     fn get_neighbor_values(border_info: Self::BorderInfo) -> Self::NeighborValues;
+    fn get_border_info(&self) -> Self::BorderInfo;
 }
 
 struct CartesianBorder {
@@ -135,6 +136,13 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
 
     fn get_neighbor_values(_border_info: Self::BorderInfo) -> Self::NeighborValues {
         todo!()
+    }
+
+    fn get_border_info(&self) -> Self::BorderInfo {
+        Self::BorderInfo {
+            min: self.min,
+            max: self.max,
+        }
     }
 }
 
