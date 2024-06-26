@@ -164,7 +164,7 @@ impl<const D1: usize, const D2: usize>
                 // Calculate the closest point of the external position
                 let (_, nearest_point, rel_length) = nearest_point_from_point_to_line(
                     &p1.transpose(),
-                    (p2_n0.transpose(), p2_n1.transpose()),
+                    &(p2_n0.transpose(), p2_n1.transpose()),
                 );
                 let dist = p1 - nearest_point.transpose();
                 let r = dist.norm();
