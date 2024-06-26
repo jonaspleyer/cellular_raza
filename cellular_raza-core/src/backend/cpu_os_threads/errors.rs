@@ -52,8 +52,8 @@ pub enum SimulationError {
     CalcError(CalcError),
     /// Related to time-stepping events. See [crate::time].
     TimeError(TimeError),
-    /// Error-type specifically related to the [Controller](cellular_raza_concepts::Controller)
-    /// trait.
+    /// Error-type specifically related to the
+    /// [Controller](cellular_raza_concepts::domain_old::Controller) trait.
     ControllerError(ControllerError),
     /// An error specific to cell-division events by the
     ///

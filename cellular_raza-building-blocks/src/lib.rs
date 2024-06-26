@@ -58,7 +58,7 @@
 //! - [pyo3](https://docs.rs/pyo3/latest/pyo3/) Rust bindings to the Python interpreter
 
 #![deny(missing_docs)]
-#![cfg_attr(doc_cfg, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod cell_building_blocks;
 mod cell_models;

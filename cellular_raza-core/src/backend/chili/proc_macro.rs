@@ -132,8 +132,8 @@ pub use cellular_raza_core_proc_macro::test_compatibility;
 /// # Arguments
 /// | Keyword | Description | Default |
 /// | --- | --- | --- |
-/// | `domain` | An object implementing the [Domain](cellular_raza_concepts::domain_new::Domain) trait. | - |
-/// | `agents` | Iterable of cell-agents compatible with [Domain](cellular_raza_concepts::domain_new::Domain) | - |
+/// | `domain` | An object implementing the [Domain](cellular_raza_concepts::Domain) trait. | - |
+/// | `agents` | Iterable of cell-agents compatible with [Domain](cellular_raza_concepts::Domain) | - |
 /// | `settings` | [Settings](crate::backend::chili::Settings) | - |
 /// | `aspects` | List of simulation aspects such as `[Mechanics, Interaction, ...]` See below. | - |
 /// | `core_path` | Path that points to the core module of `cellular_raza` | `cellular_raza::core` |
@@ -142,11 +142,11 @@ pub use cellular_raza_core_proc_macro::test_compatibility;
 /// # Simulation Aspects
 /// | Aspect | Trait(s) |
 /// | --- | --- |
-/// | `Mechanics` | [`Mechanics`](cellular_raza_concepts::Mechanics),[`SubDomainMechanics`](cellular_raza_concepts::domain_new::SubDomainMechanics)|
+/// | `Mechanics` | [`Mechanics`](cellular_raza_concepts::Mechanics),[`SubDomainMechanics`](cellular_raza_concepts::SubDomainMechanics)|
 /// | `Interaction` | [`Interaction`](cellular_raza_concepts::Interaction) |
 /// | `Cycle` | [`Cycle`](cellular_raza_concepts::Cycle) |
 /// | `Reactions`¹ | [`CellularReactions`](cellular_raza_concepts::CellularReactions) |
-/// | `DomainForce` | [`SubDomainForce`](cellular_raza_concepts::domain_new::SubDomainForce) |
+/// | `DomainForce` | [`SubDomainForce`](cellular_raza_concepts::SubDomainForce) |
 /// ¹Currently not working
 ///
 /// ## Parallelization

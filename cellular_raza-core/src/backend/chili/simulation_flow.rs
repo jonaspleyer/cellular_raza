@@ -308,7 +308,7 @@ pub trait FromMap<I>
 where
     Self: Sized,
 {
-    /// [SubDomains](cellular_raza_concepts::domain_new::SubDomain) can be neighboring each
+    /// [SubDomains](cellular_raza_concepts::SubDomain) can be neighboring each
     /// other via complicated graphs.
     /// An easy way to represent this is by using a [HashMap]. We want to create Barriers which match
     /// the specified subdomain indices.

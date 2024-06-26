@@ -70,7 +70,7 @@ macro_rules! implement_newton_damped_mechanics(
 
         #[cfg(feature = "pyo3")]
         #[pymethods]
-        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
         impl $struct_name {
             #[new]
             fn _new(
@@ -244,7 +244,7 @@ macro_rules! implement_brownian_mechanics(
 
         #[cfg(feature = "pyo3")]
         #[pymethods]
-        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
         impl $struct_name {
             #[new]
             fn _new(
@@ -430,7 +430,7 @@ macro_rules! define_langevin_nd(
         }
 
         #[cfg(feature = "pyo3")]
-        #[cfg_attr(doc_cfg, doc(cfg(feature = "pyo3")))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
         #[pymethods]
         impl $struct_name {
             /// Creates a new [

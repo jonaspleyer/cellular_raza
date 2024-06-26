@@ -5,7 +5,7 @@
 //!
 //! ## Supported Simulation Aspects
 //! Not every backend does support all simulation aspects.
-//! We aim to provide one general-purpose backend ablet to solve any given simulation that adheres
+//! We aim to provide one general-purpose backend able to solve any given simulation that adheres
 //! to the [cellular_raza_concepts] with the 🌶️ [chili] backend.
 //!
 //! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] |
@@ -15,9 +15,9 @@
 //! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |
 //! | [Reactions](cellular_raza_concepts::CellularReactions) | ✅ | ❌ |
 //! | [Volume](cellular_raza_concepts::Volume) | ✅¹ | ❌ |
-//! | [Domain](cellular_raza_concepts::Domain) | ✅ | ❌ |
-//! | [DomainNew](cellular_raza_concepts::domain_new::Domain) | ❌ | ✅ |
-//! | [Controller](cellular_raza_concepts::Controller) | ✅ | ❌ |
+//! | [Domain](cellular_raza_concepts::Domain) | ❌ | ✅ |
+//! | [DomainOld](cellular_raza_concepts::domain_old::Domain) | ✅ | ❌ |
+//! | [Controller](cellular_raza_concepts::domain_old::Controller) | ✅ | ❌ |
 //! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |
 //!
 //! ¹Only supports `Float=f64`.
