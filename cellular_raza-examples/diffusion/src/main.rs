@@ -30,11 +30,11 @@ trait FluidDynamics<Pos, Conc, Float> {
         Pos: 'static,
         Conc: 'static,
         Self::NeighborValues: 'static,
-        I: IntoIterator<Item = &'a Self::NeighborValues>,
+        I: IntoIterator<Item = Self::NeighborValues>,
         J: IntoIterator<Item = &'a (Pos, Conc)>;
 
-    fn get_concentration_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
-    fn get_neighbor_values(border_info: &Self::BorderInfo) -> Self::NeighborValues;
+    fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
+    fn get_neighbor_values(border_info: Self::BorderInfo) -> Self::NeighborValues;
 }
 
 struct CartesianBorder {
@@ -58,7 +58,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         sources: J,
     ) -> Result<(), CalcError>
     where
-        I: IntoIterator<Item = &'a Self::NeighborValues>,
+        I: IntoIterator<Item = Self::NeighborValues>,
         J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
     {
         use ndarray::s;
@@ -133,7 +133,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(r)
     }
 
-    fn get_neighbor_values(_border_info: &Self::BorderInfo) -> Self::NeighborValues {
+    fn get_neighbor_values(_border_info: Self::BorderInfo) -> Self::NeighborValues {
         todo!()
     }
 }
@@ -142,7 +142,7 @@ impl SubDomain {
     /// This code relies on the fact that discretization between Subdomains is exactly identical!
     /// Thus we test this while running in debug mode.
     /// Should an error occur at this point, the implementation needs to be reconsidered!
-    fn merge_values(&mut self, neighbor: &CartesianNeighbor) -> Result<(), CalcError> {
+    fn merge_values(&mut self, neighbor: CartesianNeighbor) -> Result<(), CalcError> {
         // First calculate the intersection of the rectangles
         // TODO In the future we hope to use the component-wise functions
         // https://github.com/dimforge/nalgebra/pull/665
