@@ -121,7 +121,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(())
     }
 
-    fn get_concentration_at_pos(
+    fn get_extracellular_at_pos(
         &self,
         pos: &nalgebra::SVector<f64, 2>,
     ) -> Result<ndarray::Array1<f64>, CalcError> {
@@ -346,7 +346,7 @@ fn main() {
     // Diffusion setup
     let total_concentration =
         ndarray::Array3::zeros((n_lattice_points[0], n_lattice_points[1], n_components));
-    let mut subdomain = SubDomain {
+    let subdomain0 = SubDomain {
         total_concentration,
         helper: ndarray::Array3::zeros((
             n_lattice_points[0] + 2,
