@@ -4,6 +4,7 @@ use cellular_raza::core::backend::chili;
 use cellular_raza::{core::time::FixedStepsize, prelude::*};
 
 use clap::Parser;
+use kdam::BarExt;
 use nalgebra::Vector3;
 use num::Zero;
 use rand::{Rng, SeedableRng};
@@ -167,27 +168,40 @@ struct DomainSample {
     times: Vec<u128>,
 }
 
+impl Args {
+    fn create_kdam_bar(
+        &self,
+        init_fmt_string: impl Into<String>,
+        total: usize,
+    ) -> Option<kdam::Bar> {
+        if self.no_output {
+            None
+        } else {
+            Some(kdam::tqdm!(
+                desc = init_fmt_string,
+                total = total,
+                position = 0
+            ))
+        }
+    }
+
+    fn set_description(progress_bar: &mut Option<kdam::Bar>, desc: impl Into<String>) {
+        match progress_bar.as_mut() {
+            Some(bar) => {
+                bar.set_description(desc);
+                match bar.update(1) {
+                    Ok(_) => (),
+                    Err(e) => println!("Progressbar could not be updated with error: {e}"),
+                }
+            }
+            None => (),
+        }
+    }
+}
+
 fn cell_scaling(args: &Args) -> Vec<DomainSample> {
     let mut samples = vec![];
-    let mut progress_bar = if args.no_output {
-        None
-    } else {
-        Some(kdam::tqdm!(
-            desc = "",
-            total = args.domain_sizes.len() * args.sample_size,
-            position = 0
-        ))
-    };
-    let mut set_desc = |n_domain_size: usize, n_sample: usize| match progress_bar.as_mut() {
-        Some(bar) => {
-            bar.set_description(format!("Domain Size {} Sample {}", n_domain_size, n_sample));
-            match bar.update(1) {
-                Ok(_) => (),
-                Err(e) => println!("Progressbar could not be updated with error: {e}"),
-            }
-        }
-        None => (),
-    };
+    let mut progress_bar = args.create_kdam_bar("", args.domain_sizes.len() * args.sample_size);
     for &n_domain_size in args.domain_sizes.iter() {
         // Reset the progress bar
         let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
@@ -210,7 +224,10 @@ fn cell_scaling(args: &Args) -> Vec<DomainSample> {
             })();
             let t = now.elapsed().as_nanos();
             times.push(t);
-            set_desc(n_domain_size, n_sample);
+            Args::set_description(
+                &mut progress_bar,
+                format!("Domain Size {} Sample {}", n_domain_size, n_sample),
+            );
         }
         samples.push(DomainSample {
             name: args.name.clone(),
