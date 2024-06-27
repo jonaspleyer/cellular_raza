@@ -14,13 +14,15 @@ homepage.workspace =  true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dev-dependencies]
+[dependencies]
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true, features=["serde1"]}
 nalgebra = { version="0.32", features=["serde-serialize"]}
 serde = { workspace = true }
 num = { workspace = true }
 criterion = { version = "0.4", features = ["html_reports"] }
+clap = { version = "4.5.7", features = ["derive"] }
+kdam = "0.5.2"
 
 [dependencies.cellular_raza]
 path = "../cellular_raza"
@@ -31,6 +33,6 @@ default = ["gradients"]
 pyo3 = ["cellular_raza/pyo3"]
 gradients = ["cellular_raza/gradients"]
 
-[[bench]]
+[[bin]]
 name = "cell_sorting"
-harness = false
+path = "src/cell_sorting.rs"
