@@ -3,6 +3,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use cellular_raza::core::backend::chili;
 use cellular_raza::{core::time::FixedStepsize, prelude::*};
 
+use clap::Parser;
 use nalgebra::Vector3;
 use num::Zero;
 use rand::{Rng, SeedableRng};
@@ -211,5 +212,51 @@ fn thread_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, cell_scaling, thread_scaling);
-criterion_main!(benches);
+/// Create new cell_sorting benchmark for thread or domain_size scaling
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Name of the current runs such as name of the device to be benchmarked
+    #[arg(required = true)]
+    name: String,
+
+    /// Identifier for benchmark results. Negative values generate a new id.
+    #[arg(short, long, default_value_t = -1)]
+    id: i32,
+
+    /// Output directory of benchmark results
+    #[arg(short, long, default_value_t = format!("benchmark_results"))]
+    output_directory: String,
+
+    /// List of number of threads to benchmark
+    #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+    threads: Vec<usize>,
+
+    /// List of domain sizes to benchmark
+    #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+    domain_sizes: Vec<usize>,
+
+    /// Number of samples to be generated for each measurement
+    #[arg(short, long, default_value_t = 5)]
+    sample_size: usize,
+
+    /// Do not save results. This takes priority against the overwrite settings.
+    #[arg(long, default_value_t = false)]
+    no_save: bool,
+
+    /// Overwrite existing results
+    #[arg(long, default_value_t = true)]
+    overwrite: bool,
+
+    /// Disables output
+    #[arg(long, default_value_t = false)]
+    no_output: bool,
+}
+
+fn main() {
+    let args = Args::parse();
+
+    if !args.no_output {
+        println!("Generating Results for device {}", args.name);
+    }
+}
