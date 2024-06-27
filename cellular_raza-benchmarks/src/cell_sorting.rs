@@ -347,7 +347,7 @@ struct CLIArgs {
 
     /// List of domain sizes to benchmark
     #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
-    domain_sizes: Vec<usize>,
+    problem_sizes: Vec<usize>,
 
     /// Number of samples to be generated for each measurement
     #[arg(short, long, default_value_t = 5)]
@@ -387,7 +387,7 @@ fn main() {
     for sample in thread_samples {
         println!("{:#?}", sample.times);
     }
-    let domain_samples = cell_scaling(&args);
+    let domain_samples = problem_size_scaling(&args);
     for sample in domain_samples {
         println!("{:#?}", sample.times);
     }
