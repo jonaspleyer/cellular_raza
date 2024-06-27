@@ -239,30 +239,50 @@ fn cell_scaling(args: &Args) -> Vec<DomainSample> {
     samples
 }
 
-fn thread_scaling(c: &mut Criterion) {
-    let mut group = c.benchmark_group("thread_scaling");
-    group.sample_size(10);
+#[derive(Deserialize, Serialize)]
+struct ThreadSample {
+    // Configuration
+    name: String,
+    id: i32,
+    // Results
+    n_threads: usize,
+    times: Vec<u128>,
+}
 
-    for n_threads in 1..48 {
-        group.sample_size(10);
-        group.bench_with_input(
-            BenchmarkId::new("n_threads", n_threads),
-            &n_threads,
-            |b, &n_threads| {
-                b.iter(|| {
-                    run_simulation(
-                        10_000,
-                        10_000,
-                        n_threads.try_into().unwrap(),
-                        210.0,
-                        5,
-                        0.25,
-                    )
-                })
-            },
-        );
+fn thread_scaling(args: &Args) -> Vec<ThreadSample> {
+    let mut samples = vec![];
+    let mut progress_bar = args.create_kdam_bar("", args.threads.len() * args.sample_size);
+    for &n_threads in args.threads.iter() {
+        // Do warm-up run
+        let mut times = vec![];
+        for n_sample in 0..args.sample_size {
+            let now = std::time::Instant::now();
+            criterion::black_box(|| {
+                run_simulation(
+                    10_000,
+                    10_000,
+                    n_threads.try_into().unwrap(),
+                    210.0,
+                    5,
+                    0.25,
+                )
+                .unwrap();
+            })();
+            let t = now.elapsed().as_nanos();
+            times.push(t);
+            Args::set_description(
+                &mut progress_bar,
+                format!("Threads: {} Sample: {}", n_threads, n_sample),
+            );
+        }
+        samples.push(ThreadSample {
+            name: args.name.clone(),
+            id: args.id,
+            n_threads,
+            times,
+        });
     }
-    group.finish();
+    samples
 }
 
 /// Create new cell_sorting benchmark for thread or domain_size scaling
@@ -311,6 +331,10 @@ fn main() {
 
     if !args.no_output {
         println!("Generating Results for device {}", args.name);
+    }
+    let thread_samples = thread_scaling(&args);
+    for sample in thread_samples {
+        println!("{:#?}", sample.times);
     }
     let domain_samples = cell_scaling(&args);
     for sample in domain_samples {
