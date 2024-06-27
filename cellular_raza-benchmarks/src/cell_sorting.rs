@@ -201,40 +201,52 @@ impl CLIArgs {
 
 fn problem_size_scaling(args: &CLIArgs) -> Vec<DomainSample> {
     let mut samples = vec![];
-    let mut progress_bar = args.create_kdam_bar("", args.domain_sizes.len() * args.sample_size);
-    for &n_domain_size in args.domain_sizes.iter() {
+    let mut progress_bar = args.create_kdam_bar("", args.problem_sizes.len() * args.sample_size);
+    for &n_domain_size in args.problem_sizes.iter() {
         // Reset the progress bar
         let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
         // The domain is sliced into voxels of size [18.0; 3]
         // Thus we want to have domains with size that is a multiplicative of 18.0
         let domain_size = 36_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64);
         let mut times = vec![];
-        for n_sample in 0..args.sample_size {
-            let now = std::time::Instant::now();
-            criterion::black_box(|| {
-                run_simulation(
-                    n_cells,
-                    n_cells,
-                    1.try_into().unwrap(),
-                    domain_size,
-                    10,
-                    0.25,
-                )
-                .unwrap();
-            })();
-            let t = now.elapsed().as_nanos();
-            times.push(t);
-            Args::set_description(
-                &mut progress_bar,
-                format!("Domain Size {} Sample {}", n_domain_size, n_sample),
-            );
-        }
-        samples.push(DomainSample {
-            name: args.name.clone(),
-            id: args.id,
-            n_domain_size,
-            times,
-        });
+        // Try to load from a file
+        let ds = match DomainSample::try_read_from_file(&args) {
+            None => {
+                for n_sample in 0..args.sample_size {
+                    let now = std::time::Instant::now();
+                    criterion::black_box(|| {
+                        run_simulation(
+                            n_cells,
+                            n_cells,
+                            1.try_into().unwrap(),
+                            domain_size,
+                            10,
+                            0.25,
+                        )
+                        .unwrap();
+                    })();
+                    let t = now.elapsed().as_nanos();
+                    times.push(t);
+                    CLIArgs::set_description(
+                        &mut progress_bar,
+                        format!("Domain Size {} Sample {}", n_domain_size, n_sample),
+                    );
+                }
+                let ds = DomainSample {
+                    name: args.name.clone(),
+                    id: args.id,
+                    n_domain_size,
+                    times,
+                };
+                match ds.store_to_file(&args) {
+                    Ok(_) => (),
+                    Err(_) => println!("Could not save to file"),
+                }
+                ds
+            }
+            Some(ds) => ds,
+        };
+        samples.push(ds);
     }
     samples
 }
