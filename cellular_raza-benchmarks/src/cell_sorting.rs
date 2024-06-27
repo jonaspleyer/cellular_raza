@@ -290,14 +290,17 @@ fn thread_scaling(args: &Args) -> Vec<ThreadSample> {
 #[command(version, about, long_about = None)]
 struct Args {
     /// Name of the current runs such as name of the device to be benchmarked
+    // TODO use this
     #[arg(required = true)]
     name: String,
 
     /// Identifier for benchmark results. Negative values generate a new id.
+    // TODO use this
     #[arg(short, long, default_value_t = -1)]
     id: i32,
 
     /// Output directory of benchmark results
+    // TODO use this
     #[arg(short, long, default_value_t = format!("benchmark_results"))]
     output_directory: String,
 
@@ -314,10 +317,12 @@ struct Args {
     sample_size: usize,
 
     /// Do not save results. This takes priority against the overwrite settings.
+    // TODO use this
     #[arg(long, default_value_t = false)]
     no_save: bool,
 
     /// Overwrite existing results
+    // TODO use this
     #[arg(long, default_value_t = true)]
     overwrite: bool,
 
