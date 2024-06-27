@@ -168,7 +168,7 @@ struct DomainSample {
     times: Vec<u128>,
 }
 
-impl Args {
+impl CLIArgs {
     fn create_kdam_bar(
         &self,
         init_fmt_string: impl Into<String>,
@@ -199,7 +199,7 @@ impl Args {
     }
 }
 
-fn cell_scaling(args: &Args) -> Vec<DomainSample> {
+fn problem_size_scaling(args: &CLIArgs) -> Vec<DomainSample> {
     let mut samples = vec![];
     let mut progress_bar = args.create_kdam_bar("", args.domain_sizes.len() * args.sample_size);
     for &n_domain_size in args.domain_sizes.iter() {
@@ -249,7 +249,7 @@ struct ThreadSample {
     times: Vec<u128>,
 }
 
-fn thread_scaling(args: &Args) -> Vec<ThreadSample> {
+fn thread_scaling(args: &CLIArgs) -> Vec<ThreadSample> {
     let mut samples = vec![];
     let mut progress_bar = args.create_kdam_bar("", args.threads.len() * args.sample_size);
     for &n_threads in args.threads.iter() {
@@ -270,7 +270,7 @@ fn thread_scaling(args: &Args) -> Vec<ThreadSample> {
             })();
             let t = now.elapsed().as_nanos();
             times.push(t);
-            Args::set_description(
+            CLIArgs::set_description(
                 &mut progress_bar,
                 format!("Threads: {} Sample: {}", n_threads, n_sample),
             );
@@ -285,10 +285,47 @@ fn thread_scaling(args: &Args) -> Vec<ThreadSample> {
     samples
 }
 
+trait Storage
+where
+    Self: Sized,
+{
+    fn store_to_file(&self, args: &CLIArgs) -> std::io::Result<()>;
+    fn try_read_from_file(args: &CLIArgs) -> Option<Self>;
+}
+
+impl<T> Storage for T
+where
+    T: Serialize + for<'a> Deserialize<'a>,
+{
+    fn store_to_file(&self, args: &CLIArgs) -> std::io::Result<()> {
+        let storage_path = args.get_storage_path();
+        std::fs::create_dir_all(&storage_path.parent().unwrap())?;
+        let buffer = std::fs::File::create(storage_path)?;
+        serde_json::to_writer(buffer, self)?;
+        Ok(())
+    }
+
+    fn try_read_from_file(args: &CLIArgs) -> Option<Self> {
+        let path = args.get_storage_path();
+        match std::fs::File::open(path) {
+            Ok(file) => {
+                let reader = std::io::BufReader::new(file);
+                match serde_json::from_reader(reader) {
+                    Ok(u) => {
+                        Some(u)
+                    },
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
 /// Create new cell_sorting benchmark for thread or domain_size scaling
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Args {
+struct CLIArgs {
     /// Name of the current runs such as name of the device to be benchmarked
     // TODO use this
     #[arg(required = true)]
@@ -331,8 +368,17 @@ struct Args {
     no_output: bool,
 }
 
+impl CLIArgs {
+    fn get_storage_path(&self) -> std::path::PathBuf {
+        // TODO check if id is negative and then create new id if so
+        std::path::PathBuf::from(&self.output_directory)
+            .join(&self.name)
+            .join(format!("{:010}.json", self.id))
+    }
+}
+
 fn main() {
-    let args = Args::parse();
+    let args = CLIArgs::parse();
 
     if !args.no_output {
         println!("Generating Results for device {}", args.name);
