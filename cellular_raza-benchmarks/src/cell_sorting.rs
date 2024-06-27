@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::usize;
 
 use cellular_raza::core::backend::chili;
 use cellular_raza::{core::time::FixedStepsize, prelude::*};
@@ -157,33 +157,69 @@ fn run_simulation(
     Ok(())
 }
 
-fn cell_scaling(c: &mut Criterion) {
-    let mut group = c.benchmark_group("cell_scaling");
-    group.sample_size(10);
+#[derive(Deserialize, Serialize)]
+struct DomainSample {
+    // Configuration settings
+    name: String,
+    id: i32,
+    // Results
+    n_domain_size: usize,
+    times: Vec<u128>,
+}
 
-    for i in 2..8 {
-        let n_cells = 10 * 4_usize.pow(i);
+fn cell_scaling(args: &Args) -> Vec<DomainSample> {
+    let mut samples = vec![];
+    let mut progress_bar = if args.no_output {
+        None
+    } else {
+        Some(kdam::tqdm!(
+            desc = "",
+            total = args.domain_sizes.len() * args.sample_size,
+            position = 0
+        ))
+    };
+    let mut set_desc = |n_domain_size: usize, n_sample: usize| match progress_bar.as_mut() {
+        Some(bar) => {
+            bar.set_description(format!("Domain Size {} Sample {}", n_domain_size, n_sample));
+            match bar.update(1) {
+                Ok(_) => (),
+                Err(e) => println!("Progressbar could not be updated with error: {e}"),
+            }
+        }
+        None => (),
+    };
+    for &n_domain_size in args.domain_sizes.iter() {
+        // Reset the progress bar
+        let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
         // The domain is sliced into voxels of size [18.0; 3]
         // Thus we want to have domains with size that is a multiplicative of 18.0
-        let domain_size = 36_f64 * 4_f64.powf(1.0 / 3.0 * i as f64);
-        group.bench_with_input(
-            BenchmarkId::new("n_cells-domain_size", n_cells),
-            &n_cells,
-            |b, &n_cells| {
-                b.iter(|| {
-                    run_simulation(
-                        n_cells,
-                        n_cells,
-                        1.try_into().unwrap(),
-                        domain_size,
-                        10,
-                        0.25,
-                    )
-                })
-            },
-        );
+        let domain_size = 36_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64);
+        let mut times = vec![];
+        for n_sample in 0..args.sample_size {
+            let now = std::time::Instant::now();
+            criterion::black_box(|| {
+                run_simulation(
+                    n_cells,
+                    n_cells,
+                    1.try_into().unwrap(),
+                    domain_size,
+                    10,
+                    0.25,
+                )
+                .unwrap();
+            })();
+            let t = now.elapsed().as_nanos();
+            times.push(t);
+            set_desc(n_domain_size, n_sample);
+        }
+        samples.push(DomainSample {
+            name: args.name.clone(),
+            id: args.id,
+            n_domain_size,
+            times,
+        });
     }
-    group.finish();
+    samples
 }
 
 fn thread_scaling(c: &mut Criterion) {
@@ -258,5 +294,9 @@ fn main() {
 
     if !args.no_output {
         println!("Generating Results for device {}", args.name);
+    }
+    let domain_samples = cell_scaling(&args);
+    for sample in domain_samples {
+        println!("{:#?}", sample.times);
     }
 }
