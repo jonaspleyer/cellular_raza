@@ -323,23 +323,36 @@ fn thread_scaling(args: &CLIArgs, threads: Vec<usize>) -> Vec<BenchmarkResult> {
 }
 
 impl BenchmarkResult {
-    fn get_next_index_value(storage_path: &std::path::Path) -> Result<u32, Box<dyn std::error::Error>>{
+    fn get_next_index_value(
+        storage_path: &std::path::Path,
+    ) -> Result<u32, Box<dyn std::error::Error>> {
         let mut index = 0;
         for globresult in glob::glob(&format!("{}/*.json", storage_path.to_string_lossy()))? {
             let res = globresult?;
             if let Some(file_name) = res.file_name() {
-                let new_index: u32 = file_name.to_string_lossy().split(".json").next().unwrap().parse()?;
+                let new_index: u32 = file_name
+                    .to_string_lossy()
+                    .split(".json")
+                    .next()
+                    .unwrap()
+                    .parse()?;
                 index = new_index.max(index);
             }
         }
-        Ok(index+1)
+        Ok(index + 1)
     }
 
-    fn get_storage_path(args: &CLIArgs, save_prefix: impl Into<std::path::PathBuf>) -> std::path::PathBuf {
+    fn get_storage_path(
+        args: &CLIArgs,
+        save_prefix: impl Into<std::path::PathBuf>,
+    ) -> std::path::PathBuf {
         args.get_storage_base_path().join(save_prefix.into())
     }
 
-    fn get_file_path(args: &CLIArgs, save_prefix: impl Into<std::path::PathBuf>) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    fn get_file_path(
+        args: &CLIArgs,
+        save_prefix: impl Into<std::path::PathBuf>,
+    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
         let storage_path = Self::get_storage_path(args, save_prefix);
         std::fs::create_dir_all(&storage_path)?;
         let index = Self::get_next_index_value(&storage_path)?;
@@ -374,7 +387,8 @@ impl BenchmarkResult {
                             return Ok(Some(u));
                         }
                     }
-                    Err(e) => println!("\
+                    Err(e) => println!(
+                        "\
                         File {} might not be matching storage format.\
                         Encountered error {e}",
                         file_path.to_string_lossy()
