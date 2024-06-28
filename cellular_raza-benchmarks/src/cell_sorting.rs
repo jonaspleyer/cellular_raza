@@ -306,7 +306,7 @@ fn thread_scaling(args: &CLIArgs, threads: Vec<usize>) -> Vec<BenchmarkResult> {
             n_threads: n_threads.try_into().unwrap(),
             domain_size: 2100,
             n_steps: 5,
-            dt: 25,
+            dt: 20,
         })
         .collect();
     run_sim(
