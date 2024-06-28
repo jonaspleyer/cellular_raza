@@ -3,13 +3,15 @@ use std::usize;
 use cellular_raza::core::backend::chili;
 use cellular_raza::{core::time::FixedStepsize, prelude::*};
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use kdam::BarExt;
 use nalgebra::Vector3;
 use num::Zero;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
+
+// SIMULATION SPECIFIC CODE
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 enum Species {
@@ -96,14 +98,26 @@ struct Cell {
     interaction: CellSpecificInteraction,
 }
 
-fn run_simulation(
+#[derive(Clone, Debug, Eq, Deserialize, PartialEq, Serialize)]
+struct SimSettings {
     n_cells_1: usize,
     n_cells_2: usize,
     n_threads: std::num::NonZeroUsize,
-    domain_size: f64,
+    /// Multiple of 0.1
+    domain_size: usize,
     n_steps: usize,
-    dt: f64,
-) -> Result<(), chili::SimulationError> {
+    /// Multiple of 0.01
+    dt: usize,
+}
+
+fn run_simulation(sim_settings: &SimSettings) -> Result<(), chili::SimulationError> {
+    let n_cells_1 = sim_settings.n_cells_1;
+    let n_cells_2 = sim_settings.n_cells_2;
+    let n_threads = sim_settings.n_threads;
+    let domain_size = sim_settings.domain_size as f64 * 0.1;
+    let n_steps = sim_settings.n_steps;
+    let dt = sim_settings.dt as f64 * 0.01;
+
     // Define the seed
     let mut rng = ChaCha8Rng::seed_from_u64(1);
 
@@ -158,16 +172,6 @@ fn run_simulation(
     Ok(())
 }
 
-#[derive(Deserialize, Serialize)]
-struct DomainSample {
-    // Configuration settings
-    name: String,
-    id: i32,
-    // Results
-    n_domain_size: usize,
-    times: Vec<u128>,
-}
-
 impl CLIArgs {
     fn create_kdam_bar(
         &self,
@@ -185,13 +189,20 @@ impl CLIArgs {
         }
     }
 
-    fn set_description(progress_bar: &mut Option<kdam::Bar>, desc: impl Into<String>) {
+    fn set_description_and_update(
+        progress_bar: &mut Option<kdam::Bar>,
+        desc: impl Into<String>,
+        update: Option<usize>,
+    ) {
         match progress_bar.as_mut() {
             Some(bar) => {
                 bar.set_description(desc);
-                match bar.update(1) {
-                    Ok(_) => (),
-                    Err(e) => println!("Progressbar could not be updated with error: {e}"),
+                match update {
+                    Some(steps) => match bar.update(steps) {
+                        Ok(_) => (),
+                        Err(e) => println!("Progressbar could not be updated with error: {e}"),
+                    },
+                    None => (),
                 }
             }
             None => (),
@@ -199,139 +210,195 @@ impl CLIArgs {
     }
 }
 
-fn problem_size_scaling(args: &CLIArgs) -> Vec<DomainSample> {
-    let mut samples = vec![];
-    let mut progress_bar = args.create_kdam_bar("", args.problem_sizes.len() * args.sample_size);
-    for &n_domain_size in args.problem_sizes.iter() {
-        // Reset the progress bar
-        let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
-        // The domain is sliced into voxels of size [18.0; 3]
-        // Thus we want to have domains with size that is a multiplicative of 18.0
-        let domain_size = 36_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64);
-        let mut times = vec![];
-        // Try to load from a file
-        let ds = match DomainSample::try_read_from_file(&args) {
-            None => {
-                for n_sample in 0..args.sample_size {
-                    let now = std::time::Instant::now();
-                    criterion::black_box(|| {
-                        run_simulation(
-                            n_cells,
-                            n_cells,
-                            1.try_into().unwrap(),
-                            domain_size,
-                            10,
-                            0.25,
-                        )
-                        .unwrap();
-                    })();
-                    let t = now.elapsed().as_nanos();
-                    times.push(t);
-                    CLIArgs::set_description(
-                        &mut progress_bar,
-                        format!("Domain Size {} Sample {}", n_domain_size, n_sample),
-                    );
-                }
-                let ds = DomainSample {
-                    name: args.name.clone(),
-                    id: args.id,
-                    n_domain_size,
-                    times,
-                };
-                match ds.store_to_file(&args) {
-                    Ok(_) => (),
-                    Err(_) => println!("Could not save to file"),
-                }
-                ds
-            }
-            Some(ds) => ds,
-        };
-        samples.push(ds);
-    }
-    samples
-}
-
-#[derive(Deserialize, Serialize)]
-struct ThreadSample {
-    // Configuration
-    name: String,
-    id: i32,
-    // Results
-    n_threads: usize,
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct BenchmarkResult {
+    simulation_settings: SimSettings,
     times: Vec<u128>,
 }
 
-fn thread_scaling(args: &CLIArgs) -> Vec<ThreadSample> {
+fn run_sim(
+    args: &CLIArgs,
+    settings: Vec<SimSettings>,
+    formatter: impl Fn(&SimSettings, usize) -> String,
+    main: impl Fn(&SimSettings),
+    save_prefix: &str,
+) -> Vec<BenchmarkResult> {
     let mut samples = vec![];
-    let mut progress_bar = args.create_kdam_bar("", args.threads.len() * args.sample_size);
-    for &n_threads in args.threads.iter() {
-        // Do warm-up run
-        let mut times = vec![];
-        for n_sample in 0..args.sample_size {
-            let now = std::time::Instant::now();
-            criterion::black_box(|| {
-                run_simulation(
-                    10_000,
-                    10_000,
-                    n_threads.try_into().unwrap(),
-                    210.0,
-                    5,
-                    0.25,
-                )
-                .unwrap();
-            })();
-            let t = now.elapsed().as_nanos();
-            times.push(t);
-            CLIArgs::set_description(
-                &mut progress_bar,
-                format!("Threads: {} Sample: {}", n_threads, n_sample),
-            );
-        }
-        samples.push(ThreadSample {
-            name: args.name.clone(),
-            id: args.id,
-            n_threads,
-            times,
-        });
+    let mut progress_bar = args.create_kdam_bar("", settings.len() * args.sample_size);
+    for setting in settings.into_iter() {
+        let res = match BenchmarkResult::try_read_from_file(args, &setting, save_prefix) {
+            Ok(Some(r)) => {
+                // Loading previous runs
+                CLIArgs::set_description_and_update(
+                    &mut progress_bar,
+                    formatter(&setting, args.sample_size),
+                    Some(args.sample_size),
+                );
+                r
+            }
+            Ok(None) | Err(_) => {
+                let mut times = vec![];
+                for n_sample in 0..args.sample_size {
+                    let now = std::time::Instant::now();
+                    criterion::black_box(|| main(&setting))();
+                    let t = now.elapsed().as_nanos();
+                    times.push(t);
+                    CLIArgs::set_description_and_update(
+                        &mut progress_bar,
+                        formatter(&setting, n_sample),
+                        Some(1),
+                    );
+                }
+                let br = BenchmarkResult {
+                    simulation_settings: setting,
+                    times,
+                };
+                match br.store_to_file(args, save_prefix) {
+                    Ok(_) => (),
+                    Err(e) => println!("Storing to file failed with error: {e}"),
+                }
+                br
+            }
+        };
+        samples.push(res);
     }
     samples
 }
 
-trait Storage
-where
-    Self: Sized,
-{
-    fn store_to_file(&self, args: &CLIArgs) -> std::io::Result<()>;
-    fn try_read_from_file(args: &CLIArgs) -> Option<Self>;
+fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>) -> Vec<BenchmarkResult> {
+    let simulation_settings: Vec<_> = domain_sizes
+        .into_iter()
+        .map(|n_domain_size| {
+            let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
+            // The domain is sliced into voxels of size [18.0; 3]
+            // Thus we want to have domains with size that is a multiplicative of 18.0
+            let domain_size =
+                (360_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64)).round() as usize;
+            SimSettings {
+                n_cells_1: n_cells,
+                n_cells_2: n_cells,
+                n_threads: 1.try_into().unwrap(),
+                domain_size,
+                n_steps: 10,
+                dt: 25,
+            }
+        })
+        .collect();
+    run_sim(
+        args,
+        simulation_settings,
+        |setting: &SimSettings, n_sample: usize| {
+            format!("Threads: {} Sample: {}", setting.n_threads, n_sample + 1)
+        },
+        |settings: &SimSettings| {
+            run_simulation(settings).unwrap();
+        },
+        "sim-size",
+    )
 }
 
-impl<T> Storage for T
-where
-    T: Serialize + for<'a> Deserialize<'a>,
-{
-    fn store_to_file(&self, args: &CLIArgs) -> std::io::Result<()> {
-        let storage_path = args.get_storage_path();
-        std::fs::create_dir_all(&storage_path.parent().unwrap())?;
-        let buffer = std::fs::File::create(storage_path)?;
+fn thread_scaling(args: &CLIArgs, threads: Vec<usize>) -> Vec<BenchmarkResult> {
+    let simulation_settings: Vec<_> = threads
+        .into_iter()
+        .map(|n_threads| SimSettings {
+            n_cells_1: 10_000,
+            n_cells_2: 10_000,
+            n_threads: n_threads.try_into().unwrap(),
+            domain_size: 2100,
+            n_steps: 5,
+            dt: 25,
+        })
+        .collect();
+    run_sim(
+        args,
+        simulation_settings,
+        |setting: &SimSettings, n_sample: usize| {
+            format!("Threads: {} Sample: {}", setting.n_threads, n_sample + 1)
+        },
+        |settings: &SimSettings| {
+            run_simulation(settings).unwrap();
+        },
+        "thread-scaling",
+    )
+}
+
+impl BenchmarkResult {
+    fn get_next_index_value(storage_path: &std::path::Path) -> Result<u32, Box<dyn std::error::Error>>{
+        let mut index = 0;
+        for globresult in glob::glob(&format!("{}/*.json", storage_path.to_string_lossy()))? {
+            let res = globresult?;
+            if let Some(file_name) = res.file_name() {
+                let new_index: u32 = file_name.to_string_lossy().split(".json").next().unwrap().parse()?;
+                index = new_index.max(index);
+            }
+        }
+        Ok(index+1)
+    }
+
+    fn get_storage_path(args: &CLIArgs, save_prefix: impl Into<std::path::PathBuf>) -> std::path::PathBuf {
+        args.get_storage_base_path().join(save_prefix.into())
+    }
+
+    fn get_file_path(args: &CLIArgs, save_prefix: impl Into<std::path::PathBuf>) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+        let storage_path = Self::get_storage_path(args, save_prefix);
+        std::fs::create_dir_all(&storage_path)?;
+        let index = Self::get_next_index_value(&storage_path)?;
+        Ok(storage_path.join(format!("{index:010}.json")))
+    }
+
+    fn store_to_file(
+        &self,
+        args: &CLIArgs,
+        save_prefix: impl Into<std::path::PathBuf>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let file_path = Self::get_file_path(args, save_prefix)?;
+        let buffer = std::fs::File::create(file_path)?;
         serde_json::to_writer(buffer, self)?;
         Ok(())
     }
 
-    fn try_read_from_file(args: &CLIArgs) -> Option<Self> {
-        let path = args.get_storage_path();
-        match std::fs::File::open(path) {
-            Ok(file) => {
+    fn try_read_from_file(
+        args: &CLIArgs,
+        sim_settings: &SimSettings,
+        save_prefix: impl Into<std::path::PathBuf>,
+    ) -> Result<Option<Self>, Box<dyn std::error::Error>> {
+        let storage_path = Self::get_storage_path(args, save_prefix);
+        // Get names of all files in this directory which end on json
+        for globresult in glob::glob(&format!("{}/*.json", storage_path.to_string_lossy()))? {
+            if let Ok(file_path) = globresult {
+                let file = std::fs::File::open(&file_path)?;
                 let reader = std::io::BufReader::new(file);
-                match serde_json::from_reader(reader) {
+                match serde_json::from_reader::<_, BenchmarkResult>(reader) {
                     Ok(u) => {
-                        Some(u)
-                    },
-                    _ => None,
+                        if &u.simulation_settings == sim_settings {
+                            return Ok(Some(u));
+                        }
+                    }
+                    Err(e) => println!("\
+                        File {} might not be matching storage format.\
+                        Encountered error {e}",
+                        file_path.to_string_lossy()
+                    ),
                 }
             }
-            _ => None,
         }
+        Ok(None)
     }
+}
+
+#[derive(Subcommand, Debug)]
+enum SubCommand {
+    /// Thread scaling benchmark
+    Threads {
+        #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+        threads: Vec<usize>,
+    },
+    /// Simulation Size scaling benchmark
+    SimSize {
+        ///
+        #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+        problem_sizes: Vec<usize>,
+    },
 }
 
 /// Create new cell_sorting benchmark for thread or domain_size scaling
@@ -343,23 +410,13 @@ struct CLIArgs {
     #[arg(required = true)]
     name: String,
 
-    /// Identifier for benchmark results. Negative values generate a new id.
-    // TODO use this
-    #[arg(short, long, default_value_t = -1)]
-    id: i32,
-
     /// Output directory of benchmark results
     // TODO use this
     #[arg(short, long, default_value_t = format!("benchmark_results"))]
     output_directory: String,
 
-    /// List of number of threads to benchmark
-    #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
-    threads: Vec<usize>,
-
-    /// List of domain sizes to benchmark
-    #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
-    problem_sizes: Vec<usize>,
+    #[command(subcommand)]
+    commands: Option<SubCommand>,
 
     /// Number of samples to be generated for each measurement
     #[arg(short, long, default_value_t = 5)]
@@ -381,26 +438,25 @@ struct CLIArgs {
 }
 
 impl CLIArgs {
-    fn get_storage_path(&self) -> std::path::PathBuf {
-        // TODO check if id is negative and then create new id if so
-        std::path::PathBuf::from(&self.output_directory)
-            .join(&self.name)
-            .join(format!("{:010}.json", self.id))
+    fn get_storage_base_path(&self) -> std::path::PathBuf {
+        std::path::PathBuf::from(&self.output_directory).join(&self.name)
     }
 }
 
 fn main() {
     let args = CLIArgs::parse();
 
-    if !args.no_output {
-        println!("Generating Results for device {}", args.name);
-    }
-    let thread_samples = thread_scaling(&args);
-    for sample in thread_samples {
-        println!("{:#?}", sample.times);
-    }
-    let domain_samples = problem_size_scaling(&args);
-    for sample in domain_samples {
-        println!("{:#?}", sample.times);
+    if let Some(command) = &args.commands {
+        if !args.no_output {
+            println!("Generating Results for device {}", args.name);
+        }
+        match command {
+            SubCommand::Threads { threads } => {
+                thread_scaling(&args, threads.clone());
+            }
+            SubCommand::SimSize { problem_sizes } => {
+                problem_size_scaling(&args, problem_sizes.clone());
+            }
+        }
     }
 }
