@@ -280,7 +280,7 @@ fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>) -> Vec<Benchma
                 n_threads: 1.try_into().unwrap(),
                 domain_size,
                 n_steps: 10,
-                dt: 25,
+                dt: 10,
             }
         })
         .collect();
@@ -306,7 +306,7 @@ fn thread_scaling(args: &CLIArgs, threads: Vec<usize>) -> Vec<BenchmarkResult> {
             n_threads: n_threads.try_into().unwrap(),
             domain_size: 2100,
             n_steps: 5,
-            dt: 20,
+            dt: 10,
         })
         .collect();
     run_sim(
