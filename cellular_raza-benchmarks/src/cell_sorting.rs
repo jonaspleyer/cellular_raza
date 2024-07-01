@@ -237,6 +237,13 @@ fn run_sim(
                 r
             }
             Ok(None) | Err(_) => {
+                // Do warm-up run before main
+                if !args.no_output {
+                    println!("Doing one warm-up run");
+                }
+                criterion::black_box(|| main(&setting))();
+
+                // Do main benchmark run
                 let mut times = vec![];
                 for n_sample in 0..args.sample_size {
                     let now = std::time::Instant::now();
