@@ -238,8 +238,9 @@ fn run_sim(
             }
             Ok(None) | Err(_) => {
                 // Do warm-up run before main
-                if !args.no_output {
-                    println!("Doing one warm-up run");
+                match &mut progress_bar {
+                    Some(bar) => bar.set_description("Doing Warmup"),
+                    None => (),
                 }
                 criterion::black_box(|| main(&setting))();
 
