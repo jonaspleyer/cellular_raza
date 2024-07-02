@@ -157,7 +157,8 @@ def plot_runtime(
     ax.set_title("Scaling with Problem Size")
     ax.set_xlabel('Number of Agents')
     ax.set_ylabel('Runtime [s/step]')
-    plt.show()
+    fig.tight_layout()
+    fig.savefig(str(odir) + "/sim-size-scaling.png")
     return fig
 
 def plot_throughput(
