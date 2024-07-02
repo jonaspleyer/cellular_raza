@@ -222,7 +222,18 @@ def plot_throughput(
     fig.savefig(str(odir) + "/thread_scaling.png")
     return fig
 
-# plot_runtime(names=["3700X", "3960X"], colors=["#003f5c", "#58508d"])
+plot_runtime(entries=[
+    # {
+    #     "name": "3700X-at-2200MHz",
+    #     "color":"#003f5c",
+    # },
+    {
+        "name": "3960X-at-2000MHz",
+        "label": "3960X @2GHz",
+        "color": "#58508d",
+        # "sim-sizes": [0, 1, 2, 3],
+    }
+])
 plot_throughput(entries = [
     {
         "name": "3700X-at-2200MHz",
