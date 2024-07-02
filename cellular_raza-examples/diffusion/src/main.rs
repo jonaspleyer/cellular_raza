@@ -17,7 +17,7 @@ pub struct SubDomain {
 }
 
 trait FluidDynamics<Pos, Conc, Float> {
-    type NeighborValues;
+    type NeighborValue;
     type BorderInfo;
 
     fn update_fluid_dynamics<'a, I, J>(
@@ -29,12 +29,12 @@ trait FluidDynamics<Pos, Conc, Float> {
     where
         Pos: 'static,
         Conc: 'static,
-        Self::NeighborValues: 'static,
-        I: IntoIterator<Item = Self::NeighborValues>,
+        Self::NeighborValue: 'static,
+        I: IntoIterator<Item = Self::NeighborValue>,
         J: IntoIterator<Item = &'a (Pos, Conc)>;
 
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
-    fn get_neighbor_values(border_info: Self::BorderInfo) -> Self::NeighborValues;
+    fn get_neighbor_values(border_info: Self::BorderInfo) -> Self::NeighborValue;
     fn get_border_info(&self) -> Self::BorderInfo;
 }
 
@@ -49,7 +49,7 @@ struct CartesianNeighbor {
 }
 
 impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
-    type NeighborValues = CartesianNeighbor;
+    type NeighborValue = CartesianNeighbor;
     type BorderInfo = CartesianBorder;
 
     fn update_fluid_dynamics<'a, I, J>(
@@ -59,7 +59,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         sources: J,
     ) -> Result<(), CalcError>
     where
-        I: IntoIterator<Item = Self::NeighborValues>,
+        I: IntoIterator<Item = Self::NeighborValue>,
         J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
     {
         use ndarray::s;
@@ -134,7 +134,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(r)
     }
 
-    fn get_neighbor_values(_border_info: Self::BorderInfo) -> Self::NeighborValues {
+    fn get_neighbor_values(_border_info: Self::BorderInfo) -> Self::NeighborValue {
         todo!()
     }
 
