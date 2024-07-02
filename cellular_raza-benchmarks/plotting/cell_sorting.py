@@ -89,6 +89,7 @@ def plot_runtime(
         subfolder: str = "sim-size",
         odir: Path = Path("benchmark_results"),
         fit_exponential: bool = True,
+        fit_order: int = 2,
     ) -> plt.Figure:
     df = get_runtime_dataset(subfolder, odir)
     plt.rcParams.update({
@@ -101,11 +102,11 @@ def plot_runtime(
         'lines.linewidth': 2,
     })
 
-    def fit_func(x, a, b, c):
+    def fit_func(x, *params):
         if fit_exponential:
-            return np.log(a*np.exp(2*x) + b*np.exp(x) + c)
+            return np.log(np.sum([p*np.exp(x)**(len(params)-i-1) for i, p in enumerate(params)], axis=0))
         else:
-            return a*x**2 + b*x + c
+            return np.sum([p*x**(len(params)-i-1) for i, p in enumerate(params)], axis=0)
 
     fig, ax = plt.subplots(figsize=(8, 6))
     # table_data = []
@@ -121,11 +122,14 @@ def plot_runtime(
         # Do individual fits for every curve
         fit_x_values = np.log(x_values) if fit_exponential else x_values
         fit_y_values = np.log(y_values) if fit_exponential else y_values
-        popt, pcov = sp.optimize.curve_fit(
+        p0 = np.zeros(fit_order+1)
+        if fit_order > 1:
+            p0[-2] = list(y_values)[-1] / list(x_values)[-1]
+        popt, _ = sp.optimize.curve_fit(
             fit_func,
             fit_x_values,
             fit_y_values,
-            p0=(0, list(y_values)[-1] / list(x_values)[-1], 0),
+            p0=p0,
             bounds=(0,np.inf),
         )
         color = entry.get("color", "k")
