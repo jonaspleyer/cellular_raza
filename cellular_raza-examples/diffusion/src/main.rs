@@ -360,8 +360,9 @@ fn main() {
         dx: (max - min).component_div(&n_lattice_points.cast()),
     };
     let mut subdomain1 = subdomain0.clone();
-    subdomain1.min = subdomain0.max;
-    subdomain1.max = subdomain0.max + (subdomain0.max - subdomain0.min);
+    subdomain1.min[0] = subdomain0.max[0];
+    subdomain1.max[0] = (subdomain0.max + (subdomain0.max - subdomain0.min))[0];
+    subdomain1.total_concentration += 1.0;
     let mut subdomains_agents = vec![(subdomain0, agents), (subdomain1, vec![])];
 
     let dt = 0.01;
