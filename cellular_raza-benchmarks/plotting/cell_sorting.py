@@ -139,8 +139,7 @@ def plot_runtime(
     return fig
 
 def plot_throughput(
-        names: list[str],
-        colors: list,
+        entries: list[dict],
         subfolder: str = "thread-scaling",
         odir: Path = Path("benchmark_results"),
     ) -> plt.Figure:
@@ -155,32 +154,40 @@ def plot_throughput(
         'lines.linewidth': 2,
     })
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    for i, name in enumerate(names):
+    fig, ax = plt.subplots(figsize=(12, 9))
+    for i, entry in enumerate(entries):
+        name = entry["name"]
         grp = df[df["name"]==name]
+
+        filt = np.array([n in entry["threads"] for n in grp["n_threads"]]) if "threads" in entry.keys() else np.repeat(True, len(grp["n_threads"]))
+        x_values = grp["n_threads"][filt]
+        y_values = grp["throughput_avg"][filt]
 
         # Do fit
         def fit_func(n, T, p):
             return T / (1 - p + p / n)
         popt, _ = sp.optimize.curve_fit(
             fit_func,
-            grp["n_threads"],
-            grp["throughput_avg"],
+            x_values,
+            y_values,
             p0=(list(grp["throughput_avg"])[0], 1),
             bounds=[(0, 0), (np.inf, 1)],
         )
-        color = colors[i] if i < len(colors) else "k"
+        color = entry["color"] if "color" in entry.keys() else "k"
+
+        # FIlter plotted values depending on threads key of entry
         ax.plot(
-            grp["n_threads"],
-            fit_func(np.array(grp["n_threads"]), *popt),
+            grp["n_threads"][filt],
+            fit_func(np.array(grp["n_threads"]), *popt)[filt],
             linestyle="--",
             color=color,
         )
+        label = entry.get("label", entry["name"])
         ax.errorbar(
-            grp["n_threads"],
-            grp["throughput_avg"],
-            yerr=grp["throughput_std"],
-            label="{} p={:.2f}%".format(name, 100*popt[1]),
+            x_values,
+            y_values,
+            yerr=grp["throughput_std"][filt],
+            label="{} p={:.2f}%".format(label, 100*popt[1]),
             color=color,
             fmt="o",
         )
@@ -188,8 +195,28 @@ def plot_throughput(
         ax.set_title("Scaling with Threads")
         ax.set_xlabel("Number of Threads")
         ax.set_ylabel("Throughput [steps/s/cell]")
-        plt.show()
-        return fig
+    ax.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
+    fig.tight_layout()
+    fig.savefig(str(odir) + "/thread_scaling.png")
+    return fig
 
 # plot_runtime(names=["3700X", "3960X"], colors=["#003f5c", "#58508d"])
-plot_throughput(names=["3700X", "3960X"], colors=["#003f5c", "#58508d"])
+plot_throughput(entries = [
+    {
+        "name": "3700X-at-2200MHz",
+        "label": "3700X @2.2GHz",
+        "color": "#003f5c",
+        "threads": list(range(16)),
+    },
+    {
+        "name": "3960X-at-2000MHz",
+        "label": "3960X @2GHz",
+        "color": "#58508d",
+        "threads": list(range(46)),
+    },
+    {
+        "name": "12700H-at-2000MHz",
+        "label": "12700H @2GHz",
+        "color": "#ff6361",
+    }
+])
