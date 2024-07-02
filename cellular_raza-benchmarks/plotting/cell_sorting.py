@@ -223,10 +223,11 @@ def plot_throughput(
     return fig
 
 plot_runtime(entries=[
-    # {
-    #     "name": "3700X-at-2200MHz",
-    #     "color":"#003f5c",
-    # },
+    {
+        "name": "12700H-at-2000MHz",
+        "label": "12700H @2GHz",
+        "color": "#ff6361",
+    },
     {
         "name": "3960X-at-2000MHz",
         "label": "3960X @2GHz",
