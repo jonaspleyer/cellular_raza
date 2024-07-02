@@ -85,8 +85,7 @@ def get_runtime_dataset(subfolder: str = "sim-size", odir: Path = Path("benchmar
     return df
 
 def plot_runtime(
-        names: list[str],
-        colors: list,
+        entries: list[dict],
         subfolder: str = "sim-size",
         odir: Path = Path("benchmark_results")
     ) -> plt.Figure:
@@ -101,35 +100,58 @@ def plot_runtime(
         'lines.linewidth': 2,
     })
 
+    def fit_func(x, a, b, c):
+        return a*x**2 + b*x + c
+
     fig, ax = plt.subplots(figsize=(8, 6))
-    for i, name in enumerate(names):
+    # table_data = []
+    for entry in entries:
+        name = entry["name"]
         grp = df[df["name"]==name]
+        filt = [
+            n in entry.get("sim-sizes", range(len(grp["n_agents"])))
+            for n in range(len(grp["n_agents"]))
+        ]
+        x_values = grp["n_agents"][filt]
+        y_values = grp["runtime_avg"][filt]
         # Do individual fits for every curve
-        def fit_func(x, a, b, c):
-            return a*x**2 + b*x + c
-        popt, _ = sp.optimize.curve_fit(
+        popt, pcov = sp.optimize.curve_fit(
             fit_func,
-            grp["n_agents"],
-            grp["runtime_avg"],
-            p0=(0, list(grp["runtime_avg"])[-1] / list(grp["n_agents"])[-1], 0),
+            x_values,
+            y_values,
+            p0=(0, list(y_values)[-1] / list(x_values)[-1], 0),
             bounds=(0,np.inf),
         )
-        color = colors[i] if i < len(colors) else "k"
+        color = entry.get("color", "k")
         ax.plot(
-            grp["n_agents"],
-            fit_func(np.array(grp["n_agents"]), *popt),
+            x_values,
+            fit_func(x_values, *popt),
             linestyle="--",
             color=color,
         )
         ax.errorbar(
-            grp["n_agents"],
-            grp["runtime_avg"],
-            yerr=grp["runtime_std"],
-            label=name,
+            x_values,
+            y_values,
+            yerr=grp["runtime_std"][filt],
+            label=entry.get("label", entry["name"]),
             color=color,
             fmt="o",
         )
         ax.legend()
+        # table_data.append((popt, pcov, x_values))
+
+    # Create table
+    # celltext = [
+    #     [*popt, np.trace(pcov) / (len(x_values) - len(popt))]
+    #     for popt, pcov, x_values in table_data
+    # ]
+    # ax.table(
+    #     cellText=celltext,
+    #     colLabels=["$a$", "$b$", "$c$", "$\\chi^2$"],
+    #     loc="bottom",
+    # )
+
+    # Set some options
     ax.set_yscale('log')
     ax.set_xscale('log')
     ax.set_title("Scaling with Problem Size")
