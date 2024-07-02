@@ -34,7 +34,7 @@ trait FluidDynamics<Pos, Conc, Float> {
         J: IntoIterator<Item = &'a (Pos, Conc)>;
 
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
-    fn get_neighbor_values(border_info: Self::BorderInfo) -> Self::NeighborValue;
+    fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
     fn get_border_info(&self) -> Self::BorderInfo;
 }
 
@@ -134,7 +134,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(r)
     }
 
-    fn get_neighbor_values(_border_info: Self::BorderInfo) -> Self::NeighborValue {
+    fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
         todo!()
     }
 
