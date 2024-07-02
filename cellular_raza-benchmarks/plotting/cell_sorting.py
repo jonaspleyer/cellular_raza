@@ -195,7 +195,7 @@ def plot_throughput(
             p0=(list(grp["throughput_avg"])[0], 1),
             bounds=[(0, 0), (np.inf, 1)],
         )
-        color = entry["color"] if "color" in entry.keys() else "k"
+        color = entry.get("color", "k")
 
         # FIlter plotted values depending on threads key of entry
         ax.plot(
