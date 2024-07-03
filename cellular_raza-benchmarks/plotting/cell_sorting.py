@@ -258,8 +258,12 @@ plot_runtime(entries=[
         "name": "3960X-at-2000MHz",
         "label": "3960X @2GHz",
         "color": "#58508d",
-        # "sim-sizes": [0, 1, 2, 3],
-    }
+    },
+    {
+        "name": "3700X-at-2200MHz",
+        "label": "3700X @2.2GHz",
+        "color": "#003f5c",
+    },
 ],
     fit_order=2,
     fit_exponential=False,
