@@ -1,6 +1,6 @@
 use super::{Agent, Force, InteractionInformation, Position, Velocity};
-use cellular_raza_concepts::*;
 use cellular_raza_concepts::domain_old::*;
+use cellular_raza_concepts::*;
 use kdam::BarExt;
 
 use super::errors::*;

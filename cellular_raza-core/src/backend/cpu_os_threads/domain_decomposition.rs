@@ -1,6 +1,6 @@
 use super::{Agent, Force, InteractionInformation, Position, Velocity};
-use cellular_raza_concepts::*;
 use cellular_raza_concepts::domain_old::*;
+use cellular_raza_concepts::*;
 
 use super::errors::*;
 use crate::storage::StorageManager;
@@ -34,7 +34,8 @@ impl<Dom> From<Dom> for DomainBox<Dom> {
     }
 }
 
-impl<Cel, Ind, Vox, Dom> cellular_raza_concepts::domain_old::Domain<CellAgentBox<Cel>, Ind, Vox> for DomainBox<Dom>
+impl<Cel, Ind, Vox, Dom> cellular_raza_concepts::domain_old::Domain<CellAgentBox<Cel>, Ind, Vox>
+    for DomainBox<Dom>
 where
     Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
     Vox: Send + Sync,

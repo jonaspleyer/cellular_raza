@@ -62,8 +62,7 @@ where
     D: Domain<C, S, Ci>,
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     <S as SubDomain>::VoxelIndex: Eq + Hash + Ord + Clone,
-    S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>
-        + SubDomain,
+    S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex> + SubDomain,
     A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
@@ -228,10 +227,7 @@ where
     where
         <S as SubDomain>::VoxelIndex: Eq + Hash + Ord,
         A: Default,
-        S: SortCells<
-            C,
-            VoxelIndex = <S as SubDomain>::VoxelIndex,
-        >,
+        S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
         use cellular_raza_concepts::BoundaryError;
         for (cell, aux_storage) in new_cells.drain(..) {

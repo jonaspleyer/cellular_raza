@@ -1,6 +1,6 @@
-use cellular_raza::prelude::*;
 use cellular_raza::building_blocks::cartesian_cuboid_n_old::*;
 use cellular_raza::concepts::domain_old::Controller;
+use cellular_raza::prelude::*;
 
 use nalgebra::Vector2;
 

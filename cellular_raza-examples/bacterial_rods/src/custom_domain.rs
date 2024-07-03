@@ -11,9 +11,7 @@ pub struct MyDomain<const D2: usize> {
     pub damping: f64,
 }
 
-impl<const D2: usize> DomainCreateSubDomains<MySubDomain<D2>>
-    for MyDomain<D2>
-{
+impl<const D2: usize> DomainCreateSubDomains<MySubDomain<D2>> for MyDomain<D2> {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; D2];
 
@@ -42,9 +40,7 @@ impl<const D2: usize> DomainCreateSubDomains<MySubDomain<D2>>
     }
 }
 
-impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>>
-    for MyDomain<D2>
-{
+impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>> for MyDomain<D2> {
     type VoxelIndex = [usize; D2];
 
     fn get_voxel_index_of(&self, cell: &Agent<D1, D2>) -> Result<Self::VoxelIndex, BoundaryError> {
@@ -65,10 +61,8 @@ pub struct MySubDomain<const D2: usize> {
 }
 
 impl<const D1: usize, const D2: usize>
-    SubDomainMechanics<
-        nalgebra::SMatrix<f64, D1, D2>,
-        nalgebra::SMatrix<f64, D1, D2>,
-    > for MySubDomain<D2>
+    SubDomainMechanics<nalgebra::SMatrix<f64, D1, D2>, nalgebra::SMatrix<f64, D1, D2>>
+    for MySubDomain<D2>
 {
     fn apply_boundary(
         &self,
@@ -144,9 +138,7 @@ impl<const D1: usize, const D2: usize>
     }
 }
 
-impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>>
-    for MySubDomain<D2>
-{
+impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>> for MySubDomain<D2> {
     type VoxelIndex = [usize; D2];
 
     fn get_voxel_index_of(&self, cell: &Agent<D1, D2>) -> Result<Self::VoxelIndex, BoundaryError> {

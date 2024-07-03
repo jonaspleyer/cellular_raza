@@ -1,6 +1,6 @@
-use cellular_raza::prelude::*;
 use cellular_raza::building_blocks::cartesian_cuboid_n_old::CartesianCuboidVoxel2;
 use cellular_raza::concepts::domain_old::ExtracellularMechanics;
+use cellular_raza::prelude::*;
 
 use plotters::{
     backend::BitMapBackend,

@@ -415,10 +415,7 @@ where
     pub fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        S: SortCells<
-            C,
-            VoxelIndex = <S as SubDomain>::VoxelIndex,
-        >,
+        S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
         <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
     {
         // Store all cells which need to find a new home in this variable
@@ -477,10 +474,7 @@ where
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
-        S: SortCells<
-            C,
-            VoxelIndex = <S as SubDomain>::VoxelIndex,
-        >,
+        S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
         // Now receive new cells and insert them
         for sent_cell in

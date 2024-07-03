@@ -53,11 +53,8 @@ impl<const D: usize> SortCells<MyCell<D>> for MySubDomain {
     }
 }
 
-impl<const D: usize>
-    SubDomainMechanics<
-        nalgebra::SMatrix<f64, D, 2>,
-        nalgebra::SMatrix<f64, D, 2>,
-    > for MySubDomain
+impl<const D: usize> SubDomainMechanics<nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>>
+    for MySubDomain
 {
     fn apply_boundary(
         &self,

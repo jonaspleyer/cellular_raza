@@ -1,8 +1,8 @@
 use super::{Agent, Force, Position, Velocity};
 use crate::backend::cpu_os_threads::domain_decomposition::AuxiliaryCellPropertyStorage;
 use crate::storage::StorageManager;
-use cellular_raza_concepts::CellAgentBox;
 use cellular_raza_concepts::domain_old::*;
+use cellular_raza_concepts::CellAgentBox;
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,

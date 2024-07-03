@@ -296,7 +296,11 @@ fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>) -> Vec<Benchma
         args,
         simulation_settings,
         |setting: &SimSettings, n_sample: usize| {
-            format!("Domain Size: {} Sample: {}", setting.domain_size, n_sample + 1)
+            format!(
+                "Domain Size: {} Sample: {}",
+                setting.domain_size,
+                n_sample + 1
+            )
         },
         |settings: &SimSettings| {
             run_simulation(settings).unwrap();

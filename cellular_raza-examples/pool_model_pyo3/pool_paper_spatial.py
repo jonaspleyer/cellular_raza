@@ -35,8 +35,8 @@ class ODEParameters:
         return (
             self.lag_phase_transition_rate_1, # lambd1,
             self.lag_phase_transition_rate_2, # lambd2,
-            self.production_rate_1,           # alph1,
-            self.production_rate_2,           # alph2,
+            self.production_rate_1,           # alpha1,
+            self.production_rate_2,           # alpha2,
             self.inhibitor_production,        # kappa,
             self.inhibition_constant,         # muI,
             self.total_cell_volume,           # N_t
