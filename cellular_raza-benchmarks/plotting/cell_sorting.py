@@ -108,7 +108,7 @@ def plot_runtime(
         else:
             return np.sum([p*x**(len(params)-i-1) for i, p in enumerate(params)], axis=0)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(12, 9))
     # table_data = []
     for entry in entries:
         name = entry["name"]
