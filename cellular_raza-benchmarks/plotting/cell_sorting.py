@@ -260,7 +260,10 @@ plot_runtime(entries=[
         "color": "#58508d",
         # "sim-sizes": [0, 1, 2, 3],
     }
-])
+],
+    fit_order=2,
+    fit_exponential=False,
+)
 plot_throughput(entries = [
     {
         "name": "3700X-at-2200MHz",
