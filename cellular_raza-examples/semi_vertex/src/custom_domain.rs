@@ -1,8 +1,8 @@
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
-use cellular_raza::concepts::*;
+use cellular_raza::concepts::domain_new::*;
 use cellular_raza::concepts::{BoundaryError, DecomposeError, IndexError, Mechanics};
 
-use crate::{MyCell, VertexPoint};
+use crate::MyCell;
 
 #[derive(Clone, Domain)]
 pub struct MyDomain {
@@ -10,7 +10,7 @@ pub struct MyDomain {
     pub cuboid: CartesianCuboid<f64, 2>,
 }
 
-impl cellular_raza::concepts::DomainCreateSubDomains<MySubDomain> for MyDomain {
+impl cellular_raza::concepts::domain_new::DomainCreateSubDomains<MySubDomain> for MyDomain {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; 2];
 
@@ -30,11 +30,11 @@ impl cellular_raza::concepts::DomainCreateSubDomains<MySubDomain> for MyDomain {
     }
 }
 
-impl cellular_raza::concepts::SortCells<MyCell> for MyDomain {
+impl<const D: usize> cellular_raza::concepts::domain_new::SortCells<MyCell<D>> for MyDomain {
     type VoxelIndex = [usize; 2];
 
-    fn get_voxel_index_of(&self, cell: &MyCell) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos().0.row_mean().transpose();
+    fn get_voxel_index_of(&self, cell: &MyCell<D>) -> Result<Self::VoxelIndex, BoundaryError> {
+        let pos = cell.pos().row_mean().transpose();
         self.cuboid.get_voxel_index_of_raw(&pos)
     }
 }
@@ -45,30 +45,32 @@ pub struct MySubDomain {
     pub subdomain: CartesianSubDomain<f64, 2>,
 }
 
-impl cellular_raza::concepts::SortCells<MyCell> for MySubDomain {
+impl<const D: usize> cellular_raza::concepts::domain_new::SortCells<MyCell<D>> for MySubDomain {
     type VoxelIndex = [usize; 2];
 
-    fn get_voxel_index_of(&self, cell: &MyCell) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos().0.row_mean().transpose();
+    fn get_voxel_index_of(&self, cell: &MyCell<D>) -> Result<Self::VoxelIndex, BoundaryError> {
+        let pos = cell.pos().row_mean().transpose();
         self.subdomain.get_index_of(pos)
     }
 }
 
-impl cellular_raza::concepts::SubDomainMechanics<VertexPoint<f64>, VertexPoint<f64>>
-    for MySubDomain
+impl<const D: usize>
+    cellular_raza::concepts::domain_new::SubDomainMechanics<
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+    > for MySubDomain
 {
     fn apply_boundary(
         &self,
-        pos: &mut VertexPoint<f64>,
-        vel: &mut VertexPoint<f64>,
+        pos: &mut nalgebra::SMatrix<f64, D, 2>,
+        vel: &mut nalgebra::SMatrix<f64, D, 2>,
     ) -> Result<(), BoundaryError> {
         // TODO refactor this with matrix multiplication!!!
         // This will probably be much more efficient and less error-prone!
 
-        // For each position in the springs MyCell
-        pos.0
-            .row_iter_mut()
-            .zip(vel.0.row_iter_mut())
+        // For each position in the springs MyCell<D>
+        pos.row_iter_mut()
+            .zip(vel.row_iter_mut())
             .for_each(|(mut p, mut v)| {
                 // For each dimension in the space
                 for i in 0..p.ncols() {
@@ -87,9 +89,9 @@ impl cellular_raza::concepts::SubDomainMechanics<VertexPoint<f64>, VertexPoint<f
             });
 
         // If new pos is still out of boundary return error
-        for j in 0..pos.0.nrows() {
-            let p = pos.0.row(j);
-            for i in 0..pos.0.ncols() {
+        for j in 0..pos.nrows() {
+            let p = pos.row(j);
+            for i in 0..pos.ncols() {
                 if p[i] < self.subdomain.get_domain_min()[i]
                     || p[i] > self.subdomain.get_domain_max()[i]
                 {

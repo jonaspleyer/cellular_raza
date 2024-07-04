@@ -9,8 +9,8 @@ use plotters::{
 
 use crate::cell_properties::*;
 
-pub fn plot_cell(
-    cell: &MyCell,
+pub fn plot_cell<const D: usize>(
+    cell: &MyCell<D>,
     root: &mut DrawingArea<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
 ) -> Result<(), DrawingError> {
     let cell_border_color = plotters::prelude::BLACK;
@@ -20,10 +20,9 @@ pub fn plot_cell(
 
     // Plot the cell border
     let pos = cell.pos();
-    let middle = pos.0.row_sum() / pos.0.nrows() as f64;
+    let middle = pos.row_sum() / pos.shape().0 as f64;
     // Calculate the paths
     let path_points = pos
-        .0
         .row_iter()
         .map(|row| {
             (
