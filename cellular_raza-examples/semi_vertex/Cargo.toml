@@ -14,3 +14,5 @@ plotters = { workspace = true }
 num = { workspace = true }
 kdam = "0.5.2"
 rayon = "1.10.0"
+itertools.workspace = true
+geo = "0.28.0"
