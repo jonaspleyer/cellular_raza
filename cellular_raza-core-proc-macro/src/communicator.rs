@@ -331,9 +331,6 @@ impl syn::parse::Parse for GenericsArguments {
 }
 
 fn impl_generics(aspects: &SimulationAspects) -> Vec<proc_macro2::TokenStream> {
-    if aspects.items.len() == 0 {
-        return vec![];
-    }
     let core_path: syn::Path = syn::parse2(quote!(cellular_raza::core)).expect(&format!(
         "{} {}",
         "Using dummy path in proc macro 'generics_and_fields' failed.",
