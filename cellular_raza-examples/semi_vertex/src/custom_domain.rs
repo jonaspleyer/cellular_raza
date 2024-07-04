@@ -1,5 +1,6 @@
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
-use cellular_raza::concepts::*;
+use cellular_raza::concepts::domain_new::*;
+use cellular_raza::concepts::{BoundaryError, DecomposeError, IndexError, Mechanics};
 
 use crate::MyCell;
 
@@ -9,7 +10,7 @@ pub struct MyDomain {
     pub cuboid: CartesianCuboid<f64, 2>,
 }
 
-impl DomainCreateSubDomains<MySubDomain> for MyDomain {
+impl cellular_raza::concepts::domain_new::DomainCreateSubDomains<MySubDomain> for MyDomain {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; 2];
 
@@ -29,7 +30,7 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
     }
 }
 
-impl<const D: usize> SortCells<MyCell<D>> for MyDomain {
+impl<const D: usize> cellular_raza::concepts::domain_new::SortCells<MyCell<D>> for MyDomain {
     type VoxelIndex = [usize; 2];
 
     fn get_voxel_index_of(&self, cell: &MyCell<D>) -> Result<Self::VoxelIndex, BoundaryError> {
@@ -44,7 +45,7 @@ pub struct MySubDomain {
     pub subdomain: CartesianSubDomain<f64, 2>,
 }
 
-impl<const D: usize> SortCells<MyCell<D>> for MySubDomain {
+impl<const D: usize> cellular_raza::concepts::domain_new::SortCells<MyCell<D>> for MySubDomain {
     type VoxelIndex = [usize; 2];
 
     fn get_voxel_index_of(&self, cell: &MyCell<D>) -> Result<Self::VoxelIndex, BoundaryError> {
@@ -53,8 +54,11 @@ impl<const D: usize> SortCells<MyCell<D>> for MySubDomain {
     }
 }
 
-impl<const D: usize> SubDomainMechanics<nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>>
-    for MySubDomain
+impl<const D: usize>
+    cellular_raza::concepts::domain_new::SubDomainMechanics<
+        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::SMatrix<f64, D, 2>,
+    > for MySubDomain
 {
     fn apply_boundary(
         &self,

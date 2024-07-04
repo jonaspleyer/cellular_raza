@@ -6,44 +6,36 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
-pub const MICRON: f64 = 1e-0;
-
-pub const SECOND: f64 = 1e0;
-pub const MINUTE: f64 = 60e0;
-
 // Number of cells
-pub const N_CELLS: usize = 1;
+pub const N_CELLS: usize = 2_025;
 
 // Mechanical parameters
-pub const CELL_MECHANICS_AREA: f64 = 500.0 * MICRON * MICRON;
-pub const CELL_MECHANICS_SPRING_TENSION: f64 = 0.0001;
-pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.0001;
-pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0 * MICRON;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 1.0;
-pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.01 / SECOND;
-pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0 * MICRON * MICRON / SECOND;
-
-// Cycle
-pub const CELL_CYCLE_GROWTH_FACTOR: f64 = 0.0 * MICRON * MICRON / SECOND;
+pub const CELL_MECHANICS_AREA: f64 = 500.0;
+pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
+pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
+pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
+pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
+pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.2;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 600.0 * MICRON;
-pub const DOMAIN_SIZE_Y: f64 = 600.0 * MICRON;
+pub const DOMAIN_SIZE_X: f64 = 1_200.0;
+pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
 
 // Time parameters
-pub const DT: f64 = 0.01 * SECOND;
-pub const T_END: f64 = 10.0 * MINUTE;
-pub const SAVE_INTERVAL: f64 = 4.0 * SECOND;
+pub const N_TIMES: u64 = 10_001;
+pub const DT: f64 = 0.02;
+pub const T_START: f64 = 0.0;
+pub const SAVE_INTERVAL: u64 = 50;
 
 // Meta Parameters to control solving
 pub const N_THREADS: usize = 1;
 
-mod alternative_vertex_mechanics;
 mod cell_properties;
 mod custom_domain;
 mod plotting;
 
-use alternative_vertex_mechanics::VertexMechanics2DAlternative;
 use cell_properties::*;
 use custom_domain::*;
 use plotting::*;
@@ -64,40 +56,45 @@ fn main() -> Result<(), chili::SimulationError> {
     };
 
     // Define cell agents
+    let dx = 0.95 * CELL_MECHANICS_AREA.sqrt();
+    let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
+    let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
-        .map(|_| MyCell {
-            mechanics: VertexMechanics2DAlternative::<6>::new(
-                [
-                    rng.gen_range(0.4 * DOMAIN_SIZE_X..0.6 * DOMAIN_SIZE_X),
-                    rng.gen_range(0.4 * DOMAIN_SIZE_Y..0.6 * DOMAIN_SIZE_Y),
-                ]
-                .into(),
-                CELL_MECHANICS_AREA,
-                rng.gen_range(0.0..2.0 * std::f64::consts::PI),
-                CELL_MECHANICS_SPRING_TENSION,
-                CELL_MECHANICS_CENTRAL_PRESSURE,
-                CELL_MECHANICS_DAMPING_CONSTANT,
-                CELL_MECHANICS_DIFFUSION_CONSTANT,
-                Some((0.3, rng.clone())),
-            ),
-            interaction: VertexDerivedInteraction::from_two_forces(
-                OutsideInteraction {
-                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
-                },
-                InsideInteraction {
-                    potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
-                    average_radius: CELL_MECHANICS_AREA.sqrt(),
-                },
-            ),
-            growth_factor: CELL_CYCLE_GROWTH_FACTOR,
-            division_area_threshold: 2.0 * CELL_MECHANICS_AREA,
+        .map(|n_cell| {
+            let n_x = n_cell as f64 % n_x_max;
+            let n_y = (n_cell as f64 / n_y_max).floor();
+            MyCell {
+                mechanics: VertexMechanics2D::<6>::new(
+                    [
+                        0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
+                        0.1 * DOMAIN_SIZE_Y + n_y * dx,
+                    ]
+                    .into(),
+                    CELL_MECHANICS_AREA,
+                    rng.gen_range(0.0..2.0 * std::f64::consts::PI),
+                    CELL_MECHANICS_SPRING_TENSION,
+                    CELL_MECHANICS_CENTRAL_PRESSURE,
+                    CELL_MECHANICS_DAMPING_CONSTANT,
+                    CELL_MECHANICS_DIFFUSION_CONSTANT,
+                    None,
+                ),
+                interaction: VertexDerivedInteraction::from_two_forces(
+                    OutsideInteraction {
+                        potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                        interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+                    },
+                    InsideInteraction {
+                        potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
+                        average_radius: CELL_MECHANICS_AREA.sqrt(),
+                    },
+                ),
+            }
         })
         .collect::<Vec<_>>();
 
     // Define settings for storage and time solving
     let settings = chili::Settings {
-        time: FixedStepsize::from_partial_save_interval(0.0, DT, T_END, SAVE_INTERVAL)?,
+        time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
         n_threads: N_THREADS.try_into().unwrap(),
         show_progressbar: true,
         storage: StorageBuilder::new().location("out/semi_vertex"),
@@ -118,30 +115,29 @@ fn main() -> Result<(), chili::SimulationError> {
 
     println!("");
     use rayon::prelude::*;
-    kdam::par_tqdm!(all_iterations.into_par_iter())
-        .map(move |iteration| -> Result<(), chili::SimulationError> {
-            let cells = storager.cells.load_all_elements_at_iteration(iteration)?;
-            let img_path = save_path.join(format!("snapshot_{:08}.png", iteration));
-            let domain_size_x = DOMAIN_SIZE_X.round() as u32;
-            let domain_size_y = DOMAIN_SIZE_Y.round() as u32;
-            let root =
-                plotters::prelude::BitMapBackend::new(&img_path, (domain_size_x, domain_size_y))
-                    .into_drawing_area();
-            root.fill(&plotters::prelude::WHITE)?;
-            let mut root = root.apply_coord_spec(plotters::prelude::Cartesian2d::<
-                plotters::coord::types::RangedCoordf64,
-                plotters::coord::types::RangedCoordf64,
-            >::new(
-                0.0..DOMAIN_SIZE_X,
-                0.0..DOMAIN_SIZE_X,
-                (0..domain_size_x as i32, 0..domain_size_y as i32),
-            ));
-            for (_, (cell, _)) in cells {
-                plot_cell(&cell.cell, &mut root)?;
-            }
-            root.present()?;
-            Ok(())
-        })
-        .collect::<Result<Vec<_>, chili::SimulationError>>()?;
+    kdam::par_tqdm!(all_iterations.into_par_iter()).map(move |iteration| -> Result<(), chili::SimulationError> {
+        let cells = storager.cells.load_all_elements_at_iteration(iteration)?;
+        let img_path = save_path
+            .join(format!("snapshot_{:08}.png", iteration));
+        let domain_size_x = DOMAIN_SIZE_X.round() as u32;
+        let domain_size_y = DOMAIN_SIZE_Y.round() as u32;
+        let root =
+            plotters::prelude::BitMapBackend::new(&img_path, (domain_size_x, domain_size_y))
+                .into_drawing_area();
+        root.fill(&plotters::prelude::WHITE)?;
+        let mut root = root.apply_coord_spec(plotters::prelude::Cartesian2d::<
+            plotters::coord::types::RangedCoordf64,
+            plotters::coord::types::RangedCoordf64,
+        >::new(
+            0.0..DOMAIN_SIZE_X,
+            0.0..DOMAIN_SIZE_X,
+            (0..domain_size_x as i32, 0..domain_size_y as i32),
+        ));
+        for (_, (cell, _)) in cells {
+            plot_cell(&cell.cell, &mut root)?;
+        }
+        root.present()?;
+        Ok(())
+    }).collect::<Result<Vec<_>, chili::SimulationError>>()?;
     Ok(())
 }
