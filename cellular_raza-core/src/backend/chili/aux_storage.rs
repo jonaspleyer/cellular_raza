@@ -238,20 +238,20 @@ impl UpdateCycle for AuxStorageCycle {
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
 /// Interface to store intermediate information about cellular reactions.
-pub trait UpdateReactions<R> {
+pub trait UpdateReactions<Ri> {
     /// Set the value of intracellular concentrations
-    fn set_conc(&mut self, conc: R);
+    fn set_conc(&mut self, conc: Ri);
     /// Obtain the current value of intracellular concentrations
-    fn get_conc(&self) -> R;
+    fn get_conc(&self) -> Ri;
     /// Add concentrations to the current value
-    fn incr_conc(&mut self, incr: R);
+    fn incr_conc(&mut self, incr: Ri);
 }
 
 /// Helper storage for values regarding intracellular concentrations for the
 /// [CellularReactions](cellular_raza_concepts::CellularReactions) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
-pub struct AuxStorageReactions<R> {
-    concentration: R,
+pub struct AuxStorageReactions<Ri> {
+    concentration: Ri,
 }
 
 /// TODO
