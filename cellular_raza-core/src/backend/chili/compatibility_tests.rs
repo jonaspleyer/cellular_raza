@@ -67,16 +67,9 @@ where
 }
 
 #[allow(unused)]
-pub fn reactions_implemented<C, Ci>(agents: &Ci)
+pub fn reactions_implemented<Ri, C, Ci>(agents: &Ci)
 where
     Ci: IntoIterator<Item = C>,
-    // TODO
-{
-}
-
-#[allow(unused)]
-pub fn reactions_volume<C, Ci>(agents: &Ci)
-where
-    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::Reactions<Ri>,
 {
 }
