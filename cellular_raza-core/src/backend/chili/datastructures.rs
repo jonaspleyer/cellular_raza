@@ -229,7 +229,6 @@ where
         A: Default,
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
-        use cellular_raza_concepts::BoundaryError;
         for (cell, aux_storage) in new_cells.drain(..) {
             let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];
@@ -310,7 +309,6 @@ where
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
             use crate::storage::StorageInterfaceStore;
-            use cellular_raza_concepts::Id;
             let cells = self
                 .voxels
                 .iter()
