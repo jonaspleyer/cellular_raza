@@ -1,6 +1,6 @@
 use super::{
-    Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateReactions,
-    UpdateReactionsContact, Voxel, VoxelPlainIndex,
+    reactions_intracellular_runge_kutta_4th, Communicator, SimulationError, SubDomainBox,
+    SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact, Voxel, VoxelPlainIndex,
 };
 use cellular_raza_concepts::*;
 
@@ -13,14 +13,25 @@ where
 {
     ///
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_cellular_reactions<ConcGradientExtracellular, ConcTotalExtracellular>(
+    pub fn update_contact_reactions<Ri, Pos, Inf>(
         &mut self,
         _dt: &f64,
     ) -> Result<(), SimulationError>
-// TODO where
-    //     ConcTotalExtracellular: std::ops::AddAssign + Mul<f64, Output = ConcVecIntracellular>,
-    //     C: CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
+    where
+        C: ReactionsContact<Ri, Pos, Inf>,
     {
+        /* self.voxels
+            .iter_mut()
+            .map(|(_, voxelbox)| {
+                voxelbox.cells.iter_mut().map(
+                    |(cell, aux_storage)| -> Result<(), SimulationError> {
+                        let intracellular = cell.get_intracellular();
+                        Ok(())
+                    },
+                )
+            })
+            .flatten()
+            .collect::<Result<(), SimulationError>>()?;*/
         /* self.voxels
         .iter_mut()
         .map(|(_, voxelbox)| {
@@ -110,12 +121,13 @@ impl<C, A> Voxel<C, A> {
     ) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
+        Ri: cellular_raza_concepts::Xapy<Float>,
         A: UpdateReactionsContact<Ri, N>,
         Float: num::Float,
     {
-        let one_half: Float = Float::one() / (Float::one() + Float::one());
+        // let one_half: Float = Float::one() / (Float::one() + Float::one());
 
-        for n in 0..self.cells.len() {
+        /* for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
                 /* let mut cells_mut = self.cells.iter_mut();
                 let (c1, aux1) = cells_mut.nth(n).unwrap();
@@ -145,7 +157,7 @@ impl<C, A> Voxel<C, A> {
                     aux2.incr_current_neighbours(1);
                 }*/
             }
-        }
+        }*/
         Ok(())
     }
 
@@ -158,9 +170,9 @@ impl<C, A> Voxel<C, A> {
         const N: usize,
     >(
         &mut self,
-        ext_pos: &Pos,
-        ext_intra: &Ri,
-        ext_inf: &Inf,
+        _ext_pos: &Pos,
+        _ext_intra: &Ri,
+        _ext_inf: &Inf,
     ) -> Result<Ri, CalcError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
@@ -209,19 +221,20 @@ where
         Pos: Clone,
         Inf: Clone,
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
+        Ri: cellular_raza_concepts::Xapy<Float>,
         A: UpdateReactionsContact<Ri, N>,
         Float: num::Float,
         <S as SubDomain>::VoxelIndex: Ord,
         Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Ri, Pos, Inf>>,
     {
-        /* for (_, vox) in self.voxels.iter_mut() {
-            vox.calculate_force_between_cells_internally()?;
+        for (_, vox) in self.voxels.iter_mut() {
+            vox.calculate_contact_reactions_between_cells_internally()?;
         }
 
         // Calculate forces for all cells from neighbors
         // TODO can we do this without memory allocation?
         // or simply allocate when creating the subdomain
-        let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+        /* let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
 
         for voxel_index in key_iterator {
             for cell_index_in_vector in 0..self.voxels[&voxel_index].cells.len() {
@@ -349,12 +362,12 @@ where
 
     /// Receive all calculated forces and include them for later update steps.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_reactions_contact_step_3<Ri, Pos, Inf>(
-        &mut self,
-    ) -> Result<(), SimulationError>
+    pub fn update_reactions_contact_step_3<Ri, Pos, Inf, Float>(&mut self) -> Result<(), SimulationError>
     where
         A: UpdateReactions<Ri>,
         Com: Communicator<SubDomainPlainIndex, ReactionsIntracellularInformation<Ri>>,
+        Ri: cellular_raza_concepts::Xapy<Float>,
+        Float: num::Float,
     {
         // Update position and velocity of all cells with new information
         for obt_intracellular in <Com as Communicator<
@@ -379,7 +392,9 @@ where
                 obt_intracellular.index_sender, obt_intracellular.cell_index_in_vector
             );
             match vox.cells.get_mut(obt_intracellular.cell_index_in_vector) {
-                Some((_, aux_storage)) => Ok(aux_storage.incr_conc(obt_intracellular.intracellular)),
+                Some((_, aux_storage)) => {
+                    Ok(aux_storage.incr_conc(obt_intracellular.intracellular))
+                }
                 None => Err(cellular_raza_concepts::IndexError(error_2)),
             }?;
         }
@@ -388,27 +403,25 @@ where
 }
 
 /// TODO
-pub fn local_reactions_update_step_3<
+pub fn local_reactions_intracellular<
     C,
     A,
     Ri,
-    #[cfg(feature = "tracing")] Float: core::fmt::Debug,
-    #[cfg(not(feature = "tracing"))] Float,
+    #[cfg(feature = "tracing")] F: core::fmt::Debug,
+    #[cfg(not(feature = "tracing"))] F,
 >(
     cell: &mut C,
     aux_storage: &mut A,
-    dt: Float,
+    dt: F,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
     A: UpdateReactions<Ri>,
     C: cellular_raza_concepts::Reactions<Ri>,
-    Float: num::Float + Copy + num::FromPrimitive,
+    // Float: num::Float + Copy + num::FromPrimitive,
+    F: num::Float,
+    Ri: num::Zero + Xapy<F>,
 {
-    /* super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
-        cell,
-        aux_storage,
-        dt,
-    )?;*/
+    reactions_intracellular_runge_kutta_4th(cell, aux_storage, dt)?;
     Ok(())
 }
