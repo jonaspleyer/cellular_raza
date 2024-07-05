@@ -254,6 +254,16 @@ pub struct AuxStorageReactions<R> {
     concentration: R,
 }
 
+/// TODO
+pub trait UpdateReactionsContact<Ri, const N: usize> {
+    /// TODO
+    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N>;
+}
+
+/// TODO
+#[derive(Clone, Default, Deserialize, Serialize)]
+pub struct AuxStorageReactionsContact {}
+
 impl<R> UpdateReactions<R> for AuxStorageReactions<R>
 where
     R: Clone + core::ops::Add<R, Output = R>,
