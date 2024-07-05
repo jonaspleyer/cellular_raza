@@ -601,10 +601,10 @@ impl SimulationAspect {
                 (generics, field)
             }
             SimulationAspect::Reactions => {
-                let generics = vec![quote!(R)];
+                let generics = vec![quote!(Ri)];
                 let field = quote!(
-                    #[UpdateReactions(R)]
-                    reactions: #backend_path AuxStorageReactions<R>,
+                    #[UpdateReactions(Ri)]
+                    reactions: #backend_path AuxStorageReactions<Ri>,
                 );
                 (generics, field)
             }
