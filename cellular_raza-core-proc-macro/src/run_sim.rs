@@ -479,7 +479,10 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     // TODO implement this!
-    if kwargs.aspects.contains(&Reactions) {}
+    if kwargs.aspects.contains(&Reactions) {
+        local_func_names.push(
+            quote!(#core_path::backend::chili::local_reactions_intracellular));
+    }
 
     let update_local_funcs = quote!(
         let __cr_private_combined_local_cell_funcs = |
