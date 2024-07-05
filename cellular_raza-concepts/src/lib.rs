@@ -62,6 +62,7 @@
 mod cell;
 mod cycle;
 mod domain;
+mod reactions;
 
 /// Traits and types which will eventually replace the old [Domain] definition.
 // TODO #[deprecated]
@@ -79,3 +80,4 @@ pub use errors::*;
 pub use interaction::*;
 pub use mechanics::*;
 pub use plotting::*;
+pub use reactions::*;
