@@ -1,4 +1,4 @@
-use cellular_raza_concepts::CalcError;
+use cellular_raza_concepts::{CalcError, Xapy};
 use num::FromPrimitive;
 
 #[cfg(feature = "tracing")]
@@ -263,4 +263,42 @@ where
     let x_new = x + dx0 * f1 * dt + dx1 * f2 * dt;
     let v_new = v + dv0 * f1 * dt + dv1 * f2 * dt;
     Ok((x_new, v_new))
+}
+
+/// TODO
+#[inline]
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
+pub fn reactions_intracellular_runge_kutta_4th<C, A, F, Ri>(
+    cell: &mut C,
+    _aux_storage: &mut A,
+    dt: F,
+) -> Result<(), CalcError>
+where
+    C: cellular_raza_concepts::Reactions<Ri>,
+    // A: super::UpdateReactions<Ri>,
+    F: num::Float,
+    Ri: num::Zero + Xapy<F>,
+{
+    // Constants
+    let two = F::one() + F::one();
+    let six = two + two + two;
+
+    let intra = cell.get_intracellular();
+
+    // Calculate the intermediate steps
+    let dintra1 = cell.calculate_intracellular_increment(&intra)?;
+    let dintra2 = cell.calculate_intracellular_increment(&dintra1.xapy(dt / two, &intra))?;
+    let dintra3 = cell.calculate_intracellular_increment(&dintra2.xapy(dt / two, &intra))?;
+    let dintra4 = cell.calculate_intracellular_increment(&dintra3.xapy(dt, &intra))?;
+    let dintra = dintra1.xapy(
+        F::one() / six,
+        &dintra2.xapy(
+            two / six,
+            &dintra3.xapy(two / six, &dintra4.xapy(F::one() / six, &Ri::zero())),
+        ),
+    );
+
+    // Update the internal value of the cell
+    cell.set_intracellular(dintra.xapy(dt, &intra));
+    Ok(())
 }
