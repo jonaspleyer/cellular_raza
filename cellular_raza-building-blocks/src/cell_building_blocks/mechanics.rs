@@ -530,12 +530,18 @@ pub struct VertexMechanics2D<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
     velocity: nalgebra::SMatrix<f64, D, 2>,
     random_vector: nalgebra::SMatrix<f64, D, 2>,
-    cell_boundary_lengths: nalgebra::SVector<f64, D>,
-    spring_tensions: nalgebra::SVector<f64, D>,
-    cell_area: f64,
-    central_pressure: f64,
-    damping_constant: f64,
-    diffusion_constant: f64,
+    /// Boundary lengths of individual edges
+    pub cell_boundary_lengths: nalgebra::SVector<f64, D>,
+    /// Spring tensions of individual edges
+    pub spring_tensions: nalgebra::SVector<f64, D>,
+    /// Total cell area
+    pub cell_area: f64,
+    /// Central pressure going from middle of the cell outwards
+    pub central_pressure: f64,
+    /// Damping constant
+    pub damping_constant: f64,
+    /// Controls the random motion of the entire cell
+    pub diffusion_constant: f64,
 }
 
 impl<const D: usize> VertexMechanics2D<D> {

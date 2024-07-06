@@ -746,16 +746,27 @@ where
     F::zero() <= u && u < F::one() && F::zero() <= t
 }
 
-impl<A, R, I1, I2, const D: usize>
+impl<F, S, A, R, I1, I2, D>
     Interaction<
-        nalgebra::SMatrix<f64, D, 2>,
-        nalgebra::SMatrix<f64, D, 2>,
-        nalgebra::SMatrix<f64, D, 2>,
+        nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        nalgebra::Matrix<F, D, nalgebra::U2, S>,
         (I1, I2),
     > for VertexDerivedInteraction<A, R, I1, I2>
 where
-    A: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I1>,
-    R: Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, I2>,
+    A: Interaction<Vector2<F>, Vector2<F>, Vector2<F>, I1>,
+    R: Interaction<Vector2<F>, Vector2<F>, Vector2<F>, I2>,
+    D: nalgebra::Dim,
+    F: nalgebra::Scalar + nalgebra::RealField,
+    nalgebra::Matrix<F, D, nalgebra::U2, S>:
+        core::ops::Mul<F, Output = nalgebra::Matrix<F, D, nalgebra::U2, S>>,
+    F: Copy,
+    // nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<F, D, nalgebra::Const<2>>,
+    // nalgebra::VecStorage<F, D, nalgebra::Const<2>>: nalgebra::Storage<F, D, nalgebra::Const<2>>
+    // S: nalgebra::RawStorage<F, D, nalgebra::U2>,
+    S: nalgebra::RawStorageMut<F, D, nalgebra::U2>,
+    S: nalgebra::Storage<F, D, nalgebra::U2>,
+    S: Clone,
 {
     fn get_interaction_information(&self) -> (I1, I2) {
         let i1 = self.outside_interaction.get_interaction_information();
@@ -765,43 +776,26 @@ where
 
     fn calculate_force_between(
         &self,
-        own_pos: &nalgebra::SMatrix<f64, D, 2>,
-        own_vel: &nalgebra::SMatrix<f64, D, 2>,
-        ext_pos: &nalgebra::SMatrix<f64, D, 2>,
-        ext_vel: &nalgebra::SMatrix<f64, D, 2>,
+        own_pos: &nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        own_vel: &nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        ext_pos: &nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        ext_vel: &nalgebra::Matrix<F, D, nalgebra::U2, S>,
         ext_information: &(I1, I2),
-    ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), CalcError> {
-        // TODO Reformulate this code:
-        // Do not calculate interactions between vertices but rather between
-        // edges of polygons.
-
+    ) -> Result<
+        (
+            nalgebra::Matrix<F, D, nalgebra::U2, S>,
+            nalgebra::Matrix<F, D, nalgebra::U2, S>,
+        ),
+        CalcError,
+    > {
         // IMPORTANT!!
         // This code assumes that we are dealing with a regular! polygon!
 
         // Calculate the middle point which we will need later
-        let middle_own: Vector2<f64> = own_pos
-            .row_iter()
-            .map(|v| v.transpose())
-            .sum::<Vector2<f64>>()
-            / own_pos.shape().0 as f64;
-
-        let average_vel_own: Vector2<f64> = own_vel
-            .row_iter()
-            .map(|v| v.transpose())
-            .sum::<Vector2<f64>>()
-            / own_vel.shape().0 as f64;
-
-        let middle_ext: Vector2<f64> = ext_pos
-            .row_iter()
-            .map(|v| v.transpose())
-            .sum::<Vector2<f64>>()
-            / ext_pos.shape().0 as f64;
-
-        let average_vel_ext: Vector2<f64> = ext_vel
-            .row_iter()
-            .map(|v| v.transpose())
-            .sum::<Vector2<f64>>()
-            / ext_vel.shape().0 as f64;
+        let middle_own = own_pos.row_mean().transpose();
+        let average_vel_own = own_vel.row_mean().transpose();
+        let middle_ext = ext_pos.row_mean().transpose();
+        let average_vel_ext = ext_vel.row_mean().transpose();
 
         // Also calculate our own polygon defined by lines between points
         let own_polygon_lines = own_pos
@@ -810,13 +804,16 @@ where
             .circular_tuple_windows()
             .collect::<Vec<(_, _)>>();
 
-        let vec_on_edge =
-            0.5 * (own_pos.view_range(0..1, 0..2) + own_pos.view_range(1..2, 0..2)).transpose();
-        let point_outside_polygon = 2.0 * vec_on_edge - middle_own;
+        let vec_on_edge = (own_pos.view_range(0..1, 0..2) + own_pos.view_range(1..2, 0..2))
+            .transpose()
+            / (F::one() + F::one());
+        // This is simplified notation for the following
+        // p = 2*v - middle = (v-middle) + v
+        let point_outside_polygon = vec_on_edge * (F::one() + F::one()) - middle_own;
 
         // Store the total calculated force here
-        let mut total_force_own = ext_pos.clone() * 0.0;
-        let mut total_force_ext = ext_pos.clone() * 0.0;
+        let mut total_force_own = ext_pos.clone() * F::zero();
+        let mut total_force_ext = ext_pos.clone() * F::zero();
 
         // Match the obtained interaction information
         let (inf1, inf2) = ext_information;
@@ -829,8 +826,8 @@ where
             // If this is the case, do not calculate any attracting force.
 
             // We first calculate a bounding box and test quickly with this
-            let bounding_box: [[f64; 2]; 2] = own_pos.row_iter().map(|v| v.transpose()).fold(
-                [[std::f64::INFINITY, -std::f64::INFINITY]; 2],
+            let bounding_box: [[F; 2]; 2] = own_pos.row_iter().map(|v| v.transpose()).fold(
+                [[F::max_value().unwrap(), F::min_value().unwrap()]; 2],
                 |mut accumulator, polygon_edge| {
                     accumulator[0][0] = accumulator[0][0].min(polygon_edge.x);
                     accumulator[0][1] = accumulator[0][1].max(polygon_edge.x);
@@ -874,13 +871,15 @@ where
                     &inf2,
                 )?;
                 let dir = (middle_ext - middle_own).normalize();
-                let calc_own = -calc_own.norm() * dir;
-                let calc_ext = calc_ext.norm() * dir;
+                let calc_own = -dir * calc_own.norm();
+                let calc_ext = dir * calc_ext.norm();
                 let mut force_ext = total_force_ext.row_mut(n_row_ext);
                 force_ext += calc_ext.transpose();
+                let n_rows = total_force_own.nrows();
+                let n_rows_float = F::from_usize(n_rows).unwrap();
                 total_force_own
                     .row_iter_mut()
-                    .for_each(|mut r| r += calc_own.transpose() / D as f64);
+                    .for_each(|mut r| r += calc_own.transpose() / n_rows_float);
             } else {
                 // Calculate the force outside
                 if let Some((n_row_nearest, (_, nearest_point, t_frac))) =
@@ -896,9 +895,10 @@ where
                     let mut force_ext = total_force_ext.row_mut(n_row_ext);
                     force_ext += calc_ext.transpose();
                     let mut force_own_n = total_force_own.row_mut(n_row_nearest);
-                    force_own_n += (1.0 - t_frac) * calc_own.transpose();
-                    let mut force_own_n1 = total_force_own.row_mut((n_row_nearest + 1) % D);
-                    force_own_n1 += t_frac * calc_own.transpose();
+                    force_own_n += calc_own.transpose() * (F::one() - t_frac);
+                    let mut force_own_n1 =
+                        total_force_own.row_mut((n_row_nearest + 1) % total_force_own.nrows());
+                    force_own_n1 += calc_own.transpose() * t_frac;
                 }
             };
         }
