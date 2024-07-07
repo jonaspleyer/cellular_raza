@@ -586,58 +586,6 @@ impl syn::parse::Parse for Arguments {
     }
 }
 
-impl SimulationAspect {
-    fn build_aux(
-        &self,
-        backend_path: &proc_macro2::TokenStream,
-    ) -> (Vec<proc_macro2::TokenStream>, proc_macro2::TokenStream) {
-        match &self {
-            SimulationAspect::Cycle => {
-                let generics = vec![];
-                let field = quote!(
-                    #[UpdateCycle]
-                    cycle: #backend_path AuxStorageCycle,
-                );
-                (generics, field)
-            }
-            SimulationAspect::Mechanics => {
-                let generics = vec![
-                    quote!(Pos),
-                    quote!(Vel),
-                    quote!(For),
-                    quote!(const N: usize),
-                ];
-                let field = quote!(
-                    #[UpdateMechanics(Pos, Vel, For, N)]
-                    mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, N>,
-                );
-                (generics, field)
-            }
-            SimulationAspect::Reactions => {
-                let generics = vec![quote!(Ri)];
-                let field = quote!(
-                    #[UpdateReactions(Ri)]
-                    reactions: #backend_path AuxStorageReactions<Ri>,
-                );
-                (generics, field)
-            }
-            SimulationAspect::Interaction => {
-                let generics = vec![];
-                let field = quote!(
-                    #[UpdateInteraction]
-                    interaction: #backend_path AuxStorageInteraction,
-                );
-                (generics, field)
-            }
-            SimulationAspect::DomainForce => {
-                let generics = vec![];
-                let field = quote!();
-                (generics, field)
-            }
-        }
-    }
-}
-
 pub struct Builder {
     pub struct_name: syn::Ident,
     pub core_path: syn::Path,
@@ -661,11 +609,38 @@ impl Builder {
         let (core_path, backend_path) = (quote!(#p), quote!(#p ::backend::chili::));
         let mut generics = vec![];
         let mut fields = vec![];
-        for item in self.aspects.items.into_iter() {
-            let (item_generics, item_field) = item.aspect.build_aux(&backend_path);
-            generics.extend(item_generics);
-            fields.extend(item_field);
+
+        use SimulationAspect::*;
+        if self.aspects.contains(&Cycle) {
+            fields.push(quote!(
+                #[UpdateCycle]
+                cycle: #backend_path AuxStorageCycle,
+            ));
         }
+
+        if self.aspects.contains(&Mechanics) {
+            generics.extend(vec![quote!(Pos), quote!(Vel), quote!(For), quote!(const NMec: usize)]);
+            fields.push(quote!(
+                #[UpdateMechanics(Pos, Vel, For, NMec)]
+                mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, NMec>,
+            ));
+        }
+
+        /* if self.aspects.contains(&Reactions) {
+            generics.extend(vec![quote!(Ri)]);
+            fields.push(quote!(
+                #[UpdateReactions(Ri)]
+                reactions: #backend_path AuxStorageReactions<Ri>,
+            ));
+        }*/
+
+        if self.aspects.contains(&Interaction) {
+            fields.push(quote!(
+                #[UpdateInteraction]
+                interaction: #backend_path AuxStorageInteraction,
+            ));
+        }
+
         let stream = quote!(
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
