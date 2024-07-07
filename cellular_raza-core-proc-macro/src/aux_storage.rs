@@ -339,31 +339,44 @@ impl AuxStorageImplementer {
             let field_type = &update_mechanics.field_type;
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #struct_impl_generics #backend_path UpdateMechanics<#field_generics> for #struct_name #struct_ty_generics #where_clause
+                impl #struct_impl_generics #backend_path UpdateMechanics<#field_generics>
+                for #struct_name #struct_ty_generics #where_clause
                 {
                     fn set_last_position(&mut self, pos: #position) {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::set_last_position(&mut self.#field_name, pos)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::set_last_position(&mut self.#field_name, pos)
                     }
-                    fn previous_positions<'a>(&'a self) -> #backend_path FixedSizeRingBufferIter<'a, #position, #n_saves> {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::previous_positions(&self.#field_name)
+                    fn previous_positions<'a>(
+                        &'a self
+                    ) -> #backend_path FixedSizeRingBufferIter<'a, #position, #n_saves> {
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::previous_positions(&self.#field_name)
                     }
                     fn set_last_velocity(&mut self, vel: #velocity) {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::set_last_velocity(&mut self.#field_name, vel)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::set_last_velocity(&mut self.#field_name, vel)
                     }
-                    fn previous_velocities<'a>(&'a self) -> #backend_path FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::previous_velocities(&self.#field_name)
+                    fn previous_velocities<'a>(
+                        &'a self
+                    ) -> #backend_path FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::previous_velocities(&self.#field_name)
                     }
                     fn n_previous_values(&self) -> usize {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::n_previous_values(&self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::n_previous_values(&self.#field_name)
                     }
                     fn add_force(&mut self, force: #force) {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::add_force(&mut self.#field_name, force);
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::add_force(&mut self.#field_name, force);
                     }
                     fn get_current_force(&self) -> #force {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::get_current_force(&self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::get_current_force(&self.#field_name)
                     }
                     fn clear_forces(&mut self) {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>::clear_forces(&mut self.#field_name)
+                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
+                            ::clear_forces(&mut self.#field_name)
                     }
                 }
             ));
