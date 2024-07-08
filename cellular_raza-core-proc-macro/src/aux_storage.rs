@@ -133,6 +133,11 @@ impl Aspect {
             return Ok(Some(Aspect::UpdateReactions(parsed)));
         }
 
+        if cmp("UpdateReactionsContact") {
+            let parsed: UpdateReactionsContactParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::UpdateReactionsContact(parsed)));
+        }
+
         Ok(None)
     }
 }
@@ -142,6 +147,7 @@ enum Aspect {
     UpdateCycle(UpdateCycleParser),
     UpdateInteraction(UpdateInteractionParser),
     UpdateReactions(UpdateReactionsParser),
+    UpdateReactionsContact(UpdateReactionsContactParser),
 }
 
 // --------------------------------- UPDATE-MECHANICS --------------------------------
@@ -195,7 +201,7 @@ impl syn::parse::Parse for UpdateInteractionParser {
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
 struct UpdateReactionsParser {
-    concentration: syn::GenericParam,
+    rintra: syn::GenericParam,
 }
 
 impl syn::parse::Parse for UpdateReactionsParser {
@@ -204,7 +210,27 @@ impl syn::parse::Parse for UpdateReactionsParser {
         let content;
         syn::parenthesized!(content in input);
         Ok(Self {
-            concentration: content.parse()?,
+            rintra: content.parse()?,
+        })
+    }
+}
+
+// --------------------------------- UPDATE-REACTIONS --------------------------------
+struct UpdateReactionsContactParser {
+    rintra: syn::GenericParam,
+    _comma_1: syn::token::Comma,
+    n_saves: syn::GenericParam,
+}
+
+impl syn::parse::Parse for UpdateReactionsContactParser {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _update_reactions_contact: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            rintra: content.parse()?,
+            _comma_1: content.parse()?,
+            n_saves: content.parse()?,
         })
     }
 }
@@ -216,6 +242,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
         let mut update_mechanics = None;
         let mut update_interaction = None;
         let mut update_reactions = None;
+        let mut update_reactions_contact = None;
 
         value
             .aspects
@@ -251,7 +278,15 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
                         }
                         Aspect::UpdateReactions(p) => {
                             update_reactions = Some(UpdateReactionsImplementer {
-                                concentration: p.concentration,
+                                rintra: p.rintra,
+                                field_type: aspect_field.field.ty.clone(),
+                                field_name: aspect_field.field.ident.clone(),
+                            })
+                        }
+                        Aspect::UpdateReactionsContact(p) => {
+                            update_reactions_contact = Some(UpdateReactionsContactImplementer {
+                                rintra: p.rintra,
+                                n_saves: p.n_saves,
                                 field_type: aspect_field.field.ty.clone(),
                                 field_name: aspect_field.field.ident.clone(),
                             })
@@ -266,6 +301,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
             update_mechanics,
             update_interaction,
             update_reactions,
+            update_reactions_contact,
             core_path: value.core_path,
         }
     }
@@ -280,6 +316,7 @@ struct AuxStorageImplementer {
     update_cycle: Option<UpdateCycleImplementer>,
     update_interaction: Option<UpdateInteractionImplementer>,
     update_reactions: Option<UpdateReactionsImplementer>,
+    update_reactions_contact: Option<UpdateReactionsContactImplementer>,
     core_path: Option<syn::Path>,
 }
 
@@ -408,21 +445,32 @@ impl AuxStorageImplementer {
             let field_type = &update_cycle.field_type;
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics #backend_path UpdateCycle for #struct_name #ty_generics #where_clause {
+                impl #impl_generics #backend_path UpdateCycle
+                for #struct_name #ty_generics #where_clause {
                     fn set_cycle_events(&mut self, events: Vec<#backend_path CycleEvent>) {
-                        <#field_type as #backend_path UpdateCycle>::set_cycle_events(&mut self.#field_name, events)
+                        <#field_type as #backend_path UpdateCycle>::set_cycle_events(
+                            &mut self.#field_name,
+                            events
+                        )
                     }
 
                     fn get_cycle_events(&self) -> &Vec<#backend_path CycleEvent> {
-                        <#field_type as #backend_path UpdateCycle>::get_cycle_events(&self.#field_name)
+                        <#field_type as #backend_path UpdateCycle>::get_cycle_events(
+                            &self.#field_name
+                        )
                     }
 
                     fn drain_cycle_events(&mut self) -> std::vec::Drain<#backend_path CycleEvent> {
-                        <#field_type as #backend_path UpdateCycle>::drain_cycle_events(&mut self.#field_name)
+                        <#field_type as #backend_path UpdateCycle>::drain_cycle_events(
+                            &mut self.#field_name
+                        )
                     }
 
                     fn add_cycle_event(&mut self, event: #backend_path CycleEvent) {
-                        <#field_type as #backend_path UpdateCycle>::add_cycle_event(&mut self.#field_name, event)
+                        <#field_type as #backend_path UpdateCycle>::add_cycle_event(
+                            &mut self.#field_name,
+                            event
+                        )
                     }
                 }
             ));
@@ -434,7 +482,7 @@ impl AuxStorageImplementer {
 
 // --------------------------------- UPDATE-REACTIONS --------------------------------
 struct UpdateReactionsImplementer {
-    concentration: syn::GenericParam,
+    rintra: syn::GenericParam,
     field_name: Option<syn::Ident>,
     field_type: syn::Type,
 }
@@ -442,7 +490,7 @@ struct UpdateReactionsImplementer {
 impl AuxStorageImplementer {
     fn implement_update_reactions(&self) -> TokenStream {
         if let Some(update_reactions) = &self.update_reactions {
-            let concentration = &update_reactions.concentration;
+            let rintra = &update_reactions.rintra;
 
             let struct_name = &self.name;
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
@@ -460,40 +508,106 @@ impl AuxStorageImplementer {
                     let pred = s_where.predicates.iter();
                     quote!(
                         where
-                        #(#pred,)*
-                        #concentration: Clone,
-                        #concentration: core::ops::Add<#concentration, Output=#concentration>,
+                            #(#pred,)*
+                            #field_type: #backend_path UpdateReactions<#rintra>,
                     )
                 }
                 None => quote!(
                     where
-                    #concentration: Clone,
-                    #concentration: core::ops::Add<#concentration, Output=#concentration>,
+                        #field_type: #backend_path UpdateReactions<#rintra>,
                 ),
             };
 
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics #backend_path UpdateReactions<#concentration> for #struct_name #ty_generics #where_clause {
-                    fn set_conc(&mut self, conc: #concentration) {
-                        <#field_type as #backend_path UpdateReactions<#concentration>>::set_conc(
+                impl #impl_generics #backend_path UpdateReactions<#rintra>
+                for #struct_name #ty_generics #where_clause {
+                    fn set_conc(&mut self, conc: #rintra) {
+                        <#field_type as #backend_path UpdateReactions<#rintra>>::set_conc(
                             &mut self.#field_name,
                             conc
                         )
                     }
 
-                    fn get_conc(&self) -> #concentration {
-                        <#field_type as #backend_path UpdateReactions<#concentration>>::get_conc(
+                    fn get_conc(&self) -> #rintra {
+                        <#field_type as #backend_path UpdateReactions<#rintra>>::get_conc(
                             &self.#field_name
                         )
                     }
 
-                    fn incr_conc(&mut self, incr: #concentration) {
-                        <#field_type as #backend_path UpdateReactions<#concentration>>::incr_conc(
+                    fn incr_conc(&mut self, incr: #rintra) {
+                        <#field_type as #backend_path UpdateReactions<#rintra>>::incr_conc(
                             &mut self.#field_name,
                             incr
                         )
                     }
                 }
+            ));
+            return TokenStream::from(new_stream);
+        }
+        TokenStream::new()
+    }
+}
+
+// ----------------------------- UPDATE-REACTIONS-CONTACT ----------------------------
+struct UpdateReactionsContactImplementer {
+    rintra: syn::GenericParam,
+    n_saves: syn::GenericParam,
+    field_name: Option<syn::Ident>,
+    field_type: syn::Type,
+}
+
+impl AuxStorageImplementer {
+    fn implement_update_reactions_contact(&self) -> TokenStream {
+        if let Some(update_reactions_contact) = &self.update_reactions_contact {
+            let rintra = &update_reactions_contact.rintra;
+            let nsaves = &update_reactions_contact.n_saves;
+
+            let struct_name = &self.name;
+            let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
+
+            let backend_path = match &self.core_path {
+                Some(p) => quote!(#p ::backend::chili::),
+                None => quote!(),
+            };
+
+            let field_name = &update_reactions_contact.field_name;
+            let field_type = &update_reactions_contact.field_type;
+
+            let where_clause = match where_clause {
+                Some(s_where) => {
+                    let pred = s_where.predicates.iter();
+                    quote!(
+                        where
+                            #(#pred,)*
+                            #field_type: #backend_path UpdateReactionsContact<#rintra, #nsaves>,
+                    )
+                }
+                None => quote!(
+                    where
+                        #field_type: #backend_path UpdateReactionsContact<#rintra, #nsaves>,
+                ),
+            };
+
+            let new_stream = wrap_pre_flags(quote!(
+                    impl #impl_generics #backend_path UpdateReactionsContact<#rintra, #nsaves>
+                    for #struct_name #ty_generics #where_clause {
+                        fn previous_increments<'a>(
+                            &'a self
+                        ) -> #backend_path FixedSizeRingBufferIter<'a, #rintra, #nsaves> {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::previous_increments(&self.#field_name)
+                        }
+
+                        fn set_last_increment(&mut self, increment: #rintra) {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::set_last_increment(&mut self.#field_name, increment)
+                        }
+
+                        fn n_previous_values(&self) -> usize {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::n_previous_values(&self.#field_name)
+                        }
+                    }
             ));
             return TokenStream::from(new_stream);
         }
@@ -560,6 +674,7 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
     res.extend(aux_storage.implement_update_cycle());
     res.extend(aux_storage.implement_update_mechanics());
     res.extend(aux_storage.implement_update_reactions());
+    res.extend(aux_storage.implement_update_reactions_contact());
     res.extend(aux_storage.implement_update_interaction());
 
     res
@@ -619,20 +734,32 @@ impl Builder {
         }
 
         if self.aspects.contains(&Mechanics) {
-            generics.extend(vec![quote!(Pos), quote!(Vel), quote!(For), quote!(const NMec: usize)]);
+            generics.extend(vec![
+                quote!(Pos),
+                quote!(Vel),
+                quote!(For),
+                quote!(const NMec: usize),
+            ]);
             fields.push(quote!(
                 #[UpdateMechanics(Pos, Vel, For, NMec)]
                 mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, NMec>,
             ));
         }
 
-        /* if self.aspects.contains(&Reactions) {
-            generics.extend(vec![quote!(Ri)]);
+        if self.aspects.contains(&Reactions) || self.aspects.contains(&ReactionsContact) {
+            generics.push(quote!(Ri));
             fields.push(quote!(
                 #[UpdateReactions(Ri)]
                 reactions: #backend_path AuxStorageReactions<Ri>,
             ));
-        }*/
+        }
+        if self.aspects.contains(&ReactionsContact) {
+            generics.push(quote!(const NReact: usize));
+            fields.push(quote!(
+                #[UpdateReactionsContact(Ri, NReact)]
+                reactions_contact: #backend_path AuxStorageReactionsContact<Ri, NReact>,
+            ));
+        }
 
         if self.aspects.contains(&Interaction) {
             fields.push(quote!(

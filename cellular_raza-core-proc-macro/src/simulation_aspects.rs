@@ -42,7 +42,7 @@ pub enum SimulationAspect {
     DomainForce,
     Reactions,
     // ReactionsExtra,
-    // ReactionsContact,
+    ReactionsContact,
 }
 
 // TODO add option to specify type parameters for individual aspects
@@ -181,7 +181,7 @@ impl SimulationAspect {
             SimulationAspect::Cycle,
             SimulationAspect::Reactions,
             // SimulationAspect::ReactionsExtra,
-            // SimulationAspect::ReactionsContact,
+            SimulationAspect::ReactionsContact,
             SimulationAspect::DomainForce,
         ]
     }
@@ -202,7 +202,7 @@ impl SimulationAspect {
             SimulationAspect::Cycle => quote::quote!(Cycle),
             SimulationAspect::Reactions => quote::quote!(Reactions),
             // SimulationAspect::ReactionsExtra => quote::quote!(ReactionsExtra),
-            // SimulationAspect::ReactionsContact => quote::quote!(ReactionsContact),
+            SimulationAspect::ReactionsContact => quote::quote!(ReactionsContact),
             SimulationAspect::DomainForce => quote::quote!(DomainForce),
         }
     }
@@ -216,7 +216,7 @@ impl SimulationAspect {
             SimulationAspect::Cycle => quote::quote!(cycle),
             SimulationAspect::Reactions => quote::quote!(reactions),
             // SimulationAspect::ReactionsExtra => quote::quote!(reactionsExtra),
-            // SimulationAspect::ReactionsContact => quote::quote!(reactionsContact),
+            SimulationAspect::ReactionsContact => quote::quote!(reactionsContact),
             SimulationAspect::DomainForce => quote::quote!(domainforce),
         }
     }
@@ -230,7 +230,7 @@ impl<'a> From<&'a SimulationAspect> for String {
             SimulationAspect::Mechanics => "Mechanics",
             SimulationAspect::Reactions => "Reactions",
             // SimulationAspect::ReactionsExtra => "ReactionsExtra",
-            // SimulationAspect::ReactionsContact => "ReactionsContact",
+            SimulationAspect::ReactionsContact => "ReactionsContact",
             SimulationAspect::DomainForce => "DomainForce",
         }
         .to_owned()

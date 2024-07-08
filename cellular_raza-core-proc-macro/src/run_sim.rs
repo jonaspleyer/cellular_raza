@@ -478,10 +478,15 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
     }
 
-    // TODO implement this!
     if kwargs.aspects.contains(&Reactions) {
-        local_func_names.push(
-            quote!(#core_path::backend::chili::local_reactions_intracellular));
+        local_func_names.push(quote!(#core_path::backend::chili::local_reactions_intracellular));
+    }
+
+    if kwargs.aspects.contains(&ReactionsContact) {
+        step_1.extend(quote!(sbox.update_contact_reactions_step_1()?;));
+        step_2.extend(quote!(sbox.update_contact_reactions_step_2()?;));
+        local_func_names
+            .push(quote!(#core_path::backend::chili::local_update_contact_reactions_step_3));
     }
 
     let update_local_funcs = quote!(
@@ -661,6 +666,14 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
     if kwargs.aspects.contains(&Cycle) {
         output.extend(quote::quote!(
             #core_path::backend::chili::compatibility_tests::cycle_implemented(
+                &#agents,
+            );
+        ));
+    }
+
+    if kwargs.aspects.contains(&ReactionsContact) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::reactions_contact_implemented(
                 &#agents,
             );
         ));

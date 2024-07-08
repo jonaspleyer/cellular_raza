@@ -210,6 +210,29 @@ impl SimulationAspect {
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
+            SimulationAspect::ReactionsContact => (
+                vec![
+                    syn::parse2(quote!(Pos)).unwrap(),
+                    syn::parse2(quote!(Ri)).unwrap(),
+                    syn::parse2(quote!(RInf)).unwrap(),
+                ],
+                vec![
+                    quote!(
+                        #[Comm(I, #backend_path ReactionsContactInformation<Pos, Ri, RInf>)]
+                        comm_reactions_contact: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path ReactionsContactInformation<Pos, Ri, RInf>
+                        >
+                    ),
+                    quote!(
+                        #[Comm(I, #backend_path ReactionsContactReturn<Ri>)]
+                        comm_reactions_contact_return: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path ReactionsContactReturn<Ri>
+                        >
+                    ),
+                ],
+            ),
             SimulationAspect::Mechanics => (
                 vec![
                     syn::parse2(quote!(Cel)).unwrap(),
@@ -217,7 +240,10 @@ impl SimulationAspect {
                 ],
                 vec![quote!(
                     #[Comm(I, #backend_path SendCell<Cel, Aux>)]
-                    comm_cell: #backend_path ChannelComm<#index_type, #backend_path SendCell<Cel, Aux>>
+                    comm_cell: #backend_path ChannelComm<
+                        #index_type,
+                        #backend_path SendCell<Cel, Aux>
+                    >
                 )],
             ),
             SimulationAspect::Interaction => (
@@ -230,11 +256,17 @@ impl SimulationAspect {
                 vec![
                     quote!(
                         #[Comm(I, #backend_path PosInformation<Pos, Vel, Inf>)]
-                        comm_pos: #backend_path ChannelComm<#index_type, #backend_path PosInformation<Pos, Vel, Inf>>
+                        comm_pos: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path PosInformation<Pos, Vel, Inf>
+                        >
                     ),
                     quote!(
                         #[Comm(I, #backend_path ForceInformation<For>)]
-                        comm_force: #backend_path ChannelComm<#index_type, #backend_path ForceInformation<For>>
+                        comm_force: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path ForceInformation<For>
+                        >
                     ),
                 ],
             ),

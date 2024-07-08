@@ -23,7 +23,8 @@ mod testing;
         UpdateCycle,
         UpdateMechanics,
         UpdateInteraction,
-        UpdateReactions
+        UpdateReactions,
+        UpdateReactionsContact,
     )
 )]
 pub fn _aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
