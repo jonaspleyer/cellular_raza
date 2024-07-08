@@ -104,7 +104,7 @@ pub enum CycleEvent {
 ///     }
 /// }
 /// ```
-pub trait Cycle<Cell, Float = f64> {
+pub trait Cycle<Cell = Self, Float = f64> {
     /// Continuously updates cellular properties and may spawn a [CycleEvent] which
     /// then calls the corresponding functions (see also [CycleEvent]).
     #[must_use]
