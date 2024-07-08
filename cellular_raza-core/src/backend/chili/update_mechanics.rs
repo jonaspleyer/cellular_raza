@@ -72,11 +72,12 @@ impl<C, A> Voxel<C, A> {
         &mut self,
     ) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
-        For: Clone + core::ops::Mul<Float, Output = For> + core::ops::Neg<Output = For>,
+        For: Xapy<Float> + num::Zero,
         Float: num::Float,
     {
         let one_half: Float = Float::one() / (Float::one() + Float::one());
@@ -96,12 +97,12 @@ impl<C, A> Voxel<C, A> {
                 let i2 = c2.get_interaction_information();
 
                 let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
-                aux1.add_force(force1 * one_half);
-                aux2.add_force(force2 * one_half);
+                aux1.add_force(force1.xapy(one_half, &For::zero()));
+                aux2.add_force(force2.xapy(one_half, &For::zero()));
 
                 let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.add_force(force1 * one_half);
-                aux2.add_force(force2 * one_half);
+                aux1.add_force(force1.xapy(one_half, &For::zero()));
+                aux2.add_force(force2.xapy(one_half, &For::zero()));
 
                 // Also check for neighbours
                 if c1.is_neighbour(&p1, &p2, &i2)? {
@@ -130,16 +131,13 @@ impl<C, A> Voxel<C, A> {
         ext_inf: &Inf,
     ) -> Result<For, CalcError>
     where
-        For: Clone
-            + core::ops::AddAssign
-            + num::Zero
-            + core::ops::Mul<Float, Output = For>
-            + core::ops::Neg<Output = For>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+            + cellular_raza_concepts::Position<Pos>
+            + cellular_raza_concepts::Velocity<Vel>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
         Float: num::Float,
+        For: Xapy<Float> + num::Zero + core::ops::AddAssign,
     {
         let one_half = Float::one() / (Float::one() + Float::one());
         let mut force = For::zero();
@@ -151,8 +149,8 @@ impl<C, A> Voxel<C, A> {
                 &ext_vel,
                 &ext_inf,
             )?;
-            aux_storage.add_force(f1 * one_half);
-            force += f2 * one_half;
+            aux_storage.add_force(f1.xapy(one_half, &For::zero()));
+            force = f2.xapy(one_half, &force);
 
             // Check for neighbours
             if cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
@@ -182,16 +180,14 @@ where
         Pos: Clone,
         Vel: Clone,
         Inf: Clone,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
-        For: Clone
-            + core::ops::AddAssign
-            + core::ops::Mul<Float, Output = For>
-            + core::ops::Neg<Output = For>
-            + num::Zero,
-        Float: num::Float,
+        For: Xapy<Float> + num::Zero + core::ops::AddAssign,
+        Float: num::Float + core::ops::AddAssign,
         <S as SubDomain>::VoxelIndex: Ord,
         S: SubDomainMechanics<Pos, Vel>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
@@ -221,9 +217,11 @@ where
                 for neighbor_index in neighbors {
                     match self.voxels.get_mut(&neighbor_index) {
                         Some(vox) => Ok::<(), CalcError>(
-                            force += vox.calculate_force_between_cells_external(
-                                &cell_pos, &cell_vel, &cell_inf,
-                            )?,
+                            force = vox
+                                .calculate_force_between_cells_external(
+                                    &cell_pos, &cell_vel, &cell_inf,
+                                )?
+                                .xapy(Float::one(), &force),
                         ),
                         None => Ok(self.communicator.send(
                             &self.plain_index_to_subdomain[&neighbor_index],
@@ -250,13 +248,14 @@ where
     /// Calculates the custom [force](SubDomainForce) of
     /// the domain on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn calculate_custom_domain_force<Pos, Vel, For, Float, const N: usize>(
+    pub fn calculate_custom_domain_force<Pos, Vel, For, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
         Pos: Clone,
         Vel: Clone,
-        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         S: SubDomainForce<Pos, Vel, For>,
     {
@@ -287,31 +286,27 @@ where
         &mut self,
     ) -> Result<(), SimulationError>
     where
-        For: Clone
-            + core::ops::AddAssign
-            + num::Zero
-            + core::ops::Mul<Float, Output = For>
-            + core::ops::Neg<Output = For>,
-        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
-            + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        For: Xapy<Float> + num::Zero,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
         Float: num::Float,
         Pos: Clone,
         Vel: Clone,
-        For: Clone,
+        For: Clone + core::ops::AddAssign,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
     {
         // Receive PositionInformation and send back ForceInformation
-        for pos_info in
-            <Com as Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>>::receive(
-                &mut self.communicator,
-            )
-            .iter()
-        {
+        let mut received_infos = <Com as Communicator<
+            SubDomainPlainIndex,
+            PosInformation<Pos, Vel, Inf>,
+        >>::receive(&mut self.communicator);
+        received_infos.sort_by_key(|pos_info| pos_info.index_sender);
+        for pos_info in received_infos.iter() {
             let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(
                 cellular_raza_concepts::IndexError(format!(
                     "EngineError: Voxel with index {:?} of PosInformation can not be\
@@ -350,12 +345,12 @@ where
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
     {
         // Update position and velocity of all cells with new information
-        for obt_forces in
-            <Com as Communicator<SubDomainPlainIndex, ForceInformation<For>>>::receive(
-                &mut self.communicator,
-            )
-            .into_iter()
-        {
+        let mut received_infos = <Com as Communicator<
+            SubDomainPlainIndex,
+            ForceInformation<For>,
+        >>::receive(&mut self.communicator);
+        received_infos.sort_by_key(|force_info| force_info.index_sender);
+        for obt_forces in received_infos {
             let error_1 = format!(
                 "EngineError: Sender with plain index {:?} was ended up in location\
                 where index is not present anymore",
@@ -382,9 +377,10 @@ where
     /// Applies boundary conditions to cells. For the future, we hope to be using previous and
     /// current position of cells rather than the cell itself.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn apply_boundary<Pos, Vel, For, Float>(&mut self) -> Result<(), BoundaryError>
+    pub fn apply_boundary<Pos, Vel>(&mut self) -> Result<(), BoundaryError>
     where
-        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
         S: SubDomainMechanics<Pos, Vel>,
     {
         for (cell, _) in self
@@ -439,12 +435,12 @@ where
                         }
                     }
                 });
-            find_new_home_cells.extend(new_voxel_cells);
+            find_new_home_cells.extend(new_voxel_cells.into_iter().map(|c| (*voxel_index, c)));
             vox.cells = old_voxel_cells;
         }
 
         // Send cells to other multivoxelcontainer or keep them here
-        for (cell, aux_storage) in find_new_home_cells {
+        for (voxel_index, (cell, aux_storage)) in find_new_home_cells {
             let ind = self.subdomain.get_voxel_index_of(&cell)?;
             let cell_index = self.voxel_index_to_plain_index[&ind];
             match self.voxels.get_mut(&cell_index) {
@@ -457,7 +453,7 @@ where
                 None => <Com as Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>>::send(
                     &mut self.communicator,
                     &self.plain_index_to_subdomain[&cell_index],
-                    SendCell(cell, aux_storage),
+                    SendCell(voxel_index, cell, aux_storage),
                 ),
             }?;
         }
@@ -477,13 +473,13 @@ where
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
         // Now receive new cells and insert them
-        for sent_cell in
-            <Com as Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>>::receive(
-                &mut self.communicator,
-            )
-            .into_iter()
-        {
-            let SendCell(cell, aux_storage) = sent_cell;
+        let mut received_cells = <Com as Communicator<
+            SubDomainPlainIndex,
+            SendCell<CellBox<C>, A>,
+        >>::receive(&mut self.communicator);
+        received_cells.sort_by_key(|send_cell| send_cell.0);
+        for sent_cell in received_cells {
+            let SendCell(_, cell, aux_storage) = sent_cell;
             let index =
                 self.voxel_index_to_plain_index[&self.subdomain.get_voxel_index_of(&cell)?];
 
@@ -529,14 +525,11 @@ pub fn local_mechanics_update_step_3<
 where
     A: UpdateMechanics<Pos, Vel, For, 2>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float> + Clone,
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
     Float: num::Float + Copy + num::FromPrimitive,
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Pos: core::ops::Sub<Pos, Output = Pos>,
-    Pos: Clone,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Vel: core::ops::Sub<Vel, Output = Vel>,
+    Pos: Xapy<Float> + num::Zero + Clone,
+    Vel: Xapy<Float> + num::Zero + Clone,
     Vel: Clone,
 {
     super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
@@ -572,11 +565,8 @@ pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::CalcError>
 where
-    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
-        // TODO this constraint is only here due to current implementation limitations we should try to
-        // remove this either by giving the option to specify types in the run_main! proc macro or by
-        // somehow inferring this type
-        + cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+    C: cellular_raza_concepts::Position<Pos>,
     A: UpdateInteraction,
 {
     cell.react_to_neighbours(aux_storage.get_current_neighbours())?;

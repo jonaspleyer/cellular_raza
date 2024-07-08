@@ -1,13 +1,15 @@
 use super::{
-    reactions_intracellular_runge_kutta_4th, Communicator, SimulationError, SubDomainBox,
-    SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact, Voxel, VoxelPlainIndex,
+    reactions_contact_adams_bashforth_2nd, reactions_intracellular_runge_kutta_4th, Communicator,
+    SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact,
+    Voxel, VoxelPlainIndex,
 };
 use cellular_raza_concepts::*;
 
+use num::FromPrimitive;
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
-impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
+/* impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
