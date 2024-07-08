@@ -1211,7 +1211,10 @@ mod test_build_aux_storage {
             ///             use cellular_raza_core::backend::chili::UpdateMechanics;
             ///             aux_storage.set_last_position(1_f32);
             ///             aux_storage.set_last_position(3_f32);
-            ///             let last_positions = aux_storage.previous_positions().map(|f| *f).collect::<Vec<f32>>();
+            ///             let last_positions = aux_storage
+            ///                 .previous_positions()
+            ///                 .map(|f| *f)
+            ///                 .collect::<Vec<f32>>();
             ///             assert_eq!(last_positions, vec![1_f32, 3_f32]);
             ///             aux_storage.set_last_velocity(10_f32);
             ///             let last_velocities: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 4>
