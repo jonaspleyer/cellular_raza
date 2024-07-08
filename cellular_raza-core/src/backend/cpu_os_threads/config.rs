@@ -1,4 +1,4 @@
-use super::{Agent, Force, Position, Velocity};
+use super::{Agent, ForceBound, PositionBound, VelocityBound};
 use crate::backend::cpu_os_threads::domain_decomposition::AuxiliaryCellPropertyStorage;
 use crate::storage::StorageManager;
 use cellular_raza_concepts::domain_old::*;
@@ -228,9 +228,9 @@ impl<
 where
     Dom: Domain<Cel, Ind, Vox> + Clone + 'static,
     Ind: Index + 'static,
-    Pos: Serialize + for<'a> Deserialize<'a> + Position + 'static + std::fmt::Debug,
-    For: Serialize + for<'a> Deserialize<'a> + Force + 'static,
-    Vel: Serialize + for<'a> Deserialize<'a> + Velocity + 'static,
+    Pos: Serialize + for<'a> Deserialize<'a> + PositionBound + 'static + std::fmt::Debug,
+    For: Serialize + for<'a> Deserialize<'a> + ForceBound + 'static,
+    Vel: Serialize + for<'a> Deserialize<'a> + VelocityBound + 'static,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcBoundaryExtracellular: Serialize + for<'a> Deserialize<'a>,
     ConcVecIntracellular: Serialize + for<'a> Deserialize<'a> + num::Zero,

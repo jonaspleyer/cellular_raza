@@ -1,4 +1,4 @@
-use super::{Agent, Force, InteractionInformation, Position, Velocity};
+use super::{Agent, ForceBound, InteractionInformation, PositionBound, VelocityBound};
 use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::*;
 use kdam::BarExt;
@@ -152,10 +152,10 @@ where
     ) -> Result<(), SimulationError>
     where
         Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
-        Pos: Position,
-        For: Force,
+        Pos: PositionBound,
+        For: ForceBound,
         Inf: InteractionInformation,
-        Vel: Velocity,
+        Vel: VelocityBound,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,
         ConcVecIntracellular: Concentration,
@@ -317,10 +317,10 @@ where
     >
     where
         Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
-        Pos: Position,
-        For: Force,
+        Pos: PositionBound,
+        For: ForceBound,
         Inf: InteractionInformation,
-        Vel: Velocity,
+        Vel: VelocityBound,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,
         ConcBoundaryExtracellular: Send + Sync + 'static,

@@ -16,7 +16,7 @@ use num::Zero;
 + Sync
 + Mul<f64, Output = Self>;*/
 /// Represents the current position of a cell-agent.
-pub trait Position:
+pub trait PositionBound:
     Sized
     + Add<Self, Output = Self>
     + AddAssign
@@ -29,7 +29,7 @@ pub trait Position:
     + Mul<f64, Output = Self>
 {
 }
-impl<T> Position for T where
+impl<T> PositionBound for T where
     T: Sized
         + Add<Self, Output = Self>
         + AddAssign
@@ -56,7 +56,7 @@ impl<T> Position for T where
 + Sync
 + Mul<f64, Output = Self>;*/
 /// Represents a force which can act between two cells.
-pub trait Force:
+pub trait ForceBound:
     Sized
     + Add<Self, Output = Self>
     + AddAssign
@@ -70,7 +70,7 @@ pub trait Force:
     + Mul<f64, Output = Self>
 {
 }
-impl<T> Force for T where
+impl<T> ForceBound for T where
     T: Sized
         + Add<Self, Output = Self>
         + AddAssign
@@ -98,7 +98,7 @@ impl<T> Force for T where
 + Sync
 + Mul<f64, Output = Self>;*/
 /// Represents the velocity of a cell.
-pub trait Velocity:
+pub trait VelocityBound:
     Sized
     + Add<Self, Output = Self>
     + AddAssign
@@ -112,7 +112,7 @@ pub trait Velocity:
     + Mul<f64, Output = Self>
 {
 }
-impl<T> Velocity for T where
+impl<T> VelocityBound for T where
     T: Sized
         + Add<Self, Output = Self>
         + AddAssign
@@ -131,10 +131,12 @@ impl<T> Velocity for T where
 ///
 /// We hope to be deprecating this trait in the future and only rely on individual traits instead.
 /// While this trait could be manually implemented, it is often not necessary (see [cellular_raza-building-blocks](https://docs.rs/cellular_raza-building-blocks))
-pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf, Float = f64>:
+pub trait Agent<Pos: PositionBound, Vel: VelocityBound, For: ForceBound, Inf, Float = f64>:
     Cycle<Self, Float>
     + Interaction<Pos, Vel, For, Inf>
     + Mechanics<Pos, Vel, For, Float>
+    + Position<Pos>
+    + Velocity<Vel>
     + Sized
     + Send
     + Sync
@@ -145,12 +147,14 @@ pub trait Agent<Pos: Position, Vel: Velocity, For: Force, Inf, Float = f64>:
 }
 impl<Pos, Vel, For, Inf, Float, A> Agent<Pos, Vel, For, Inf, Float> for A
 where
-    Pos: Position,
-    For: Force,
-    Vel: Velocity,
+    Pos: PositionBound,
+    For: ForceBound,
+    Vel: VelocityBound,
     A: Cycle<Self, Float>
         + Interaction<Pos, Vel, For, Inf>
         + Mechanics<Pos, Vel, For, Float>
+        + Position<Pos>
+        + Velocity<Vel>
         + Sized
         + Send
         + Sync

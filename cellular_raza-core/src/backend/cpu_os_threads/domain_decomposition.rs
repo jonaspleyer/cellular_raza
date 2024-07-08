@@ -1,4 +1,4 @@
-use super::{Agent, Force, InteractionInformation, Position, Velocity};
+use super::{Agent, ForceBound, InteractionInformation, PositionBound, VelocityBound};
 use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::*;
 
@@ -291,10 +291,12 @@ where
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
         Ind: Index,
-        Pos: Position,
-        Vel: Velocity,
-        For: Force,
+        Pos: PositionBound,
+        Vel: VelocityBound,
+        For: ForceBound,
         Cel: Mechanics<Pos, Vel, For>,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         for (cell, aux_storage) in self.cells.iter_mut() {
             match self
@@ -333,10 +335,12 @@ where
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
         Ind: Index,
-        Pos: Position,
-        Vel: Velocity,
-        For: Force,
+        Pos: PositionBound,
+        Vel: VelocityBound,
+        For: ForceBound,
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
@@ -384,10 +388,12 @@ where
     where
         Vox: Voxel<Ind, Pos, Vel, For>,
         Ind: Index,
-        Pos: Position,
-        Vel: Velocity,
-        For: Force,
+        Pos: PositionBound,
+        Vel: VelocityBound,
+        For: ForceBound,
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For>,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         let mut force = For::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
@@ -606,7 +612,7 @@ where
     Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
     Pos: Serialize + for<'a> Deserialize<'a>,
     Vel: Serialize + for<'a> Deserialize<'a>,
-    For: Force + Serialize + for<'a> Deserialize<'a>,
+    For: ForceBound + Serialize + for<'a> Deserialize<'a>,
     Inf: Clone,
     Cel: Serialize + for<'a> Deserialize<'a> + Send + Sync,
     ConcVecExtracellular: Serialize + for<'a> Deserialize<'a>,
@@ -619,9 +625,9 @@ where
         dt: &f64,
     ) -> Result<(), SimulationError>
     where
-        Pos: Position,
-        Vel: Velocity,
-        For: Force,
+        Pos: PositionBound,
+        Vel: VelocityBound,
+        For: ForceBound,
         Inf: InteractionInformation,
         Cel: Agent<Pos, Vel, For, Inf>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
@@ -696,6 +702,8 @@ where
         Cel: Mechanics<Pos, Vel, For>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + Volume,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
         Vox: ExtracellularMechanics<
                 Ind,
                 Pos,
@@ -920,11 +928,13 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_1(&mut self) -> Result<(), SimulationError>
     where
-        Pos: Position,
-        Vel: Velocity,
+        Pos: PositionBound,
+        Vel: VelocityBound,
         Inf: Clone,
         For: std::fmt::Debug,
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         // General Idea of this function
         // for each cell
@@ -1002,9 +1012,11 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_2(&mut self) -> Result<(), SimulationError>
     where
-        Pos: Position,
-        Vel: Velocity,
+        Pos: PositionBound,
+        Vel: VelocityBound,
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in self.receiver_pos.try_iter() {
@@ -1036,9 +1048,11 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_cellular_mechanics_step_3(&mut self, dt: &f64) -> Result<(), SimulationError>
     where
-        Pos: Position,
-        Vel: Velocity,
+        Pos: PositionBound,
+        Vel: VelocityBound,
         Cel: Interaction<Pos, Vel, For, Inf> + Mechanics<Pos, Vel, For> + Clone,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         // Update position and velocity of all cells with new information
         for obt_forces in self.receiver_force.try_iter() {
@@ -1120,9 +1134,11 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn sort_cells_in_voxels_step_1(&mut self) -> Result<(), SimulationError>
     where
-        Pos: Position,
-        Vel: Velocity,
+        Pos: PositionBound,
+        Vel: VelocityBound,
         Cel: Mechanics<Pos, Vel, For>,
+        Cel: Position<Pos>,
+        Cel: Velocity<Vel>,
     {
         // Store all cells which need to find a new home in this variable
         let mut find_new_home_cells = Vec::<_>::new();
@@ -1240,8 +1256,8 @@ where
     ) -> Result<(), SimulationError>
     where
         Inf: Send + Sync + core::fmt::Debug,
-        Pos: Position,
-        Vel: Velocity,
+        Pos: PositionBound,
+        Vel: VelocityBound,
         ConcVecExtracellular: cellular_raza_concepts::domain_old::Concentration,
         ConcTotalExtracellular: cellular_raza_concepts::domain_old::Concentration,
         ConcVecIntracellular: Mul<f64, Output = ConcVecIntracellular>
@@ -1249,6 +1265,8 @@ where
             + AddAssign<ConcVecIntracellular>,
         Cel: Cycle<Cel>
             + Mechanics<Pos, Vel, For>
+            + Position<Pos>
+            + Velocity<Vel>
             + Interaction<Pos, Vel, For, Inf>
             + CellularReactions<ConcVecIntracellular, ConcVecExtracellular>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>
