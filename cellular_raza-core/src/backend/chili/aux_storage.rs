@@ -1247,6 +1247,18 @@ mod test_build_aux_storage {
             ///             assert_eq!(aux_storage.get_conc(), 0_f32 + 1.44_f32);
             ///         }
             ///     };
+            ///     (ReactionsContact) => {
+            ///         {
+            ///             use cellular_raza_core::backend::chili::UpdateReactionsContact;
+            ///             aux_storage.set_last_increment(0f32);
+            ///             aux_storage.set_last_increment(3f32);
+            ///             assert_eq!(aux_storage.n_previous_values(), 2);
+            ///             let last_increments: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 10>
+            ///                 = aux_storage.previous_increments();
+            ///             let last_increments = last_increments.map(|f| *f).collect::<Vec<_>>();
+            ///             assert_eq!(last_increments, vec![0.0, 3.0]);
+            ///         }
+            ///     };
             /// );
             #[doc = concat!($(
                 concat!("test_aspect!(", stringify!($asp), ");")
@@ -1258,6 +1270,6 @@ mod test_build_aux_storage {
 
     cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: construct,
-        aspects: [Mechanics, Interaction, Cycle, Reactions]
+        aspects: [Mechanics, Interaction, Cycle, Reactions, ReactionsContact]
     );
 }
