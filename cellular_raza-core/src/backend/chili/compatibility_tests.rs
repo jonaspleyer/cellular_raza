@@ -67,6 +67,14 @@ where
 }
 
 #[allow(unused)]
+pub fn reactions_contact_implemented<Ri, Pos, RInf, C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::ReactionsContact<Ri, Pos, RInf>,
+{
+}
+
+#[allow(unused)]
 pub fn reactions_implemented<Ri, C, Ci>(agents: &Ci)
 where
     Ci: IntoIterator<Item = C>,
