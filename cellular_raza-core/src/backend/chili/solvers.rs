@@ -307,3 +307,45 @@ where
     cell.set_intracellular(dintra.xapy(dt, &intra));
     Ok(())
 }
+
+/// TODO
+#[inline]
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
+pub fn reactions_contact_adams_bashforth_2nd<C, A, F, Ri>(
+    cell: &mut C,
+    aux_storage: &mut A,
+    dt: F,
+) -> Result<(), CalcError>
+where
+    A: UpdateReactions<Ri>,
+    A: UpdateReactionsContact<Ri, 3>,
+    C: cellular_raza_concepts::Intracellular<Ri>,
+    Ri: Xapy<F> + num::Zero + Clone,
+    F: FromPrimitive + num::Float,
+{
+    // let dintra0 = aux_storage
+    let intracellular = cell.get_intracellular();
+    let dintra = aux_storage.get_conc();
+    aux_storage.set_last_increment(dintra.clone());
+    let n_previous_values = aux_storage.n_previous_values();
+    let mut old_intracellular_increments = aux_storage.previous_increments();
+    let new_intracellular = match n_previous_values {
+        2 => adams_bashforth_3(
+            intracellular,
+            [
+                dintra,
+                old_intracellular_increments.next().unwrap().clone(),
+                old_intracellular_increments.next().unwrap().clone(),
+            ],
+            dt,
+        )?,
+        1 => adams_bashforth_2(
+            intracellular,
+            [dintra, old_intracellular_increments.next().unwrap().clone()],
+            dt,
+        )?,
+        _ => euler(intracellular, dintra, dt)?,
+    };
+    cell.set_intracellular(new_intracellular);
+    Ok(())
+}
