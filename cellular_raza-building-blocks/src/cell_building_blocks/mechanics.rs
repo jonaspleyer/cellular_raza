@@ -134,22 +134,6 @@ macro_rules! implement_newton_damped_mechanics(
 
         impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type> for $struct_name
         {
-            fn pos(&self) -> SVector<$float_type, $d> {
-                self.pos
-            }
-
-            fn velocity(&self) -> SVector<$float_type, $d> {
-                self.vel
-            }
-
-            fn set_pos(&mut self, p: &SVector<$float_type, $d>) {
-                self.pos = *p;
-            }
-
-            fn set_velocity(&mut self, v: &SVector<$float_type, $d>) {
-                self.vel = *v;
-            }
-
             fn calculate_increment(
                 &self,
                 force: SVector<$float_type, $d>,
@@ -157,6 +141,26 @@ macro_rules! implement_newton_damped_mechanics(
                 let dx = self.vel;
                 let dv = force / self.mass - self.damping_constant * self.vel;
                 Ok((dx, dv))
+            }
+        }
+
+        impl cellular_raza_concepts::Position<SVector<$float_type, $d>> for $struct_name {
+            fn pos(&self) -> SVector<$float_type, $d> {
+                self.pos
+            }
+
+            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
+                self.pos = *pos;
+            }
+        }
+
+        impl cellular_raza_concepts::Velocity<SVector<$float_type, $d>> for $struct_name {
+            fn velocity(&self) -> SVector<$float_type, $d> {
+                self.vel
+            }
+
+            fn set_velocity(&mut self, velocity: &SVector<$float_type, $d>) {
+                self.vel = *velocity;
             }
         }
     }
@@ -299,21 +303,6 @@ macro_rules! implement_brownian_mechanics(
             SVector<$float_type, $d>,
             $float_type
         > for $struct_name {
-            fn pos(&self) -> SVector<$float_type, $d> {
-                self.pos
-            }
-
-            fn velocity(&self) -> SVector<$float_type, $d> {
-                use num::Zero;
-                SVector::<$float_type, $d>::zero()
-            }
-
-            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
-                self.pos = *pos;
-            }
-
-            fn set_velocity(&mut self, _velocity: &SVector<$float_type, $d>) {}
-
             fn set_random_variable(
                 &mut self,
                 rng: &mut rand_chacha::ChaCha8Rng,
@@ -337,6 +326,26 @@ macro_rules! implement_brownian_mechanics(
                     * self.random_vector;
                 Ok((dx, SVector::<$float_type, $d>::zero()))
             }
+        }
+
+        impl cellular_raza_concepts::Position<SVector<$float_type, $d>> for $struct_name {
+            fn pos(&self) -> SVector<$float_type, $d> {
+                self.pos
+            }
+
+            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
+                self.pos = *pos;
+            }
+
+        }
+
+        impl cellular_raza_concepts::Velocity<SVector<$float_type, $d>> for $struct_name {
+            fn velocity(&self) -> SVector<$float_type, $d> {
+                use num::Zero;
+                SVector::<$float_type, $d>::zero()
+            }
+
+            fn set_velocity(&mut self, _velocity: &SVector<$float_type, $d>) {}
         }
     }
 );
@@ -389,22 +398,6 @@ macro_rules! define_langevin_nd(
             SVector<$float_type, $d>,
             $float_type
         > for $struct_name {
-            fn pos(&self) -> SVector<$float_type, $d> {
-                self.pos
-            }
-
-            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
-                self.pos = *pos;
-            }
-
-            fn velocity(&self) -> SVector<$float_type, $d> {
-                self.vel
-            }
-
-            fn set_velocity(&mut self, velocity: &SVector<$float_type, $d>) {
-                self.vel = *velocity;
-            }
-
             fn set_random_variable(
                 &mut self,
                 rng: &mut rand_chacha::ChaCha8Rng,
@@ -426,6 +419,26 @@ macro_rules! define_langevin_nd(
                     -self.damping / self.mass * self.vel
                     + 1.0 / self.mass * (self.random_vector + force);
                 Ok((dx, dv))
+            }
+        }
+
+        impl cellular_raza_concepts::Position<SVector<$float_type, $d>> for $struct_name {
+            fn pos(&self) -> SVector<$float_type, $d> {
+                self.pos
+            }
+
+            fn set_pos(&mut self, pos: &SVector<$float_type, $d>) {
+                self.pos = *pos;
+            }
+        }
+
+        impl cellular_raza_concepts::Velocity<SVector<$float_type, $d>> for $struct_name {
+            fn velocity(&self) -> SVector<$float_type, $d> {
+                self.vel
+            }
+
+            fn set_velocity(&mut self, velocity: &SVector<$float_type, $d>) {
+                self.vel = *velocity;
             }
         }
 
@@ -790,22 +803,6 @@ impl<const D: usize>
         nalgebra::SMatrix<f64, D, 2>,
     > for VertexMechanics2D<D>
 {
-    fn pos(&self) -> nalgebra::SMatrix<f64, D, 2> {
-        self.points.clone()
-    }
-
-    fn velocity(&self) -> nalgebra::SMatrix<f64, D, 2> {
-        self.velocity.clone()
-    }
-
-    fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D, 2>) {
-        self.points = pos.clone();
-    }
-
-    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D, 2>) {
-        self.velocity = velocity.clone();
-    }
-
     fn calculate_increment(
         &self,
         force: nalgebra::SMatrix<f64, D, 2>,
@@ -868,5 +865,29 @@ impl<const D: usize>
             });
         }
         Ok(())
+    }
+}
+
+impl<const D: usize> cellular_raza_concepts::Position<nalgebra::SMatrix<f64, D, 2>>
+    for VertexMechanics2D<D>
+{
+    fn pos(&self) -> nalgebra::SMatrix<f64, D, 2> {
+        self.points.clone()
+    }
+
+    fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D, 2>) {
+        self.points = pos.clone();
+    }
+}
+
+impl<const D: usize> cellular_raza_concepts::Velocity<nalgebra::SMatrix<f64, D, 2>>
+    for VertexMechanics2D<D>
+{
+    fn velocity(&self) -> nalgebra::SMatrix<f64, D, 2> {
+        self.velocity.clone()
+    }
+
+    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D, 2>) {
+        self.velocity = velocity.clone();
     }
 }

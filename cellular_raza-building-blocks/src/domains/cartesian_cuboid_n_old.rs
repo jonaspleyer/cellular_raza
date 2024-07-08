@@ -349,11 +349,9 @@ macro_rules! implement_cartesian_cuboid_voxel_fluid_mechanics{
         // Index is an array of size 3 with elements of type usize
         impl<Cel, const N: usize> Domain<Cel, [i64; $d], $voxel_name<N>> for $name
         // Position, Force and Velocity are all Vector$d supplied by the Nalgebra crate
-            where Cel: cellular_raza_concepts::Mechanics<
-                SVector<f64, $d>,
-                SVector<f64, $d>,
-                SVector<f64, $d>
-            >,
+            where
+                Cel: cellular_raza_concepts::Position<SVector<f64, $d>>,
+                Cel: cellular_raza_concepts::Velocity<SVector<f64, $d>>,
         {
             fn apply_boundary(&self, cell: &mut Cel) -> Result<(),BoundaryError> {
                 let mut pos = cell.pos();

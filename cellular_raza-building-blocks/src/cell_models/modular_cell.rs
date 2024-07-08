@@ -58,22 +58,6 @@ impl<Pos, Vel, For, Float, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos
 where
     Mec: Mechanics<Pos, Vel, For, Float>,
 {
-    fn set_pos(&mut self, pos: &Pos) {
-        self.mechanics.set_pos(pos)
-    }
-
-    fn pos(&self) -> Pos {
-        self.mechanics.pos()
-    }
-
-    fn set_velocity(&mut self, velocity: &Vel) {
-        self.mechanics.set_velocity(velocity);
-    }
-
-    fn velocity(&self) -> Vel {
-        self.mechanics.velocity()
-    }
-
     fn set_random_variable(
         &mut self,
         rng: &mut rand_chacha::ChaCha8Rng,
@@ -84,6 +68,34 @@ where
 
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {
         self.mechanics.calculate_increment(force)
+    }
+}
+
+impl<Pos, Mec, Int, Cyc, React, InteractionExtracellular> cellular_raza_concepts::Position<Pos>
+    for ModularCell<Mec, Int, Cyc, React, InteractionExtracellular>
+where
+    Mec: Position<Pos>,
+{
+    fn set_pos(&mut self, pos: &Pos) {
+        self.mechanics.set_pos(pos)
+    }
+
+    fn pos(&self) -> Pos {
+        self.mechanics.pos()
+    }
+}
+
+impl<Vel, Mec, Int, Cyc, React, InteractionExtracellular> Velocity<Vel>
+    for ModularCell<Mec, Int, Cyc, React, InteractionExtracellular>
+where
+    Mec: Velocity<Vel>,
+{
+    fn set_velocity(&mut self, velocity: &Vel) {
+        self.mechanics.set_velocity(velocity);
+    }
+
+    fn velocity(&self) -> Vel {
+        self.mechanics.velocity()
     }
 }
 

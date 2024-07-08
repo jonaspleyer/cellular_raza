@@ -310,7 +310,7 @@ where
         + num::ToPrimitive
         + core::ops::SubAssign
         + nalgebra::ClosedDiv<F>,
-    C: Mechanics<SVector<F, D>, SVector<F, D>, SVector<F, D>>,
+    C: Position<SVector<F, D>>,
 {
     type VoxelIndex = [usize; D];
 
@@ -797,7 +797,8 @@ macro_rules! implement_cartesian_cuboid_domain {
 
         impl<C, I: IntoIterator<Item=C>> Domain<C, $subdomain_name, I> for $domain_name
         where
-            C: cellular_raza_concepts::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
+            // C: cellular_raza_concepts::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
+            C: Position<SVector<$float_type, $d>>,
         {
             // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
             type SubDomainIndex = usize;
@@ -1007,12 +1008,13 @@ macro_rules! implement_cartesian_cuboid_domain {
 
         impl<C> SortCells<C> for $subdomain_name
         where
-            C: Mechanics<
+            /* C: Mechanics<
             SVector<$float_type, $d>,
             SVector<$float_type, $d>,
             SVector<$float_type, $d>,
             $float_type,
-        >,
+        >,*/
+            C: Position<SVector<$float_type, $d>>,
         {
             type VoxelIndex = [i64; $d];
 
