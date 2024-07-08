@@ -825,6 +825,16 @@ mod test_build_communicator {
             ///     ($asp:ident, Interaction) => {};
             ///     (Cycle) => {};
             ///     (Reactions) => {};
+            ///     (ReactionsContact) => {
+            ///         communicator.send(&1, ReactionsContactInformation {
+            ///             pos: 1u8,
+            ///             intracellular: [0.0, 1.0],
+            ///             info: "hi",
+            ///             cell_index_in_vector: 0,
+            ///             index_sender: VoxelPlainIndex(0),
+            ///             index_receiver: VoxelPlainIndex(1),
+            ///         });
+            ///     };
             /// );
             #[doc = concat!($(
                 concat!("test_aspect!(", stringify!($asp), ");")
@@ -837,7 +847,7 @@ mod test_build_communicator {
 
     cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: test_build_communicator,
-        aspects: [Mechanics, Interaction, Cycle, Reactions]
+        aspects: [Mechanics, Interaction, Cycle, Reactions, ReactionsContact]
     );
 
     /// ```compile_fail
