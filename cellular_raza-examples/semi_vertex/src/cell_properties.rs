@@ -93,9 +93,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for OutsideInteractio
     fn get_interaction_information(&self) -> () {}
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>>
-    for InsideInteraction
-{
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for InsideInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
@@ -105,7 +103,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>>
         _ext_info: &(),
     ) -> Result<(Vector2<f64>, Vector2<f64>), CalcError> {
         // Calculate direction between own and other point
-        let z = ext_pos - own_pos;
+        let z = own_pos - ext_pos;
         let r = z.norm();
         let dir = z.normalize();
 
