@@ -7,7 +7,7 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 // Number of cells
-pub const N_CELLS: usize = 2_025;
+pub const N_CELLS: usize = 20;
 
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
@@ -17,15 +17,15 @@ pub const CELL_MECHANICS_MAXIMUM_AREA: f64 = 350.0;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
 pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
-pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.2;
+pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0;
 
 // Parameters for domain
-pub const DOMAIN_SIZE_X: f64 = 1_200.0;
-pub const DOMAIN_SIZE_Y: f64 = 1_200.0;
+pub const DOMAIN_SIZE_X: f64 = 800.0;
+pub const DOMAIN_SIZE_Y: f64 = 800.0;
 
 // Time parameters
 pub const N_TIMES: u64 = 10_001;
-pub const DT: f64 = 0.02;
+pub const DT: f64 = 0.05;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: u64 = 50;
 
@@ -56,7 +56,7 @@ fn main() -> Result<(), chili::SimulationError> {
     };
 
     // Define cell agents
-    let dx = 0.95 * CELL_MECHANICS_AREA.sqrt();
+    let dx = 1.05 * CELL_MECHANICS_AREA.sqrt();
     let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
     let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
     let cells = (0..N_CELLS)
