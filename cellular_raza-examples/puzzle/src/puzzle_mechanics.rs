@@ -55,45 +55,10 @@ where
     }
 }
 
-impl<F> core::ops::Sub<Vertices<F>> for Vertices<F>
-where
-    F: Clone + std::fmt::Debug + PartialEq + 'static,
-    SVector<F, 2>: core::ops::Sub<Output = SVector<F, 2>>,
-{
-    type Output = Vertices<F>;
-
-    fn sub(self, rhs: Vertices<F>) -> Self::Output {
-        let n_min = self.0.len().min(rhs.0.len());
-        let (mut new_values, rhs) = if self.0.len() < rhs.0.len() {
-            (rhs, self)
-        } else {
-            (self, rhs)
-        };
-        for i in 0..n_min {
-            let x = new_values.0.get_mut(i).unwrap();
-            *x = x.clone() - rhs.0[i].clone();
-        }
-        new_values
-    }
-}
-
-impl<F> core::ops::Neg for Vertices<F>
-where
-    F: Clone + std::fmt::Debug + PartialEq + 'static,
-    Vector2<F>: core::ops::Neg<Output = Vector2<F>>,
-{
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        let res: Vec<_> = self.0.into_iter().map(|x| x.neg()).collect();
-        Vertices(res)
-    }
-}
-
 impl<F> num::Zero for Vertices<F>
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
-    nalgebra::SVector<F, 2>: num::Zero,
+    F: nalgebra::RealField,
 {
     fn zero() -> Self {
         Vertices(Vec::new())
@@ -114,30 +79,39 @@ where
     }
 }
 
+impl<F> core::ops::Add for Vertices<F>
+where
+    F: Clone + std::fmt::Debug + PartialEq + 'static,
+    F: nalgebra::RealField,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let mut new_values = self;
+        use core::ops::AddAssign;
+        for i in 0..new_values.0.len() {
+            match (new_values.0.get_mut(i), rhs.0.get(i)) {
+                (Some(s), Some(x)) => s.add_assign(x),
+                _ => (),
+            }
+        }
+        new_values
+    }
+}
+
 impl<F> core::ops::AddAssign for Vertices<F>
 where
     SVector<F, 2>: core::ops::Add<Output = SVector<F, 2>> + Clone,
     F: Clone + std::fmt::Debug + PartialEq + 'static,
+    F: nalgebra::RealField,
 {
     fn add_assign(&mut self, rhs: Self) {
-        *self = (*self).clone() + rhs;
-    }
-}
-
-impl<F> core::ops::Mul<F> for Vertices<F>
-where
-    nalgebra::SVector<F, 2>: core::ops::Mul<F, Output = nalgebra::SVector<F, 2>>,
-    F: Clone + std::fmt::Debug + PartialEq + 'static,
-{
-    type Output = Vertices<F>;
-
-    fn mul(self, rhs: F) -> Self::Output {
-        Vertices(
-            self.0
-                .into_iter()
-                .map(|xi| xi * rhs.clone())
-                .collect::<Vec<_>>(),
-        )
+        for i in 0..self.0.len() {
+            match (self.0.get_mut(i), rhs.0.get(i)) {
+                (Some(s), Some(x)) => s.add_assign(x),
+                _ => (),
+            }
+        }
     }
 }
 
@@ -308,10 +282,11 @@ where
                 })
                 .collect();
             let vertices = Vertices(vertices);
+            use num::Zero;
             Puzzle {
                 vertices: vertices.clone(),
-                velocity: vertices.clone() * F::zero(),
-                random_velocity: vertices.clone() * F::zero(),
+                velocity: vertices.xapy(F::zero(), &Vertices::zero()),
+                random_velocity: vertices.xapy(F::zero(), &Vertices::zero()),
                 triangulation: Triangulation::new(&vertices).unwrap(),
                 angle_stiffness,
                 surface_tension,
@@ -332,14 +307,10 @@ where
     }
 }
 
-impl<F> Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F> for Puzzle<F>
+impl<F> Position<Vertices<F>> for Puzzle<F>
 where
-    F: core::ops::DivAssign
-        + nalgebra::RealField
-        + num::Float
-        + core::ops::Mul<SVector<F, 2>, Output = SVector<F, 2>>
-        + core::iter::Sum,
-    rand_distr::StandardNormal: rand_distr::Distribution<F>,
+    F: Clone + std::fmt::Debug + PartialEq + 'static + PartialOrd,
+    F: nalgebra::RealField + num::Float,
 {
     fn pos(&self) -> Vertices<F> {
         self.vertices.clone()
@@ -588,7 +559,7 @@ where
     Ii: Interaction<Vector2<F>, Vector2<F>, Vector2<F>, I1>,
     Io: Interaction<Vector2<F>, Vector2<F>, Vector2<F>, I2>,
     F: Clone + std::fmt::Debug + PartialEq + 'static + num::Float,
-    F: nalgebra::RealField,
+    F: nalgebra::RealField + num::Float + num::FromPrimitive,
 {
     fn calculate_force_between(
         &self,
@@ -598,10 +569,11 @@ where
         ext_vel: &Vertices<F>,
         ext_info: &(Vector2<F>, Vector2<F>, I1, I2),
     ) -> Result<(Vertices<F>, Vertices<F>), CalcError> {
+        use num::Zero;
         let min_ext = ext_info.0;
         let max_ext = ext_info.1;
-        let mut total_force1 = own_pos.clone() * F::zero();
-        let mut total_force2 = ext_pos.clone() * F::zero();
+        let mut total_force1 = own_pos.clone().xapy(F::zero(), &Vertices::zero());
+        let mut total_force2 = ext_pos.clone().xapy(F::zero(), &Vertices::zero());
         // Check if the bounding boxes do intersect. If this is not the case, do only calculation
         // of outside interactions
         let boxes_do_not_intersect = self.bounding_boxes_do_not_intersect(&min_ext, &max_ext);
