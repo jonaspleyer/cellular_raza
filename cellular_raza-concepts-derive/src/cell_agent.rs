@@ -79,6 +79,8 @@ enum CellAspect {
     Interaction,
     Intracellular,
     Reactions,
+    ReactionsRaw,
+    ReactionsContact,
     ExtracellularGradient,
     Volume,
 }
@@ -98,6 +100,8 @@ impl CellAspect {
                 "Interaction" => Some(CellAspect::Interaction),
                 "Intracellular" => Some(CellAspect::Intracellular),
                 "Reactions" => Some(CellAspect::Reactions),
+                "ReactionsRaw" => Some(CellAspect::ReactionsRaw),
+                "ReactionsContact" => Some(CellAspect::ReactionsContact),
                 "ExtracellularGradient" => Some(CellAspect::ExtracellularGradient),
                 "Volume" => Some(CellAspect::Volume),
                 _ => None,
@@ -162,6 +166,8 @@ pub struct AgentImplementer {
     velocity: Option<FieldInfo>,
     interaction: Option<FieldInfo>,
     intracellular: Option<FieldInfo>,
+    reactions_raw: Option<FieldInfo>,
+    reactions_contact: Option<FieldInfo>,
     extracellular_gradient: Option<FieldInfo>,
     volume: Option<FieldInfo>,
 }
@@ -174,6 +180,8 @@ impl From<AgentParser> for AgentImplementer {
         let mut velocity = None;
         let mut interaction = None;
         let mut intracellular = None;
+        let mut reactions_raw = None;
+        let mut reactions_contact = None;
         let mut extracellular_gradient = None;
         let mut volume = None;
 
@@ -202,7 +210,16 @@ impl From<AgentParser> for AgentImplementer {
                         intracellular = Some(field_info);
                     }
                     CellAspect::Reactions => {
-                        cellular_reactions = Some(field_info);
+                        intracellular = Some(field_info.clone());
+                        reactions_raw = Some(field_info);
+                    }
+                    CellAspect::ReactionsRaw => {
+                        reactions_raw = Some(field_info);
+                    }
+                    CellAspect::ReactionsContact => {
+                        intracellular = Some(field_info.clone());
+                        reactions_raw = Some(field_info.clone());
+                        reactions_contact = Some(field_info);
                     }
                     CellAspect::ExtracellularGradient => {
                         extracellular_gradient = Some(field_info);
@@ -223,6 +240,8 @@ impl From<AgentParser> for AgentImplementer {
             velocity,
             interaction,
             intracellular,
+            reactions_raw,
+            reactions_contact,
             extracellular_gradient,
             volume,
         }
@@ -554,18 +573,89 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
-                    fn calculate_intra_and_extracellular_reaction_increment(
+    pub fn implement_reactions_raw(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.reactions_raw {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(rintra, "__cr_private_Ri");
+            let tokens = quote!(#rintra);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Reactions, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, rintra);
+            let impl_generics = generics.split_for_impl().0;
+
+            let res = quote! {
+                #[automatically_derived]
+                impl #impl_generics Reactions<#rintra>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn calculate_intracellular_increment(
                         &self,
-                        internal_concentration_vector: &#cvec_intra,
-                        external_concentration_vector: &#cvec_extra,
-                    ) -> Result<(#cvec_intra, #cvec_extra), CalcError> {
-                        <#field_type as CellularReactions<
-                            #cvec_intra,
-                            #cvec_extra
-                        >>::calculate_intra_and_extracellular_reaction_increment(
+                        intracellular: &#rintra,
+                    ) -> Result<#rintra, CalcError> {
+                        <#field_type as Reactions<
+                            #rintra,
+                        >>::calculate_intracellular_increment(
                             &self.#field_name,
-                            internal_concentration_vector,
-                            external_concentration_vector
+                            intracellular
+                        )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
+    pub fn implement_reactions_contact(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.reactions_contact {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(pos, "__cr_private_Pos");
+            new_ident!(rintra, "__cr_private_Ri");
+            new_ident!(rinf, "__cr_private_Ri");
+            let tokens = quote!(#pos, #rintra, #rinf);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, ReactionsContact, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, rintra);
+            let impl_generics = generics.split_for_impl().0;
+
+            let res = quote! {
+                #[automatically_derived]
+                impl #impl_generics Reactions<#tokens>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn get_contact_information(&self) -> #rinf {
+                        <#field_type as ReactionsContact<#tokens>>::get_contact_information(
+                            &self.#field_name
+                        )
+                    }
+
+                    fn calculate_contact_increment(
+                        &self,
+                        own_intracellular: &#rintra,
+                        ext_intracellular: &#rintra,
+                        own_pos: &#pos,
+                        ext_pos: &#pos,
+                        rinf: &#rinf,
+                    ) -> Result<(#rintra, #rintra), CalcError> {
+                        <#field_type as ReactionsContact<#tokens>>::calculate_contact_increment(
+                            &self.#field_name,
+                            own_intracellular,
+                            ext_intracellular,
+                            own_pos,
+                            ext_pos,
+                            rinf,
                         )
                     }
                 }
@@ -658,6 +748,8 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     res.extend(agent.implement_position());
     res.extend(agent.implement_velocity());
     res.extend(agent.implement_intracellular());
+    res.extend(agent.implement_reactions_raw());
+    res.extend(agent.implement_reactions_contact());
     res.extend(agent.implement_interaction());
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());

@@ -32,9 +32,9 @@ mod domain;
         Velocity,
         Interaction,
         Reactions,
+        ReactionsRaw,
         Intracellular,
         ExtracellularGradient,
-        Volume,
     )
 )]
 pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
