@@ -27,6 +27,9 @@ mod domain;
     attributes(
         Cycle,
         Mechanics,
+        MechanicsRaw,
+        Position,
+        Velocity,
         Interaction,
         Reactions,
         ExtracellularGradient,

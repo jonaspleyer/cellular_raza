@@ -72,6 +72,9 @@ impl syn::parse::Parse for AgentParser {
 #[derive(Clone)]
 enum CellAspect {
     Mechanics,
+    MechanicsRaw,
+    Position,
+    Velocity,
     Cycle,
     Interaction,
     Reactions,
@@ -87,6 +90,9 @@ impl CellAspect {
             let path_str = p.to_string();
             match path_str.as_str() {
                 "Mechanics" => Some(CellAspect::Mechanics),
+                "MechanicsRaw" => Some(CellAspect::MechanicsRaw),
+                "Position" => Some(CellAspect::Position),
+                "Velocity" => Some(CellAspect::Velocity),
                 "Cycle" => Some(CellAspect::Cycle),
                 "Interaction" => Some(CellAspect::Interaction),
                 "Reactions" => Some(CellAspect::Reactions),
@@ -138,6 +144,7 @@ impl CellAspectField {
     }
 }
 
+#[derive(Clone)]
 pub struct FieldInfo {
     pub field_type: syn::Type,
     pub field_name: Option<syn::Ident>,
@@ -148,7 +155,9 @@ pub struct AgentImplementer {
     name: syn::Ident,
     generics: syn::Generics,
     cycle: Option<FieldInfo>,
-    mechanics: Option<FieldInfo>,
+    mechanics_raw: Option<FieldInfo>,
+    position: Option<FieldInfo>,
+    velocity: Option<FieldInfo>,
     interaction: Option<FieldInfo>,
     cellular_reactions: Option<FieldInfo>,
     extracellular_gradient: Option<FieldInfo>,
@@ -158,7 +167,9 @@ pub struct AgentImplementer {
 impl From<AgentParser> for AgentImplementer {
     fn from(value: AgentParser) -> Self {
         let mut cycle = None;
-        let mut mechanics = None;
+        let mut mechanics_raw = None;
+        let mut position = None;
+        let mut velocity = None;
         let mut interaction = None;
         let mut cellular_reactions = None;
         let mut extracellular_gradient = None;
@@ -174,7 +185,14 @@ impl From<AgentParser> for AgentImplementer {
                     CellAspect::Cycle => {
                         cycle = Some(field_info);
                     }
-                    CellAspect::Mechanics => mechanics = Some(field_info),
+                    CellAspect::Mechanics => {
+                        mechanics_raw = Some(field_info.clone());
+                        position = Some(field_info.clone());
+                        velocity = Some(field_info);
+                    }
+                    CellAspect::MechanicsRaw => mechanics_raw = Some(field_info),
+                    CellAspect::Position => position = Some(field_info),
+                    CellAspect::Velocity => velocity = Some(field_info),
                     CellAspect::Interaction => {
                         interaction = Some(field_info);
                     }
@@ -195,7 +213,9 @@ impl From<AgentParser> for AgentImplementer {
             name: value.name,
             generics: value.generics,
             cycle,
-            mechanics,
+            mechanics_raw,
+            position,
+            velocity,
             interaction,
             cellular_reactions,
             extracellular_gradient,
@@ -279,11 +299,11 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
-    pub fn implement_mechanics(&self) -> TokenStream {
+    pub fn implement_mechanics_raw(&self) -> TokenStream {
         let struct_name = &self.name;
         let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
-        if let Some(field_info) = &self.mechanics {
+        if let Some(field_info) = &self.mechanics_raw {
             new_ident!(position, "__cr_private_Pos");
             new_ident!(velocity, "__cr_private_Vel");
             new_ident!(force, "__cr_private_For");
@@ -308,21 +328,6 @@ impl AgentImplementer {
                 impl #impl_generics Mechanics<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
-                    fn pos(&self) -> #position {
-                        <#field_type as Mechanics<#tokens>>::pos(&self.#field_name)
-                    }
-                    fn velocity(&self) -> #velocity {
-                        <#field_type as Mechanics<#tokens>>::velocity(&self.#field_name)
-                    }
-                    fn set_pos(&mut self, pos: &#position) {
-                        <#field_type as Mechanics<#tokens>>::set_pos(&mut self.#field_name, pos)
-                    }
-                    fn set_velocity(&mut self, velocity: &#velocity) {
-                        <#field_type as Mechanics<#tokens>>::set_velocity(
-                            &mut self.#field_name,
-                            velocity
-                        )
-                    }
                     fn calculate_increment(&self, force: #force)
                         -> Result<(#position, #velocity), CalcError> {
                         <#field_type as Mechanics<#tokens>>::calculate_increment(
@@ -339,6 +344,76 @@ impl AgentImplementer {
                             rng,
                             dt
                         )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
+    pub fn implement_position(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.position {
+            new_ident!(position, "__cr_private_Pos");
+            let tokens = quote!(#position);
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Position, tokens);
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            let impl_generics = generics.split_for_impl().0;
+
+            let res = quote! {
+                #[automatically_derived]
+                impl #impl_generics Position<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    fn pos(&self) -> #position {
+                        <#field_type as Position<#tokens>>::pos(&self.#field_name)
+                    }
+
+                    fn set_pos(&mut self, pos: &#position) {
+                        <#field_type as Position<#tokens>>::set_pos(&mut self.#field_name, pos)
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
+    pub fn implement_velocity(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.velocity {
+            new_ident!(velocity, "__cr_private_Vel");
+            let tokens = quote!(#velocity);
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, Velocity, tokens);
+            let mut generics = self.generics.clone();
+            push_ident!(generics, velocity);
+            let impl_generics = generics.split_for_impl().0;
+
+            let res = quote! {
+                #[automatically_derived]
+                impl #impl_generics Velocity<#tokens> for #struct_name #struct_ty_generics
+                    #where_clause
+                {
+                    fn velocity(&self) -> #velocity {
+                        <#field_type as Velocity<#tokens>>::velocity(&self.#field_name)
+                    }
+
+                    fn set_velocity(&mut self, velocity: &#velocity) {
+                        <#field_type as Velocity<#tokens>>::set_velocity(&mut self.#field_name, velocity)
                     }
                 }
             };
@@ -574,8 +649,9 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let mut res = proc_macro2::TokenStream::new();
     res.extend(agent.implement_cycle());
-    res.extend(agent.implement_mechanics());
-    res.extend(agent.implement_reactions());
+    res.extend(agent.implement_mechanics_raw());
+    res.extend(agent.implement_position());
+    res.extend(agent.implement_velocity());
     res.extend(agent.implement_interaction());
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());
