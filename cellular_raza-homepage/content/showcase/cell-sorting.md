@@ -38,17 +38,19 @@ This means, that units of $V_0$ and $\lambda$ are changing and they incorporate 
 
 We can assume that interactions between cells are restricted to close ranges and thus enforce a
 cutoff $\xi$ for the interaction where the resulting force is identical to zero.
+We further assume that cells of different species do not attract each other but do repel.
+To describe this behaviour, we set the potential to zero when $r>R_i+R_j$ (ie. $\sigma>1$)
+and both cells have distinct species type $s_i$.
+In total we are left with
 
 $$
-    V(r) = \begin{cases}
-        V_0 \left(\frac{1}{3\sigma^3} - \frac{1}{\sigma}\right) &\text{ if } r \leq \xi \\\\
-        0 &\text{ else }
-    \end{cases}
+    V_{i,j}(r) =
+    \begin{cases}
+        0 &\text{ if } r\geq\xi\\\\
+        0 &\text{ if } s_i\neq s_j \text{ and } \sigma\geq 1\\\\
+        V(r) &\text{ else }
+    \end{cases}.
 $$
-
-We further assume that cells of different species do not attract each other.
-To describe this behaviour, we set $V(r)=0$ when $r>R_i+R_j$ and both cells have distince species
-type.
 
 ## Parameters
 
