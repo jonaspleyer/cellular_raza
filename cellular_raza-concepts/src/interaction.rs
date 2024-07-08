@@ -95,12 +95,11 @@ pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
 ///         Ok((-self.half_time * self.intracellular, self.half_time * self.intracellular))
 ///     }
 /// }
-///
-/// #[derive(CellAgent)]
-/// struct MyAgent {
-///     #[Reactions]
-///     reactions: MyReactions,
-/// }
+// #[derive(CellAgent)]
+// struct MyAgent {
+//     #[Reactions]
+//     reactions: MyReactions,
+// }
 /// ```
 pub trait CellularReactions<ConcVecIntracellular, ConcVecExtracellular = ConcVecIntracellular> {
     /// Retrieves the current intracellular concentration.

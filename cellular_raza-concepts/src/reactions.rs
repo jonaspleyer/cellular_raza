@@ -28,14 +28,18 @@ pub trait ReactionsExtra<Ri, E>: Intracellular<Ri> {
 }
 
 /// TODO
-pub trait ReactionsContact<Ri, Pos, Inf = ()>: Intracellular<Ri> {
+pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()>: Intracellular<Ri> {
+    /// TODO
+    fn get_contact_information(&self) -> RInf;
+
     /// TODO
     fn calculate_contact_increment(
         &self,
-        intracellular_own: &Ri,
-        intracellular_ext: &Ri,
-        pos: &Pos,
-        inf: &Inf,
+        own_intracellular: &Ri,
+        ext_intracellular: &Ri,
+        own_pos: &Pos,
+        ext_pos: &Pos,
+        rinf: &RInf,
     ) -> Result<(Ri, Ri), CalcError>;
 }
 
@@ -180,19 +184,23 @@ mod test_plain_float {
     impl ReactionsContact<f64, [f64; 2]> for MyCell {
         fn calculate_contact_increment(
             &self,
-            intracellular_own: &f64,
-            intracellular_ext: &f64,
-            pos: &[f64; 2],
-            _inf: &(),
+            own_intracellular: &f64,
+            ext_intracellular: &f64,
+            own_pos: &[f64; 2],
+            ext_pos: &[f64; 2],
+            _rinf: &(),
         ) -> Result<(f64, f64), CalcError> {
-            let dist = ((self.pos[0] - pos[0]).powf(2.0) + (self.pos[1] - pos[1]).powf(2.0)).sqrt();
+            let dist =
+                ((own_pos[0] - ext_pos[0]).powf(2.0) + (own_pos[1] - ext_pos[1]).powf(2.0)).sqrt();
             if dist < self.reaction_range {
-                let exchange = self.exchange_term * (intracellular_ext - intracellular_own);
+                let exchange = self.exchange_term * (ext_intracellular - own_intracellular);
                 Ok((exchange, -exchange))
             } else {
                 Ok((0.0, 0.0))
             }
         }
+
+        fn get_contact_information(&self) -> () {}
     }
 
     #[test]
@@ -222,9 +230,9 @@ mod test_plain_float {
             // The first index indicates from where the term originated while the second index
             // shows for which cell the value needs to be added.
             // From cell 1 to 2
-            let (dr11, dr12) = c1.calculate_contact_increment(&r1, &r2, &p1, &())?;
+            let (dr11, dr12) = c1.calculate_contact_increment(&r1, &r2, &p1, &p2, &())?;
             // From cell 2 to 1
-            let (dr22, dr21) = c2.calculate_contact_increment(&r2, &r1, &p2, &())?;
+            let (dr22, dr21) = c2.calculate_contact_increment(&r2, &r1, &p2, &p1, &())?;
 
             // Calculate the combined increments
             let dr1 = dt * (dr11 + dr21) / 2.0;
@@ -354,9 +362,8 @@ mod test_plain_float {
         let mut dcombined1 = None;
         let mut dcombined2 = None;
 
-        let exact_solution = |t: f64, x0: f64, degradation: f64| -> f64 {
-            x0 * (-degradation * t).exp()
-        };
+        let exact_solution =
+            |t: f64, x0: f64, degradation: f64| -> f64 { x0 * (-degradation * t).exp() };
 
         let dt = 0.1;
         for n_step in 0..1_000 {
@@ -392,13 +399,76 @@ mod test_plain_float {
             assert!((cell.get_intracellular() + extracellular - x0).abs() < 1e-6);
 
             // Calculate the exact value and commpare
-            let exact_value = exact_solution((n_step+1) as f64 * dt, x0, cell.secretion_rate);
+            let exact_value = exact_solution((n_step + 1) as f64 * dt, x0, cell.secretion_rate);
             println!("{} {}", cell.get_intracellular(), exact_value);
             assert!((cell.get_intracellular() - exact_value).abs() < 1e-3);
         }
         Ok(())
     }
 }
+
+/// ```
+/// use cellular_raza_concepts::{CellAgent, Intracellular, Reactions, CalcError};
+/// struct MyReactions;
+/// impl Intracellular<i16> for MyReactions {
+///     fn get_intracellular(&self) -> i16 {
+///         42
+///     }
+///     fn set_intracellular(&mut self, _intracellular: i16) {}
+/// }
+/// impl Reactions<i16> for MyReactions {
+///     fn calculate_intracellular_increment(&self, intracellular: &i16) -> Result<i16,
+///     CalcError> {
+///         Ok(-1)
+///     }
+/// }
+/// #[derive(CellAgent)]
+/// struct MyCell {
+///     #[Reactions]
+///     reactions: MyReactions,
+/// }
+/// let mycell = MyCell {
+///     reactions: MyReactions,
+/// };
+/// assert_eq!(mycell.get_intracellular(), 42);
+/// assert_eq!(mycell.calculate_intracellular_increment(&7).unwrap(), -1);
+/// ```
+#[allow(unused)]
+fn derive_reactions() {}
+
+/// ```
+/// use cellular_raza_concepts::{CellAgent, Intracellular, Reactions, CalcError};
+/// struct MyIntracellular(String);
+/// impl Intracellular<String> for MyIntracellular {
+///     fn get_intracellular(&self) -> String {
+///         format!("{}", self.0)
+///     }
+///     fn set_intracellular(&mut self, intracellular: String) {
+///         self.0 = intracellular;
+///     }
+/// }
+/// #[derive(CellAgent)]
+/// struct MyAgent {
+///     #[Intracellular]
+///     intracellular: MyIntracellular,
+/// }
+/// let mut myagent = MyAgent {
+///     intracellular: MyIntracellular("42".to_owned()),
+/// };
+/// assert_eq!(myagent.get_intracellular(), format!("42"));
+/// myagent.set_intracellular(format!("this wind is nice"));
+/// assert_eq!(myagent.get_intracellular(), "this wind is nice".to_owned());
+/// ```
+#[allow(unused)]
+fn derive_intracellular() {}
+
+/// TODO
+#[allow(unused)]
+fn derive_reactions_raw() {}
+
+/// TODO
+#[allow(unused)]
+fn derive_reactions_contact() {}
 
 /* mod test_particle_sim {
     use super::*;
