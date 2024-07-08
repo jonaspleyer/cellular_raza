@@ -4,7 +4,7 @@ use plotters::{
     backend::BitMapBackend,
     coord::types::RangedCoordf64,
     prelude::{Cartesian2d, DrawingArea, ShapeStyle},
-    style::RGBColor,
+    style::{colors::colormaps::ColorMap, RGBColor},
 };
 
 use crate::cell_properties::*;
@@ -39,7 +39,11 @@ pub fn plot_cell<const D: usize>(
     root.draw(&cell_border)?;
 
     // Define color inside of cell
-    let cell_inside_color = RGBColor(28, 173, 28);
+    let colormap = plotters::style::colors::colormaps::DerivedColorMap::new(&[
+        plotters::style::colors::BLACK,
+        RGBColor(100, 255, 100),
+    ]);
+    let cell_inside_color = colormap.get_color_normalized(cell.intracellular.x, 0.0, 0.1);
     let cell_inside = plotters::element::Polygon::new(
         path_points
             .clone()

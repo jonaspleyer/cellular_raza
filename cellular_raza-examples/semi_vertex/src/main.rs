@@ -125,29 +125,30 @@ fn main() -> Result<(), chili::SimulationError> {
 
     println!("");
     use rayon::prelude::*;
-    kdam::par_tqdm!(all_iterations.into_par_iter()).map(move |iteration| -> Result<(), chili::SimulationError> {
-        let cells = storager.cells.load_all_elements_at_iteration(iteration)?;
-        let img_path = save_path
-            .join(format!("snapshot_{:08}.png", iteration));
-        let domain_size_x = DOMAIN_SIZE_X.round() as u32;
-        let domain_size_y = DOMAIN_SIZE_Y.round() as u32;
-        let root =
-            plotters::prelude::BitMapBackend::new(&img_path, (domain_size_x, domain_size_y))
-                .into_drawing_area();
-        root.fill(&plotters::prelude::WHITE)?;
-        let mut root = root.apply_coord_spec(plotters::prelude::Cartesian2d::<
-            plotters::coord::types::RangedCoordf64,
-            plotters::coord::types::RangedCoordf64,
-        >::new(
-            0.0..DOMAIN_SIZE_X,
-            0.0..DOMAIN_SIZE_X,
-            (0..domain_size_x as i32, 0..domain_size_y as i32),
-        ));
-        for (_, (cell, _)) in cells {
-            plot_cell(&cell.cell, &mut root)?;
-        }
-        root.present()?;
-        Ok(())
-    }).collect::<Result<Vec<_>, chili::SimulationError>>()?;
+    kdam::par_tqdm!(all_iterations.into_par_iter())
+        .map(move |iteration| -> Result<(), chili::SimulationError> {
+            let cells = storager.cells.load_all_elements_at_iteration(iteration)?;
+            let img_path = save_path.join(format!("snapshot_{:08}.png", iteration));
+            let domain_size_x = DOMAIN_SIZE_X.round() as u32;
+            let domain_size_y = DOMAIN_SIZE_Y.round() as u32;
+            let root =
+                plotters::prelude::BitMapBackend::new(&img_path, (domain_size_x, domain_size_y))
+                    .into_drawing_area();
+            root.fill(&plotters::prelude::WHITE)?;
+            let mut root = root.apply_coord_spec(plotters::prelude::Cartesian2d::<
+                plotters::coord::types::RangedCoordf64,
+                plotters::coord::types::RangedCoordf64,
+            >::new(
+                0.0..DOMAIN_SIZE_X,
+                0.0..DOMAIN_SIZE_X,
+                (0..domain_size_x as i32, 0..domain_size_y as i32),
+            ));
+            for (_, (cell, _)) in cells {
+                plot_cell(&cell.cell, &mut root)?;
+            }
+            root.present()?;
+            Ok(())
+        })
+        .collect::<Result<Vec<_>, chili::SimulationError>>()?;
     Ok(())
 }
