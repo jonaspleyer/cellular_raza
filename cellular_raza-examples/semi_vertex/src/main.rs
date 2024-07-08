@@ -88,9 +88,19 @@ fn main() -> Result<(), chili::SimulationError> {
                         average_radius: CELL_MECHANICS_AREA.sqrt(),
                     },
                 ),
+                intracellular: nalgebra::Vector2::from([rng.gen_range(0.0..1e-1); 2]),
+                k1: 0.02,
+                k2: 0.01,
+                k3: 0.01,
+                exchange: nalgebra::Vector2::from([0.0002, 0.004]),
             }
         })
         .collect::<Vec<_>>();
+    for cell in cells.iter() {
+        assert!(cell.k2 > 0.0);
+        assert!(cell.k2.powi(3) < cell.k1 * cell.k3.powi(2));
+        assert!(cell.exchange.y / cell.exchange.x * cell.k2.powi(3) > cell.k1 * cell.k3.powi(2));
+    }
 
     // Define settings for storage and time solving
     let settings = chili::Settings {
@@ -105,7 +115,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction],
+        aspects: [Mechanics, Interaction, Reactions],
     )?;
 
     // Plot the results
