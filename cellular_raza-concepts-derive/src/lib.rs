@@ -32,6 +32,7 @@ mod domain;
         Velocity,
         Interaction,
         Reactions,
+        Intracellular,
         ExtracellularGradient,
         Volume,
     )

@@ -77,6 +77,7 @@ enum CellAspect {
     Velocity,
     Cycle,
     Interaction,
+    Intracellular,
     Reactions,
     ExtracellularGradient,
     Volume,
@@ -95,6 +96,7 @@ impl CellAspect {
                 "Velocity" => Some(CellAspect::Velocity),
                 "Cycle" => Some(CellAspect::Cycle),
                 "Interaction" => Some(CellAspect::Interaction),
+                "Intracellular" => Some(CellAspect::Intracellular),
                 "Reactions" => Some(CellAspect::Reactions),
                 "ExtracellularGradient" => Some(CellAspect::ExtracellularGradient),
                 "Volume" => Some(CellAspect::Volume),
@@ -159,7 +161,7 @@ pub struct AgentImplementer {
     position: Option<FieldInfo>,
     velocity: Option<FieldInfo>,
     interaction: Option<FieldInfo>,
-    cellular_reactions: Option<FieldInfo>,
+    intracellular: Option<FieldInfo>,
     extracellular_gradient: Option<FieldInfo>,
     volume: Option<FieldInfo>,
 }
@@ -171,7 +173,7 @@ impl From<AgentParser> for AgentImplementer {
         let mut position = None;
         let mut velocity = None;
         let mut interaction = None;
-        let mut cellular_reactions = None;
+        let mut intracellular = None;
         let mut extracellular_gradient = None;
         let mut volume = None;
 
@@ -196,6 +198,9 @@ impl From<AgentParser> for AgentImplementer {
                     CellAspect::Interaction => {
                         interaction = Some(field_info);
                     }
+                    CellAspect::Intracellular => {
+                        intracellular = Some(field_info);
+                    }
                     CellAspect::Reactions => {
                         cellular_reactions = Some(field_info);
                     }
@@ -217,7 +222,7 @@ impl From<AgentParser> for AgentImplementer {
             position,
             velocity,
             interaction,
-            cellular_reactions,
+            intracellular,
             extracellular_gradient,
             volume,
         }
@@ -504,50 +509,50 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
-    pub fn implement_reactions(&self) -> TokenStream {
+    pub fn implement_intracellular(&self) -> TokenStream {
         let struct_name = &self.name;
         let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
-        if let Some(field_info) = &self.cellular_reactions {
+        if let Some(field_info) = &self.intracellular {
             let field_name = &field_info.field_name;
             let field_type = &field_info.field_type;
-            new_ident!(cvec_intra, "__cr_private_CVecIntra");
-            new_ident!(cvec_extra, "__cr_private_CVecExtra");
-            let tokens = quote!(#cvec_intra, #cvec_extra);
+            new_ident!(rintra, "__cr_private_Ri");
+            let tokens = quote!(#rintra);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, CellularReactions, tokens);
+                append_where_clause!(struct_where_clause, field_type, Intracellular, tokens);
 
             let mut generics = self.generics.clone();
-            push_ident!(generics, cvec_intra);
-            push_ident!(generics, cvec_extra);
+            push_ident!(generics, rintra);
             let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #impl_generics CellularReactions<
-                    #cvec_intra,
-                    #cvec_extra
-                > for #struct_name #struct_ty_generics #where_clause {
-                    fn get_intracellular(&self) -> #cvec_intra {
-                        <#field_type as CellularReactions<
-                            #cvec_intra,
-                            #cvec_extra
+                impl #impl_generics Intracellular<#rintra>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn get_intracellular(&self) -> #rintra {
+                        <#field_type as Intracellular<
+                            #rintra,
                         >>::get_intracellular(&self.#field_name)
                     }
 
                     fn set_intracellular(
                         &mut self,
-                        concentration_vector: #cvec_intra
+                        concentration_vector: #rintra
                     ) {
-                        <#field_type as CellularReactions<
-                            #cvec_intra,
-                            #cvec_extra
+                        <#field_type as Intracellular<
+                            #rintra,
                         >>::set_intracellular(
                             &mut self.#field_name,
                             concentration_vector
                         );
                     }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
 
                     fn calculate_intra_and_extracellular_reaction_increment(
                         &self,
@@ -652,6 +657,7 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     res.extend(agent.implement_mechanics_raw());
     res.extend(agent.implement_position());
     res.extend(agent.implement_velocity());
+    res.extend(agent.implement_intracellular());
     res.extend(agent.implement_interaction());
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());
