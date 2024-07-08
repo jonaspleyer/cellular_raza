@@ -57,7 +57,7 @@ pub struct ForceInformation<For> {
 }
 
 /// Send cell and its AuxStorage between threads.
-pub struct SendCell<Cel, Aux>(pub Cel, pub Aux);
+pub struct SendCell<Cel, Aux>(pub VoxelPlainIndex, pub Cel, pub Aux);
 
 impl<C, A> Voxel<C, A> {
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
