@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use std::ops::{Deref, DerefMut};
 
+pub use cellular_raza_concepts::Xapy;
+
 use super::{CellIdentifier, VoxelPlainIndex};
 
 /// Wrapper around the user-defined CellAgent
@@ -254,16 +256,6 @@ pub struct AuxStorageReactions<Ri> {
     concentration: Ri,
 }
 
-/// TODO
-pub trait UpdateReactionsContact<Ri, const N: usize> {
-    /// TODO
-    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N>;
-}
-
-/// TODO
-#[derive(Clone, Default, Deserialize, Serialize)]
-pub struct AuxStorageReactionsContact {}
-
 impl<R> UpdateReactions<R> for AuxStorageReactions<R>
 where
     R: Clone + core::ops::Add<R, Output = R>,
@@ -281,6 +273,39 @@ where
     #[inline]
     fn set_conc(&mut self, conc: R) {
         self.concentration = conc;
+    }
+}
+
+/// Used to update properties of the cell related to the [ReactionsContact] trait.
+pub trait UpdateReactionsContact<Ri, const N: usize> {
+    /// Obtain previous increments used for adams_bashforth integrators
+    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N>;
+    /// Set the last increment in the ring buffer
+    fn set_last_increment(&mut self, increment: Ri);
+    /// Get the number of previous values to match agains [FixedSizeRingBufferIter]
+    fn n_previous_values(&self) -> usize;
+}
+
+/// Implementor of the [UpdateReactionsContact] trait.
+#[derive(Clone, Default, Deserialize, Serialize)]
+pub struct AuxStorageReactionsContact<Ri, const N: usize> {
+    increments: FixedSizeRingBuffer<Ri, N>,
+}
+
+impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N> {
+    #[inline]
+    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N> {
+        self.increments.iter()
+    }
+
+    #[inline]
+    fn set_last_increment(&mut self, increment: Ri) {
+        self.increments.push(increment)
+    }
+
+    #[inline]
+    fn n_previous_values(&self) -> usize {
+        self.increments.size
     }
 }
 
