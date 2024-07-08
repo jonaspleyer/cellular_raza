@@ -17,10 +17,32 @@ pub struct Bacteria {
     #[Cycle]
     pub cycle: BacteriaCycle,
     #[Interaction]
-    #[Reactions]
     pub cellular_reactions: BacteriaReactions,
     #[ExtracellularGradient]
     pub interactionextracellulargradient: GradientSensing,
+}
+
+impl CellularReactions<f64, ReactionVector> for Bacteria {
+    fn get_intracellular(&self) -> f64 {
+        self.cellular_reactions.get_intracellular()
+    }
+
+    fn set_intracellular(&mut self, concentration_vector: f64) {
+        self.cellular_reactions
+            .set_intracellular(concentration_vector)
+    }
+
+    fn calculate_intra_and_extracellular_reaction_increment(
+        &self,
+        internal_concentration_vector: &f64,
+        external_concentration_vector: &ReactionVector,
+    ) -> Result<(f64, ReactionVector), CalcError> {
+        self.cellular_reactions
+            .calculate_intra_and_extracellular_reaction_increment(
+                internal_concentration_vector,
+                external_concentration_vector,
+            )
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
