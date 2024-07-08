@@ -1,7 +1,7 @@
 use cellular_raza::core::backend::chili::*;
 use cellular_raza::prelude::{
-    Brownian3D, CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, RngError,
-    StorageBuilder,
+    Brownian3D, CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, Position,
+    RngError, StorageBuilder, Velocity,
 };
 
 use nalgebra::Vector3;

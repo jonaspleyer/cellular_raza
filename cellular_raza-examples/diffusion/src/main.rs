@@ -2,7 +2,7 @@ use std::ops::AddAssign;
 
 use cellular_raza::{
     building_blocks::NewtonDamped2D,
-    concepts::{CalcError, CellAgent, Mechanics},
+    concepts::{CalcError, CellAgent, Mechanics, Position, Velocity},
 };
 
 #[derive(Clone, Debug)]

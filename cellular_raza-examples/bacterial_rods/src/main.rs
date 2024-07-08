@@ -1,7 +1,7 @@
 use std::ops::Div;
 
 use cellular_raza::building_blocks::{nearest_point_from_point_to_line, CartesianCuboid};
-use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Mechanics};
+use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Position, Velocity};
 use cellular_raza::core::backend::chili;
 
 use rand::SeedableRng;
@@ -58,22 +58,6 @@ impl<const D1: usize, const D2: usize>
         nalgebra::SMatrix<f64, D1, D2>,
     > for Agent<D1, D2>
 {
-    fn pos(&self) -> nalgebra::SMatrix<f64, D1, D2> {
-        self.pos.clone()
-    }
-
-    fn velocity(&self) -> nalgebra::SMatrix<f64, D1, D2> {
-        self.vel.clone()
-    }
-
-    fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D1, D2>) {
-        self.pos = pos.clone();
-    }
-
-    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D1, D2>) {
-        self.vel = velocity.clone();
-    }
-
     fn calculate_increment(
         &self,
         force: nalgebra::SMatrix<f64, D1, D2>,
@@ -130,6 +114,26 @@ impl<const D1: usize, const D2: usize>
             / dt;
 
         Ok(())
+    }
+}
+
+impl<const D1: usize, const D2: usize> Position<nalgebra::SMatrix<f64, D1, D2>> for Agent<D1, D2> {
+    fn pos(&self) -> nalgebra::SMatrix<f64, D1, D2> {
+        self.pos.clone()
+    }
+
+    fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D1, D2>) {
+        self.pos = pos.clone();
+    }
+}
+
+impl<const D1: usize, const D2: usize> Velocity<nalgebra::SMatrix<f64, D1, D2>> for Agent<D1, D2> {
+    fn velocity(&self) -> nalgebra::SMatrix<f64, D1, D2> {
+        self.vel.clone()
+    }
+
+    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D1, D2>) {
+        self.vel = velocity.clone();
     }
 }
 

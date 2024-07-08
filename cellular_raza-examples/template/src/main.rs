@@ -1,7 +1,9 @@
 use cellular_raza::building_blocks::{
     BoundLennardJonesF32, CartesianCuboid2NewF32, NewtonDamped2DF32,
 };
-use cellular_raza::concepts::{CalcError, CellAgent, Interaction, Mechanics, RngError};
+use cellular_raza::concepts::{
+    CalcError, CellAgent, Interaction, Mechanics, Position, RngError, Velocity,
+};
 
 use cellular_raza::core::backend::chili;
 

@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use cellular_raza::building_blocks::{
     nearest_point_from_point_to_multiple_lines, ray_intersects_line_segment,
 };
-use cellular_raza::concepts::{CalcError, Interaction, Mechanics};
+use cellular_raza::concepts::{
+    CalcError, CellAgent, Interaction, Mechanics, Position, RngError, Velocity, Xapy,
+};
 
 use itertools::Itertools;
 use nalgebra::{SVector, Vector2};
@@ -15,23 +17,21 @@ pub struct Vertices<F>(pub Vec<SVector<F, 2>>)
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static;
 
-impl<F> core::ops::Add for Vertices<F>
+impl<F> Xapy<F> for Vertices<F>
 where
-    SVector<F, 2>: core::ops::Add<Output = SVector<F, 2>>,
     F: Clone + std::fmt::Debug + PartialEq + 'static,
+    SVector<F, 2>: core::ops::Mul<F, Output = SVector<F, 2>>,
+    SVector<F, 2>: core::ops::Add<SVector<F, 2>, Output = SVector<F, 2>>,
+    F: Copy,
 {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        let n_min = self.0.len().min(rhs.0.len());
-        let (mut new_values, rhs) = if self.0.len() < rhs.0.len() {
-            (rhs, self)
-        } else {
-            (self, rhs)
-        };
-        for i in 0..n_min {
-            let x = new_values.0.get_mut(i).unwrap();
-            *x = x.clone() + rhs.0[i].clone();
+    fn xapy(&self, a: F, y: &Self) -> Self {
+        let mut new_values = self.clone();
+        for i in 0..self.0.len().max(y.0.len()) {
+            match (new_values.0.get_mut(i), y.0.get(i)) {
+                (Some(s), Some(yi)) => *s = *s * a + *yi,
+                (Some(s), None) => *s = *s * a,
+                _ => (),
+            }
         }
         new_values
     }
@@ -349,7 +349,12 @@ where
         self.vertices = self.ensure_vertices_are_simple(pos.clone());
         self.triangulation.update_triangulation(&self.vertices.0);
     }
+}
 
+impl<F> Velocity<Vertices<F>> for Puzzle<F>
+where
+    F: Clone + std::fmt::Debug + PartialEq + 'static + PartialOrd,
+{
     fn velocity(&self) -> Vertices<F> {
         self.velocity.clone()
     }
@@ -357,7 +362,17 @@ where
     fn set_velocity(&mut self, velocity: &Vertices<F>) {
         self.velocity = velocity.clone();
     }
+}
 
+impl<F> Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F> for Puzzle<F>
+where
+    F: core::ops::DivAssign
+        + nalgebra::RealField
+        + num::Float
+        + core::ops::Mul<SVector<F, 2>, Output = SVector<F, 2>>
+        + core::iter::Sum,
+    rand_distr::StandardNormal: rand_distr::Distribution<F>,
+{
     fn calculate_increment(
         &self,
         force: Vertices<F>,
@@ -476,8 +491,8 @@ where
         }
         internal_force.0.iter_mut().for_each(|f| *f += center_force);
         Ok((
-            self.velocity.clone() + self.random_velocity.clone(),
-            internal_force + force - self.velocity.clone() * self.damping,
+            self.velocity.clone().xapy(F::one(), &self.random_velocity),
+            internal_force.xapy(F::one(), &self.velocity.xapy(-self.damping, &force)),
         ))
     }
 
@@ -496,11 +511,13 @@ where
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
 pub struct PuzzleInteraction<F, I, O, I1, I2>
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
 {
+    #[MechanicsRaw]
+    #[Velocity]
     pub puzzle: Puzzle<F>,
     pub bounding_min: Vector2<F>,
     pub bounding_max: Vector2<F>,
@@ -549,51 +566,18 @@ where
     }
 }
 
-impl<F, I, O, I1, I2> Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F>
-    for PuzzleInteraction<F, I, O, I1, I2>
+impl<F, I, O, I1, I2> Position<Vertices<F>> for PuzzleInteraction<F, I, O, I1, I2>
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static + PartialOrd,
-    F: nalgebra::RealField + num::Float + num::FromPrimitive,
-    F: core::ops::DivAssign
-        + nalgebra::RealField
-        + num::Float
-        + core::ops::Mul<SVector<F, 2>, Output = SVector<F, 2>>
-        + core::iter::Sum,
-    rand_distr::StandardNormal: rand_distr::Distribution<F>,
+    F: nalgebra::RealField + num::Float,
 {
-    fn calculate_increment(
-        &self,
-        force: Vertices<F>,
-    ) -> Result<(Vertices<F>, Vertices<F>), CalcError> {
-        <Puzzle<F> as Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F>>::calculate_increment(
-            &self.puzzle,
-            force,
-        )
-    }
-
     fn pos(&self) -> Vertices<F> {
-        <Puzzle<F> as Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F>>::pos(&self.puzzle)
-    }
-
-    fn velocity(&self) -> Vertices<F> {
-        <Puzzle<F> as Mechanics<Vertices<F>, Vertices<F>, Vertices<F>, F>>::velocity(&self.puzzle)
+        self.puzzle.pos()
     }
 
     fn set_pos(&mut self, pos: &Vertices<F>) {
         self.puzzle.set_pos(pos);
         self.update_bounding_box();
-    }
-
-    fn set_velocity(&mut self, velocity: &Vertices<F>) {
-        self.puzzle.set_velocity(velocity)
-    }
-
-    fn set_random_variable(
-        &mut self,
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: F,
-    ) -> Result<(), cellular_raza::prelude::RngError> {
-        self.puzzle.set_random_variable(rng, dt)
     }
 }
 
