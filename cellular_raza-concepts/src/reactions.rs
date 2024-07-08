@@ -1,4 +1,5 @@
 use crate::CalcError;
+use crate::Position;
 
 /// TODO
 pub trait Intracellular<Ri> {
@@ -163,6 +164,16 @@ mod test_plain_float {
         ) -> Result<(f64, f64), CalcError> {
             let secretion = self.secretion_rate * intracellular;
             Ok((-secretion, secretion))
+        }
+    }
+
+    impl Position<[f64; 2]> for MyCell {
+        fn pos(&self) -> [f64; 2] {
+            self.pos
+        }
+
+        fn set_pos(&mut self, pos: &[f64; 2]) {
+            self.pos = *pos;
         }
     }
 

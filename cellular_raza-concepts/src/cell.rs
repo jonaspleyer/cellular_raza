@@ -1,6 +1,6 @@
 use crate::errors::{CalcError, RngError};
 use crate::interaction::*;
-use crate::mechanics::Mechanics;
+use crate::mechanics::{Mechanics, Position, Velocity};
 
 use serde::{Deserialize, Serialize};
 
@@ -86,11 +86,37 @@ where
     }
 }
 
-impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A>
+impl<A, Pos> Position<Pos> for CellAgentBox<A>
 where
-    A: Mechanics<Pos, Vel, For, Float> + Serialize + for<'a> Deserialize<'a>,
+    A: Position<Pos>,
 {
     fn pos(&self) -> Pos {
+        self.cell.pos()
+    }
+
+    fn set_pos(&mut self, pos: &Pos) {
+        self.cell.set_pos(pos)
+    }
+}
+
+impl<A, Vel> Velocity<Vel> for CellAgentBox<A>
+where
+    A: Velocity<Vel>,
+{
+    fn velocity(&self) -> Vel {
+        self.cell.velocity()
+    }
+
+    fn set_velocity(&mut self, velocity: &Vel) {
+        self.cell.set_velocity(velocity)
+    }
+}
+
+impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A>
+where
+    A: Mechanics<Pos, Vel, For, Float>,
+{
+    /* fn pos(&self) -> Pos {
         self.cell.pos()
     }
 
@@ -104,7 +130,7 @@ where
 
     fn set_velocity(&mut self, velocity: &Vel) {
         self.cell.set_velocity(velocity);
-    }
+    }*/
 
     fn set_random_variable(
         &mut self,

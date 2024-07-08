@@ -1,8 +1,25 @@
 use crate::errors::{CalcError, RngError};
 
+/// Methods for accessing the position of an agent.
+pub trait Position<Pos> {
+    /// Gets the cells current position.
+    fn pos(&self) -> Pos;
+    /// Gets the cells current velocity.
+    fn set_pos(&mut self, position: &Pos);
+}
+
+/// Methods for accessing the velocity of an agent
+pub trait Velocity<Vel> {
+    /// Gets the cells current velocity.
+    fn velocity(&self) -> Vel;
+    /// Sets the cells current velocity.
+    fn set_velocity(&mut self, velocity: &Vel);
+}
+
 /// Describes the position of a cell-agent and allows to calculate increments and set/get
 /// information of the agent.
 pub trait Mechanics<Pos, Vel, For, Float = f64> {
+    /*
     /// Gets the cells current position.
     fn pos(&self) -> Pos;
     /// Gets the cells current velocity.
@@ -10,7 +27,7 @@ pub trait Mechanics<Pos, Vel, For, Float = f64> {
     /// Sets the cells current position.
     fn set_pos(&mut self, pos: &Pos);
     /// Sets the cells current velocity.
-    fn set_velocity(&mut self, velocity: &Vel);
+    fn set_velocity(&mut self, velocity: &Vel);*/
 
     /// Define a new random variable in case that the mechanics type contains a random aspect to
     /// its motion.
