@@ -22,7 +22,7 @@ where
     where
         C: ReactionsContact<Ri, Pos, Inf>,
     {
-        /* self.voxels
+        self.voxels
             .iter_mut()
             .map(|(_, voxelbox)| {
                 voxelbox.cells.iter_mut().map(
@@ -33,7 +33,7 @@ where
                 )
             })
             .flatten()
-            .collect::<Result<(), SimulationError>>()?;*/
+            .collect::<Result<(), SimulationError>>()?;
         /* self.voxels
         .iter_mut()
         .map(|(_, voxelbox)| {
@@ -74,16 +74,16 @@ where
         .collect::<Result<(), SimulationError>>()*/
         Ok(())
     }
-}
+}*/
 
 /// TODO
-pub struct ReactionsContactInformation<Pos, I, Inf> {
+pub struct ReactionsContactInformation<Pos, Ri, RInf> {
     /// Current position
     pub pos: Pos,
     /// Current intracellular values
-    pub intracellular: I,
+    pub intracellular: Ri,
     /// Information shared between cells
-    pub info: Inf,
+    pub info: RInf,
     /// Index of cell in stored vector
     ///
     /// When returning information, this property is needed in order
@@ -98,9 +98,9 @@ pub struct ReactionsContactInformation<Pos, I, Inf> {
 }
 
 /// TODO
-pub struct ReactionsIntracellularInformation<I> {
+pub struct ReactionsContactReturn<Ri> {
     /// Increment of intracellular
-    pub intracellular: I,
+    pub intracellular: Ri,
     /// Index of cell in stored vector
     ///
     /// This property works in tandem with [Self::index_sender] in order to send
@@ -115,51 +115,45 @@ impl<C, A> Voxel<C, A> {
     pub(crate) fn calculate_contact_reactions_between_cells_internally<
         Ri,
         Pos,
-        Inf,
+        RInf,
         Float,
         const N: usize,
     >(
         &mut self,
     ) -> Result<(), CalcError>
     where
-        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
+        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: Position<Pos>,
         Ri: cellular_raza_concepts::Xapy<Float>,
+        Ri: num::Zero,
         A: UpdateReactionsContact<Ri, N>,
+        A: UpdateReactions<Ri>,
         Float: num::Float,
     {
-        // let one_half: Float = Float::one() / (Float::one() + Float::one());
+        let one_half: Float = Float::one() / (Float::one() + Float::one());
 
-        /* for n in 0..self.cells.len() {
+        for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
-                /* let mut cells_mut = self.cells.iter_mut();
+                let mut cells_mut = self.cells.iter_mut();
                 let (c1, aux1) = cells_mut.nth(n).unwrap();
                 let (c2, aux2) = cells_mut.nth(m - n - 1).unwrap();
 
                 let p1 = c1.pos();
-                let v1 = c1.velocity();
-                let i1 = c1.get_interaction_information();
-
+                let intra1 = c1.get_intracellular();
+                let rinf1 = c1.get_contact_information();
                 let p2 = c2.pos();
-                let v2 = c2.velocity();
-                let i2 = c2.get_interaction_information();
+                let intra2 = c2.get_intracellular();
+                let rinf2 = c2.get_contact_information();
 
-                let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
-                aux1.add_force(force1 * one_half);
-                aux2.add_force(force2 * one_half);
+                let (dintra11, dintra12) =
+                    c1.calculate_contact_increment(&intra1, &intra2, &p1, &p2, &rinf2)?;
+                let (dintra22, dintra21) =
+                    c2.calculate_contact_increment(&intra2, &intra1, &p2, &p1, &rinf1)?;
 
-                let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.add_force(force1 * one_half);
-                aux2.add_force(force2 * one_half);
-
-                // Also check for neighbours
-                if c1.is_neighbour(&p1, &p2, &i2)? {
-                    aux1.incr_current_neighbours(1);
-                }
-                if c2.is_neighbour(&p2, &p1, &i1)? {
-                    aux2.incr_current_neighbours(1);
-                }*/
+                aux1.incr_conc(dintra11.xapy(one_half, &dintra21.xapy(one_half, &Ri::zero())));
+                aux2.incr_conc(dintra22.xapy(one_half, &dintra12.xapy(one_half, &Ri::zero())));
             }
-        }*/
+        }
         Ok(())
     }
 
@@ -167,40 +161,37 @@ impl<C, A> Voxel<C, A> {
     pub(crate) fn calculate_contact_reactions_between_cells_external<
         Ri,
         Pos,
-        Inf,
+        RInf,
         Float,
         const N: usize,
     >(
         &mut self,
-        _ext_pos: &Pos,
-        _ext_intra: &Ri,
-        _ext_inf: &Inf,
+        ext_pos: &Pos,
+        ext_intra: &Ri,
+        ext_rinf: &RInf,
     ) -> Result<Ri, CalcError>
     where
-        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
+        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: Position<Pos>,
+        Ri: num::Zero,
+        Ri: Xapy<Float>,
         A: UpdateReactions<Ri>,
+        A: UpdateReactionsContact<Ri, N>,
         Float: num::Float,
     {
-        /* let one_half = Float::one() / (Float::one() + Float::one());
-        let mut force = For::zero();
+        let one_half = Float::one() / (Float::one() + Float::one());
+        let mut dextra_total = Ri::zero();
         for (cell, aux_storage) in self.cells.iter_mut() {
-            let (f1, f2) = cell.calculate_force_between(
-                &cell.pos(),
-                &cell.velocity(),
-                &ext_pos,
-                &ext_vel,
-                &ext_inf,
-            )?;
-            aux_storage.add_force(f1 * one_half);
-            force += f2 * one_half;
+            let own_intra = cell.get_intracellular();
+            let own_pos = cell.pos();
 
-            // Check for neighbours
-            if cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
-                aux_storage.incr_current_neighbours(1);
-            }
+            let (dintra, dextra) = cell.calculate_contact_increment(
+                &own_intra, &ext_intra, &own_pos, &ext_pos, &ext_rinf,
+            )?;
+            aux_storage.incr_conc(dintra.xapy(one_half, &Ri::zero()));
+            dextra_total = dextra.xapy(one_half, &dextra_total);
         }
-        Ok(force)*/
-        todo!()
+        Ok(dextra_total)
     }
 }
 
@@ -216,168 +207,139 @@ where
     /// Then, threads will exchange information in the [PosInformation] format
     /// to calculate the forces acting on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_contact_reactions_step_1<Ri, Pos, Inf, Float, const N: usize>(
+    pub fn update_contact_reactions_step_1<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
         Pos: Clone,
-        Inf: Clone,
-        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
-        Ri: cellular_raza_concepts::Xapy<Float>,
+        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: cellular_raza_concepts::Position<Pos>,
+        A: UpdateReactions<Ri>,
         A: UpdateReactionsContact<Ri, N>,
+        Ri: num::Zero + Xapy<Float> + Clone,
+        RInf: Clone,
         Float: num::Float,
-        <S as SubDomain>::VoxelIndex: Ord,
-        Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Ri, Pos, Inf>>,
+        // <S as SubDomain>::VoxelIndex: Ord,
+        Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Pos, Ri, RInf>>,
     {
         for (_, vox) in self.voxels.iter_mut() {
-            vox.calculate_contact_reactions_between_cells_internally()?;
+            vox.calculate_contact_reactions_between_cells_internally::<Ri, Pos, RInf, Float, N>()?;
         }
 
-        // Calculate forces for all cells from neighbors
         // TODO can we do this without memory allocation?
         // or simply allocate when creating the subdomain
-        /* let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+        let key_iterator: Vec<_> = self.voxels.keys().map(|k| *k).collect();
 
         for voxel_index in key_iterator {
             for cell_index_in_vector in 0..self.voxels[&voxel_index].cells.len() {
                 let cell_pos = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
                     .pos();
-                let cell_vel = self.voxels[&voxel_index].cells[cell_index_in_vector]
+                let cell_intra = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
-                    .velocity();
-                let cell_inf = self.voxels[&voxel_index].cells[cell_index_in_vector]
+                    .get_intracellular();
+                let cell_contact_inf = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
-                    .get_interaction_information();
-                let mut force = For::zero();
+                    .get_contact_information();
+                let mut incr = Ri::zero();
                 let neighbors = self.voxels[&voxel_index].neighbors.clone();
                 for neighbor_index in neighbors {
                     match self.voxels.get_mut(&neighbor_index) {
                         Some(vox) => Ok::<(), CalcError>(
-                            force += vox.calculate_force_between_cells_external(
-                                &cell_pos, &cell_vel, &cell_inf,
-                            )?,
+                            incr = incr.xapy(
+                                Float::one(),
+                                &vox.calculate_contact_reactions_between_cells_external(
+                                    &cell_pos,
+                                    &cell_intra,
+                                    &cell_contact_inf,
+                                )?,
+                            ),
+                            // Ok(())
                         ),
                         None => Ok(self.communicator.send(
                             &self.plain_index_to_subdomain[&neighbor_index],
-                            PosInformation {
+                            ReactionsContactInformation {
+                                pos: cell_pos.clone(),
+                                intracellular: cell_intra.clone(),
+                                info: cell_contact_inf.clone(),
+                                cell_index_in_vector,
                                 index_sender: voxel_index,
                                 index_receiver: neighbor_index.clone(),
-                                pos: cell_pos.clone(),
-                                vel: cell_vel.clone(),
-                                info: cell_inf.clone(),
-                                cell_index_in_vector,
                             },
                         )?),
                     }?;
                 }
-                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_index_in_vector]
-                    .1
-                    .add_force(force);
             }
-        }*/
-
+        }
         Ok(())
     }
 
-    /// Calculates the custom [force](SubDomainForce) of
-    /// the domain on the cells.
+    /// TODO
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn calculate_reactions_combined<Ri, Pos, Inf, Float, const N: usize>(
+    pub fn update_contact_reactions_step_2<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
-        Pos: Clone,
-        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
-        A: UpdateReactions<Ri>,
-        // TODO use the correct trait here (which is not yet developed)
-        // S: SubDomainForce<Pos, Vel, For>,
-    {
-        /* for (cell, aux) in self
-            .voxels
-            .iter_mut()
-            .map(|(_, vox)| vox.cells.iter_mut())
-            .flatten()
-        {
-            let f = self
-                .subdomain
-                .calculate_custom_force(&cell.pos(), &cell.velocity())?;
-            aux.add_force(f);
-        }*/
-        Ok(())
-    }
-
-    /// Update cells position and velocity
-    ///
-    /// We assume that cells implement the
-    /// [Mechanics](cellular_raza_concepts::Mechanics) and
-    /// [Interaction](cellular_raza_concepts::Interaction) traits.
-    /// Then, threads will use the previously exchanged [PosInformation] to calculate forces
-    /// and send back information about the acting force in the [ForceInformation] format.
-    /// In addition, this method also applies the inverse force to local cells.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_contact_reactions_step_2<Ri, Pos, Inf, Float, const N: usize>(
-        &mut self,
-    ) -> Result<(), SimulationError>
-    where
-        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Inf>,
-        A: UpdateReactions<Ri>,
+        C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf> + Position<Pos>,
+        A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, N>,
+        Ri: Xapy<Float> + num::Zero,
         Float: num::Float,
         Pos: Clone,
-        Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Ri, Pos, Inf>>,
-        Com: Communicator<SubDomainPlainIndex, ReactionsIntracellularInformation<Ri>>,
+        Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Pos, Ri, RInf>>,
+        Com: Communicator<SubDomainPlainIndex, ReactionsContactReturn<Ri>>,
     {
-        // Receive PositionInformation and send back ForceInformation
-        /* for pos_info in
-            <Com as Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>>::receive(
-                &mut self.communicator,
-            )
-            .iter()
-        {
-            let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(
+        // Receive contactinformation and send back increments
+        let mut received_infos = <Com as Communicator<
+            SubDomainPlainIndex,
+            ReactionsContactInformation<Pos, Ri, RInf>,
+        >>::receive(&mut self.communicator);
+        received_infos.sort_by_key(|info| info.index_sender);
+        for contact_info in received_infos {
+            let vox = self.voxels.get_mut(&contact_info.index_receiver).ok_or(
                 cellular_raza_concepts::IndexError(format!(
-                    "EngineError: Voxel with index {:?} of PosInformation can not be\
-                            found in this thread.",
-                    pos_info.index_receiver
+                    "EngineError: Voxel with index {:?} of ReactionsContactInformation can not be\
+                    found in this threads.",
+                    contact_info.index_receiver
                 )),
             )?;
-            // Calculate force from cells in voxel
-            let force = vox.calculate_force_between_cells_external(
-                &pos_info.pos,
-                &pos_info.vel,
-                &pos_info.info,
+            // Calculate the contact increments from cells in voxel
+            let incr = vox.calculate_contact_reactions_between_cells_external(
+                &contact_info.pos,
+                &contact_info.intracellular,
+                &contact_info.info,
             )?;
 
-            // Send back force information
-            // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
+            // Send back information about the increment
             self.communicator.send(
-                &self.plain_index_to_subdomain[&pos_info.index_sender],
-                ForceInformation {
-                    force,
-                    cell_index_in_vector: pos_info.cell_index_in_vector,
-                    index_sender: pos_info.index_sender,
+                &self.plain_index_to_subdomain[&contact_info.index_sender],
+                ReactionsContactReturn {
+                    intracellular: incr,
+                    cell_index_in_vector: contact_info.cell_index_in_vector,
+                    index_sender: contact_info.index_sender,
                 },
             )?;
-        }*/
+        }
         Ok(())
     }
 
-    /// Receive all calculated forces and include them for later update steps.
+    /// Receive all calculated increments and include them for later update steps.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_reactions_contact_step_3<Ri, Pos, Inf, Float>(&mut self) -> Result<(), SimulationError>
+    pub fn update_reactions_contact_step_3<Ri, Pos, Inf, Float>(
+        &mut self,
+    ) -> Result<(), SimulationError>
     where
         A: UpdateReactions<Ri>,
-        Com: Communicator<SubDomainPlainIndex, ReactionsIntracellularInformation<Ri>>,
+        Com: Communicator<SubDomainPlainIndex, ReactionsContactReturn<Ri>>,
         Ri: cellular_raza_concepts::Xapy<Float>,
         Float: num::Float,
     {
         // Update position and velocity of all cells with new information
-        for obt_intracellular in <Com as Communicator<
+        let mut received_infos = <Com as Communicator<
             SubDomainPlainIndex,
-            ReactionsIntracellularInformation<Ri>,
-        >>::receive(&mut self.communicator)
-        .into_iter()
-        {
+            ReactionsContactReturn<Ri>,
+        >>::receive(&mut self.communicator);
+        received_infos.sort_by_key(|info| info.index_sender);
+        for obt_intracellular in received_infos {
             let error_1 = format!(
                 "EngineError: Sender with plain index {:?} was ended up in location\
                 where index is not present anymore",
@@ -402,6 +364,29 @@ where
         }
         Ok(())
     }
+}
+
+/// Updates the cells intracellular values from the obtained contact informations
+pub fn local_update_contact_reactions_step_3<
+    C,
+    A,
+    Ri,
+    #[cfg(feature = "tracing")] F: core::fmt::Debug,
+    #[cfg(not(feature = "tracing"))] F,
+>(
+    cell: &mut C,
+    aux_storage: &mut A,
+    dt: F,
+    _rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), SimulationError>
+where
+    A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, 3>,
+    C: cellular_raza_concepts::Intracellular<Ri>,
+    F: num::Float + FromPrimitive,
+    Ri: num::Zero + Xapy<F> + Clone,
+{
+    reactions_contact_adams_bashforth_2nd(cell, aux_storage, dt)?;
+    Ok(())
 }
 
 /// TODO
