@@ -4,6 +4,8 @@ use num::FromPrimitive;
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
+use super::{UpdateReactions, UpdateReactionsContact};
+
 /// Classical euler solver for the [Mechanics](cellular_raza_concepts::Mechanics) trait.
 ///
 /// The euler solver is the most simple solver and not stable for many problems.
@@ -26,12 +28,10 @@ pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 0>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Pos: Clone,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Vel: Clone,
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
+    Pos: Xapy<Float> + num::Zero + Clone,
+    Vel: Xapy<Float> + num::Zero + Clone,
     Float: Copy,
 {
     let force = aux_storage.get_current_force();
@@ -46,7 +46,8 @@ where
     aux_storage.clear_forces();
 
     // Calculate new position and velocity of cell
-    let (new_position, new_velocity) = euler(position, dx, velocity, dv, dt)?;
+    let new_position = euler(position, dx, dt)?;
+    let new_velocity = euler(velocity, dv, dt)?;
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
     Ok(())
@@ -75,14 +76,10 @@ pub fn mechanics_adams_bashforth_3<C, A, Pos, Vel, For, Float>(
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 2>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Pos: core::ops::Sub<Pos, Output = Pos>,
-    Pos: Clone,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Vel: core::ops::Sub<Vel, Output = Vel>,
-    Vel: Clone,
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
+    Pos: Xapy<Float> + num::Zero + Clone,
+    Vel: Xapy<Float> + num::Zero + Clone,
     Float: num::Float + FromPrimitive,
 {
     let force = aux_storage.get_current_force();
@@ -101,29 +98,39 @@ where
     let mut old_pos_increments = aux_storage.previous_positions();
     let mut old_vel_increments = aux_storage.previous_velocities();
     let (new_position, new_velocity) = match n_previous_values {
-        2 => adams_bashforth_3(
-            position,
-            [
-                dx,
-                old_pos_increments.next().unwrap().clone(),
-                old_pos_increments.next().unwrap().clone(),
-            ],
-            velocity,
-            [
-                dv,
-                old_vel_increments.next().unwrap().clone(),
-                old_vel_increments.next().unwrap().clone(),
-            ],
-            dt,
-        )?,
-        1 => adams_bashforth_2(
-            position,
-            [dx, old_pos_increments.next().unwrap().clone()],
-            velocity,
-            [dv, old_vel_increments.next().unwrap().clone()],
-            dt,
-        )?,
-        _ => euler(position, dx, velocity, dv, dt)?,
+        2 => (
+            adams_bashforth_3(
+                position,
+                [
+                    dx,
+                    old_pos_increments.next().unwrap().clone(),
+                    old_pos_increments.next().unwrap().clone(),
+                ],
+                dt,
+            )?,
+            adams_bashforth_3(
+                velocity,
+                [
+                    dv,
+                    old_vel_increments.next().unwrap().clone(),
+                    old_vel_increments.next().unwrap().clone(),
+                ],
+                dt,
+            )?,
+        ),
+        1 => (
+            adams_bashforth_2(
+                position,
+                [dx, old_pos_increments.next().unwrap().clone()],
+                dt,
+            )?,
+            adams_bashforth_2(
+                velocity,
+                [dv, old_vel_increments.next().unwrap().clone()],
+                dt,
+            )?,
+        ),
+        _ => (euler(position, dx, dt)?, euler(velocity, dv, dt)?),
     };
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
@@ -152,14 +159,10 @@ pub fn mechanics_adams_bashforth_2<C, A, Pos, Vel, For, Float>(
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 1>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Pos: core::ops::Sub<Pos, Output = Pos>,
-    Pos: Clone,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Vel: core::ops::Sub<Vel, Output = Vel>,
-    Vel: Clone,
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
+    Pos: Xapy<Float> + num::Zero + Clone,
+    Vel: Xapy<Float> + num::Zero + Clone,
     Float: num::Float + FromPrimitive,
 {
     let force = aux_storage.get_current_force();
@@ -177,7 +180,7 @@ where
     let n_previous_values = aux_storage.n_previous_values();
     let mut old_pos_increments = aux_storage.previous_positions();
     let mut old_vel_increments = aux_storage.previous_velocities();
-    let (new_position, new_velocity) = match n_previous_values {
+    /* let (new_position, new_velocity) = match n_previous_values {
         1 => adams_bashforth_2(
             position,
             [dx, old_pos_increments.next().unwrap().clone()],
@@ -186,6 +189,21 @@ where
             dt,
         )?,
         _ => euler(position, dx, velocity, dv, dt)?,
+    };*/
+    let (new_position, new_velocity) = match n_previous_values {
+        1 => (
+            adams_bashforth_2(
+                position,
+                [dx, old_pos_increments.next().unwrap().clone()],
+                dt,
+            )?,
+            adams_bashforth_2(
+                velocity,
+                [dv, old_vel_increments.next().unwrap().clone()],
+                dt,
+            )?,
+        ),
+        _ => (euler(position, dx, dt)?, euler(velocity, dv, dt)?),
     };
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
@@ -193,76 +211,63 @@ where
 }
 
 #[inline]
-fn euler<Pos, Vel, Float>(
-    x: Pos,
-    dx: Pos,
-    v: Vel,
-    dv: Vel,
-    dt: Float,
-) -> Result<(Pos, Vel), CalcError>
+fn euler<X, F>(
+    x: X,
+    dx: X,
+    // v: Vel,
+    // dv: Vel,
+    dt: F,
+) -> Result<X, CalcError>
+// ) -> Result<(X, Vel), CalcError>
 where
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Float: Copy,
+    X: Xapy<F> + num::Zero,
+    F: Copy,
 {
-    let x_new = x + dx * dt;
-    let v_new = v + dv * dt;
-    Ok((x_new, v_new))
+    let x_new = dx.xapy(dt, &x);
+    Ok(x_new)
 }
 
 #[inline]
-fn adams_bashforth_3<Pos, Vel, Float>(
-    x: Pos,
-    dx: [Pos; 3],
-    v: Vel,
-    dv: [Vel; 3],
-    dt: Float,
-) -> Result<(Pos, Vel), CalcError>
+fn adams_bashforth_3<X, F>(
+    x: X,
+    dx: [X; 3],
+    dt: F,
+) -> Result<X, CalcError>
 where
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Float: Copy + FromPrimitive + num::Float,
+    X: Xapy<F> + num::Zero,
+    F: Copy + FromPrimitive + num::Float,
 {
-    let f1 = Float::from_isize(23).unwrap() / Float::from_isize(12).unwrap();
-    let f2 = -Float::from_isize(16).unwrap() / Float::from_isize(12).unwrap();
-    let f3 = Float::from_isize(5).unwrap() / Float::from_isize(12).unwrap();
+    let f0 = F::from_isize(23).unwrap() / F::from_isize(12).unwrap();
+    let f1 = -F::from_isize(16).unwrap() / F::from_isize(12).unwrap();
+    let f2 = F::from_isize(5).unwrap() / F::from_isize(12).unwrap();
 
     let [dx0, dx1, dx2] = dx;
-    let [dv0, dv1, dv2] = dv;
 
-    let x_new = x + dx0 * f1 * dt + dx1 * f2 * dt + dx2 * f3 * dt;
-    let v_new = v + dv0 * f1 * dt + dv1 * f2 * dt + dv2 * f3 * dt;
-    Ok((x_new, v_new))
+    let x_new = dx0
+        .xapy(f0, &dx1.xapy(f1, &dx2.xapy(f2, &X::zero())))
+        .xapy(dt, &x);
+    Ok(x_new)
 }
 
 #[inline]
-fn adams_bashforth_2<Pos, Vel, Float>(
-    x: Pos,
-    dx: [Pos; 2],
-    v: Vel,
-    dv: [Vel; 2],
-    dt: Float,
-) -> Result<(Pos, Vel), CalcError>
+fn adams_bashforth_2<X, F>(
+    x: X,
+    dx: [X; 2],
+    // v: Vel,
+    // dv: [Vel; 2],
+    dt: F,
+) -> Result<X, CalcError>
 where
-    Pos: core::ops::Mul<Float, Output = Pos>,
-    Pos: core::ops::Add<Pos, Output = Pos>,
-    Vel: core::ops::Mul<Float, Output = Vel>,
-    Vel: core::ops::Add<Vel, Output = Vel>,
-    Float: Copy + FromPrimitive + num::Float,
+    X: Xapy<F> + num::Zero,
+    F: Copy + FromPrimitive + num::Float,
 {
-    let f1 = Float::from_isize(3).unwrap() / Float::from_isize(2).unwrap();
-    let f2 = -Float::from_isize(1).unwrap() / Float::from_isize(2).unwrap();
+    let f0 = F::from_isize(3).unwrap() / F::from_isize(2).unwrap();
+    let f1 = -F::from_isize(1).unwrap() / F::from_isize(2).unwrap();
 
     let [dx0, dx1] = dx;
-    let [dv0, dv1] = dv;
 
-    let x_new = x + dx0 * f1 * dt + dx1 * f2 * dt;
-    let v_new = v + dv0 * f1 * dt + dv1 * f2 * dt;
-    Ok((x_new, v_new))
+    let x_new = dx0.xapy(f0, &dx1.xapy(f1, &X::zero())).xapy(dt, &x);
+    Ok(x_new)
 }
 
 /// TODO
