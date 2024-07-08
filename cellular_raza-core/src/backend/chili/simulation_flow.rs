@@ -788,6 +788,47 @@ mod test_build_communicator {
             ///     ],
             ///     core_path: cellular_raza_core
             /// );
+            /// let mut map = std::collections::HashMap::new();
+            /// map.insert(0, vec![1]);
+            /// map.insert(1, vec![0]);
+            /// use cellular_raza_core::backend::chili::{ReactionsContactInformation, FromMap,
+            /// Communicator, PosInformation, ForceInformation, VoxelPlainIndex, SendCell};
+            /// let mut communicator = __MyComm::from_map(&map).unwrap().remove(&0).unwrap();
+            /// macro_rules! test_aspect (
+            ///     (Mechanics) => {
+            ///         communicator.send(&1, SendCell(
+            ///             VoxelPlainIndex(1),
+            ///             format!("MyCell"),
+            ///             format!("AuxStorage")
+            ///         ));
+            ///     };
+            ///     (iInteraction) => {
+            #[doc = concat!($(
+                concat!("test_aspect!(", stringify!($asp), ", Interaction);"),
+            )*)]
+            ///     };
+            ///     (Interaction) => {
+            ///         communicator.send(&1, PosInformation {
+            ///             pos: 1u8,
+            ///             vel: 1.0,
+            ///             info: (),
+            ///             cell_index_in_vector: 1,
+            ///             index_sender: VoxelPlainIndex(0),
+            ///             index_receiver: VoxelPlainIndex(1),
+            ///         });
+            ///         communicator.send(&1, ForceInformation {
+            ///             force: 0.1,
+            ///             cell_index_in_vector: 0,
+            ///             index_sender: VoxelPlainIndex(0),
+            ///         });
+            ///     };
+            ///     ($asp:ident, Interaction) => {};
+            ///     (Cycle) => {};
+            ///     (Reactions) => {};
+            /// );
+            #[doc = concat!($(
+                concat!("test_aspect!(", stringify!($asp), ");")
+            ,)*)]
             /// ```
             #[allow(non_snake_case)]
             fn $func_name () {}
