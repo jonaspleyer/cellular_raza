@@ -5,6 +5,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct VoxelPlainIndex(usize);
 
+/// This is mainly used by the simulation_flow::cocmmunicator for testing purposes
+#[allow(unused)]
+#[doc(hidden)]
+impl VoxelPlainIndex {
+    pub fn new(value: usize) -> Self {
+        Self(value)
+    }
+}
+
 /// Identifer or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct SubDomainPlainIndex(usize);

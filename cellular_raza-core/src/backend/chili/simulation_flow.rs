@@ -797,7 +797,7 @@ mod test_build_communicator {
             /// macro_rules! test_aspect (
             ///     (Mechanics) => {
             ///         communicator.send(&1, SendCell(
-            ///             VoxelPlainIndex(1),
+            ///             VoxelPlainIndex::new(1),
             ///             format!("MyCell"),
             ///             format!("AuxStorage")
             ///         ));
@@ -813,13 +813,13 @@ mod test_build_communicator {
             ///             vel: 1.0,
             ///             info: (),
             ///             cell_index_in_vector: 1,
-            ///             index_sender: VoxelPlainIndex(0),
-            ///             index_receiver: VoxelPlainIndex(1),
+            ///             index_sender: VoxelPlainIndex::new(0),
+            ///             index_receiver: VoxelPlainIndex::new(1),
             ///         });
             ///         communicator.send(&1, ForceInformation {
             ///             force: 0.1,
             ///             cell_index_in_vector: 0,
-            ///             index_sender: VoxelPlainIndex(0),
+            ///             index_sender: VoxelPlainIndex::new(0),
             ///         });
             ///     };
             ///     ($asp:ident, Interaction) => {};
@@ -831,8 +831,8 @@ mod test_build_communicator {
             ///             intracellular: [0.0, 1.0],
             ///             info: "hi",
             ///             cell_index_in_vector: 0,
-            ///             index_sender: VoxelPlainIndex(0),
-            ///             index_receiver: VoxelPlainIndex(1),
+            ///             index_sender: VoxelPlainIndex::new(0),
+            ///             index_receiver: VoxelPlainIndex::new(1),
             ///         });
             ///     };
             /// );
