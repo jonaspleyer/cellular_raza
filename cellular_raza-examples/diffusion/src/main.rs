@@ -38,11 +38,13 @@ trait FluidDynamics<Pos, Conc, Float> {
     fn get_border_info(&self) -> Self::BorderInfo;
 }
 
+#[derive(Clone)]
 struct CartesianBorder {
     min: nalgebra::SVector<f64, 2>,
     max: nalgebra::SVector<f64, 2>,
 }
 
+#[derive(Clone)]
 struct CartesianNeighbor {
     border: CartesianBorder,
     concentrations: ndarray::Array3<f64>,
@@ -134,8 +136,14 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         Ok(r)
     }
 
-    fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
-        todo!()
+    fn get_neighbor_values(&self, _border_info: Self::BorderInfo) -> Self::NeighborValue {
+        CartesianNeighbor {
+            border: CartesianBorder {
+                min: self.min,
+                max: self.max,
+            },
+            concentrations: self.total_concentration.clone(),
+        }
     }
 
     fn get_border_info(&self) -> Self::BorderInfo {
@@ -156,6 +164,10 @@ impl SubDomain {
         // https://github.com/dimforge/nalgebra/pull/665
         let min = (self.min - self.dx).zip_map(&neighbor.border.min, |a, b| a.max(b));
         let max = (self.max + self.dx).zip_map(&neighbor.border.max, |a, b| a.min(b));
+        println!(
+            "self.min {:6.2?} neighbor.border.min {:6.2?} min {:6.2?} {:6.2?}",
+            self.min, neighbor.border.min, min, max
+        );
 
         // Check that the discretization is identical
         #[cfg(debug_assertions)]
@@ -189,6 +201,11 @@ impl SubDomain {
             ind_min_neighbor[1]..ind_max_neighbor[1],
             ..
         ]);
+        println!(
+            "{} {}",
+            self.total_concentration.iter().sum::<f64>(),
+            neighbor.concentrations.iter().sum::<f64>()
+        );
 
         self.helper
             .slice_mut(s![
@@ -196,7 +213,7 @@ impl SubDomain {
                 ind_min_self[1]..ind_max_self[1],
                 ..
             ])
-            .assign(&neighbor_slice);
+            .add_assign(&neighbor_slice);
         Ok(())
     }
 
@@ -327,7 +344,7 @@ fn main() {
         // nalgebra::Vector2::from([ 2.5,  2.5]),
         // nalgebra::Vector2::from([ 2.5, -2.5]),
     ];
-    let mut agents = positions
+    let agents = positions
         .into_iter()
         .map(|pos| {
             use num::Zero;
@@ -379,10 +396,31 @@ fn main() {
         let border_infos = subdomains_agents
             .iter()
             .map(|(sdm, _)| sdm.get_border_info())
-            .collect::<Vec<_>>();
-        for (subdomain, agents) in subdomains_agents.iter_mut() {
+            .enumerate()
+            .collect::<std::collections::HashMap<_, _>>();
+        let all_neighbor_values = subdomains_agents
+            .iter()
+            .enumerate()
+            .map(|(i, (sdm, _))| {
+                (
+                    i,
+                    border_infos
+                        .iter()
+                        .filter_map(|(j, bdi)| {
+                            if i != *j {
+                                Some(sdm.get_neighbor_values(bdi.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<std::collections::HashMap<_, _>>();
+        for (n_subdomain, (subdomain, agents)) in subdomains_agents.iter_mut().enumerate() {
             // TODO use the border_infos from before here
-            let neighbor_values = vec![];
+            // border_infos.iter().filter_map(|(n_other, &border_info)| if n_subdomain==*n_other {
+            //     Some(border_info.clone())} else {None});
             // CartesianNeighbor {
             //     border: CartesianBorder {
             //         min: [-10.0, -7.0].into(),
@@ -390,6 +428,7 @@ fn main() {
             //     },
             //     concentrations: ndarray::Array3::ones([5, 16, n_components]),
             // }];
+            let neighbor_values = all_neighbor_values[&n_subdomain].clone();
             let sources = agents
                 .iter_mut()
                 .map(|a| {
