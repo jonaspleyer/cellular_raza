@@ -133,7 +133,6 @@ impl<const N: usize> Reactions<Vector2<f64>> for MyCell<N> {
         let s = intracellular.y;
         let da = self.k1 * s * a.powf(2.0) - self.k2 * a;
         let ds = -self.k1 * s * a.powf(2.0) + self.k3;
-        println!("{:10.7} {:10.7} {:10.7} {:10.7}", a, s, da, ds);
         Ok([da, ds].into())
     }
 }
