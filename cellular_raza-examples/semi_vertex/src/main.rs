@@ -23,10 +23,10 @@ pub const DOMAIN_SIZE_Y: f64 = 800.0;
 pub const N_TIMES: u64 = 10_001;
 pub const DT: f64 = 0.05;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: u64 = 50;
+pub const SAVE_INTERVAL: u64 = 10;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 1;
+pub const N_THREADS: usize = 4;
 
 mod cell_properties;
 mod custom_domain;
@@ -77,11 +77,14 @@ fn main() -> Result<(), chili::SimulationError> {
                         average_radius: CELL_MECHANICS_AREA.sqrt(),
                     },
                 ),
-                intracellular: nalgebra::Vector2::from([rng.gen_range(0.0..1e-1); 2]),
-                k1: 0.02,
-                k2: 0.01,
-                k3: 0.01,
-                exchange: nalgebra::Vector2::from([0.0002, 0.004]),
+                intracellular: nalgebra::Vector2::from([
+                    rng.gen_range(5.0..6.0),
+                    rng.gen_range(0.0..1.0),
+                ]),
+                k1: 0.01,
+                k2: 0.02,
+                k3: 0.1,
+                exchange: nalgebra::Vector2::from([0.001, 0.1]),
             }
         })
         .collect::<Vec<_>>();
