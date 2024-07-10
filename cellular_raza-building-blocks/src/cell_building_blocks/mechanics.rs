@@ -1,7 +1,7 @@
 use cellular_raza_concepts::{CalcError, Mechanics, RngError};
 
 use itertools::Itertools;
-use nalgebra::SVector;
+use nalgebra::{SMatrix, SVector};
 
 use serde::{Deserialize, Serialize};
 
@@ -726,6 +726,122 @@ impl<const D: usize> VertexMechanics2D<D> {
     /// Change the internal cell area
     pub fn set_cell_area(&mut self, cell_area: f64) {
         self.cell_area = cell_area;
+    }
+}
+
+impl VertexMechanics2D<6> {
+    /// TODO
+    pub fn fill_rectangle_flat_top(
+        cell_area: f64,
+        spring_tensions: f64,
+        central_pressure: f64,
+        damping_constant: f64,
+        diffusion_constant: f64,
+        rectangle: [SVector<f64, 2>; 2],
+    ) -> Vec<Self> {
+        // If the supplied area is larger than the total area, return nothing
+        let side_x = rectangle[1].x - rectangle[0].x;
+        let side_y = rectangle[1].y - rectangle[0].y;
+        if cell_area > side_x * side_y {
+            return Vec::new();
+        }
+        let segment_length = Self::calculate_boundary_length(cell_area) / 6.0;
+        let radius_outer = segment_length / (std::f64::consts::PI / 6.0).sin() / 2.0;
+        let radius_inner = segment_length / (std::f64::consts::PI / 6.0).tan() / 2.0;
+
+        // Check if only one single hexagon fits into the domain in any dimension
+        let n_max_x = (side_x - 2.0 * radius_outer).div_euclid(3.0 / 2.0 * radius_outer) as usize;
+        let n_max_y = side_y.div_euclid(2.0 * radius_inner);
+        let total_width_x = 2.0 * radius_outer + (n_max_x - 1) as f64 * 3.0 / 2.0 * radius_outer;
+        let total_width_y = n_max_y as f64 * 2.0 * radius_inner;
+
+        let pad_x = (side_x - total_width_x) / 2.0;
+        let pad_y = (side_y - total_width_y) / 2.0;
+        let padding = nalgebra::RowVector2::from([pad_x, pad_y]);
+
+        let mut generated_models = vec![];
+        for n_x in 0..n_max_x {
+            for n_y in 0..n_max_y as usize - n_x % 2 {
+                let middle = rectangle[0].transpose()
+                    + padding
+                    + nalgebra::RowVector2::from([
+                        (1.0 + 3.0 / 2.0 * n_x as f64) * radius_outer,
+                        (1 + 2 * n_y + n_x % 2) as f64 * radius_inner,
+                    ]);
+                let mut pos = nalgebra::SMatrix::<f64, 6, 2>::zeros();
+                for i in 0..6 {
+                    let phi = 2.0 * std::f64::consts::PI * i as f64 / 6.0;
+                    pos.set_row(
+                        i,
+                        &(middle
+                            + radius_outer * nalgebra::RowVector2::from([phi.cos(), phi.sin()])),
+                    );
+                }
+                generated_models.push(Self {
+                    points: pos,
+                    velocity: SMatrix::zeros(),
+                    random_vector: SMatrix::zeros(),
+                    cell_boundary_lengths: SVector::from_element(segment_length),
+                    spring_tensions: SVector::from_element(spring_tensions),
+                    cell_area,
+                    central_pressure,
+                    damping_constant,
+                    diffusion_constant,
+                });
+            }
+        }
+        generated_models
+    }
+}
+
+#[cfg(test)]
+mod test_vertex_mechanics_6n {
+    #[test]
+    fn test_fill_too_small() {
+        use crate::VertexMechanics2D;
+        use nalgebra::Vector2;
+        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
+            200.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            [Vector2::from([1.0, 1.0]), Vector2::from([2.0, 2.0])],
+        );
+        assert_eq!(models.len(), 0);
+    }
+
+    #[test]
+    fn test_fill_multiple() {
+        use crate::VertexMechanics2D;
+        use cellular_raza_concepts::Position;
+        use nalgebra::Vector2;
+        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
+            36.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            [Vector2::from([0.0; 2]), Vector2::from([100.0; 2])],
+        );
+        use itertools::Itertools;
+        for (m1, m2) in models.into_iter().circular_tuple_windows() {
+            if m1.pos().row_mean().transpose().x == m2.pos().row_mean().transpose().x {
+                let max = m1
+                    .pos()
+                    .row_iter()
+                    .map(|row| row.transpose().y)
+                    .max_by(|x0, x1| x0.partial_cmp(x1).unwrap())
+                    .unwrap();
+                let min = m2
+                    .pos()
+                    .row_iter()
+                    .map(|row| row.transpose().y)
+                    .min_by(|x0, x1| x0.partial_cmp(x1).unwrap())
+                    .unwrap();
+                assert!((max - min).abs() < 1e-7);
+            }
+        }
     }
 }
 
