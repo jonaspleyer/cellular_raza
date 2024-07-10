@@ -6,9 +6,6 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
-// Number of cells
-pub const N_CELLS: usize = 20;
-
 // Mechanical parameters
 pub const CELL_MECHANICS_AREA: f64 = 500.0;
 pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
@@ -56,28 +53,22 @@ fn main() -> Result<(), chili::SimulationError> {
     };
 
     // Define cell agents
-    let dx = 1.05 * CELL_MECHANICS_AREA.sqrt();
-    let n_x_max = (0.8 * DOMAIN_SIZE_X / dx).floor();
-    let n_y_max = (0.8 * DOMAIN_SIZE_Y / dx).floor();
-    let cells = (0..N_CELLS)
-        .map(|n_cell| {
-            let n_x = n_cell as f64 % n_x_max;
-            let n_y = (n_cell as f64 / n_y_max).floor();
+    let models = VertexMechanics2D::fill_rectangle_flat_top(
+        CELL_MECHANICS_AREA,
+        CELL_MECHANICS_SPRING_TENSION,
+        CELL_MECHANICS_CENTRAL_PRESSURE,
+        CELL_MECHANICS_DAMPING_CONSTANT,
+        CELL_MECHANICS_DIFFUSION_CONSTANT,
+        [
+            [0.1 * DOMAIN_SIZE_X, 0.1 * DOMAIN_SIZE_Y].into(),
+            [0.9 * DOMAIN_SIZE_X, 0.9 * DOMAIN_SIZE_Y].into(),
+        ],
+    );
+    let cells = models
+        .into_iter()
+        .map(|model| {
             MyCell {
-                mechanics: VertexMechanics2D::<6>::new(
-                    [
-                        0.1 * DOMAIN_SIZE_X + n_x * dx + 0.5 * (n_y % 2.0) * dx,
-                        0.1 * DOMAIN_SIZE_Y + n_y * dx,
-                    ]
-                    .into(),
-                    CELL_MECHANICS_AREA,
-                    rng.gen_range(0.0..2.0 * std::f64::consts::PI),
-                    CELL_MECHANICS_SPRING_TENSION,
-                    CELL_MECHANICS_CENTRAL_PRESSURE,
-                    CELL_MECHANICS_DAMPING_CONSTANT,
-                    CELL_MECHANICS_DIFFUSION_CONSTANT,
-                    None,
-                ),
+                mechanics: model,
                 interaction: VertexDerivedInteraction::from_two_forces(
                     OutsideInteraction {
                         potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
