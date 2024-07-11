@@ -35,7 +35,7 @@ macro_rules! implement_newton_damped_mechanics(
         /// although this is rarely desirable.
         /// Both operations need to be implemented by other concepts such as
         /// [Cycle](cellular_raza_concepts::Cycle).
-        #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         pub struct $struct_name {
             /// Current position $\vec{x}$ given by a vector of dimension `D`.
@@ -215,7 +215,7 @@ macro_rules! implement_brownian_mechanics(
         /// The new random vector is then also sampled by a distribution with greater width.
         /// If we choose this value larger than one, we can
         /// resolve smaller timesteps to more accurately solve the equations.
-        #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass)]
         pub struct $struct_name {
             /// Current position of the particle $\vec{x}$.
@@ -377,7 +377,7 @@ macro_rules! define_langevin_nd(
         ///     M \ddot{\mathbf{X}} = - \mathbf{\nabla} U(\mathbf{X}) - \gamma M\dot{\mathbf{X}} + \sqrt{2 M \gamma k_{\rm B} T}\mathbf{R}(t)
         /// \\end{equation}
         #[cfg_attr(feature = "pyo3", pyclass)]
-        #[derive(Clone, Debug, Deserialize, Serialize)]
+        #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         pub struct $struct_name {
             /// Current position
             pub pos: SVector<$float_type, $d>,
@@ -538,7 +538,7 @@ define_langevin_nd!(Langevin3DF32, 3, f32);
 /// or smaller than the desired one.
 /// Each vertex is damped individually by the same constant.
 // TODO include more formulas for this model
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct VertexMechanics2D<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
     velocity: nalgebra::SMatrix<f64, D, 2>,

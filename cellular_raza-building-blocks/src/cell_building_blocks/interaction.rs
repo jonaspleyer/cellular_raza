@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use pyo3::prelude::*;
 
 /// No interaction of the cell with any other.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass)]
 pub struct NoInteraction;
 
@@ -197,7 +197,7 @@ implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 /// </textarea>
 /// <div id="bibtex_display"></div>
 ///
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
 pub struct MorsePotential {
     /// Radius of the object
@@ -213,7 +213,7 @@ pub struct MorsePotential {
 }
 
 /// Same as [MorsePotential] but for `f32` type.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct MorsePotentialF32 {
     /// Radius of the object
@@ -441,7 +441,7 @@ implement_morse_potential!(MorsePotentialF32, f32);
 /// }
 /// </textarea>
 /// <div id="bibtex_display"></div>
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     /// Interaction strength $\epsilon$ of the potential.
     pub radius: F,
@@ -529,7 +529,7 @@ where
 }
 
 /// Derives an interaction potential from a point-like potential.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct VertexDerivedInteraction<A, R, I1 = (), I2 = ()> {
     /// Interaction potential used when other vertex is outside of current polygon.
     pub outside_interaction: A,
