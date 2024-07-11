@@ -746,8 +746,8 @@ impl VertexMechanics2D<6> {
             return Vec::new();
         }
         let segment_length = Self::calculate_boundary_length(cell_area) / 6.0;
-        let radius_outer = segment_length / (std::f64::consts::PI / 6.0).sin() / 2.0;
-        let radius_inner = segment_length / (std::f64::consts::PI / 6.0).tan() / 2.0;
+        let radius_outer = Self::outer_radius_from_cell_area(cell_area);
+        let radius_inner = Self::inner_radius_from_cell_area(cell_area);
 
         // Check if only one single hexagon fits into the domain in any dimension
         let n_max_x = (side_x - 2.0 * radius_outer).div_euclid(3.0 / 2.0 * radius_outer) as usize;
@@ -909,6 +909,34 @@ impl VertexMechanics2D<4> {
             .collect::<Vec<_>>();
 
         filled_rectangle
+    }
+}
+
+impl<const D: usize> VertexMechanics2D<D> {
+    /// Calculates the outer circle radius of the Regular Polygon given its area.
+    pub fn outer_radius_from_cell_area(cell_area: f64) -> f64 {
+        // let segment_length = Self::calculate_boundary_length(cell_area) / D as f64;
+        // segment_length / (std::f64::consts::PI / D as f64).tan() / 2.0
+        let boundary_length = Self::calculate_boundary_length(cell_area);
+        Self::outer_radius_from_boundary_length(boundary_length)
+    }
+
+    /// Calculates the outer circle radius of the Regular Polygon given its boundary length.
+    pub fn outer_radius_from_boundary_length(boundary_length: f64) -> f64 {
+        let segment_length = boundary_length / D as f64;
+        segment_length / (std::f64::consts::PI / D as f64).sin() / 2.0
+    }
+
+    /// Calculates the inner circle radius of the Regular Polygon given its area.
+    pub fn inner_radius_from_cell_area(cell_area: f64) -> f64 {
+        let boundary_length = Self::calculate_boundary_length(cell_area);
+        Self::inner_radius_from_boundary_length(boundary_length)
+    }
+
+    /// Calculates the inner circle radius of the Regular Polygon given its boundary length.
+    pub fn inner_radius_from_boundary_length(boundary_length: f64) -> f64 {
+        let segment_length = boundary_length / D as f64;
+        segment_length / (std::f64::consts::PI / D as f64).tan() / 2.0
     }
 }
 
