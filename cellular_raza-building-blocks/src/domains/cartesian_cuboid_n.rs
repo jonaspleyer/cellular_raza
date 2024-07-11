@@ -105,9 +105,18 @@ where
     }
 }
 
-impl<C, F, const D: usize> Domain<C, CartesianSubDomain<F, D>> for CartesianCuboid<F, D>
+impl<C, Ci, F, const D: usize> Domain<C, CartesianSubDomain<F, D>, Ci> for CartesianCuboid<F, D>
 where
     C: Position<nalgebra::SVector<F, D>>,
+    F: 'static
+        + num::Float
+        + Copy
+        + core::fmt::Debug
+        + num::FromPrimitive
+        + num::ToPrimitive
+        + core::ops::SubAssign
+        + nalgebra::ClosedDiv<F>,
+    Ci: IntoIterator<Item = C>,
 {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; D];
@@ -115,18 +124,28 @@ where
     fn decompose(
         self,
         n_subdomains: core::num::NonZeroUsize,
-        cells: Vec<C>,
+        cells: Ci,
     ) -> Result<DecomposedDomain<Self::SubDomainIndex, CartesianSubDomain<F, D>, C>, DecomposeError>
     {
         use cellular_raza_concepts::Domain;
         #[derive(Clone, Domain)]
-        struct MyIntermdiatedomain<F, const D: usize> {
-            #[Base]
+        struct MyIntermdiatedomain<F, const D: usize>
+        where
+            F: 'static
+                + num::Float
+                + Copy
+                + core::fmt::Debug
+                + num::FromPrimitive
+                + num::ToPrimitive
+                + core::ops::SubAssign
+                + nalgebra::ClosedDiv<F>,
+        {
+            #[DomainRngSeed]
+            #[DomainCreateSubDomains]
+            #[SortCells]
             domain: CartesianCuboid<F, D>,
         }
-        let my_intermediate_domain = MyIntermdiatedomain {
-            domain: self,
-        };
+        let my_intermediate_domain = MyIntermdiatedomain { domain: self };
         my_intermediate_domain.decompose(n_subdomains, cells)
     }
 }
@@ -343,6 +362,19 @@ where
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
         let pos = cell.pos();
         self.get_voxel_index_of_raw(&pos)
+    }
+}
+
+impl<C, F, const D: usize> SortCells<C> for CartesianSubDomain<F, D>
+where
+    C: Position<nalgebra::SVector<F, D>>,
+    F: 'static + num::Float + core::fmt::Debug + core::ops::SubAssign + core::ops::DivAssign,
+{
+    type VoxelIndex = [usize; D];
+
+    fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
+        let pos = cell.pos();
+        self.get_index_of(pos)
     }
 }
 
