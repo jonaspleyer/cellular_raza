@@ -105,6 +105,32 @@ where
     }
 }
 
+impl<C, F, const D: usize> Domain<C, CartesianSubDomain<F, D>> for CartesianCuboid<F, D>
+where
+    C: Position<nalgebra::SVector<F, D>>,
+{
+    type SubDomainIndex = usize;
+    type VoxelIndex = [usize; D];
+
+    fn decompose(
+        self,
+        n_subdomains: core::num::NonZeroUsize,
+        cells: Vec<C>,
+    ) -> Result<DecomposedDomain<Self::SubDomainIndex, CartesianSubDomain<F, D>, C>, DecomposeError>
+    {
+        use cellular_raza_concepts::Domain;
+        #[derive(Clone, Domain)]
+        struct MyIntermdiatedomain<F, const D: usize> {
+            #[Base]
+            domain: CartesianCuboid<F, D>,
+        }
+        let my_intermediate_domain = MyIntermdiatedomain {
+            domain: self,
+        };
+        my_intermediate_domain.decompose(n_subdomains, cells)
+    }
+}
+
 impl<F, const D: usize> CartesianCuboid<F, D>
 where
     F: 'static + num::Float + Copy + core::fmt::Debug + num::FromPrimitive + num::ToPrimitive,
