@@ -38,15 +38,10 @@
 //! full simulation results.
 //! See [SledStorageInterface]
 
-/// Common interface for all storage solutions.
 mod concepts;
 mod memory_storage;
 mod quick_xml;
-
-/// Save elements as json files via [serde_json](https://docs.rs/serde_json/latest/serde_json/).
 mod serde_json;
-
-/// Save elements in the embedded database [sled](https://docs.rs/sled/latest/sled/).
 mod sled_database;
 
 mod test;

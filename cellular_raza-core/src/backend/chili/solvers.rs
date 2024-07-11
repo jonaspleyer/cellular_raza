@@ -228,11 +228,7 @@ where
 }
 
 #[inline]
-fn adams_bashforth_3<X, F>(
-    x: X,
-    dx: [X; 3],
-    dt: F,
-) -> Result<X, CalcError>
+fn adams_bashforth_3<X, F>(x: X, dx: [X; 3], dt: F) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
     F: Copy + FromPrimitive + num::Float,
