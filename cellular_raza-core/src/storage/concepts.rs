@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
+use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
 use super::serde_json::JsonStorageInterface;
 use super::sled_database::SledStorageInterface;
@@ -112,6 +113,8 @@ pub enum StorageOption {
     SerdeJson,
     /// Save results as [xml](https://www.xml.org/) file.
     SerdeXml,
+    /// A [std::collections::HashMap](HashMap) based memory storage.
+    Memory,
 }
 
 /// A unique vector containing only non-recurring values but in the correct order.
@@ -261,6 +264,7 @@ pub struct StorageManager<Id, Element> {
     sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
     json_storage: Option<JsonStorageInterface<Id, Element>>,
     xml_storage: Option<XmlStorageInterface<Id, Element>>,
+    memory_storage: Option<MemoryStorageInterface<Id, Element>>,
 }
 
 /// Used to construct a [StorageManager]
@@ -448,6 +452,7 @@ impl<Id, Element> StorageManager<Id, Element> {
         let mut sled_temp_storage = None;
         let mut json_storage = None;
         let mut xml_storage = None;
+        let mut memory_storage = None;
         for storage_variant in storage_builder.priority.iter() {
             match storage_variant {
                 StorageOption::SerdeJson => {
@@ -476,6 +481,12 @@ impl<Id, Element> StorageManager<Id, Element> {
                         instance,
                     )?);
                 }
+                StorageOption::Memory => {
+                    memory_storage = Some(MemoryStorageInterface::<Id, Element>::open_or_create(
+                        &location.to_path_buf().join("xml"),
+                        instance,
+                    )?);
+                }
             }
         }
         let manager = StorageManager {
@@ -487,6 +498,7 @@ impl<Id, Element> StorageManager<Id, Element> {
             sled_temp_storage,
             json_storage,
             xml_storage,
+            memory_storage,
         };
 
         Ok(manager)
@@ -524,11 +536,16 @@ macro_rules! exec_for_all_storage_options(
             StorageOption::SledTemp => exec_for_all_storage_options!(@internal $self, SledTemp, sled_temp_storage, $function, $($args)*),
             StorageOption::SerdeJson => exec_for_all_storage_options!(@internal $self, SerdeJson, json_storage, $function, $($args)*),
             StorageOption::SerdeXml => exec_for_all_storage_options!(@internal $self, SerdeXml, xml_storage, $function, $($args)*),
+            StorageOption::Memory => exec_for_all_storage_options!(@internal $self, Memory, memory_storage, $function, $($args)*),
         }
     }
 );
 
-impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element> {
+impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element>
+where
+    Id: core::hash::Hash + core::cmp::Eq + Clone,
+    Element: Clone
+{
     #[allow(unused)]
     fn store_single_element(
         &mut self,
@@ -550,6 +567,10 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Elem
 
         if let Some(xml_storage) = &mut self.xml_storage {
             xml_storage.store_single_element(iteration, identifier, element)?;
+        }
+
+        if let Some(memory_storage) = &mut self.memory_storage {
+            memory_storage.store_single_element(iteration, identifier, element)?;
         }
         Ok(())
     }

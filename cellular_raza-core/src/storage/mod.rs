@@ -40,8 +40,7 @@
 
 /// Common interface for all storage solutions.
 mod concepts;
-
-/// Save elements as xml files via [quick_xml](https://docs.rs/quick-xml/latest/quick_xml/).
+mod memory_storage;
 mod quick_xml;
 
 /// Save elements as json files via [serde_json](https://docs.rs/serde_json/latest/serde_json/).
@@ -53,6 +52,7 @@ mod sled_database;
 mod test;
 
 pub use concepts::*;
+pub use memory_storage::*;
 pub use quick_xml::*;
 pub use serde_json::*;
 pub use sled_database::*;
