@@ -22,6 +22,7 @@ impl Parallelizer {
         &self,
         code: &proc_macro2::TokenStream,
         core_path: &syn::Path,
+        settings: &syn::Ident,
     ) -> proc_macro2::TokenStream {
         let core_path = &core_path;
         match &self {
@@ -31,7 +32,7 @@ impl Parallelizer {
                     .subdomain_boxes
                     .into_iter()
                 {
-                    let settings = settings.clone();
+                    let #settings = #settings.clone();
                     let handle = std::thread::Builder::new()
                         .name(format!("cellular_raza-worker_thread-{:03.0}", key))
                         .spawn(move ||
@@ -520,7 +521,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
         // Initialize the progress bar
         #[allow(unused)]
-        let mut pb = match (key, settings.show_progressbar) {
+        let mut pb = match (key, #settings.show_progressbar) {
             (0, true) => Some(_time_stepper.initialize_bar()?),
             _ => None,
         };
@@ -535,7 +536,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             sbox.sync();
             #step_4
 
-            match (&mut pb, settings.show_progressbar) {
+            match (&mut pb, #settings.show_progressbar) {
                 (Some(bar), true) => _time_stepper.update_bar(bar)?,
                 _ => (),
             };
@@ -565,7 +566,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let update_func = run_main_update(kwargs.clone());
     let parallelized_update_func = kwargs
         .parallelizer
-        .parallelize_execution(&update_func, &core_path);
+        .parallelize_execution(&update_func, &core_path, settings);
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
