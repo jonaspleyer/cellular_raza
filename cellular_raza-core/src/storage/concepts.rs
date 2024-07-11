@@ -601,7 +601,11 @@ where
     }
 }
 
-impl<Id, Element> StorageInterfaceLoad<Id, Element> for StorageManager<Id, Element> {
+impl<Id, Element> StorageInterfaceLoad<Id, Element> for StorageManager<Id, Element>
+where
+    Id: core::hash::Hash + core::cmp::Eq + Clone,
+    Element: Clone,
+{
     #[allow(unused)]
     fn load_single_element(
         &self,

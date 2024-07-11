@@ -282,7 +282,7 @@ where
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
-        Voxel<C, A>: Serialize,
+        Voxel<C, A>: Clone + Serialize,
     {
         if let Some(crate::time::TimeEvent::FullSave) = next_time_point.event {
             use crate::storage::StorageInterfaceStore;
@@ -303,8 +303,8 @@ where
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
-        A: Serialize,
-        C: Serialize,
+        A: Clone + Serialize,
+        C: Clone + Serialize,
         CellBox<C>: cellular_raza_concepts::Id<Identifier = CellIdentifier>,
     {
         if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {

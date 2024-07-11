@@ -393,6 +393,7 @@ where
         Dom: Clone,
         Cont: Clone,
         Obs: Clone,
+        Cel: Clone,
     {
         use crate::storage::StorageInterfaceStore;
         let setup_current = SimulationSetup {
@@ -526,7 +527,7 @@ where
         ConcVecExtracellular,
         ConcBoundaryExtracellular,
         ConcVecIntracellular,
-    >: for<'a> Deserialize<'a> + Serialize,
+    >: Clone + for<'a> Deserialize<'a> + Serialize,
 {
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn plot_spatial_at_iteration_with_functions<Cpf, Vpf, Dpf>(
