@@ -278,7 +278,7 @@ where
         #[cfg(not(feature = "tracing"))] F,
     >(
         &self,
-        storage_manager: &crate::storage::StorageManager<VoxelPlainIndex, Voxel<C, A>>,
+        storage_manager: &mut crate::storage::StorageManager<VoxelPlainIndex, Voxel<C, A>>,
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
@@ -299,7 +299,7 @@ where
         #[cfg(not(feature = "tracing"))] F,
     >(
         &self,
-        storage_manager: &crate::storage::StorageManager<CellIdentifier, (CellBox<C>, A)>,
+        storage_manager: &mut crate::storage::StorageManager<CellIdentifier, (CellBox<C>, A)>,
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where

@@ -510,9 +510,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         let builder_voxels = builder.clone().suffix(builder.get_suffix().join("voxels"));
         let builder_cells = builder.clone().suffix(builder.get_suffix().join("cells"));
 
-        let _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
+        let mut _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
            #core_path::storage::StorageManager::open_or_create(builder_voxels, key as u64)?;
-        let _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
+        let mut _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
            #core_path::storage::StorageManager::open_or_create(builder_cells, key as u64)?;
 
         // Set up the time stepper
@@ -540,8 +540,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 (Some(bar), true) => _time_stepper.update_bar(bar)?,
                 _ => (),
             };
-            sbox.save_voxels(&_storage_manager_voxels, &next_time_point)?;
-            sbox.save_cells(&_storage_manager_cells, &next_time_point)?;
+            sbox.save_voxels(&mut _storage_manager_voxels, &next_time_point)?;
+            sbox.save_cells(&mut _storage_manager_cells, &next_time_point)?;
         }
         Ok(#core_path::backend::chili::StorageAccess {
             voxels: _storage_manager_voxels.clone(),

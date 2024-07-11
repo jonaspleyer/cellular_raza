@@ -531,7 +531,7 @@ macro_rules! exec_for_all_storage_options(
 impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element> {
     #[allow(unused)]
     fn store_single_element(
-        &self,
+        &mut self,
         iteration: u64,
         identifier: &Id,
         element: &Element,
@@ -540,15 +540,15 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Elem
         Id: Serialize,
         Element: Serialize,
     {
-        if let Some(sled_storage) = &self.sled_storage {
+        if let Some(sled_storage) = &mut self.sled_storage {
             sled_storage.store_single_element(iteration, identifier, element)?;
         }
 
-        if let Some(json_storage) = &self.json_storage {
+        if let Some(json_storage) = &mut self.json_storage {
             json_storage.store_single_element(iteration, identifier, element)?;
         }
 
-        if let Some(xml_storage) = &self.xml_storage {
+        if let Some(xml_storage) = &mut self.xml_storage {
             xml_storage.store_single_element(iteration, identifier, element)?;
         }
         Ok(())
@@ -556,7 +556,7 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Elem
 
     #[allow(unused)]
     fn store_batch_elements<'a, I>(
-        &'a self,
+        &'a mut self,
         iteration: u64,
         identifiers_elements: I,
     ) -> Result<(), StorageError>
@@ -565,15 +565,15 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Elem
         Element: 'a + Serialize,
         I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
-        if let Some(sled_storage) = &self.sled_storage {
+        if let Some(sled_storage) = &mut self.sled_storage {
             sled_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
         }
 
-        if let Some(json_storage) = &self.json_storage {
+        if let Some(json_storage) = &mut self.json_storage {
             json_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
         }
 
-        if let Some(xml_storage) = &self.xml_storage {
+        if let Some(xml_storage) = &mut self.xml_storage {
             xml_storage.store_batch_elements(iteration, identifiers_elements)?;
         }
         Ok(())
@@ -649,7 +649,7 @@ pub trait StorageInterfaceOpen<Id, Element> {
 pub trait StorageInterfaceStore<Id, Element> {
     /// Saves a single element at given iteration.
     fn store_single_element(
-        &self,
+        &mut self,
         iteration: u64,
         identifier: &Id,
         element: &Element,
@@ -660,7 +660,7 @@ pub trait StorageInterfaceStore<Id, Element> {
 
     /// Stores a batch of multiple elements with identifiers all at the same iteration.
     fn store_batch_elements<'a, I>(
-        &'a self,
+        &'a mut self,
         iteration: u64,
         identifiers_elements: I,
     ) -> Result<(), StorageError>

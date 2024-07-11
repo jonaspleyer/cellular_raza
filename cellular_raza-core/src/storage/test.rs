@@ -4,7 +4,7 @@ fn store_load_json() -> Result<(), Box<dyn std::error::Error>> {
     let builder = StorageBuilder::new()
         .priority([StorageOption::SerdeJson])
         .init();
-    let storage_manager =
+    let mut storage_manager =
         StorageManager::<usize, BatchSaveFormat<usize, f64>>::open_or_create(builder, 0)?;
     storage_manager.store_single_element(
         0,

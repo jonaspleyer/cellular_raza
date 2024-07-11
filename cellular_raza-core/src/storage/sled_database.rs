@@ -75,7 +75,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>
     for SledStorageInterface<Id, Element, TEMP>
 {
     fn store_single_element(
-        &self,
+        &mut self,
         iteration: u64,
         identifier: &Id,
         element: &Element,
@@ -100,7 +100,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>
     }
 
     fn store_batch_elements<'a, I>(
-        &'a self,
+        &'a mut self,
         iteration: u64,
         identifiers_elements: I,
     ) -> Result<(), StorageError>

@@ -94,7 +94,7 @@ impl<Id, Element> StorageInterfaceOpen<Id, Element> for JsonStorageInterface<Id,
 
 impl<Id, Element> StorageInterfaceStore<Id, Element> for JsonStorageInterface<Id, Element> {
     fn store_single_element(
-        &self,
+        &mut self,
         iteration: u64,
         identifier: &Id,
         element: &Element,
@@ -113,7 +113,7 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for JsonStorageInterface<Id
     }
 
     fn store_batch_elements<'a, I>(
-        &self,
+        &mut self,
         iteration: u64,
         identifiers_elements: I,
     ) -> Result<(), StorageError>
@@ -266,8 +266,8 @@ macro_rules! test_storage_interface(
                 use tempdir::TempDir;
                 let dir = TempDir::new("tempdir").unwrap();
                 let location = dir.path().join(concat!("tempdir_", stringify!($interface_name)));
-                let interface_0 = $interface_name::open_or_create(&location, 0).unwrap();
-                let interface_1 = $interface_name::open_or_create(&location, 1).unwrap();
+                let mut interface_0 = $interface_name::open_or_create(&location, 0).unwrap();
+                let mut interface_1 = $interface_name::open_or_create(&location, 1).unwrap();
                 let generate_elements = |low: usize, high: usize| {
                     (low..high).map(|i| (i, i as f64))
                     .collect::<std::collections::HashMap<_, _>>()

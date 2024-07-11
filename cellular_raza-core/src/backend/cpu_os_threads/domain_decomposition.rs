@@ -1201,7 +1201,7 @@ where
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn save_cells_to_database(
-        &self,
+        &mut self,
         iteration: &u64,
     ) -> Result<(), crate::storage::StorageError>
     where
@@ -1221,7 +1221,7 @@ where
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub(crate) fn save_voxels_to_database(
-        &self,
+        &mut self,
         iteration: &u64,
     ) -> Result<(), crate::storage::StorageError>
     where

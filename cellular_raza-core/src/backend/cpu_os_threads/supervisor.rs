@@ -388,7 +388,7 @@ where
     // Find a way to deserialize the struct with only referencing the variables
     /// Saves the current [SimulationSetup] via the internal [StorageManager]
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn save_current_setup(&self, iteration: u64) -> Result<(), SimulationError>
+    pub fn save_current_setup(&mut self, iteration: u64) -> Result<(), SimulationError>
     where
         Dom: Clone,
         Cont: Clone,

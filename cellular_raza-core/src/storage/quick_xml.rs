@@ -94,7 +94,7 @@ impl<Id, Element> StorageInterfaceOpen<Id, Element> for XmlStorageInterface<Id, 
 
 impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id, Element> {
     fn store_single_element(
-        &self,
+        &mut self,
         iteration: u64,
         identifier: &Id,
         element: &Element,
@@ -118,7 +118,7 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id,
     }
 
     fn store_batch_elements<'a, I>(
-        &'a self,
+        &'a mut self,
         iteration: u64,
         identifiers_elements: I,
     ) -> Result<(), StorageError>
