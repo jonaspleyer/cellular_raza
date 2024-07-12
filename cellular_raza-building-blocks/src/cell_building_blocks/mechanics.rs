@@ -442,16 +442,39 @@ macro_rules! define_langevin_nd(
             }
         }
 
+        impl $struct_name {
+            /// Constructs a new
+            #[doc = concat!("[", stringify!($struct_name), "]")]
+            /// mechanics model for the specified dimension.
+            pub fn new(
+                pos: [$float_type; $d],
+                vel: [$float_type; $d],
+                mass: $float_type,
+                damping: $float_type,
+                kb_temperature: $float_type,
+            ) -> Self {
+                use num::Zero;
+                Self {
+                    pos: pos.into(),
+                    vel: vel.into(),
+                    mass,
+                    damping,
+                    kb_temperature,
+                    random_vector: SVector::<$float_type, $d>::zero(),
+                }
+            }
+        }
+
         #[cfg(feature = "pyo3")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
         #[pymethods]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
         impl $struct_name {
             /// Creates a new [
             #[doc = stringify!($struct_name)]
             /// ] struct from position, velocity, mass, damping,
             /// kb_temperature and the update interval of the mechanics aspect.
             #[new]
-            pub fn new(
+            fn _new(
                 pos: [$float_type; $d],
                 vel: [$float_type; $d],
                 mass: $float_type,
