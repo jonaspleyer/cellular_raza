@@ -30,7 +30,7 @@ kdam = { version="0.5", features = ["template", "rayon"] }
 # Storage
 bincode = "1.3"
 serde = { workspace = true }
-quick-xml = { version="0.28", features=["serialize"]}
+quick-xml = { version="0.36", features=["serialize"]}
 serde_json = { version="1.0" }
 sled = { version="0.34" }
 chrono = { version = "0.4.31", optional = true }
