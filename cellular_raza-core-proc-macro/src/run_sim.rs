@@ -122,6 +122,13 @@ enum Kwarg {
         double_colon: syn::Token![:],
         parallelizer: Parallelizer,
     },
+    determinism {
+        #[allow(unused)]
+        determinism_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        determinism: bool,
+    },
     // TODO add storage ie. to enable or disable storing of results entirely
     // figure out how this interacts with the TimeStepper trait in cellular_raza_core::time
 }
@@ -158,6 +165,11 @@ impl syn::parse::Parse for Kwarg {
                 parallelizer_kw: keyword,
                 double_colon: input.parse()?,
                 parallelizer: input.parse()?,
+            }),
+            "determinism" => Ok(Kwarg::determinism {
+                determinism_kw: keyword,
+                double_colon: input.parse()?,
+                determinism: input.parse::<syn::LitBool>()?.value,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
@@ -367,6 +379,7 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
+    determinism: bool | true,
 );
 
 define_kwargs!(
@@ -403,6 +416,7 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
+    determinism: bool | true,
     @from
     KwargsSim
 );
@@ -443,14 +457,15 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     let core_path = &kwargs.core_path;
     let settings = &kwargs.settings;
+    let determinism = &kwargs.determinism;
 
     if kwargs
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
     {
         step_1.extend(quote!(sbox.update_mechanics_interaction_step_1()?;));
-        step_2.extend(quote!(sbox.update_mechanics_interaction_step_2()?;));
-        step_3.extend(quote!(sbox.update_mechanics_interaction_step_3()?;));
+        step_2.extend(quote!(sbox.update_mechanics_interaction_step_2(#determinism)?;));
+        step_3.extend(quote!(sbox.update_mechanics_interaction_step_3(#determinism)?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
@@ -476,7 +491,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         local_func_names
             .push(quote!(#core_path::backend::chili::local_mechanics_set_random_variable));
         step_3.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
-        step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2()?;));
+        step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2(#determinism)?;));
     }
 
     if kwargs.aspects.contains(&Reactions) {
@@ -485,7 +500,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&ReactionsContact) {
         step_1.extend(quote!(sbox.update_contact_reactions_step_1()?;));
-        step_2.extend(quote!(sbox.update_contact_reactions_step_2()?;));
+        step_2.extend(quote!(sbox.update_contact_reactions_step_2(#determinism)?;));
         local_func_names
             .push(quote!(#core_path::backend::chili::local_update_contact_reactions_step_3));
     }

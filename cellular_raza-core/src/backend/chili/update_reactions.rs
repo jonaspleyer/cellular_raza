@@ -278,6 +278,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_contact_reactions_step_2<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,
+        determinism: bool,
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf> + Position<Pos>,
@@ -293,7 +294,9 @@ where
             SubDomainPlainIndex,
             ReactionsContactInformation<Pos, Ri, RInf>,
         >>::receive(&mut self.communicator);
-        received_infos.sort_by_key(|info| info.index_sender);
+        if determinism {
+            received_infos.sort_by_key(|info| info.index_sender);
+        }
         for contact_info in received_infos {
             let vox = self.voxels.get_mut(&contact_info.index_receiver).ok_or(
                 cellular_raza_concepts::IndexError(format!(
@@ -326,6 +329,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
     pub fn update_contact_reactions_step_3<Ri>(
         &mut self,
+        determinism: bool,
     ) -> Result<(), SimulationError>
     where
         A: UpdateReactions<Ri>,
@@ -336,7 +340,9 @@ where
             SubDomainPlainIndex,
             ReactionsContactReturn<Ri>,
         >>::receive(&mut self.communicator);
-        received_infos.sort_by_key(|info| info.index_sender);
+        if determinism {
+            received_infos.sort_by_key(|info| info.index_sender);
+        }
         for obt_intracellular in received_infos {
             let error_1 = format!(
                 "EngineError: Sender with plain index {:?} was ended up in location\

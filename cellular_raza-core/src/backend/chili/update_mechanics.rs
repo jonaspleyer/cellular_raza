@@ -284,6 +284,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_mechanics_interaction_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
+        determinism: bool,
     ) -> Result<(), SimulationError>
     where
         For: Xapy<Float> + num::Zero,
@@ -305,7 +306,9 @@ where
             SubDomainPlainIndex,
             PosInformation<Pos, Vel, Inf>,
         >>::receive(&mut self.communicator);
-        received_infos.sort_by_key(|pos_info| pos_info.index_sender);
+        if determinism {
+            received_infos.sort_by_key(|pos_info| pos_info.index_sender);
+        }
         for pos_info in received_infos.iter() {
             let vox = self.voxels.get_mut(&pos_info.index_receiver).ok_or(
                 cellular_raza_concepts::IndexError(format!(
@@ -339,6 +342,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
     pub fn update_mechanics_interaction_step_3<Pos, Vel, For>(
         &mut self,
+        determinism: bool,
     ) -> Result<(), SimulationError>
     where
         A: UpdateMechanics<Pos, Vel, For, 2>,
@@ -349,7 +353,9 @@ where
             SubDomainPlainIndex,
             ForceInformation<For>,
         >>::receive(&mut self.communicator);
-        received_infos.sort_by_key(|force_info| force_info.index_sender);
+        if determinism {
+            received_infos.sort_by_key(|force_info| force_info.index_sender);
+        }
         for obt_forces in received_infos {
             let error_1 = format!(
                 "EngineError: Sender with plain index {:?} was ended up in location\
@@ -466,7 +472,7 @@ where
     /// [SubDomainBox::sort_cells_in_voxels_step_1] method, we receive these new cells and insert
     /// them into their respective voxels.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn sort_cells_in_voxels_step_2(&mut self) -> Result<(), SimulationError>
+    pub fn sort_cells_in_voxels_step_2(&mut self, determinism: bool) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
@@ -477,7 +483,9 @@ where
             SubDomainPlainIndex,
             SendCell<CellBox<C>, A>,
         >>::receive(&mut self.communicator);
-        received_cells.sort_by_key(|send_cell| send_cell.0);
+        if determinism {
+            received_cells.sort_by_key(|send_cell| send_cell.0);
+        }
         for sent_cell in received_cells {
             let SendCell(_, cell, aux_storage) = sent_cell;
             let index =
