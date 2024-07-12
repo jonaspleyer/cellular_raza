@@ -324,14 +324,12 @@ where
 
     /// Receive all calculated increments and include them for later update steps.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_reactions_contact_step_3<Ri, Pos, Inf, Float>(
+    pub fn update_contact_reactions_step_3<Ri>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
         A: UpdateReactions<Ri>,
         Com: Communicator<SubDomainPlainIndex, ReactionsContactReturn<Ri>>,
-        Ri: cellular_raza_concepts::Xapy<Float>,
-        Float: num::Float,
     {
         // Update position and velocity of all cells with new information
         let mut received_infos = <Com as Communicator<
