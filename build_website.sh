@@ -53,7 +53,7 @@ movie() {
     --dir-name-depth 1 \
     --highlight-dirs \
     --dir-name-position 1.0 \
-    --file-filter "(cellular_raza-homepage|cellular_raza_book|cellular_raza-book)" \
+    --file-filter "(cellular_raza-homepage|cellular_raza_book|cellular_raza-book|cellular_raza-benchmarks|benchmark_results)" \
     --output-ppm-stream - \
     | ffmpeg -y -r 60 -f image2pipe -pix_fmt yuv420p -c:v libx264 -y -vcodec ppm -i - -b 65536K output.mp4
     # Compress the movie
