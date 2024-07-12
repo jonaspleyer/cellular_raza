@@ -214,9 +214,7 @@ impl<Id, Element> StorageInterfaceLoad<Id, Element> for XmlStorageInterface<Id, 
             // Load all elements which are inside this folder from batches and singles
             for path in std::fs::read_dir(&iteration_path)? {
                 let p = path?.path();
-                let file = std::fs::OpenOptions::new()
-                    .read(true)
-                    .open(&p)?;
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
                 let buffer_reader = std::io::BufReader::new(file);
 
                 match p.file_stem() {

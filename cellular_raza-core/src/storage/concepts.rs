@@ -544,7 +544,7 @@ macro_rules! exec_for_all_storage_options(
 impl<Id, Element> StorageInterfaceStore<Id, Element> for StorageManager<Id, Element>
 where
     Id: core::hash::Hash + core::cmp::Eq + Clone,
-    Element: Clone
+    Element: Clone,
 {
     #[allow(unused)]
     fn store_single_element(

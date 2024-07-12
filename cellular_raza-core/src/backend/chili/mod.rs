@@ -14,7 +14,7 @@ impl VoxelPlainIndex {
     }
 }
 
-/// Identifer or subdomains
+/// Identifier or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct SubDomainPlainIndex(usize);
 
