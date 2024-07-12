@@ -181,8 +181,6 @@ impl<Id, Element> StorageInterfaceLoad<Id, Element> for XmlStorageInterface<Id, 
                 let p = path?.path();
                 let file = std::fs::OpenOptions::new()
                     .read(true)
-                    .write(true)
-                    .create(true)
                     .open(&p)?;
                 let buffer_reader = std::io::BufReader::new(file);
 

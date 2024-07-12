@@ -155,11 +155,7 @@ impl<Id, Element> StorageInterfaceLoad<Id, Element> for JsonStorageInterface<Id,
             // Load all elements which are inside this folder from batches and singles
             for path in std::fs::read_dir(&iteration_path)? {
                 let p = path?.path();
-                let file = std::fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .open(&p)?;
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
 
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
@@ -207,11 +203,7 @@ impl<Id, Element> StorageInterfaceLoad<Id, Element> for JsonStorageInterface<Id,
             // Load all elements which are inside this folder from batches and singles
             for path in std::fs::read_dir(&iteration_path)? {
                 let p = path?.path();
-                let file = std::fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .open(&p)?;
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
 
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
