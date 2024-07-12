@@ -66,6 +66,7 @@ movie() {
 scc_table() {
     scc \
         --exclude-dir cellular_raza-homepage \
+        --exclude-dir cellular_raza-benchmarks/benchmark_results \
         --exclude-dir target \
         --no-size \
         -f html-table \
