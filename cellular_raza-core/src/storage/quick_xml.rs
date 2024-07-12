@@ -150,14 +150,49 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id,
 impl<Id, Element> StorageInterfaceLoad<Id, Element> for XmlStorageInterface<Id, Element> {
     fn load_single_element(
         &self,
-        _iteration: u64,
-        _identifier: &Id,
+        iteration: u64,
+        identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
         Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        unimplemented!();
+        let iterations = self.get_all_iterations()?;
+        if iterations.contains(&iteration) {
+            // Get the path where the iteration folder is
+            let iteration_path = self.get_iteration_path(iteration);
+
+            // Load all elements which are inside this folder from batches and singles
+            for path in std::fs::read_dir(&iteration_path)? {
+                let p = path?.path();
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
+                let buffer_reader = std::io::BufReader::new(file);
+
+                match p.file_stem() {
+                    Some(stem) => match stem.to_str() {
+                        Some(tail) => {
+                            let elements = tail.split("_");
+                            if elements.into_iter().next() == Some("batch") {
+                                let result: BatchSaveFormat<Id, Element> =
+                                    quick_xml::de::from_reader(buffer_reader)?;
+                                for quick_xml_format in result.data.into_iter() {
+                                    let id1 = bincode::serialize(&quick_xml_format.identifier)?;
+                                    let id2 = bincode::serialize(&identifier)?;
+                                    if id1 == id2 {
+                                        return Ok(Some(quick_xml_format.element));
+                                    }
+                                }
+                            }
+                        }
+                        None => (),
+                    },
+                    None => (),
+                }
+            }
+            return Ok(None);
+        } else {
+            return Ok(None);
+        }
     }
 
     fn load_all_elements_at_iteration(
