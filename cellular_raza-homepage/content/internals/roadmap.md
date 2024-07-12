@@ -22,9 +22,9 @@ For feature requests, please use [github's issue tracker](https://www.github.com
     - [x] immediate death
     - [x] phased death
     - [x] make it stochastic
-- [ ] Custom (individual-only) rules
-- [ ] General contact functions
-    - [ ] Contact reactions
+- [x] Custom (individual-only) rules
+- [x] General contact functions
+    - [x] Contact reactions
 
 ### Domain (concepts + backend)
 - [ ] Environment Fluid Dynamics
@@ -49,6 +49,7 @@ For feature requests, please use [github's issue tracker](https://www.github.com
 - [ ] Custom (adaptive) time steppers
 - [ ] Proper error handling with strategies
 - [ ] Export Formats other then 1:1 storage through (de)serialization (such as vtk files for paraview)
+- [ ] Csv file storage support
 - [ ] Julia Bindings
 
 ## Possible Directions
