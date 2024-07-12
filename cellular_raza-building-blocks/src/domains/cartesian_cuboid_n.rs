@@ -912,7 +912,7 @@ macro_rules! implement_cartesian_cuboid_domain {
 
                 // We construct all Voxels which are grouped in their according subdomains
                 // Then we construct the subdomain
-                let mut index_subdomain_cells: std::collections::HashMap<
+                let mut index_subdomain_cells: std::collections::BTreeMap<
                     Self::SubDomainIndex,
                     (_, Vec<C>)
                 > = ind_n
@@ -956,7 +956,7 @@ macro_rules! implement_cartesian_cuboid_domain {
                         .map(move |voxel_index| (voxel_index, subdomain_index))
                     )
                     .flatten()
-                    .collect::<std::collections::HashMap<Self::VoxelIndex, Self::SubDomainIndex>>();
+                    .collect::<std::collections::BTreeMap<Self::VoxelIndex, Self::SubDomainIndex>>();
 
                 // Sort the cells into the correct voxels
                 cells

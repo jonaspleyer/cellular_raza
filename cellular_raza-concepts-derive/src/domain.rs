@@ -269,7 +269,7 @@ impl DomainImplementer {
                 <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone
                     + core::hash::Hash + Eq,
                 <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone
-                    + core::hash::Hash + Eq,
+                    + core::hash::Hash + Eq + Ord,
                 #cell_iterator: IntoIterator<Item = #cell>,
             {
                 type SubDomainIndex = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex;
@@ -290,7 +290,7 @@ impl DomainImplementer {
 
                     // Build a map from a voxel_index to the subdomain_index in which it is
                     let mut voxel_index_to_subdomain_index:
-                        ::std::collections::HashMap<Self::VoxelIndex, Self::SubDomainIndex> =
+                        ::std::collections::BTreeMap<Self::VoxelIndex, Self::SubDomainIndex> =
                         subdomains
                         .iter()
                         .map(|(subdomain_index, subdomain, _)| subdomain
