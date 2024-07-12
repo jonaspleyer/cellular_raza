@@ -147,10 +147,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
         }
     }
 
-    fn load_element_history(
-        &self,
-        identifier: &Id,
-    ) -> Result<Option<HashMap<u64, Element>>, StorageError>
+    fn load_element_history(&self, identifier: &Id) -> Result<HashMap<u64, Element>, StorageError>
     where
         Id: Serialize,
         Element: for<'a> Deserialize<'a>,
@@ -231,11 +228,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
                 },
             };
         }
-        Ok(if accumulator.len() != 0 {
-            Some(accumulator)
-        } else {
-            None
-        })
+        Ok(accumulator)
     }
 
     fn load_all_elements_at_iteration(

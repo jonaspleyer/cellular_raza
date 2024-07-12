@@ -719,10 +719,7 @@ pub trait StorageInterfaceLoad<Id, Element> {
     /// Loads the elements history, meaning every occurrence of the element in the storage.
     /// This function should provide the results in ordered fashion such that the time
     /// direction is retained.
-    fn load_element_history(
-        &self,
-        identifier: &Id,
-    ) -> Result<Option<HashMap<u64, Element>>, StorageError>
+    fn load_element_history(&self, identifier: &Id) -> Result<HashMap<u64, Element>, StorageError>
     where
         Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
@@ -738,11 +735,7 @@ pub trait StorageInterfaceLoad<Id, Element> {
                 },
             )
             .collect::<Result<HashMap<u64, _>, StorageError>>()?;
-        Ok(if results.len() == 0 {
-            None
-        } else {
-            Some(results)
-        })
+        Ok(results)
     }
 
     /// Gets a snapshot of all elements at a given iteration.
