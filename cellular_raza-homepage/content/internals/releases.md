@@ -4,6 +4,12 @@ type: docs
 weight: 100
 ---
 
+## cellular_raza 0.0.12
+_13th July 2024_
+- Implement concepts for contact reactions
+- add option to enable/disable determinism
+- correct some bugs and implement functionality for storage solutions
+
 ## cellular_raza 0.0.11
 _18th June 2024_
 - corretly treat interaction functions related to neighbours
