@@ -211,13 +211,13 @@ impl SubDomainImplementer {
             quote::quote!(
                 impl #impl_generics SortCells<#cell>
                 for #struct_name #struct_ty_generics #where_clause {
-                    type Index = <#field_type as SortCells>::Index;
+                    type VoxelIndex = <#field_type as SortCells<#cell>>::VoxelIndex;
 
-                    fn get_index_of(
+                    fn get_voxel_index_of(
                         &self,
                         cell: &#cell
-                    ) -> Result<Self::Index, BoundaryError> {
-                        <#field_type as SortCells<#cell>>::get_index_of(
+                    ) -> Result<Self::VoxelIndex, BoundaryError> {
+                        <#field_type as SortCells<#cell>>::get_voxel_index_of(
                             &self.#field_name,
                             cell,
                         )
