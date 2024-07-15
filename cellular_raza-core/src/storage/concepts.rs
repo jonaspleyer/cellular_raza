@@ -112,6 +112,10 @@ pub enum StorageOption {
     /// Save results as [json](https://www.json.org/json-en.html) file.
     SerdeJson,
     /// Save results as [xml](https://www.xml.org/) file.
+    /// # WARNING!
+    /// This option does not allow to deserializee at the moment due to a bug (probably) in
+    /// quick-xml.
+    #[deprecated]
     SerdeXml,
     /// A [std::collections::HashMap](HashMap) based memory storage.
     Memory,
