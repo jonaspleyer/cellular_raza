@@ -127,7 +127,6 @@ where
         cells: Ci,
     ) -> Result<DecomposedDomain<Self::SubDomainIndex, CartesianSubDomain<F, D>, C>, DecomposeError>
     {
-        use cellular_raza_concepts::Domain;
         #[derive(Clone, Domain)]
         struct MyIntermdiatedomain<F, const D: usize>
         where

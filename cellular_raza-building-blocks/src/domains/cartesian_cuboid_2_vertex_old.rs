@@ -1,8 +1,9 @@
 // Imports from this crate
 use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::{
-    BoundaryError, CalcError, CreatePlottingRoot, DrawingError, IndexError, RequestError, Volume,
+    BoundaryError, CalcError, CreatePlottingRoot, DrawingError, IndexError, RequestError,
 };
+use cellular_raza_concepts::reactions_old::Volume;
 
 use super::cartesian_cuboid_n::get_decomp_res;
 
