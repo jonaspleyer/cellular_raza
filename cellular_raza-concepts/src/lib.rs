@@ -63,6 +63,9 @@ mod cell;
 mod cycle;
 mod domain;
 mod reactions;
+/// Contains traits and types which specify cellular reactions specific to the [cpu_os_threads]
+/// backend.
+pub mod reactions_old;
 
 /// Traits and types which will eventually replace the old [Domain] definition.
 // TODO #[deprecated]
