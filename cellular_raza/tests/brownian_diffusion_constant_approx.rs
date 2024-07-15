@@ -163,7 +163,7 @@ macro_rules! test_brownian {
 }
 
 #[test]
-fn brownian_3d_1() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_3d_1() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_3d_1".into();
     parameters.diffusion_constant = 1.0;
@@ -172,7 +172,7 @@ fn brownian_3d_1() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_3d_2() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_3d_2() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_3d_2".into();
@@ -181,7 +181,7 @@ fn brownian_3d_2() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_3d_3() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_3d_3() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_3d_3".into();
@@ -190,7 +190,7 @@ fn brownian_3d_3() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_2d_1".into();
     parameters.diffusion_constant = 1.0;
@@ -199,7 +199,7 @@ fn brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_2d_2() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_2d_2() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_2d_2".into();
@@ -208,7 +208,7 @@ fn brownian_2d_2() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_2d_3() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_2d_3() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_2d_3".into();
@@ -217,7 +217,7 @@ fn brownian_2d_3() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_1d_1() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_1d_1() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_1d_1".into();
     parameters.diffusion_constant = 1.0;
@@ -226,7 +226,7 @@ fn brownian_1d_1() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_1d_2() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_1d_2() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_1d_2".into();
@@ -235,7 +235,7 @@ fn brownian_1d_2() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn brownian_1d_3() -> Result<(), Box<dyn std::error::Error>> {
+fn diffusion_constant_brownian_1d_3() -> Result<(), Box<dyn std::error::Error>> {
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_1d_3".into();
