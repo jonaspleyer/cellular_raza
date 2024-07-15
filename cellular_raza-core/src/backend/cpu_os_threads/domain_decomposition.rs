@@ -1,7 +1,7 @@
 use super::{Agent, ForceBound, InteractionInformation, PositionBound, VelocityBound};
 use cellular_raza_concepts::domain_old::*;
-use cellular_raza_concepts::*;
 use cellular_raza_concepts::reactions_old::*;
+use cellular_raza_concepts::*;
 
 use super::errors::*;
 use crate::storage::StorageManager;

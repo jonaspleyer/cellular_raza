@@ -1,8 +1,5 @@
-use cellular_raza::{
-    concepts::{domain_old::Controller},
-    prelude::SimulationError,
-};
 use cellular_raza::concepts::reactions_old::*;
+use cellular_raza::{concepts::domain_old::Controller, prelude::SimulationError};
 use nalgebra::DVector;
 use serde::{Deserialize, Serialize};
 

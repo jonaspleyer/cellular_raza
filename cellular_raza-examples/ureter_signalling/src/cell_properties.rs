@@ -1,5 +1,5 @@
-use cellular_raza::prelude::*;
 use cellular_raza::concepts::reactions_old::*;
+use cellular_raza::prelude::*;
 
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};

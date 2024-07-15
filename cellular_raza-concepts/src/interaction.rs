@@ -36,4 +36,3 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
     // TODO
     // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
 }
-

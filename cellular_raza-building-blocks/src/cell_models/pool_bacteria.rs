@@ -2,8 +2,8 @@
 //!
 //! This submodule heavily depends on the [pyo3]() crate.
 
-use cellular_raza_concepts::*;
 use cellular_raza_concepts::reactions_old::*;
+use cellular_raza_concepts::*;
 
 use crate::cell_building_blocks::NewtonDamped2D;
 
