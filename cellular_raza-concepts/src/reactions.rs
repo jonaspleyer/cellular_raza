@@ -1,17 +1,23 @@
 use crate::CalcError;
 use crate::Position;
 
-/// TODO
+/// Setter and Getter for intracellular values of a cellagent.
 pub trait Intracellular<Ri> {
-    /// TODO
+    /// Sets the current intracellular values.
     fn set_intracellular(&mut self, intracellular: Ri);
-    /// TODO
+    /// Obtains the current intracellular values.
     fn get_intracellular(&self) -> Ri;
 }
 
-/// TODO
+/// Describes purely intracellular reactions of a cellagent.
+///
+/// In the most simple case, intracellular values can be assumed to have a homogenous distribution
+/// throughout the entire cell.
+/// We can then describe them by a list of values $\vec{u}=(u_0,\dots,u_N)$.
 pub trait Reactions<Ri>: Intracellular<Ri> {
-    /// TODO
+    /// Calculates the purely intracellular reaction increment.
+    /// Users who implement this trait should always use the given argument instead of relying on
+    /// values obtained via `self`.
     fn calculate_intracellular_increment(&self, intracellular: &Ri) -> Result<Ri, CalcError>;
 }
 
@@ -43,7 +49,9 @@ pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()>: Intracellular<Ri> {
     ) -> Result<(Ri, Ri), CalcError>;
 }
 
-/// TODO
+/// Mathematical abstraction similar to the well-known `axpy` method.
+///
+/// This trait
 pub trait Xapy<F> {
     /// TODO
     fn xapy(&self, a: F, y: &Self) -> Self;
