@@ -599,7 +599,10 @@ where
         }
 
         if let Some(xml_storage) = &mut self.xml_storage {
-            xml_storage.store_batch_elements(iteration, identifiers_elements)?;
+            xml_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
+        }
+        if let Some(memory_storage) = &mut self.memory_storage {
+            memory_storage.store_batch_elements(iteration, identifiers_elements)?;
         }
         Ok(())
     }
