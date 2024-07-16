@@ -540,11 +540,21 @@ macro_rules! exec_for_all_storage_options(
     };
     ($self:ident, $priority:ident, $function:ident, $($args:tt)*) => {
         match $priority {
-            StorageOption::Sled => exec_for_all_storage_options!(@internal $self, Sled, sled_storage, $function, $($args)*),
-            StorageOption::SledTemp => exec_for_all_storage_options!(@internal $self, SledTemp, sled_temp_storage, $function, $($args)*),
-            StorageOption::SerdeJson => exec_for_all_storage_options!(@internal $self, SerdeJson, json_storage, $function, $($args)*),
-            StorageOption::SerdeXml => exec_for_all_storage_options!(@internal $self, SerdeXml, xml_storage, $function, $($args)*),
-            StorageOption::Memory => exec_for_all_storage_options!(@internal $self, Memory, memory_storage, $function, $($args)*),
+            StorageOption::Sled => exec_for_all_storage_options!(
+                @internal $self, Sled, sled_storage, $function, $($args)*
+            ),
+            StorageOption::SledTemp => exec_for_all_storage_options!(
+                @internal $self, SledTemp, sled_temp_storage, $function, $($args)*
+            ),
+            StorageOption::SerdeJson => exec_for_all_storage_options!(
+                @internal $self, SerdeJson, json_storage, $function, $($args)*
+            ),
+            StorageOption::SerdeXml => exec_for_all_storage_options!(
+                @internal $self, SerdeXml, xml_storage, $function, $($args)*
+            ),
+            StorageOption::Memory => exec_for_all_storage_options!(
+                @internal $self, Memory, memory_storage, $function, $($args)*
+            ),
         }
     }
 );
