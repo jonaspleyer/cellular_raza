@@ -504,7 +504,10 @@ fn main() {
             } => {
                 thread_scaling(&args, threads.clone(), *n_domain_size);
             }
-            SubCommand::SimSize { problem_sizes, n_threads } => {
+            SubCommand::SimSize {
+                problem_sizes,
+                n_threads,
+            } => {
                 problem_size_scaling(&args, problem_sizes.clone(), *n_threads);
             }
         }
