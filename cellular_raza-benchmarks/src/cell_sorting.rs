@@ -275,7 +275,7 @@ fn run_sim(
     samples
 }
 
-fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>) -> Vec<BenchmarkResult> {
+fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>, n_threads: usize) -> Vec<BenchmarkResult> {
     let simulation_settings: Vec<_> = domain_sizes
         .into_iter()
         .map(|n_domain_size| {
@@ -287,7 +287,7 @@ fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>) -> Vec<Benchma
             SimSettings {
                 n_cells_1: n_cells,
                 n_cells_2: n_cells,
-                n_threads: 1.try_into().unwrap(),
+                n_threads: n_threads.try_into().unwrap(),
                 domain_size,
                 n_steps: 10,
                 dt: 10,
@@ -426,6 +426,8 @@ enum SubCommand {
         ///
         #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
         problem_sizes: Vec<usize>,
+        #[arg(short, default_value_t = 1)]
+        n_threads: usize,
     },
 }
 
@@ -482,8 +484,8 @@ fn main() {
             SubCommand::Threads { threads } => {
                 thread_scaling(&args, threads.clone());
             }
-            SubCommand::SimSize { problem_sizes } => {
-                problem_size_scaling(&args, problem_sizes.clone());
+            SubCommand::SimSize { problem_sizes, n_threads } => {
+                problem_size_scaling(&args, problem_sizes.clone(), *n_threads);
             }
         }
     }
