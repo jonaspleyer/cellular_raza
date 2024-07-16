@@ -72,7 +72,7 @@ impl<Id, Element> JsonStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterfaceOpen<Id, Element> for JsonStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen for JsonStorageInterface<Id, Element> {
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,

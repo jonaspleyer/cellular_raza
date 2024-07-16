@@ -72,7 +72,7 @@ impl<Id, Element> XmlStorageInterface<Id, Element> {
     }
 }
 
-impl<Id, Element> StorageInterfaceOpen<Id, Element> for XmlStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen for XmlStorageInterface<Id, Element> {
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,

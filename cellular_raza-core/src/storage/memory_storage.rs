@@ -16,7 +16,7 @@ where
     map: std::collections::HashMap<u64, std::collections::HashMap<Id, Element>>,
 }
 
-impl<Id, Element> StorageInterfaceOpen<Id, Element> for MemoryStorageInterface<Id, Element> {
+impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
     fn open_or_create(
         _location: &std::path::Path,
         _storage_instance: u64,

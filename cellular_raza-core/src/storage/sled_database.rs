@@ -47,7 +47,7 @@ impl<Id, Element, const TEMP: bool> SledStorageInterface<Id, Element, TEMP> {
     }
 }
 
-impl<Id, Element, const TEMP: bool> StorageInterfaceOpen<Id, Element>
+impl<Id, Element, const TEMP: bool> StorageInterfaceOpen
     for SledStorageInterface<Id, Element, TEMP>
 {
     fn open_or_create(

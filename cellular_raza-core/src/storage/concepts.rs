@@ -664,7 +664,7 @@ where
 }
 
 /// Open or create a new instance of the Storage controller.
-pub trait StorageInterfaceOpen<Id, Element> {
+pub trait StorageInterfaceOpen {
     /// Initializes the current storage device.
     ///
     /// In the case of databases, this may already result in an IO operation
@@ -807,11 +807,121 @@ pub trait StorageInterfaceLoad<Id, Element> {
     }
 }
 
+impl<T, Id, Element> StorageInterfaceLoad<Id, Element> for StorageWrapper<T>
+where
+    T: FileBasedStorage<Id, Element>,
+{
+    fn load_single_element(
+        &self,
+        iteration: u64,
+        identifier: &Id,
+    ) -> Result<Option<Element>, StorageError>
+    where
+        Id: Serialize + for<'a> Deserialize<'a>,
+        Element: for<'a> Deserialize<'a>,
+    {
+        let iterations = self.get_all_iterations()?;
+        if iterations.contains(&iteration) {
+            // Get the path where the iteration folder is
+            let iteration_path = self.0.get_iteration_path(iteration);
+
+            // Load all elements which are inside this folder from batches and singles
+            for path in std::fs::read_dir(&iteration_path)? {
+                let p = path?.path();
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
+
+                match p.file_stem() {
+                    Some(stem) => match stem.to_str() {
+                        Some(tail) => {
+                            let elements = tail.split("_");
+                            if elements.into_iter().next() == Some("batch") {
+                                let result: BatchSaveFormat<Id, Element> =
+                                    serde_json::from_reader(file)?;
+                                for json_save_format in result.data.into_iter() {
+                                    let id1 = bincode::serialize(&json_save_format.identifier)?;
+                                    let id2 = bincode::serialize(&identifier)?;
+                                    if id1 == id2 {
+                                        return Ok(Some(json_save_format.element));
+                                    }
+                                }
+                            }
+                        }
+                        None => (),
+                    },
+                    None => (),
+                }
+            }
+            return Ok(None);
+        } else {
+            return Ok(None);
+        }
+    }
+
+    fn load_all_elements_at_iteration(
+        &self,
+        iteration: u64,
+    ) -> Result<HashMap<Id, Element>, StorageError>
+    where
+        Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
+        Element: for<'a> Deserialize<'a>,
+    {
+        let iterations = self.get_all_iterations()?;
+        if iterations.contains(&iteration) {
+            // Create a new empty hashmap
+            let mut all_elements_at_iteration = HashMap::new();
+
+            // Get the path where the iteration folder is
+            let iteration_path = self.0.get_iteration_path(iteration);
+
+            // Load all elements which are inside this folder from batches and singles
+            for path in std::fs::read_dir(&iteration_path)? {
+                let p = path?.path();
+                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
+
+                match p.file_stem() {
+                    Some(stem) => match stem.to_str() {
+                        Some(tail) => {
+                            let elements = tail.split("_");
+                            if elements.into_iter().next() == Some("batch") {
+                                let result: BatchSaveFormat<Id, Element> =
+                                    serde_json::from_reader(file)?;
+                                all_elements_at_iteration.extend(result.data.into_iter().map(
+                                    |json_save_format| {
+                                        (json_save_format.identifier, json_save_format.element)
+                                    },
+                                ));
+                            }
+                        }
+                        None => (),
+                    },
+                    None => (),
+                }
+            }
+            return Ok(all_elements_at_iteration);
+        } else {
+            return Ok(HashMap::new());
+        }
+    }
+
+    fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
+        let paths = std::fs::read_dir(&self.0.get_path())?;
+        paths
+            .into_iter()
+            .filter_map(|path| match path {
+                Ok(p) => match self.0.folder_name_to_iteration(&p.path()) {
+                    Ok(Some(entry)) => Some(Ok(entry)),
+                    Ok(None) => None,
+                    Err(e) => Some(Err(e)),
+                },
+                Err(_) => None,
+            })
+            .collect::<Result<Vec<_>, _>>()
+    }
+}
+
 /// Provide methods to initialize, store and load single and multiple elements at iterations.
 pub trait StorageInterface<Id, Element>:
-    StorageInterfaceOpen<Id, Element>
-    + StorageInterfaceLoad<Id, Element>
-    + StorageInterfaceStore<Id, Element>
+    StorageInterfaceOpen + StorageInterfaceLoad<Id, Element> + StorageInterfaceStore<Id, Element>
 {
 }
 
@@ -819,6 +929,6 @@ impl<Id, Element, T> StorageInterface<Id, Element> for T
 where
     T: StorageInterfaceLoad<Id, Element>,
     T: StorageInterfaceStore<Id, Element>,
-    T: StorageInterfaceOpen<Id, Element>,
+    T: StorageInterfaceOpen,
 {
 }
