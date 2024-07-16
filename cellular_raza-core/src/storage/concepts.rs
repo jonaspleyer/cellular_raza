@@ -266,7 +266,7 @@ pub struct StorageManager<Id, Element> {
 
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
-    json_storage: Option<JsonStorageInterface<Id, Element>>,
+    json_storage: Option<StorageWrapper<JsonStorageInterface<Id, Element>>>,
     xml_storage: Option<XmlStorageInterface<Id, Element>>,
     memory_storage: Option<MemoryStorageInterface<Id, Element>>,
 }
@@ -460,10 +460,12 @@ impl<Id, Element> StorageManager<Id, Element> {
         for storage_variant in storage_builder.priority.iter() {
             match storage_variant {
                 StorageOption::SerdeJson => {
-                    json_storage = Some(JsonStorageInterface::<Id, Element>::open_or_create(
-                        &location.to_path_buf().join("json"),
-                        instance,
-                    )?);
+                    json_storage = Some(StorageWrapper(
+                        JsonStorageInterface::<Id, Element>::open_or_create(
+                            &location.to_path_buf().join("json"),
+                            instance,
+                        )?,
+                    ));
                 }
                 StorageOption::Sled => {
                     sled_storage =
