@@ -950,13 +950,13 @@ pub trait StorageInterfaceLoad<Id, Element> {
     /// // but do not appear afterwards.
     /// use std::collections::HashMap;
     /// let valid_state = HashMap::from([
-    ///     (, vec!["E1", "E2", "E3"])
-    ///     (, vec!["E1", "E2", "E3", "E4"]),
-    ///     (, vec!["E1", "E2", "E3", "E4"]),
-    ///     (, vec!["E1", "E2", "E4"]),
-    ///     (, vec!["E2", "E4"]),
-    ///     (, vec!["E2", "E4", "E5"]),
-    ///     (, vec!["E4", "E5"]),
+    ///     (0, vec!["E1", "E2", "E3"]),
+    ///     (1, vec!["E1", "E2", "E3", "E4"]),
+    ///     (2, vec!["E1", "E2", "E3", "E4"]),
+    ///     (3, vec!["E1", "E2", "E4"]),
+    ///     (4, vec!["E2", "E4"]),
+    ///     (5, vec!["E2", "E4", "E5"]),
+    ///     (6, vec!["E4", "E5"]),
     /// ]);
     /// // The entry "E2" is missing in iteration 1 but present afterwards.
     /// // This is an invalid state but will not be caught.
