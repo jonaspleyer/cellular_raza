@@ -65,7 +65,7 @@ fn test_newton_damped(
 ) -> Result<HashMap<u64, HashMap<CellIdentifier, MyAgent>>, Box<dyn std::error::Error>> {
     let domain =
         cellular_raza::building_blocks::CartesianCuboid::from_boundaries_and_interaction_range(
-            [0f64; 3], [100.0; 3], 5.0,
+            [0f64; 3], [100.0; 3], 20.0,
         )?;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
     #[cfg(debug_assertions)]
@@ -85,8 +85,8 @@ fn test_newton_damped(
             mass: 1.0,
         },
         interaction: MorsePotential {
-            strength_attracting: 0.3,
-            strength_repelling: 1.0,
+            strength_attracting: 0.01,
+            strength_repelling: 0.1,
             length_attracting: 3.0,
             length_repelling: 2.0,
             cutoff: 4.0,
@@ -124,7 +124,7 @@ fn test_pure_brownian(
         cellular_raza::building_blocks::CartesianCuboid::from_boundaries_and_interaction_range(
             [-30f64; 3],
             [100.0; 3],
-            5.0,
+            20.0,
         )?;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
     let agents = (0..10).map(|_| {
