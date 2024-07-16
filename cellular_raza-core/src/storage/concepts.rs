@@ -905,15 +905,39 @@ pub trait StorageInterfaceLoad<Id, Element> {
         identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize + for<'a> Deserialize<'a>,
+        Id: Eq + Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>;
 
     /// Loads the elements history, meaning every occurrence of the element in the storage.
-    /// This function should provide the results in ordered fashion such that the time
+    /// This function by default provides the results in ordered fashion such that the time
     /// direction is retained.
+    /// Furthermore this function assumes that a given index occurs over the course of a complete
+    /// time segment with no interceptions.
+    /// ```
+    /// // All elements (given by Strings) occur over a period of time
+    /// // but do not appear afterwards.
+    /// use std::collections::HashMap;
+    /// let valid_state = HashMap::from([
+    ///     (, vec!["E1", "E2", "E3"])
+    ///     (, vec!["E1", "E2", "E3", "E4"]),
+    ///     (, vec!["E1", "E2", "E3", "E4"]),
+    ///     (, vec!["E1", "E2", "E4"]),
+    ///     (, vec!["E2", "E4"]),
+    ///     (, vec!["E2", "E4", "E5"]),
+    ///     (, vec!["E4", "E5"]),
+    /// ]);
+    /// // The entry "E2" is missing in iteration 1 but present afterwards.
+    /// // This is an invalid state but will not be caught.
+    /// // The backend is responsible to avoid this state.
+    /// let invalid_state = HashMap::from([
+    ///     (0, vec!["E1", "E2"]),
+    ///     (1, vec!["E1"]),
+    ///     (2, vec!["E1", "E2"]),
+    /// ]);
+    /// ```
     fn load_element_history(&self, identifier: &Id) -> Result<HashMap<u64, Element>, StorageError>
     where
-        Id: Serialize + for<'a> Deserialize<'a>,
+        Id: Eq + Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         let mut iterations = self.get_all_iterations()?;
@@ -1017,7 +1041,7 @@ where
         identifier: &Id,
     ) -> Result<Option<Element>, StorageError>
     where
-        Id: Serialize + for<'a> Deserialize<'a>,
+        Id: Eq + Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         let iterations = self.get_all_iterations()?;
