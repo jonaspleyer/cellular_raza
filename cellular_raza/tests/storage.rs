@@ -83,6 +83,17 @@ fn storage_quick_xml() -> Result<(), SimulationError> {
 }*/
 
 #[test]
+fn storage_ron() -> Result<(), SimulationError> {
+    let r1 = main_sim([Ron])?;
+    let r2 = main_sim([Ron])?;
+    let r3 = main_sim([Ron])?;
+    assert_eq!(r1, r2);
+    assert_eq!(r2, r3);
+    Ok(())
+}
+
+
+#[test]
 fn storage_sled() -> Result<(), SimulationError> {
     let r1 = main_sim([Sled])?;
     let r2 = main_sim([Sled])?;
