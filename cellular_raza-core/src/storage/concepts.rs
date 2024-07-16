@@ -731,16 +731,31 @@ pub trait StorageInterfaceLoad<Id, Element> {
         Id: Serialize + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        let results = self
-            .get_all_iterations()?
+        let mut iterations = self.get_all_iterations()?;
+        iterations.sort();
+        let mut started_gathering = false;
+        let mut stop_gathering = false;
+        let results = iterations
             .iter()
-            .filter_map(
-                |&iteration| match self.load_single_element(iteration, identifier) {
-                    Ok(Some(element)) => Some(Ok((iteration, element))),
-                    Ok(None) => None,
-                    Err(e) => Some(Err(e)),
-                },
-            )
+            .filter_map(|&iteration| {
+                if stop_gathering {
+                    None
+                } else {
+                    match self.load_single_element(iteration, identifier) {
+                        Ok(Some(element)) => {
+                            started_gathering = true;
+                            Some(Ok((iteration, element)))
+                        }
+                        Ok(None) => {
+                            if started_gathering {
+                                stop_gathering = true;
+                            }
+                            None
+                        }
+                        Err(e) => Some(Err(e)),
+                    }
+                }
+            })
             .collect::<Result<HashMap<u64, _>, StorageError>>()?;
         Ok(results)
     }
