@@ -665,6 +665,23 @@ where
     }
 }
 
+/// The mode in which to generate paths and store results.
+pub enum StorageMode {
+    /// Save one element to a single file
+    Single,
+    /// Save many elements in one file.
+    Batch,
+}
+
+impl StorageMode {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Single => "single",
+            Self::Batch => "batch",
+        }
+    }
+}
+
 /// Abstraction and simplification of many file-based storage solutions
 pub trait FileBasedStorage<Id, Element> {
     /// Get path where results are stored.
@@ -690,9 +707,9 @@ pub trait FileBasedStorage<Id, Element> {
     fn create_or_get_iteration_file_with_prefix(
         &self,
         iteration: u64,
-        prefix: &str,
+        mode: StorageMode,
     ) -> Result<std::io::BufWriter<std::fs::File>, StorageError> {
-        let save_path = self.get_iteration_save_path_batch_with_prefix(iteration, prefix)?;
+        let save_path = self.get_iteration_save_path_batch_with_prefix(iteration, mode)?;
 
         // Open+Create a file and wrap it inside a buffer writer
         let file = std::fs::OpenOptions::new()
@@ -717,7 +734,7 @@ pub trait FileBasedStorage<Id, Element> {
     fn get_iteration_save_path_batch_with_prefix(
         &self,
         iteration: u64,
-        prefix: &str,
+        mode: StorageMode,
     ) -> Result<std::path::PathBuf, StorageError> {
         // First we get the folder path of the iteration
         let iteration_path = self.get_iteration_path(iteration);
@@ -768,7 +785,7 @@ where
     {
         let iteration_file = self
             .0
-            .create_or_get_iteration_file_with_prefix(iteration, "batch")?;
+            .create_or_get_iteration_file_with_prefix(iteration, StorageMode::Batch)?;
         let batch = BatchSaveFormat {
             data: identifiers_elements
                 .into_iter()
@@ -794,7 +811,7 @@ where
     {
         let iteration_file = self
             .0
-            .create_or_get_iteration_file_with_prefix(iteration, "single")?;
+            .create_or_get_iteration_file_with_prefix(iteration, StorageMode::Single)?;
         let save_format = CombinedSaveFormat {
             identifier,
             element,

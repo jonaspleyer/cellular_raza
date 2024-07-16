@@ -1,7 +1,7 @@
 use super::concepts::StorageError;
 use super::concepts::{
-    BatchSaveFormat, CombinedSaveFormat, StorageInterfaceLoad, StorageInterfaceOpen,
-    StorageInterfaceStore,
+    BatchSaveFormat, CombinedSaveFormat, FileBasedStorage, StorageInterfaceLoad,
+    StorageInterfaceOpen, StorageInterfaceStore, StorageMode,
 };
 use serde::{Deserialize, Serialize};
 
@@ -104,7 +104,7 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id,
         Element: Serialize,
     {
         let mut iteration_file =
-            self.create_or_get_iteration_file_with_prefix(iteration, "single")?;
+            self.create_or_get_iteration_file_with_prefix(iteration, StorageMode::Single)?;
         let save_format = CombinedSaveFormat {
             identifier,
             element,
@@ -128,7 +128,7 @@ impl<Id, Element> StorageInterfaceStore<Id, Element> for XmlStorageInterface<Id,
         I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
         let mut iteration_file =
-            self.create_or_get_iteration_file_with_prefix(iteration, "batch")?;
+            self.create_or_get_iteration_file_with_prefix(iteration, StorageMode::Batch)?;
         let batch = BatchSaveFormat {
             data: identifiers_elements
                 .into_iter()
