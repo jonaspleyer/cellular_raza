@@ -1109,8 +1109,8 @@ where
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
                         Some(tail) => {
-                            let elements = tail.split("_");
-                            if elements.into_iter().next() == Some("batch") {
+                            let first_name_segment = tail.split("_").into_iter().next();
+                            if first_name_segment == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
                                     self.0.from_reader(file)?;
                                 all_elements_at_iteration.extend(result.data.into_iter().map(
@@ -1118,6 +1118,11 @@ where
                                         (json_save_format.identifier, json_save_format.element)
                                     },
                                 ));
+                            } else if first_name_segment == Some("single") {
+                                let result: CombinedSaveFormat<Id, Element> =
+                                    self.0.from_reader(file)?;
+                                all_elements_at_iteration
+                                    .extend([(result.identifier, result.element)]);
                             }
                         }
                         None => (),
