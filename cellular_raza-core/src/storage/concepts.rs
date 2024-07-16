@@ -700,6 +700,12 @@ pub trait FileBasedStorage<Id, Element> {
         V: Serialize,
         W: std::io::Write;
 
+    /// Deserializes the given value type [V] from a reader.
+    fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
+    where
+        V: for<'a> Deserialize<'a>,
+        R: std::io::Read;
+
     /// Creates a new iteration file with a predefined naming scheme.
     ///
     /// The path which to use is by default determined by the
@@ -743,9 +749,25 @@ pub trait FileBasedStorage<Id, Element> {
 
         // Check if other batch files are already existing
         // If this is the case increase the batch number until we find one where no batch is existing
-        let save_path = iteration_path
-            .join(format!("{}_{:020.0}", prefix, self.get_storage_instance()))
-            .with_extension(self.get_extension());
+        let prefix = mode.to_str();
+        let create_save_path = |i: usize| -> std::path::PathBuf {
+            iteration_path
+                .join(format!(
+                    "{}_{:020.0}_{:020.0}",
+                    prefix,
+                    self.get_storage_instance(),
+                    i
+                ))
+                .with_extension(self.get_extension())
+        };
+        let mut counter = 0;
+        let mut save_path;
+        while {
+            save_path = create_save_path(counter);
+            save_path.exists()
+        } {
+            counter += 1
+        }
         Ok(save_path)
     }
 
@@ -1006,16 +1028,20 @@ where
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
                         Some(tail) => {
-                            let elements = tail.split("_");
-                            if elements.into_iter().next() == Some("batch") {
+                            let first_name_segment = tail.split("_").into_iter().next();
+                            if first_name_segment == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
-                                    serde_json::from_reader(file)?;
+                                    self.0.from_reader(file)?;
                                 for json_save_format in result.data.into_iter() {
-                                    let id1 = bincode::serialize(&json_save_format.identifier)?;
-                                    let id2 = bincode::serialize(&identifier)?;
-                                    if id1 == id2 {
+                                    if &json_save_format.identifier == identifier {
                                         return Ok(Some(json_save_format.element));
                                     }
+                                }
+                            } else if first_name_segment == Some("single") {
+                                let result: CombinedSaveFormat<Id, Element> =
+                                    self.0.from_reader(file)?;
+                                if &result.identifier == identifier {
+                                    return Ok(Some(result.element));
                                 }
                             }
                         }
@@ -1057,7 +1083,7 @@ where
                             let elements = tail.split("_");
                             if elements.into_iter().next() == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
-                                    serde_json::from_reader(file)?;
+                                    self.0.from_reader(file)?;
                                 all_elements_at_iteration.extend(result.data.into_iter().map(
                                     |json_save_format| {
                                         (json_save_format.identifier, json_save_format.element)
