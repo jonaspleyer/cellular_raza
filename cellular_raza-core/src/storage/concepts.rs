@@ -572,6 +572,19 @@ macro_rules! exec_for_all_storage_options(
             }
         }
     };
+    (mut $self:ident, $field:ident, $function:ident, $($args:tt)*) => {
+        if let Some($field) = &mut $self.$field {
+            $field.$function($($args)*)?;
+        }
+    };
+    (all mut $self:ident, $function:ident, $($args:tt)*) => {
+        exec_for_all_storage_options!(mut $self, sled_storage, $function, $($args)*);
+        exec_for_all_storage_options!(mut $self, sled_temp_storage, $function, $($args)*);
+        exec_for_all_storage_options!(mut $self, json_storage, $function, $($args)*);
+        exec_for_all_storage_options!(mut $self, ron_storage, $function, $($args)*);
+        exec_for_all_storage_options!(mut $self, xml_storage, $function, $($args)*);
+        exec_for_all_storage_options!(mut $self, memory_storage, $function, $($args)*);
+    };
     ($self:ident, $priority:ident, $function:ident, $($args:tt)*) => {
         match $priority {
             StorageOption::Sled => exec_for_all_storage_options!(
@@ -612,21 +625,11 @@ where
         Id: Serialize,
         Element: Serialize,
     {
-        if let Some(sled_storage) = &mut self.sled_storage {
-            sled_storage.store_single_element(iteration, identifier, element)?;
-        }
-
-        if let Some(json_storage) = &mut self.json_storage {
-            json_storage.store_single_element(iteration, identifier, element)?;
-        }
-
-        if let Some(xml_storage) = &mut self.xml_storage {
-            xml_storage.store_single_element(iteration, identifier, element)?;
-        }
-
-        if let Some(memory_storage) = &mut self.memory_storage {
-            memory_storage.store_single_element(iteration, identifier, element)?;
-        }
+        exec_for_all_storage_options!(
+            all mut self,
+            store_single_element,
+            iteration, identifier, element
+        );
         Ok(())
     }
 
@@ -641,20 +644,12 @@ where
         Element: 'a + Serialize,
         I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
     {
-        if let Some(sled_storage) = &mut self.sled_storage {
-            sled_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
-        }
-
-        if let Some(json_storage) = &mut self.json_storage {
-            json_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
-        }
-
-        if let Some(xml_storage) = &mut self.xml_storage {
-            xml_storage.store_batch_elements(iteration, identifiers_elements.clone())?;
-        }
-        if let Some(memory_storage) = &mut self.memory_storage {
-            memory_storage.store_batch_elements(iteration, identifiers_elements)?;
-        }
+        exec_for_all_storage_options!(
+            all mut self,
+            store_batch_elements,
+            iteration,
+            identifiers_elements.clone()
+        );
         Ok(())
     }
 }
