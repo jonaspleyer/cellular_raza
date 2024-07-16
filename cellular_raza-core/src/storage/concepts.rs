@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
+use super::ron::RonStorageInterface;
 use super::serde_json::JsonStorageInterface;
 use super::sled_database::SledStorageInterface;
-use super::ron::RonStorageInterface;
 
 /// Error related to storing and reading elements
 #[derive(Debug)]
@@ -486,7 +486,9 @@ impl<Id, Element> StorageManager<Id, Element> {
                 StorageOption::SerdeJson => {
                     json_storage = Some(StorageWrapper(
                         JsonStorageInterface::<Id, Element>::open_or_create(
-                            &location.to_path_buf().join("json"),
+                            &location
+                                .to_path_buf()
+                                .join(JsonStorageInterface::<Id, Element>::EXTENSION),
                             instance,
                         )?,
                     ));
@@ -508,23 +510,26 @@ impl<Id, Element> StorageManager<Id, Element> {
                 StorageOption::Ron => {
                     ron_storage = Some(StorageWrapper(
                         RonStorageInterface::<Id, Element>::open_or_create(
-                            &location.to_path_buf().join("xml"),
+                            &location
+                                .to_path_buf()
+                                .join(RonStorageInterface::<Id, Element>::EXTENSION),
                             instance,
                         )?,
                     ));
-
                 }
                 StorageOption::SerdeXml => {
                     xml_storage = Some(StorageWrapper(
                         XmlStorageInterface::<Id, Element>::open_or_create(
-                            &location.to_path_buf().join("xml"),
+                            &location
+                                .to_path_buf()
+                                .join(XmlStorageInterface::<Id, Element>::EXTENSION),
                             instance,
                         )?,
                     ));
                 }
                 StorageOption::Memory => {
                     memory_storage = Some(MemoryStorageInterface::<Id, Element>::open_or_create(
-                        &location.to_path_buf().join("xml"),
+                        &location.to_path_buf(),
                         instance,
                     )?);
                 }
@@ -728,15 +733,15 @@ impl StorageMode {
 
 /// Abstraction and simplification of many file-based storage solutions
 pub trait FileBasedStorage<Id, Element> {
+    /// The suffix which is used to distinguish this storage solution from others.
+    const EXTENSION: &'static str;
+
     /// Get path where results are stored.
     fn get_path(&self) -> &std::path::Path;
 
     /// Get the number of this storage instance.
     /// This value may coincide with the thread number.
     fn get_storage_instance(&self) -> u64;
-
-    /// Get the suffix which is used to distinguish this storage solution from others.
-    fn get_extension(&self) -> &str;
 
     /// Writes either [BatchSaveFormat] or [CombinedSaveFormat] to the disk.
     fn to_writer_pretty<V, W>(&self, writer: W, value: &V) -> Result<(), StorageError>
@@ -802,7 +807,7 @@ pub trait FileBasedStorage<Id, Element> {
                     self.get_storage_instance(),
                     i
                 ))
-                .with_extension(self.get_extension())
+                .with_extension(Self::EXTENSION)
         };
         let mut counter = 0;
         let mut save_path;

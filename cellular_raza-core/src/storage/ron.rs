@@ -14,13 +14,12 @@ pub struct RonStorageInterface<Id, Element> {
 }
 
 impl<Id, Element> FileBasedStorage<Id, Element> for RonStorageInterface<Id, Element> {
+    const EXTENSION: &'static str = "ron";
+
     fn get_path(&self) -> &std::path::Path {
         &self.path
     }
 
-    fn get_extension(&self) -> &str {
-        "ron"
-    }
     fn get_storage_instance(&self) -> u64 {
         self.storage_instance
     }

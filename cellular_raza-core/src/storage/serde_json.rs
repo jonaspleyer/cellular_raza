@@ -14,12 +14,10 @@ pub struct JsonStorageInterface<Id, Element> {
 }
 
 impl<Id, Element> FileBasedStorage<Id, Element> for JsonStorageInterface<Id, Element> {
+    const EXTENSION: &'static str = "json";
+
     fn get_path(&self) -> &std::path::Path {
         &self.path
-    }
-
-    fn get_extension(&self) -> &str {
-        "json"
     }
 
     fn get_storage_instance(&self) -> u64 {

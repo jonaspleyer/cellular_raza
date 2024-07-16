@@ -14,13 +14,12 @@ pub struct XmlStorageInterface<Id, Element> {
 }
 
 impl<Id, Element> FileBasedStorage<Id, Element> for XmlStorageInterface<Id, Element> {
+    const EXTENSION: &'static str = "xml";
+
     fn get_path(&self) -> &std::path::Path {
         &self.path
     }
 
-    fn get_extension(&self) -> &str {
-        "xml"
-    }
     fn get_storage_instance(&self) -> u64 {
         self.storage_instance
     }
