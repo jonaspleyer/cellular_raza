@@ -41,6 +41,7 @@
 mod concepts;
 mod memory_storage;
 mod quick_xml;
+mod ron;
 mod serde_json;
 mod sled_database;
 
@@ -49,5 +50,6 @@ mod test;
 pub use concepts::*;
 pub use memory_storage::*;
 pub use quick_xml::*;
+pub use ron::*;
 pub use serde_json::*;
 pub use sled_database::*;

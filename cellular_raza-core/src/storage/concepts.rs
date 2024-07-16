@@ -8,6 +8,7 @@ use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
 use super::serde_json::JsonStorageInterface;
 use super::sled_database::SledStorageInterface;
+use super::ron::RonStorageInterface;
 
 /// Error related to storing and reading elements
 #[derive(Debug)]
@@ -20,6 +21,10 @@ pub enum StorageError {
     QuickXmlError(quick_xml::Error),
     /// Occurs during parsing of Xml structs.
     FastXmlDeserializeError(quick_xml::DeError),
+    /// Generic error related to serialization in the [ron] crate.
+    RonError(ron::Error),
+    /// Generic error related to deserialization in the [ron] crate.
+    RonSpannedError(ron::error::SpannedError),
     /// Generic error related to the [sled] database.
     SledError(sled::Error),
     /// Generic serialization error thrown by the [bincode] library.
@@ -47,6 +52,18 @@ impl From<quick_xml::Error> for StorageError {
 impl From<quick_xml::DeError> for StorageError {
     fn from(err: quick_xml::DeError) -> Self {
         StorageError::FastXmlDeserializeError(err)
+    }
+}
+
+impl From<ron::error::SpannedError> for StorageError {
+    fn from(err: ron::error::SpannedError) -> Self {
+        StorageError::RonSpannedError(err)
+    }
+}
+
+impl From<ron::Error> for StorageError {
+    fn from(err: ron::Error) -> Self {
+        StorageError::RonError(err)
     }
 }
 
@@ -86,6 +103,8 @@ impl Display for StorageError {
             StorageError::SerdeJsonError(message) => write!(f, "{}", message),
             StorageError::QuickXmlError(message) => write!(f, "{}", message),
             StorageError::FastXmlDeserializeError(message) => write!(f, "{}", message),
+            StorageError::RonError(message) => write!(f, "{}", message),
+            StorageError::RonSpannedError(message) => write!(f, "{}", message),
             StorageError::SledError(message) => write!(f, "{}", message),
             StorageError::SerializeError(message) => write!(f, "{}", message),
             StorageError::IoError(message) => write!(f, "{}", message),
@@ -116,6 +135,10 @@ pub enum StorageOption {
     /// quick-xml.
     #[deprecated]
     SerdeXml,
+    /// Store results in the [ron] file format specifically designed for Rust structs.
+    /// This format guarantees round-trips `Rust -> Ron -> Rust` and is thus preferred together
+    /// with the well-established [StorageOption::SerdeJson] format.
+    Ron,
     /// A [std::collections::HashMap](HashMap) based memory storage.
     Memory,
 }
@@ -266,6 +289,7 @@ pub struct StorageManager<Id, Element> {
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
     json_storage: Option<StorageWrapper<JsonStorageInterface<Id, Element>>>,
+    ron_storage: Option<StorageWrapper<RonStorageInterface<Id, Element>>>,
     xml_storage: Option<StorageWrapper<XmlStorageInterface<Id, Element>>>,
     memory_storage: Option<MemoryStorageInterface<Id, Element>>,
 }
@@ -454,6 +478,7 @@ impl<Id, Element> StorageManager<Id, Element> {
         let mut sled_storage = None;
         let mut sled_temp_storage = None;
         let mut json_storage = None;
+        let mut ron_storage = None;
         let mut xml_storage = None;
         let mut memory_storage = None;
         for storage_variant in storage_builder.priority.iter() {
@@ -480,6 +505,15 @@ impl<Id, Element> StorageManager<Id, Element> {
                             instance,
                         )?);
                 }
+                StorageOption::Ron => {
+                    ron_storage = Some(StorageWrapper(
+                        RonStorageInterface::<Id, Element>::open_or_create(
+                            &location.to_path_buf().join("xml"),
+                            instance,
+                        )?,
+                    ));
+
+                }
                 StorageOption::SerdeXml => {
                     xml_storage = Some(StorageWrapper(
                         XmlStorageInterface::<Id, Element>::open_or_create(
@@ -504,6 +538,7 @@ impl<Id, Element> StorageManager<Id, Element> {
             sled_storage,
             sled_temp_storage,
             json_storage,
+            ron_storage,
             xml_storage,
             memory_storage,
         };
@@ -547,6 +582,9 @@ macro_rules! exec_for_all_storage_options(
             ),
             StorageOption::SerdeJson => exec_for_all_storage_options!(
                 @internal $self, SerdeJson, json_storage, $function, $($args)*
+            ),
+            StorageOption::Ron => exec_for_all_storage_options!(
+                @internal $self, Ron, ron_storage, $function, $($args)*
             ),
             StorageOption::SerdeXml => exec_for_all_storage_options!(
                 @internal $self, SerdeXml, xml_storage, $function, $($args)*
