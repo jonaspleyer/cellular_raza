@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
