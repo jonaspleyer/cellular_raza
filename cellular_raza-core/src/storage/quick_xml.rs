@@ -7,8 +7,7 @@ use core::marker::PhantomData;
 /// Save elements as xml files with [quick_xml].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct XmlStorageInterface<Id, Element> {
-    /// Storage path.
-    pub path: std::path::PathBuf,
+    path: std::path::PathBuf,
     storage_instance: u64,
     phantom_id: PhantomData<Id>,
     phantom_element: PhantomData<Element>,
