@@ -4,7 +4,9 @@ use crate::CalcError;
 ///
 /// This trait can also be derived with the [CellAgent](crate::CellAgent) derive macro.
 /// ```
-/// use cellular_raza_concepts::{InteractionExtracellularGradient, CalcError, CellAgent};
+/// use cellular_raza_concepts::{reactions_old::InteractionExtracellularGradient,
+///     CalcError, CellAgent
+/// };
 ///
 /// struct DoNothingGradient;
 ///
@@ -35,7 +37,7 @@ pub trait InteractionExtracellularGradient<Cell, ConcGradientExtracellular> {
 ///
 /// This trait can also be derived with the [CellAgent](crate::CellAgent) derive macro.
 /// ```
-/// use cellular_raza_concepts::{CellularReactions, CellAgent, CalcError};
+/// use cellular_raza_concepts::{reactions_old::CellularReactions, CellAgent, CalcError};
 /// struct MyReactions {
 ///     intracellular: f64,
 ///     half_time: f64,
