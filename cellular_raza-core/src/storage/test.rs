@@ -62,7 +62,7 @@ macro_rules! test_storage_interface(
             use crate::storage::*;
 
             #[test]
-            fn store_load_all_elements() {
+            fn store_multiple_load_multiple_2_interfaces() {
                 // Open storage interfaces
                 let mut interface_0;
                 let mut interface_1;
@@ -100,21 +100,51 @@ macro_rules! test_storage_interface(
             }
 
             #[test]
-            fn store_load_single_elements() {
+            fn store_single_load_single_element() {
                 let mut interface = open_storage_interface!($interface_name);
 
-                let elements: std::collections::HashMap<_, _> = (0..10).map(|i| (i, format!("{:05}", i))).collect();
+                let identifiers_elements = [
+                    (30, format!("This is sparta!")),
+                    (40, format!("This is not")),
+                    (35, format!("Something else")),
+                ];
+
                 let iteration = 350;
-                for (id, element) in elements.iter() {
-                    interface.store_single_element(iteration, id, element).unwrap();
+                for (identifier, element) in identifiers_elements {
+                    interface.store_single_element(iteration, &identifier, &element).unwrap();
+                    let element_loaded = interface.load_single_element(
+                        iteration,
+                        &identifier
+                    ).unwrap().unwrap();
+                    assert_eq!(element, element_loaded);
                 }
-                for (id, element) in elements.iter() {
-                    let element_loaded = interface.load_single_element(350, id).unwrap().unwrap();
-                    assert_eq!(element, &element_loaded);
+            }
+
+            #[test]
+            fn store_single_load_multiple_elements() {
+                let mut interface = open_storage_interface!($interface_name);
+                let identifiers_elements = [
+                    (format!("hasta"), (3, 12)),
+                    (format!("la"), (3, 11)),
+                    (format!("vista"), (45, 33))
+                ];
+                let iteration = 1001;
+                for (identifier, element) in identifiers_elements.iter() {
+                    interface.store_single_element(iteration, identifier, element).unwrap();
                 }
+                let loaded_elements = interface.load_all_elements_at_iteration(iteration).unwrap();
+                for (identifier, element) in identifiers_elements {
+                    let loaded_element = loaded_elements[&identifier];
+                    assert_eq!(loaded_element, element);
+                }
+            }
+
+            #[test]
+            fn store_multiple_load_single_elements() {
             }
         }
     }
 );
 
 test_storage_interface!(JsonStorageInterface, json_tests);
+test_storage_interface!(XmlStorageInterface, quick_xml_tests);
