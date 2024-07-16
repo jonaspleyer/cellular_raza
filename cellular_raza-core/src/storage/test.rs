@@ -148,3 +148,4 @@ macro_rules! test_storage_interface(
 
 test_storage_interface!(JsonStorageInterface, json_tests);
 test_storage_interface!(XmlStorageInterface, quick_xml_tests);
+test_storage_interface!(RonStorageInterface, ron_tests);
