@@ -275,15 +275,24 @@ fn run_sim(
     samples
 }
 
-fn problem_size_scaling(args: &CLIArgs, domain_sizes: Vec<usize>, n_threads: usize) -> Vec<BenchmarkResult> {
+fn n_domain_size_to_domain_size_and_n_cells(n_domain_size: usize) -> (usize, usize) {
+    let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
+    let domain_size = (360_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64)).round() as usize;
+    println!("{} {}", domain_size, n_cells);
+    (domain_size, n_cells)
+}
+
+fn problem_size_scaling(
+    args: &CLIArgs,
+    domain_sizes: Vec<usize>,
+    n_threads: usize,
+) -> Vec<BenchmarkResult> {
     let simulation_settings: Vec<_> = domain_sizes
         .into_iter()
         .map(|n_domain_size| {
-            let n_cells = 10 * 4_usize.pow(n_domain_size as u32);
+            let (domain_size, n_cells) = n_domain_size_to_domain_size_and_n_cells(n_domain_size);
             // The domain is sliced into voxels of size [18.0; 3]
             // Thus we want to have domains with size that is a multiplicative of 18.0
-            let domain_size =
-                (360_f64 * 4_f64.powf(1.0 / 3.0 * n_domain_size as f64)).round() as usize;
             SimSettings {
                 n_cells_1: n_cells,
                 n_cells_2: n_cells,
