@@ -10,6 +10,7 @@ use num::Zero;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
+use tempdir::TempDir;
 
 // SIMULATION SPECIFIC CODE
 
@@ -154,7 +155,8 @@ fn run_simulation(sim_settings: &SimSettings) -> Result<(), chili::SimulationErr
 
     let time = FixedStepsize::from_partial_save_steps(0.0, dt, n_steps as u64, n_steps as u64 + 1)?;
 
-    let storage = StorageBuilder::new();
+    let temp_dir = TempDir::new("out_tmp").unwrap();
+    let storage = StorageBuilder::new().location(temp_dir.path());
 
     let settings = chili::Settings {
         n_threads,
