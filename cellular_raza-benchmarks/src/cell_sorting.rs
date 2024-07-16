@@ -320,16 +320,23 @@ fn problem_size_scaling(
     )
 }
 
-fn thread_scaling(args: &CLIArgs, threads: Vec<usize>) -> Vec<BenchmarkResult> {
+fn thread_scaling(
+    args: &CLIArgs,
+    threads: Vec<usize>,
+    n_domain_size: usize,
+) -> Vec<BenchmarkResult> {
     let simulation_settings: Vec<_> = threads
         .into_iter()
-        .map(|n_threads| SimSettings {
-            n_cells_1: 10_000,
-            n_cells_2: 10_000,
-            n_threads: n_threads.try_into().unwrap(),
-            domain_size: 2100,
-            n_steps: 5,
-            dt: 10,
+        .map(|n_threads| {
+            let (domain_size, n_cells) = n_domain_size_to_domain_size_and_n_cells(n_domain_size);
+            SimSettings {
+                n_cells_1: n_cells,
+                n_cells_2: n_cells,
+                n_threads: n_threads.try_into().unwrap(),
+                domain_size,
+                n_steps: 5,
+                dt: 10,
+            }
         })
         .collect();
     run_sim(
@@ -429,6 +436,8 @@ enum SubCommand {
     Threads {
         /// List of thread configurations to benchmark
         threads: Vec<usize>,
+        #[arg(short, default_value_t = 5)]
+        n_domain_size: usize,
     },
     /// Simulation Size scaling benchmark
     SimSize {
@@ -489,8 +498,11 @@ fn main() {
             println!("Generating Results for device {}", args.name);
         }
         match command {
-            SubCommand::Threads { threads } => {
-                thread_scaling(&args, threads.clone());
+            SubCommand::Threads {
+                threads,
+                n_domain_size,
+            } => {
+                thread_scaling(&args, threads.clone(), *n_domain_size);
             }
             SubCommand::SimSize { problem_sizes, n_threads } => {
                 problem_size_scaling(&args, problem_sizes.clone(), *n_threads);
