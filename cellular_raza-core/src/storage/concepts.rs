@@ -891,14 +891,7 @@ pub trait StorageInterfaceStore<Id, Element> {
     where
         Id: 'a + Serialize,
         Element: 'a + Serialize,
-        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>,
-    {
-        identifiers_elements
-            .into_iter()
-            .map(|(id, element)| self.store_single_element(iteration, id, element))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(())
-    }
+        I: Clone + IntoIterator<Item = (&'a Id, &'a Element)>;
 }
 
 /// Handles loading of elements
