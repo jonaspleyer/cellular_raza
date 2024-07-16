@@ -18,6 +18,7 @@ jobs:
         with:
           fetch-depth: 1
           submodules: 'true'
+          lfs: 'false'
       - name: Install diff util
         run: |
           sudo apt update
