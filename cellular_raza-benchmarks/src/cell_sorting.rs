@@ -418,13 +418,12 @@ impl BenchmarkResult {
 enum SubCommand {
     /// Thread scaling benchmark
     Threads {
-        #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+        /// List of thread configurations to benchmark
         threads: Vec<usize>,
     },
     /// Simulation Size scaling benchmark
     SimSize {
-        ///
-        #[arg(short, long, default_values_t = Vec::<usize>::new(), num_args=0..)]
+        /// List of problem sizes to benchmark
         problem_sizes: Vec<usize>,
         #[arg(short, default_value_t = 1)]
         n_threads: usize,
