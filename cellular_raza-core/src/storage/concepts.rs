@@ -267,7 +267,7 @@ pub struct StorageManager<Id, Element> {
     sled_storage: Option<SledStorageInterface<Id, Element>>,
     sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
     json_storage: Option<StorageWrapper<JsonStorageInterface<Id, Element>>>,
-    xml_storage: Option<XmlStorageInterface<Id, Element>>,
+    xml_storage: Option<StorageWrapper<XmlStorageInterface<Id, Element>>>,
     memory_storage: Option<MemoryStorageInterface<Id, Element>>,
 }
 
@@ -482,10 +482,12 @@ impl<Id, Element> StorageManager<Id, Element> {
                         )?);
                 }
                 StorageOption::SerdeXml => {
-                    xml_storage = Some(XmlStorageInterface::<Id, Element>::open_or_create(
-                        &location.to_path_buf().join("xml"),
-                        instance,
-                    )?);
+                    xml_storage = Some(StorageWrapper(
+                        XmlStorageInterface::<Id, Element>::open_or_create(
+                            &location.to_path_buf().join("xml"),
+                            instance,
+                        )?,
+                    ));
                 }
                 StorageOption::Memory => {
                     memory_storage = Some(MemoryStorageInterface::<Id, Element>::open_or_create(
