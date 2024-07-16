@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
@@ -98,7 +98,6 @@ impl Display for StorageError {
 
 impl Error for StorageError {}
 
-// TODO implement this correctly
 /// Define how to store results of the simulation.
 ///
 /// We currently support saving results in a [sled] database, as xml files
