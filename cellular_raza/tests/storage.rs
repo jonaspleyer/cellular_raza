@@ -92,7 +92,6 @@ fn storage_ron() -> Result<(), SimulationError> {
     Ok(())
 }
 
-
 #[test]
 fn storage_sled() -> Result<(), SimulationError> {
     let r1 = main_sim([Sled])?;

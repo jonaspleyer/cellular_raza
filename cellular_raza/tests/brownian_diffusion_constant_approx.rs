@@ -56,7 +56,7 @@ fn define_settings(
     let dir = TempDir::new("tempdir").unwrap();
     let location = dir.path().join(&parameters.storage_name);
     let storage = cellular_raza_core::storage::StorageBuilder::new()
-        .priority([cellular_raza_core::storage::StorageOption::Sled])
+        .priority([cellular_raza_core::storage::StorageOption::Memory])
         .location(location)
         .init();
 
