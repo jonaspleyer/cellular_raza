@@ -36,6 +36,7 @@ serde.workspace = true
 rand.workspace = true
 tempdir.workspace = true
 nalgebra.workspace = true
+ode_integrate = "0.0.2"
 
 [features]
 default = ["gradients", "timestamp"]
