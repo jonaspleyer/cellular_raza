@@ -3,7 +3,7 @@ use super::concepts::{StorageInterfaceLoad, StorageInterfaceOpen, StorageInterfa
 
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
 /// Use the [sled] database to save results to an embedded database.
@@ -253,7 +253,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
             .collect::<Result<HashMap<Id, Element>, StorageError>>()
     }
 
-    fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, StorageError>
+    fn load_all_elements(&self) -> Result<BTreeMap<u64, HashMap<Id, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
@@ -275,7 +275,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
                     .collect::<Result<HashMap<Id, Element>, StorageError>>()?;
                 Ok((iteration, identifier_to_element))
             })
-            .collect::<Result<HashMap<u64, HashMap<Id, Element>>, StorageError>>()
+            .collect::<Result<BTreeMap<u64, HashMap<Id, Element>>, StorageError>>()
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {

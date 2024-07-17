@@ -3,7 +3,7 @@ use super::concepts::{StorageInterfaceLoad, StorageInterfaceOpen, StorageInterfa
 
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Use the [sled] database to save results to an embedded database.
 // TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
@@ -13,7 +13,7 @@ where
     Id: Sized,
     Element: Sized,
 {
-    map: std::collections::HashMap<u64, std::collections::HashMap<Id, Element>>,
+    map: BTreeMap<u64, HashMap<Id, Element>>,
 }
 
 impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
@@ -22,7 +22,7 @@ impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
         _storage_instance: u64,
     ) -> Result<Self, StorageError> {
         Ok(Self {
-            map: HashMap::new(),
+            map: BTreeMap::new(),
         })
     }
 }
@@ -109,7 +109,7 @@ where
         }
     }
 
-    fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, StorageError>
+    fn load_all_elements(&self) -> Result<BTreeMap<u64, HashMap<Id, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,

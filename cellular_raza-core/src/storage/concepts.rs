@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fmt::Display;
 
@@ -1024,7 +1024,7 @@ pub trait StorageInterfaceLoad<Id, Element> {
     /// Loads all elements for every iteration.
     /// This will yield the complete storage and may result in extremely large allocations of
     /// memory.
-    fn load_all_elements(&self) -> Result<HashMap<u64, HashMap<Id, Element>>, StorageError>
+    fn load_all_elements(&self) -> Result<BTreeMap<u64, HashMap<Id, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
@@ -1036,19 +1036,19 @@ pub trait StorageInterfaceLoad<Id, Element> {
                 let elements = self.load_all_elements_at_iteration(*iteration)?;
                 Ok((*iteration, elements))
             })
-            .collect::<Result<HashMap<_, _>, StorageError>>()?;
+            .collect::<Result<BTreeMap<_, _>, StorageError>>()?;
         Ok(all_elements)
     }
 
     /// Similarly to the [load_all_elements](StorageInterfaceLoad::load_all_elements) function,
     /// but this function returns all elements as their histories.
-    fn load_all_element_histories(&self) -> Result<HashMap<Id, HashMap<u64, Element>>, StorageError>
+    fn load_all_element_histories(&self) -> Result<HashMap<Id, BTreeMap<u64, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
         let all_elements = self.load_all_elements()?;
-        let reordered_elements: HashMap<Id, HashMap<u64, Element>> = all_elements
+        let reordered_elements: HashMap<Id, BTreeMap<u64, Element>> = all_elements
             .into_iter()
             .map(|(iteration, identifier_to_elements)| {
                 identifier_to_elements
