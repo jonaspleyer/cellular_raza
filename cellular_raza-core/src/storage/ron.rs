@@ -30,7 +30,10 @@ impl<Id, Element> FileBasedStorage<Id, Element> for RonStorageInterface<Id, Elem
         W: std::io::Write,
     {
         let config = ron::ser::PrettyConfig::new()
-            .depth_limit(4)
+            .depth_limit(usize::MAX)
+            .struct_names(true)
+            .separate_tuple_members(false)
+            .compact_arrays(true)
             .indentor("  ".to_owned());
         Ok(ron::ser::to_writer_pretty(writer, value, config)?)
     }
