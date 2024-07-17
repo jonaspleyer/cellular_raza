@@ -588,26 +588,33 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
         let _aux_storage = _CrAuxStorage::default();
-        let mut runner = #core_path::backend::chili::construct_simulation_runner::<
-            _,
-            _,
-            _,
-            _,
-            #core_path::backend::chili::communicator_generics_placeholders!(
-                name: _CrCommunicator,
-                aspects: [#(#asp),*]
-            ),
-            _Syncer,
-            _
-        >(
-            #domain,
-            #agents,
-            #settings.n_threads,
-            &_aux_storage,
-        )?;
 
-        let res = #parallelized_update_func?;
-        Result::<_, #core_path::backend::chili::SimulationError>::Ok(res)
+        let __run_sim = || -> Result<
+                #core_path::backend::chili::StorageAccess<_, _>,
+                #core_path::backend::chili::SimulationError
+        > {
+            let mut runner = #core_path::backend::chili::construct_simulation_runner::<
+                _,
+                _,
+                _,
+                _,
+                #core_path::backend::chili::communicator_generics_placeholders!(
+                    name: _CrCommunicator,
+                    aspects: [#(#asp),*]
+                ),
+                _Syncer,
+                _
+            >(
+                #domain,
+                #agents,
+                #settings.n_threads,
+                &_aux_storage,
+            )?;
+
+            let res = #parallelized_update_func?;
+            Result::<_, #core_path::backend::chili::SimulationError>::Ok(res)
+        };
+        __run_sim()
     })
 }
 
@@ -716,15 +723,10 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
     let test_compat = test_compatibility(kwargs_compat);
     let kwargs_main = KwargsMain::from(kwargs.clone());
     let run_main = run_main(kwargs_main);
-    let core_path = &kwargs.core_path;
     quote::quote!({
         #types
         #test_compat
-        let res = #run_main?;
-        Result::<
-            #core_path::backend::chili::StorageAccess<_, _>,
-            #core_path::backend::chili::SimulationError
-        >::Ok(res)
+        #run_main
     })
     .into()
 }
