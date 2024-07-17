@@ -1042,7 +1042,9 @@ pub trait StorageInterfaceLoad<Id, Element> {
 
     /// Similarly to the [load_all_elements](StorageInterfaceLoad::load_all_elements) function,
     /// but this function returns all elements as their histories.
-    fn load_all_element_histories(&self) -> Result<HashMap<Id, BTreeMap<u64, Element>>, StorageError>
+    fn load_all_element_histories(
+        &self,
+    ) -> Result<HashMap<Id, BTreeMap<u64, Element>>, StorageError>
     where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,

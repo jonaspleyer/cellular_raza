@@ -9,6 +9,7 @@ from glob import glob
 import tqdm
 import multiprocessing as mp
 
+
 def get_last_output_path() -> Path:
     return Path(sorted(list(glob("out/semi_vertex/*")))[-1])
 

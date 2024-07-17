@@ -5,12 +5,11 @@ use cellular_raza::concepts::{
 
 use cellular_raza_building_blocks::CartesianCuboid;
 use cellular_raza_core::backend::chili::{
-    run_simulation, CellIdentifier, Settings, VoxelPlainIndex,
+    run_simulation, Settings,
 };
 use cellular_raza_core::storage::{StorageBuilder, StorageInterfaceLoad, StorageOption};
 use cellular_raza_core::time::FixedStepsize;
-use nalgebra::{Normed, Vector2};
-use ode_integrate::concepts::ode_def;
+use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
 pub const KILOGRAMM: f64 = 1.0;
