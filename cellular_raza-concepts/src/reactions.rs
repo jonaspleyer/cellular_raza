@@ -51,9 +51,15 @@ pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()>: Intracellular<Ri> {
 
 /// Mathematical abstraction similar to the well-known `axpy` method.
 ///
-/// This trait
+/// ```
+/// # use cellular_raza_concepts::Xapy;
+/// let a = 2.0;
+/// let x = 33.0;
+/// let y = 234.0;
+/// assert_eq!(x*a + y, x.xapy(a, &y));
+/// ```
 pub trait Xapy<F> {
-    /// TODO
+    /// Abstraction over the common `a*x + y` mathematical function.
     fn xapy(&self, a: F, y: &Self) -> Self;
 }
 
