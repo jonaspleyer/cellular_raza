@@ -4,9 +4,7 @@ use cellular_raza::concepts::{
 };
 
 use cellular_raza_building_blocks::CartesianCuboid;
-use cellular_raza_core::backend::chili::{
-    run_simulation, Settings,
-};
+use cellular_raza_core::backend::chili::{run_simulation, Settings};
 use cellular_raza_core::storage::{StorageBuilder, StorageInterfaceLoad, StorageOption};
 use cellular_raza_core::time::FixedStepsize;
 use nalgebra::Vector2;
@@ -64,14 +62,11 @@ fn two_body_problem() {
     let m_earth = 5.972e24 * KILOGRAMM;
 
     // Time values to solve for
+    // One revelation is approximately 28 days.
     let t0 = 0.0 * DAY;
     let dt = 0.00002 * DAY;
-    // One revelation is approximately 28 days. We do two.
-    let t_max = 60.0 * DAY;
-    let save_interval = 0.1 * DAY;
-    let time_series: Vec<_> = (0..(t_max / save_interval).round() as usize + 1)
-        .map(|i| t0 + i as f64 * dt)
-        .collect();
+    let n_steps = 500;
+    let time_series: Vec<_> = (0..n_steps).map(|i| t0 + i as f64 * dt).collect();
 
     let particles = [
         // This is the moon
