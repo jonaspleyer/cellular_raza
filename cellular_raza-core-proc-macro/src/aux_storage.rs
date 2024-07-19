@@ -385,7 +385,7 @@ impl AuxStorageImplementer {
                     }
                     fn previous_positions<'a>(
                         &'a self
-                    ) -> #backend_path FixedSizeRingBufferIter<'a, #position, #n_saves> {
+                    ) -> #backend_path RingBufferIter<&'a #position, #n_saves> {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::previous_positions(&self.#field_name)
                     }
@@ -395,7 +395,7 @@ impl AuxStorageImplementer {
                     }
                     fn previous_velocities<'a>(
                         &'a self
-                    ) -> #backend_path FixedSizeRingBufferIter<'a, #velocity, #n_saves> {
+                    ) -> #backend_path RingBufferIter<&'a #velocity, #n_saves> {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::previous_velocities(&self.#field_name)
                     }
@@ -593,7 +593,7 @@ impl AuxStorageImplementer {
                     for #struct_name #ty_generics #where_clause {
                         fn previous_increments<'a>(
                             &'a self
-                        ) -> #backend_path FixedSizeRingBufferIter<'a, #rintra, #nsaves> {
+                        ) -> #backend_path RingBufferIter<&'a #rintra, #nsaves> {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::previous_increments(&self.#field_name)
                         }

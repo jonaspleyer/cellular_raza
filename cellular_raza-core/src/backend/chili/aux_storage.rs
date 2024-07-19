@@ -1,5 +1,6 @@
 use cellular_raza_concepts::CycleEvent;
 use serde::{Deserialize, Serialize};
+pub use circ_buffer::*;
 
 use std::ops::{Deref, DerefMut};
 
@@ -76,7 +77,7 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 
     /// Get all previous positions. This number maybe smaller than the maximum number of stored
     /// positions but never exceeds it.
-    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Pos, N>;
+    fn previous_positions<'a>(&'a self) -> RingBufferIter<&'a Pos, N>;
 
     /// Stores the last velocity of the cell. Overwrites old results when stored amount
     /// exceeds number of maximum stored values.
@@ -84,7 +85,7 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 
     /// Get all previous velocities. This number may be smaller than the maximum number of stored
     /// velocities but never exceeds it.
-    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N>;
+    fn previous_velocities<'a>(&'a self) -> RingBufferIter<&'a Vel, N>;
 
     /// Get the number of previous values currently stored
     ///
@@ -104,8 +105,8 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 /// Stores intermediate information about the mechanics of a cell.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct AuxStorageMechanics<Pos, Vel, For, const N: usize> {
-    positions: FixedSizeRingBuffer<Pos, N>,
-    velocities: FixedSizeRingBuffer<Vel, N>,
+    positions: RingBuffer<Pos, N>,
+    velocities: RingBuffer<Vel, N>,
     current_force: For,
 }
 
@@ -120,8 +121,8 @@ where
 {
     fn default() -> Self {
         Self {
-            positions: FixedSizeRingBuffer::<Pos, N>::default(),
-            velocities: FixedSizeRingBuffer::<Vel, N>::default(),
+            positions: RingBuffer::<Pos, N>::default(),
+            velocities: RingBuffer::<Vel, N>::default(),
             current_force: For::default(),
         }
     }
@@ -133,18 +134,18 @@ where
     For: Clone + core::ops::AddAssign<For> + num::Zero,
 {
     #[inline]
-    fn previous_positions<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Pos, N> {
+    fn previous_positions<'a>(&'a self) -> RingBufferIter<&'a Pos, N> {
         self.positions.iter()
     }
 
     #[inline]
-    fn previous_velocities<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Vel, N> {
+    fn previous_velocities<'a>(&'a self) -> RingBufferIter<&'a Vel, N> {
         self.velocities.iter()
     }
 
     #[inline]
     fn n_previous_values(&self) -> usize {
-        self.positions.size
+        self.positions.get_size()
     }
 
     #[inline]
@@ -279,22 +280,22 @@ where
 /// Used to update properties of the cell related to the [ReactionsContact] trait.
 pub trait UpdateReactionsContact<Ri, const N: usize> {
     /// Obtain previous increments used for adams_bashforth integrators
-    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N>;
+    fn previous_increments<'a>(&'a self) -> RingBufferIter<&'a Ri, N>;
     /// Set the last increment in the ring buffer
     fn set_last_increment(&mut self, increment: Ri);
-    /// Get the number of previous values to match agains [FixedSizeRingBufferIter]
+    /// Get the number of previous values to match agains [RingBufferIter]
     fn n_previous_values(&self) -> usize;
 }
 
 /// Implementor of the [UpdateReactionsContact] trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactionsContact<Ri, const N: usize> {
-    increments: FixedSizeRingBuffer<Ri, N>,
+    increments: RingBuffer<Ri, N>,
 }
 
 impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N> {
     #[inline]
-    fn previous_increments<'a>(&'a self) -> FixedSizeRingBufferIter<'a, Ri, N> {
+    fn previous_increments<'a>(&'a self) -> RingBufferIter<&'a Ri, N> {
         self.increments.iter()
     }
 
@@ -305,7 +306,7 @@ impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsCo
 
     #[inline]
     fn n_previous_values(&self) -> usize {
-        self.increments.size
+        self.increments.get_size()
     }
 }
 
@@ -840,356 +841,6 @@ pub mod test_derive_aux_storage {
     }
 }
 
-/// Small implementation of a ring Buffer with constant size.
-/// Makes use of a fixed-size array internally.
-/// ```
-/// # use cellular_raza_core::backend::chili::FixedSizeRingBuffer;
-/// let mut ring_buffer = FixedSizeRingBuffer::<i64, 4>::default();
-///
-/// // These entries will be made into free space in the buffer.
-/// ring_buffer.push(1_i64);
-/// ring_buffer.push(2_i64);
-/// ring_buffer.push(3_i64);
-/// ring_buffer.push(4_i64);
-///
-/// // Now it will start truncating initial entries.
-/// ring_buffer.push(5_i64);
-/// ring_buffer.push(6_i64);
-/// ring_buffer.push(7_i64);
-///
-/// let mut elements = ring_buffer.iter();
-/// assert_eq!(elements.next(), Some(&4));
-/// assert_eq!(elements.next(), Some(&5));
-/// assert_eq!(elements.next(), Some(&6));
-/// assert_eq!(elements.next(), Some(&7));
-/// ```
-#[derive(Debug)]
-pub struct FixedSizeRingBuffer<T, const N: usize> {
-    items: [std::mem::MaybeUninit<T>; N],
-    first: usize,
-    size: usize,
-}
-
-impl<T, const N: usize> Clone for FixedSizeRingBuffer<T, N>
-where
-    T: Clone,
-{
-    fn clone(&self) -> Self {
-        let mut new_items: [std::mem::MaybeUninit<T>; N] =
-            unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-        for i in 0..self.size {
-            let i = (self.first + i) % N;
-            new_items[i].write(unsafe { self.items[i].assume_init_ref().clone() });
-        }
-
-        Self {
-            items: new_items,
-            first: self.first,
-            size: self.size,
-        }
-    }
-}
-
-impl<T, const N: usize> Serialize for FixedSizeRingBuffer<T, N>
-where
-    T: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut s = serializer.serialize_seq(Some(self.size))?;
-        for element in self.iter() {
-            s.serialize_element(element)?;
-        }
-        s.end()
-    }
-}
-
-struct FixedSizedRingBufferVisitor<T, const N: usize> {
-    phantom: core::marker::PhantomData<T>,
-}
-
-impl<'de, T, const N: usize> serde::de::Visitor<'de> for FixedSizedRingBufferVisitor<T, N>
-where
-    T: Deserialize<'de>,
-{
-    type Value = Vec<T>;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str(&format!(
-            "{} or less values of the type {}",
-            N,
-            std::any::type_name::<T>()
-        ))
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: serde::de::SeqAccess<'de>,
-    {
-        let mut elements = Vec::new();
-        while let Some(element) = seq.next_element()? {
-            elements.push(element);
-        }
-        Ok(elements)
-    }
-}
-
-impl<'de, T, const N: usize> Deserialize<'de> for FixedSizeRingBuffer<T, N>
-where
-    T: Deserialize<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let elements = deserializer.deserialize_seq(FixedSizedRingBufferVisitor::<T, N> {
-            phantom: core::marker::PhantomData,
-        })?;
-        let mut ring_buffer = FixedSizeRingBuffer::default();
-        if elements.len() > N {
-            todo!()
-        }
-        for element in elements.into_iter() {
-            ring_buffer.push(element);
-        }
-        Ok(ring_buffer)
-    }
-}
-
-/// Iterator of the [FixedSizeRingBuffer] struct.
-///
-/// This iterator does not necessarily contain `N` elements.
-/// It depends on how many entries have been added previously.
-///
-/// ```
-/// # use cellular_raza_core::backend::chili::*;
-/// let mut ring_buffer = FixedSizeRingBuffer::<usize, 4>::default();
-/// ring_buffer.push(1);
-/// ring_buffer.push(33);
-/// let elements = ring_buffer.iter().collect::<Vec<_>>();
-/// assert_eq!(elements.len(), 2);
-/// assert_eq!(elements[0], &1);
-/// assert_eq!(elements[1], &33);
-///
-/// ring_buffer.push(4);
-/// ring_buffer.push(5);
-/// ring_buffer.push(6);
-/// let elements = ring_buffer.iter().collect::<Vec<_>>();
-/// assert_eq!(elements.len(), 4);
-/// assert_eq!(elements, vec![&33, &4, &5, &6]);
-/// ```
-pub struct FixedSizeRingBufferIter<'a, T, const N: usize> {
-    items: &'a [std::mem::MaybeUninit<T>; N],
-    current: usize,
-    left_size: usize,
-}
-
-impl<'a, T, const N: usize> Iterator for FixedSizeRingBufferIter<'a, T, N> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<&'a T> {
-        if self.left_size == 0 {
-            return None;
-        }
-        let index = self.current;
-        self.current = (self.current + 1) % N;
-        self.left_size -= 1;
-        Some(unsafe { self.items[index].assume_init_ref() })
-    }
-}
-
-impl<T, const N: usize> Default for FixedSizeRingBuffer<T, N> {
-    fn default() -> Self {
-        Self {
-            items: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
-            first: 0,
-            size: 0,
-        }
-    }
-}
-
-impl<T, const N: usize> FixedSizeRingBuffer<T, N> {
-    /// Append one element to the buffer.
-    ///
-    /// This will not grow the buffer but instead replace existing
-    /// entries when the maximum size is reached.
-    /// ```
-    /// # use cellular_raza_core::backend::chili::*;
-    /// let mut ring_buffer = FixedSizeRingBuffer::<f64, 5>::default();
-    /// ring_buffer.push(1.0);
-    /// ring_buffer.push(2.0);
-    /// ring_buffer.push(3.0);
-    /// ring_buffer.push(4.0);
-    /// ring_buffer.push(5.0);
-    /// // Now we begin to drop the first entry when pushing more values.
-    /// ring_buffer.push(6.0);
-    /// let elements = ring_buffer.iter().collect::<Vec<_>>();
-    /// assert_eq!(elements, vec![&2.0, &3.0, &4.0, &5.0, &6.0])
-    /// ```
-    pub fn push(&mut self, new_item: T) {
-        let last = (self.first + self.size) % N;
-        self.items[last].write(new_item);
-        self.first = (self.first + self.size.div_euclid(N)) % N;
-        self.size = N.min(self.size + 1);
-    }
-
-    /// Iterate over references to elements of the RingBuffer.
-    pub fn iter<'a>(&'a self) -> FixedSizeRingBufferIter<'a, T, N> {
-        FixedSizeRingBufferIter {
-            items: &self.items,
-            current: self.first,
-            left_size: self.size,
-        }
-    }
-}
-
-#[cfg(test)]
-mod test_ring_buffer {
-    use super::*;
-
-    #[test]
-    fn test_pushing_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 12>::default();
-        for i in 0..100 {
-            ring_buffer.push(i);
-            assert_eq!(ring_buffer.iter().last(), Some(&i));
-            println!("{i}");
-        }
-    }
-
-    #[test]
-    fn test_pushing_overflow() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
-        ring_buffer.push("ce");
-        assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), vec![&"ce"]);
-        ring_buffer.push("ll");
-        assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), vec![&"ce", &"ll"]);
-        ring_buffer.push("ular");
-        assert_eq!(
-            ring_buffer.iter().collect::<Vec<_>>(),
-            vec![&"ce", &"ll", &"ular"]
-        );
-        ring_buffer.push(" ");
-        assert_eq!(
-            ring_buffer.iter().collect::<Vec<_>>(),
-            vec![&"ce", &"ll", &"ular", &" "]
-        );
-        ring_buffer.push("raza");
-        assert_eq!(
-            ring_buffer.iter().collect::<Vec<_>>(),
-            vec![&"ll", &"ular", &" ", &"raza"]
-        );
-    }
-
-    #[test]
-    fn test_clone_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
-        ring_buffer.push(1_usize);
-        ring_buffer.push(2);
-        ring_buffer.push(3);
-        ring_buffer.push(4);
-        let new_ring_buffer = ring_buffer.clone();
-        assert_eq!(
-            ring_buffer.iter().collect::<Vec<_>>(),
-            new_ring_buffer.iter().collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
-    fn test_clone_partial() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 87>::default();
-        for i in 0..100 {
-            ring_buffer.push(i);
-            let new_ring_buffer = ring_buffer.clone();
-            assert_eq!(
-                ring_buffer.iter().collect::<Vec<_>>(),
-                new_ring_buffer.iter().collect::<Vec<_>>()
-            );
-        }
-    }
-
-    #[test]
-    fn test_serialize_full() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
-        ring_buffer.push(1_u128);
-        ring_buffer.push(2);
-        ring_buffer.push(55);
-        ring_buffer.push(12999);
-
-        let serialized = serde_json::to_string(&ring_buffer).unwrap();
-        assert_eq!(serialized, "[1,2,55,12999]");
-    }
-
-    #[test]
-    fn test_serialize_partially_filled() {
-        let mut ring_buffer = FixedSizeRingBuffer::<_, 4>::default();
-        ring_buffer.push(1_u128);
-        ring_buffer.push(2);
-
-        let serialized = serde_json::to_string(&ring_buffer).unwrap();
-        assert_eq!(serialized, "[1,2]");
-    }
-
-    #[test]
-    fn test_deserialize_full() {
-        let ring_buffer_string = "[-3,2,1023,-112]";
-        let ring_buffer: FixedSizeRingBuffer<i16, 4> =
-            serde_json::de::from_str(ring_buffer_string).unwrap();
-        assert_eq!(
-            ring_buffer.iter().collect::<Vec<_>>(),
-            vec![&-3, &2, &1023, &-112]
-        );
-    }
-
-    #[test]
-    fn test_deserialize_partially_filled() {
-        for i in 0..50 {
-            let ring_buffer_values: Vec<_> = (0..i).collect();
-            let string = format!("{:?}", ring_buffer_values);
-            let ring_buffer: FixedSizeRingBuffer<_, 100> =
-                serde_json::de::from_str(&string).unwrap();
-            assert_eq!(ring_buffer.iter().collect::<Vec<_>>(), ring_buffer_values);
-        }
-    }
-}
-
-#[allow(unused)]
-#[doc(hidden)]
-mod test_derive_serde_ring_buffer {
-    /// ```
-    /// use serde::Serialize;
-    /// use cellular_raza_core::backend::chili::*;
-    /// #[derive(Serialize)]
-    /// struct Something<T, const N: usize> {
-    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
-    /// }
-    /// ```
-    fn derive_serialize() {}
-
-    /// ```
-    /// use serde::Deserialize;
-    /// use cellular_raza_core::backend::chili::*;
-    /// #[derive(Deserialize)]
-    /// struct Something<T, const N: usize> {
-    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
-    /// }
-    /// ```
-    fn derive_deserialize() {}
-
-    /// ```
-    /// use serde::{Deserialize, Serialize};
-    /// use cellular_raza_core::backend::chili::*;
-    /// #[derive(Deserialize, Serialize)]
-    /// struct Something<T, const N: usize> {
-    ///     ring_buffer: FixedSizeRingBuffer<T, N>,
-    /// }
-    /// ```
-    fn derive_serialize_deserialize() {}
-}
-
 #[allow(unused)]
 #[doc(hidden)]
 mod test_build_aux_storage {
@@ -1217,7 +868,7 @@ mod test_build_aux_storage {
             ///                 .collect::<Vec<f32>>();
             ///             assert_eq!(last_positions, vec![1_f32, 3_f32]);
             ///             aux_storage.set_last_velocity(10_f32);
-            ///             let last_velocities: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 4>
+            ///             let last_velocities: cellular_raza_core::backend::chili::RingBufferIter<_, 4>
             ///                 = aux_storage.previous_velocities();
             ///             let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
             ///             assert_eq!(last_velocities, vec![10_f32]);
@@ -1256,7 +907,7 @@ mod test_build_aux_storage {
             ///             aux_storage.set_last_increment(0f32);
             ///             aux_storage.set_last_increment(3f32);
             ///             assert_eq!(aux_storage.n_previous_values(), 2);
-            ///             let last_increments: cellular_raza_core::backend::chili::FixedSizeRingBufferIter<_, 10>
+            ///             let last_increments: cellular_raza_core::backend::chili::RingBufferIter<_, 10>
             ///                 = aux_storage.previous_increments();
             ///             let last_increments = last_increments.map(|f| *f).collect::<Vec<_>>();
             ///             assert_eq!(last_increments, vec![0.0, 3.0]);
