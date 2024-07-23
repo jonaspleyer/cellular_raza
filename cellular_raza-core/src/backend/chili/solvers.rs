@@ -180,16 +180,6 @@ where
     let n_previous_values = aux_storage.n_previous_values();
     let mut old_pos_increments = aux_storage.previous_positions();
     let mut old_vel_increments = aux_storage.previous_velocities();
-    /* let (new_position, new_velocity) = match n_previous_values {
-        1 => adams_bashforth_2(
-            position,
-            [dx, old_pos_increments.next().unwrap().clone()],
-            velocity,
-            [dv, old_vel_increments.next().unwrap().clone()],
-            dt,
-        )?,
-        _ => euler(position, dx, velocity, dv, dt)?,
-    };*/
     let (new_position, new_velocity) = match n_previous_values {
         1 => (
             adams_bashforth_2(
@@ -211,14 +201,7 @@ where
 }
 
 #[inline]
-fn euler<X, F>(
-    x: X,
-    dx: X,
-    // v: Vel,
-    // dv: Vel,
-    dt: F,
-) -> Result<X, CalcError>
-// ) -> Result<(X, Vel), CalcError>
+fn euler<X, F>(x: X, dx: X, dt: F) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
     F: Copy,
@@ -246,13 +229,7 @@ where
 }
 
 #[inline]
-fn adams_bashforth_2<X, F>(
-    x: X,
-    dx: [X; 2],
-    // v: Vel,
-    // dv: [Vel; 2],
-    dt: F,
-) -> Result<X, CalcError>
+fn adams_bashforth_2<X, F>(x: X, dx: [X; 2], dt: F) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
     F: Copy + FromPrimitive + num::Float,
@@ -276,7 +253,6 @@ pub fn reactions_intracellular_runge_kutta_4th<C, A, F, Ri>(
 ) -> Result<(), CalcError>
 where
     C: cellular_raza_concepts::Reactions<Ri>,
-    // A: super::UpdateReactions<Ri>,
     F: num::Float,
     Ri: num::Zero + Xapy<F>,
 {
@@ -408,7 +384,6 @@ mod test_solvers_reactions {
         }
         for (t, res) in results_cr {
             let res_exact = exact_solution(t);
-            println!("{} {}", res, res_exact);
             assert!((res - res_exact).abs() < 1e-6);
         }
         Ok(())
@@ -446,7 +421,6 @@ mod test_solvers {
             y = euler(y, dy, dt).unwrap();
             t += dt;
             let e = expected_global_truncation_error(t);
-            println!("{} {} {}", y, exact_solution(t), e);
             assert!((y - exact_solution(t)).abs() < e);
         }
     }
@@ -505,11 +479,8 @@ mod test_solvers {
         // https://math.stackexchange.com/questions/1326502/determine-the-local-truncation-error-of-the-following-method
         // Third order derivatives
         let third_derivative_bound = Vec2(y0.0 * omega.powi(3), y0.0 * omega.powi(3));
-        println!("Third deriv bound: {:?}", third_derivative_bound);
         let lipschitz_constant = Vec2(1.0, omega);
-        println!("lipschitz: {:?}", lipschitz_constant);
         let local_truncation_error = &third_derivative_bound * (5f32 / 12.0 * dt.powi(2));
-        println!("Local Trunc: {:?}", local_truncation_error);
         // See this wikipedia article:
         // https://en.wikipedia.org/wiki/Truncation_error_(numerical_integration)#Relationship_between_local_and_global_truncation_errors
         let global_truncation_error = |t: f32| -> Vec2 {

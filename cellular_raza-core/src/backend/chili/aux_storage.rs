@@ -1,6 +1,6 @@
 use cellular_raza_concepts::CycleEvent;
-use serde::{Deserialize, Serialize};
 pub use circ_buffer::*;
+use serde::{Deserialize, Serialize};
 
 use std::ops::{Deref, DerefMut};
 
