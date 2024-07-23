@@ -42,6 +42,7 @@ tracing-subscriber = { version = "0.3.18", optional = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 pyo3 = { version = "0.21", optional=true, features=["serde"] }
+circ_buffer = { version = "0.1.6", features = ["serde"] }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
