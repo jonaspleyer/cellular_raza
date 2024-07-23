@@ -345,3 +345,72 @@ where
     cell.set_intracellular(new_intracellular);
     Ok(())
 }
+
+#[cfg(test)]
+mod test_solvers_reactions {
+    use crate::backend::chili::UpdateReactions;
+
+    use super::*;
+
+    #[test]
+    fn exponential_decay_rk4() -> Result<(), CalcError> {
+        use cellular_raza_concepts::*;
+        struct PlainCell {
+            intracellular: f64,
+            lambda: f64,
+        }
+        impl Intracellular<f64> for PlainCell {
+            fn get_intracellular(&self) -> f64 {
+                self.intracellular
+            }
+            fn set_intracellular(&mut self, intracellular: f64) {
+                self.intracellular = intracellular;
+            }
+        }
+        impl Reactions<f64> for PlainCell {
+            fn calculate_intracellular_increment(
+                &self,
+                intracellular: &f64,
+            ) -> Result<f64, CalcError> {
+                Ok(-self.lambda * intracellular)
+            }
+        }
+        struct AuxStorage {
+            increment: f64,
+        }
+        impl UpdateReactions<f64> for AuxStorage {
+            fn get_conc(&self) -> f64 {
+                self.increment
+            }
+            fn incr_conc(&mut self, incr: f64) {
+                self.increment += incr;
+            }
+            fn set_conc(&mut self, conc: f64) {
+                self.increment = conc;
+            }
+        }
+        let y0 = 33.0;
+        let lambda = 0.2;
+        let dt = 0.1;
+        let exact_solution = |t: f64| -> f64 { y0 * (-lambda * t).exp() };
+
+        let mut cell = PlainCell {
+            intracellular: y0,
+            lambda,
+        };
+        let mut aux_storage = AuxStorage { increment: 0.0 };
+        let mut results_cr = vec![(0.0, cell.get_intracellular())];
+        let mut t = 0.0;
+        for _ in 0..100 {
+            reactions_intracellular_runge_kutta_4th(&mut cell, &mut aux_storage, dt)?;
+            t += dt;
+            results_cr.push((t, cell.get_intracellular()));
+        }
+        for (t, res) in results_cr {
+            let res_exact = exact_solution(t);
+            println!("{} {}", res, res_exact);
+            assert!((res - res_exact).abs() < 1e-6);
+        }
+        Ok(())
+    }
+}
