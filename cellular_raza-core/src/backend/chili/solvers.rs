@@ -414,3 +414,131 @@ mod test_solvers_reactions {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test_solvers {
+    use super::*;
+
+    #[test]
+    fn euler_exp_decay() {
+        let y0 = 27.0;
+        let lambda = 0.3;
+        let dt = 0.001;
+        let rhs = |y: f64| -> f64 { -lambda * y };
+        let exact_solution = |t: f64| -> f64 { y0 * (-lambda * t).exp() };
+
+        // The following truncation error is taken from wikipedia:
+        // https://en.wikipedia.org/wiki/Euler_method#Global_truncation_error
+        // Lipschitz constant of RHS
+        let lipschitz_constant = lambda;
+        // Upper bound on second derivative of y
+        let second_derivative_bound = y0 * lambda.powi(2);
+
+        let expected_global_truncation_error = |t: f64| -> f64 {
+            dt * second_derivative_bound / (2.0 * lipschitz_constant)
+                * ((lipschitz_constant * t).exp() - 1.0)
+        };
+
+        let mut y = y0;
+        let mut t = 0.0;
+        for _ in 0..100 {
+            let dy = rhs(y);
+            y = euler(y, dy, dt).unwrap();
+            t += dt;
+            let e = expected_global_truncation_error(t);
+            println!("{} {} {}", y, exact_solution(t), e);
+            assert!((y - exact_solution(t)).abs() < e);
+        }
+    }
+
+    #[test]
+    fn adams_bashforth_2_harmonic_oscillator() {
+        #[derive(Clone, Copy, Debug)]
+        struct Vec2(f32, f32);
+        impl<'a> core::ops::Add<&'a Vec2> for Vec2 {
+            type Output = Vec2;
+            fn add(self, rhs: &'a Vec2) -> Self::Output {
+                Vec2(self.0 + rhs.0, self.1 + rhs.1)
+            }
+        }
+        impl core::ops::Add<Vec2> for Vec2 {
+            type Output = Self;
+            fn add(self, rhs: Vec2) -> Self::Output {
+                Vec2(self.0 + rhs.0, self.1 + rhs.1)
+            }
+        }
+        impl<'a> core::ops::Mul<f32> for &'a Vec2 {
+            type Output = Vec2;
+            fn mul(self, rhs: f32) -> Self::Output {
+                Vec2(self.0 * rhs, self.1 * rhs)
+            }
+        }
+        impl core::ops::Neg for Vec2 {
+            type Output = Vec2;
+            fn neg(self) -> Self::Output {
+                Self(-self.0, -self.1)
+            }
+        }
+        impl num::Zero for Vec2 {
+            fn is_zero(&self) -> bool {
+                self.0.is_zero() && self.1.is_zero()
+            }
+            fn set_zero(&mut self) {
+                self.0 = 0.0;
+                self.1 = 0.0;
+            }
+            fn zero() -> Self {
+                Vec2(0., 0.)
+            }
+        }
+
+        // Define parameters and initial values
+        let y0 = Vec2(2.8347, 0.0);
+        let omega: f32 = 0.319;
+        let dt: f32 = 0.045;
+
+        // Write down rhs and exact solution
+        let rhs = |y: Vec2| -> Vec2 { Vec2(y.1, -omega.powi(2) * y.0) };
+        let exact_solution =
+            |t: f32| -> Vec2 { Vec2(y0.0 * (omega * t).cos(), - y0.0 * omega * (omega * t).sin()) };
+        // This is taken from this math.stackexchange post:
+        // https://math.stackexchange.com/questions/1326502/determine-the-local-truncation-error-of-the-following-method
+        // Third order derivatives
+        let third_derivative_bound = Vec2(y0.0 * omega.powi(3), y0.0 * omega.powi(3));
+        println!("Third deriv bound: {:?}", third_derivative_bound);
+        let lipschitz_constant = Vec2(1.0, omega);
+        println!("lipschitz: {:?}", lipschitz_constant);
+        let local_truncation_error = &third_derivative_bound * (5f32 / 12.0 * dt.powi(2));
+        println!("Local Trunc: {:?}", local_truncation_error);
+        // See this wikipedia article:
+        // https://en.wikipedia.org/wiki/Truncation_error_(numerical_integration)#Relationship_between_local_and_global_truncation_errors
+        let global_truncation_error = |t: f32| -> Vec2 {
+            Vec2(
+                ((lipschitz_constant.0 * t).exp() - 1.0) * local_truncation_error.0 / dt
+                    / lipschitz_constant.0,
+                ((lipschitz_constant.1 * t).exp() - 1.0) * local_truncation_error.1 / dt
+                    / lipschitz_constant.1,
+            )
+        };
+
+        // Numerically integrate equation
+        let mut t = 0.0;
+        let mut y = y0.clone();
+        let mut dy_storage = [rhs(exact_solution(t-dt)), rhs(exact_solution(t-2.0*dt))];
+
+        for i in 0..100 {
+            let dy = rhs(y);
+            dy_storage[1] = dy_storage[0];
+            dy_storage[0] = dy;
+            y = adams_bashforth_2(y, dy_storage, dt).unwrap();
+            t += dt;
+            let e = global_truncation_error(t);
+            let d1 = (y.0 - exact_solution(t).0).abs();
+            let d2 = (y.1 - exact_solution(t).1).abs();
+            if i > 0 {
+                assert!(d1 < e.0);
+                assert!(d2 < e.1);
+            }
+        }
+    }
+}
