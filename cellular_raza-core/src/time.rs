@@ -150,10 +150,10 @@ where
         let all_events = save_points
             .clone()
             .into_iter()
-            .map(|x| {
+            .map(|t_save| {
                 (
-                    x,
-                    ((x - t0) / dt).round().to_usize().unwrap(),
+                    t_save,
+                    ((t_save - t0) / dt).round().to_usize().unwrap(),
                     TimeEvent::PartialSave,
                 )
             })
