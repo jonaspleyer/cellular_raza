@@ -360,4 +360,22 @@ pub mod test_time_stepper {
     fn stepping_end_3() {
         test_stepping(3);
     }
+
+    #[test]
+    fn produce_correct_increments() {
+        let t0 = 10.0;
+        let dt = 0.1;
+        let t_max = 11.0;
+        let save_interval = 0.25;
+        let mut stepper =
+            FixedStepsize::from_partial_save_interval(t0, dt, t_max, save_interval).unwrap();
+        let all_times = Vec::from_iter(std::iter::from_fn(move || stepper.advance().unwrap()));
+        for time in all_times {
+            assert_eq!(time.increment, 0.1);
+            match time.event {
+                Some(_) => assert!((time.time - t0) % save_interval < dt),
+                _ => (),
+            }
+        }
+    }
 }
