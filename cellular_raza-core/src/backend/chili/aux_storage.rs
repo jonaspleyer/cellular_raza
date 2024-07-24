@@ -77,7 +77,7 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 
     /// Get all previous positions. This number maybe smaller than the maximum number of stored
     /// positions but never exceeds it.
-    fn previous_positions<'a>(&'a self) -> RingBufferIter<&'a Pos, N>;
+    fn previous_positions<'a>(&'a self) -> RingBufferIterRef<'a, Pos, N>;
 
     /// Stores the last velocity of the cell. Overwrites old results when stored amount
     /// exceeds number of maximum stored values.
@@ -85,7 +85,7 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
 
     /// Get all previous velocities. This number may be smaller than the maximum number of stored
     /// velocities but never exceeds it.
-    fn previous_velocities<'a>(&'a self) -> RingBufferIter<&'a Vel, N>;
+    fn previous_velocities<'a>(&'a self) -> RingBufferIterRef<'a, Vel, N>;
 
     /// Get the number of previous values currently stored
     ///
@@ -134,12 +134,12 @@ where
     For: Clone + core::ops::AddAssign<For> + num::Zero,
 {
     #[inline]
-    fn previous_positions<'a>(&'a self) -> RingBufferIter<&'a Pos, N> {
+    fn previous_positions<'a>(&'a self) -> RingBufferIterRef<'a, Pos, N> {
         self.positions.iter()
     }
 
     #[inline]
-    fn previous_velocities<'a>(&'a self) -> RingBufferIter<&'a Vel, N> {
+    fn previous_velocities<'a>(&'a self) -> RingBufferIterRef<'a, Vel, N> {
         self.velocities.iter()
     }
 
@@ -280,10 +280,10 @@ where
 /// Used to update properties of the cell related to the [ReactionsContact] trait.
 pub trait UpdateReactionsContact<Ri, const N: usize> {
     /// Obtain previous increments used for adams_bashforth integrators
-    fn previous_increments<'a>(&'a self) -> RingBufferIter<&'a Ri, N>;
+    fn previous_increments<'a>(&'a self) -> RingBufferIterRef<'a, Ri, N>;
     /// Set the last increment in the ring buffer
     fn set_last_increment(&mut self, increment: Ri);
-    /// Get the number of previous values to match agains [RingBufferIter]
+    /// Get the number of previous values to match against [circ_buffer::RingBufferIterRef]
     fn n_previous_values(&self) -> usize;
 }
 
@@ -295,7 +295,7 @@ pub struct AuxStorageReactionsContact<Ri, const N: usize> {
 
 impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N> {
     #[inline]
-    fn previous_increments<'a>(&'a self) -> RingBufferIter<&'a Ri, N> {
+    fn previous_increments<'a>(&'a self) -> RingBufferIterRef<'a, Ri, N> {
         self.increments.iter()
     }
 
@@ -868,7 +868,7 @@ mod test_build_aux_storage {
             ///                 .collect::<Vec<f32>>();
             ///             assert_eq!(last_positions, vec![1_f32, 3_f32]);
             ///             aux_storage.set_last_velocity(10_f32);
-            ///             let last_velocities: cellular_raza_core::backend::chili::RingBufferIter<_, 4>
+            ///             let last_velocities: cellular_raza_core::backend::chili::RingBufferIterRef<_, _, 4>
             ///                 = aux_storage.previous_velocities();
             ///             let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
             ///             assert_eq!(last_velocities, vec![10_f32]);
@@ -907,7 +907,7 @@ mod test_build_aux_storage {
             ///             aux_storage.set_last_increment(0f32);
             ///             aux_storage.set_last_increment(3f32);
             ///             assert_eq!(aux_storage.n_previous_values(), 2);
-            ///             let last_increments: cellular_raza_core::backend::chili::RingBufferIter<_, 10>
+            ///             let last_increments: cellular_raza_core::backend::chili::RingBufferIterRef<_, _, 10>
             ///                 = aux_storage.previous_increments();
             ///             let last_increments = last_increments.map(|f| *f).collect::<Vec<_>>();
             ///             assert_eq!(last_increments, vec![0.0, 3.0]);
