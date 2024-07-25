@@ -305,33 +305,20 @@ mod two_component_contact_reaction {
         save_interval: f64,
         t_max: f64,
     ) -> Result<(), SimulationError> {
-        // Obtain solutions when solving with cellular_raza
-        let solutions_cr = run_cellular_raza(
-            production,
-            y0,
-            upper_limit,
-            n_agents,
-            t0,
-            dt,
-            save_interval,
-            t_max,
-        )?;
-
-        // Gather exact solution
+        // Define exact solution
         let exact_solution_derivative = |t: f64, n_deriv: i32| -> nalgebra::Vector2<f64> {
+            let linear_growth = if n_deriv == 0 {
+                y0[0] + (n_agents - 1) as f64 * production * (t - t0)
+            } else {
+                0.0
+            };
             let q = (upper_limit - y0[1]) / y0[1];
-            nalgebra::Vector2::from([
-                if n_deriv == 0 {
-                    y0[0] + (n_agents - 1) as f64 * production * (t - t0)
-                } else {
-                    0.0
-                },
-                (1..n_deriv).product::<i32>() as f64
-                    * upper_limit
-                    * q.powi(n_deriv)
-                    * (1.0 + q * (-production * (n_agents - 1) as f64 * (t - t0)).exp())
-                        .powi(-(n_deriv + 1)),
-            ])
+            let logistic_curve = (1..n_deriv).product::<i32>() as f64
+                * upper_limit
+                * q.powi(n_deriv)
+                * (1.0 + q * (-production * (n_agents - 1) as f64 * (t - t0)).exp())
+                    .powi(-(n_deriv + 1));
+            nalgebra::Vector2::from([linear_growth, logistic_curve])
         };
 
         // Estimate upper bound on local and global truncation error
@@ -363,6 +350,18 @@ mod two_component_contact_reaction {
                     / lipschitz_constant[1],
             ])
         };
+
+        // Obtain solutions from cellular_raza
+        let solutions_cr = run_cellular_raza(
+            production,
+            y0,
+            upper_limit,
+            n_agents,
+            t0,
+            dt,
+            save_interval,
+            t_max,
+        )?;
 
         // Compare the results
         for (t, res_cr) in solutions_cr {
