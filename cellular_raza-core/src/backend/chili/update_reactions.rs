@@ -269,6 +269,9 @@ where
                         )?),
                     }?;
                 }
+                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_index_in_vector]
+                    .1
+                    .incr_conc(incr);
             }
         }
         Ok(())
