@@ -412,10 +412,30 @@ pub fn local_reactions_intracellular<
 where
     A: UpdateReactions<Ri>,
     C: cellular_raza_concepts::Reactions<Ri>,
-    // Float: num::Float + Copy + num::FromPrimitive,
     F: num::Float,
     Ri: num::Zero + Xapy<F>,
 {
     reactions_intracellular_runge_kutta_4th(cell, aux_storage, dt)?;
+    Ok(())
+}
+
+/// TODO
+pub fn local_reactions_clear_increment<
+    C,
+    A,
+    Ri,
+    #[cfg(feature = "tracing")] F: core::fmt::Debug,
+    #[cfg(not(feature = "tracing"))] F,
+>(
+    _cell: &mut C,
+    aux_storage: &mut A,
+    _dt: F,
+    _rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), SimulationError>
+where
+    A: UpdateReactions<Ri>,
+    Ri: num::Zero,
+{
+    aux_storage.set_conc(Ri::zero());
     Ok(())
 }
