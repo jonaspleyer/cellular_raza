@@ -57,6 +57,7 @@ pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()>: Intracellular<Ri> {
 /// let x = 33.0;
 /// let y = 234.0;
 /// assert_eq!(x*a + y, x.xapy(a, &y));
+/// assert_eq!((x*a + y)*a+y, x.xapy(a, &y).xapy(a, &y));
 /// ```
 pub trait Xapy<F> {
     /// Abstraction over the common `a*x + y` mathematical function.
