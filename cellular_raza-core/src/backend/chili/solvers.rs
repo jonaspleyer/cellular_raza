@@ -283,7 +283,7 @@ where
 /// TODO
 #[inline]
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
-pub fn reactions_contact_adams_bashforth_2nd<C, A, F, Ri>(
+pub fn reactions_contact_adams_bashforth_3rd<C, A, F, Ri>(
     cell: &mut C,
     aux_storage: &mut A,
     dt: F,

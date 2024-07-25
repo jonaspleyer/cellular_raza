@@ -1,5 +1,5 @@
 use super::{
-    reactions_contact_adams_bashforth_2nd, reactions_intracellular_runge_kutta_4th, Communicator,
+    reactions_contact_adams_bashforth_3rd, reactions_intracellular_runge_kutta_4th, Communicator,
     SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact,
     Voxel, VoxelPlainIndex,
 };
@@ -389,7 +389,7 @@ where
     F: num::Float + FromPrimitive,
     Ri: num::Zero + Xapy<F> + Clone,
 {
-    reactions_contact_adams_bashforth_2nd(cell, aux_storage, dt)?;
+    reactions_contact_adams_bashforth_3rd(cell, aux_storage, dt)?;
     Ok(())
 }
 
