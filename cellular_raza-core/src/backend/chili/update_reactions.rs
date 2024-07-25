@@ -242,6 +242,7 @@ where
                     .0
                     .get_contact_information();
                 let mut incr = Ri::zero();
+                // TODO can we do this without cloning at all?
                 let neighbors = self.voxels[&voxel_index].neighbors.clone();
                 for neighbor_index in neighbors {
                     match self.voxels.get_mut(&neighbor_index) {

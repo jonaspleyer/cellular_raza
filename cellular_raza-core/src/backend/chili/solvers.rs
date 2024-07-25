@@ -474,7 +474,7 @@ mod test_solvers {
         // Write down rhs and exact solution
         let rhs = |y: Vec2| -> Vec2 { Vec2(y.1, -omega.powi(2) * y.0) };
         let exact_solution =
-            |t: f32| -> Vec2 { Vec2(y0.0 * (omega * t).cos(), - y0.0 * omega * (omega * t).sin()) };
+            |t: f32| -> Vec2 { Vec2(y0.0 * (omega * t).cos(), -y0.0 * omega * (omega * t).sin()) };
         // This is taken from this math.stackexchange post:
         // https://math.stackexchange.com/questions/1326502/determine-the-local-truncation-error-of-the-following-method
         // Third order derivatives
@@ -485,9 +485,11 @@ mod test_solvers {
         // https://en.wikipedia.org/wiki/Truncation_error_(numerical_integration)#Relationship_between_local_and_global_truncation_errors
         let global_truncation_error = |t: f32| -> Vec2 {
             Vec2(
-                ((lipschitz_constant.0 * t).exp() - 1.0) * local_truncation_error.0 / dt
+                ((lipschitz_constant.0 * t).exp() - 1.0) * local_truncation_error.0
+                    / dt
                     / lipschitz_constant.0,
-                ((lipschitz_constant.1 * t).exp() - 1.0) * local_truncation_error.1 / dt
+                ((lipschitz_constant.1 * t).exp() - 1.0) * local_truncation_error.1
+                    / dt
                     / lipschitz_constant.1,
             )
         };
@@ -495,7 +497,10 @@ mod test_solvers {
         // Numerically integrate equation
         let mut t = 0.0;
         let mut y = y0.clone();
-        let mut dy_storage = [rhs(exact_solution(t-dt)), rhs(exact_solution(t-2.0*dt))];
+        let mut dy_storage = [
+            rhs(exact_solution(t - dt)),
+            rhs(exact_solution(t - 2.0 * dt)),
+        ];
 
         for i in 0..100 {
             let dy = rhs(y);
