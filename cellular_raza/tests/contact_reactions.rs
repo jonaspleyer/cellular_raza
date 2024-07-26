@@ -304,6 +304,7 @@ mod two_component_contact_reaction {
         dt: f64,
         save_interval: usize,
         t_max: f64,
+        #[allow(unused)] save_filename: &str,
     ) -> Result<(), SimulationError> {
         // Define exact solution
         let q = (upper_limit - y0[1]) / y0[1];
@@ -368,17 +369,53 @@ mod two_component_contact_reaction {
         )?;
 
         // Compare the results
+        let mut results = vec![];
         for (t, res_cr) in solutions_cr {
             let res_ex = exact_solution_derivative(t, 0);
-            let e = global_truncation_error(t);
-            for r in res_cr {
+            let e_global = global_truncation_error(t);
+            let e_local = local_truncation_error(t);
+            for r in res_cr.iter() {
                 let d0 = (r[0] - res_ex[0]).abs();
                 let d1 = (r[1] - res_ex[1]).abs();
-                assert!(d0 < e[0]);
-                assert!(d1 < e[1]);
+                assert!(d0 < e_global[0]);
+                println!("{} {}", d1, e_global[1]);
+                assert!(d1 < e_global[1]);
             }
+            results.push((t, res_ex, e_global, e_local, res_cr));
         }
+
+        #[cfg(not(debug_assertions))]
+        save_results(results, save_filename);
+
         Ok(())
+    }
+
+    #[allow(unused)]
+    fn save_results(
+        results: Vec<(
+            f64,
+            nalgebra::Vector2<f64>,
+            nalgebra::Vector2<f64>,
+            nalgebra::Vector2<f64>,
+            Vec<[f64; 2]>,
+        )>,
+        save_filename: &str,
+    ) {
+        use std::fs::File;
+        use std::io::prelude::*;
+        let mut file = File::create(save_filename).unwrap();
+        for (t, res_ex, e_global, e_local, res_cr) in results {
+            write!(
+                file,
+                "{},{},{},{},{},{},{}",
+                t, e_global[0], e_global[1], e_local[0], e_local[1], res_ex[0], res_ex[1]
+            )
+            .unwrap();
+            for r_cr in res_cr {
+                write!(file, ",{},{}", r_cr[0], r_cr[1]).unwrap();
+            }
+            writeln!(file, "").unwrap();
+        }
     }
 
     #[test]
@@ -401,6 +438,7 @@ mod two_component_contact_reaction {
             dt,
             save_interval,
             t_max,
+            "tests/contact_reactions-config0.csv",
         )
         .unwrap();
     }
@@ -425,6 +463,7 @@ mod two_component_contact_reaction {
             dt,
             save_interval,
             t_max,
+            "tests/contact_reactions-config1.csv",
         )
         .unwrap();
     }
@@ -449,6 +488,7 @@ mod two_component_contact_reaction {
             dt,
             save_interval,
             t_max,
+            "tests/contact_reactions-config2.csv",
         )
         .unwrap();
     }
