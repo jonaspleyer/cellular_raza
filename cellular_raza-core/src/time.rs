@@ -117,6 +117,42 @@ where
         Self::from_partial_save_points(t0, dt, partial_save_points)
     }
 
+    /// Similar to [Self::from_partial_save_interval] but specify a multiple of the time increment
+    /// instead of a floating point value.
+    /// This method is preferred over the one previously mentioned.
+    pub fn from_partial_save_freq(
+        t0: F,
+        dt: F,
+        t_max: F,
+        save_freq: usize,
+    ) -> Result<Self, TimeError> {
+        let max_iterations = F::to_usize(&((t_max - t0) / dt).round())
+            .ok_or(TimeError(format!("Could not round value to usize")))?;
+        let all_events = (0..max_iterations)
+            .map(|n| {
+                Ok((
+                    t0 + F::from_usize(n * save_freq).ok_or(TimeError(format!(
+                        "Could not convert usize {} to type {}",
+                        n,
+                        std::any::type_name::<F>()
+                    )))? * dt,
+                    n,
+                    TimeEvent::PartialSave,
+                ))
+            })
+            .collect::<Result<Vec<_>, TimeError>>()?;
+        Ok(Self {
+            dt,
+            t0,
+            all_events,
+            current_time: t0,
+            current_iteration: 0,
+            maximum_iterations: max_iterations,
+            current_event: Some(TimeEvent::PartialSave),
+            past_events: Vec::new(),
+        })
+    }
+
     /// Simple function to construct the stepper from an initial time point, the time increment and
     /// the time points at which the simulation should be saved. Notice that these saves do not
     /// cover [FullSaves](TimeEvent::FullSave) but only [PartialSaves](TimeEvent::PartialSave).
