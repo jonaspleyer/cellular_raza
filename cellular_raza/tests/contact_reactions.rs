@@ -306,13 +306,13 @@ mod two_component_contact_reaction {
         t_max: f64,
     ) -> Result<(), SimulationError> {
         // Define exact solution
+        let q = (upper_limit - y0[1]) / y0[1];
         let exact_solution_derivative = |t: f64, n_deriv: i32| -> nalgebra::Vector2<f64> {
             let linear_growth = if n_deriv == 0 {
                 y0[0] + (n_agents - 1) as f64 * production * (t - t0)
             } else {
                 0.0
             };
-            let q = (upper_limit - y0[1]) / y0[1];
             let logistic_curve = (1..n_deriv).product::<i32>() as f64
                 * upper_limit
                 * q.powi(n_deriv)
@@ -324,7 +324,11 @@ mod two_component_contact_reaction {
         // Estimate upper bound on local and global truncation error
         let lipschitz_constant = nalgebra::vector![
             (n_agents - 1) as f64 * production,
-            (n_agents - 1) as f64 * production * y0[1]
+            y0[1] / (t_max - t0)
+                * (1.0 / (1.0 + q * (-production * (n_agents - 1) as f64 * t0).exp())
+                    - 1.0 / (1.0 + q * (-production * (n_agents - 1) as f64 * (t_max - t0)).exp()))
+                .abs()
+                .max(10.0 * std::f64::EPSILON)
         ];
         let fourth_derivative_bound = |t: f64| -> nalgebra::Vector2<f64> {
             nalgebra::vector![
