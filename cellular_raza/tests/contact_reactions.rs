@@ -33,9 +33,7 @@ impl Intracellular<f64> for ReactionCell {
     }
 
     fn set_intracellular(&mut self, intracellular: f64) {
-        if self.index == (5, 5) {
-            println!("{}", intracellular);
-        }
+        if self.index == (5, 5) {}
         self.intracellular = intracellular;
     }
 }
@@ -378,7 +376,6 @@ mod two_component_contact_reaction {
                 let d0 = (r[0] - res_ex[0]).abs();
                 let d1 = (r[1] - res_ex[1]).abs();
                 assert!(d0 < e_global[0]);
-                println!("{} {}", d1, e_global[1]);
                 assert!(d1 < e_global[1]);
             }
             results.push((t, res_ex, e_global, e_local, res_cr));
