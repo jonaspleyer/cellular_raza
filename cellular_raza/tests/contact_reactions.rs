@@ -240,7 +240,7 @@ mod two_component_contact_reaction {
         n_agents: usize,
         t0: f64,
         dt: f64,
-        save_interval: f64,
+        save_interval: usize,
         t_max: f64,
     ) -> Result<Vec<(f64, Vec<[f64; 2]>)>, SimulationError> {
         // Define initial values
@@ -261,7 +261,7 @@ mod two_component_contact_reaction {
 
         // Specify simulation domain, time and only store results intermediately in memory
         let domain = CartesianCuboid::from_boundaries_and_n_voxels([0.0; 1], [1.0; 1], [1; 1])?;
-        let time = FixedStepsize::from_partial_save_interval(t0, dt, t_max, save_interval)?;
+        let time = FixedStepsize::from_partial_save_freq(t0, dt, t_max, save_interval)?;
         let storage = StorageBuilder::new().priority([StorageOption::Memory]);
         let settings = Settings {
             n_threads: 1.try_into().unwrap(),
@@ -302,7 +302,7 @@ mod two_component_contact_reaction {
         n_agents: usize,
         t0: f64,
         dt: f64,
-        save_interval: f64,
+        save_interval: usize,
         t_max: f64,
     ) -> Result<(), SimulationError> {
         // Define exact solution
@@ -385,7 +385,7 @@ mod two_component_contact_reaction {
         let upper_limit = 12.0;
         let t0 = 3.0;
         let dt = 0.21;
-        let save_interval = 0.42;
+        let save_interval = 2;
         let t_max = 20.000001;
         let n_agents = 2;
         compare_results(
@@ -409,7 +409,7 @@ mod two_component_contact_reaction {
         let upper_limit = 5.0;
         let t0 = 34.0;
         let dt = 0.01;
-        let save_interval = 0.2;
+        let save_interval = 10;
         let t_max = 38.000001;
         let n_agents = 3;
         compare_results(
@@ -433,7 +433,7 @@ mod two_component_contact_reaction {
         let upper_limit = 2.0;
         let t0 = 170.0;
         let dt = 0.1;
-        let save_interval = 0.5;
+        let save_interval = 2;
         let t_max = 199.000001;
         let n_agents = 12;
         compare_results(
