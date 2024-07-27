@@ -25,9 +25,8 @@ jobs:
           sudo apt install diffutils
       - name: Check diffs
         run: |
-          diff .docs-header.html cellular_raza-building-blocks/.docs-header.html
           # This file does not exist at the moment
-          # run: diff .docs-header.html cellular_raza-concepts/.docs-header.html
-          diff .docs-header.html cellular_raza-core/.docs-header.html
-          diff .docs-header.html cellular_raza/.docs-header.html
+          # run: diff cellular_raza-building-blocks/.docs-header.html cellular_raza-concepts/.docs-header.html
+          diff cellular_raza-building-blocks/.docs-header.html cellular_raza-core/.docs-header.html
+          diff cellular_raza-building-blocks/.docs-header.html cellular_raza/.docs-header.html
 
