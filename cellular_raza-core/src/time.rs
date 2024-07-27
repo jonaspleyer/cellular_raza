@@ -128,7 +128,7 @@ where
     ) -> Result<Self, TimeError> {
         let max_iterations = F::to_usize(&((t_max - t0) / dt).round())
             .ok_or(TimeError(format!("Could not round value to usize")))?;
-        let all_events = (0..max_iterations)
+        let all_events = (0..max_iterations).step_by(save_freq)
             .map(|n| {
                 Ok((
                     t0 + F::from_usize(n * save_freq).ok_or(TimeError(format!(
