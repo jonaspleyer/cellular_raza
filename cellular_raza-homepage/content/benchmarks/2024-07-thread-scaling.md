@@ -9,6 +9,6 @@ title: Thread Scaling
 
 ## Results
 
-![](scaling_1.png)
+![](thread_scaling.png)
 
 ## Discussion
