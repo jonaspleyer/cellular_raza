@@ -57,6 +57,7 @@ def plot_cells_at_iter(
         output_path: Path | None = None,
         save_path: Path | None = None,
         overwrite: bool = False,
+        transparent: bool = False,
     ):
     if output_path is None:
         output_path = get_last_output_path()
@@ -73,7 +74,7 @@ def plot_cells_at_iter(
     ax.set_ylim(0, 800)
     plot_cells(ax, cells, intra_low, intra_high)
     fig.tight_layout()
-    fig.savefig(save_path)
+    fig.savefig(save_path, transparent=transparent)
     plt.close(fig)
     return save_path
 
@@ -89,6 +90,7 @@ def plot_cells_at_all_iterations(
         output_path: Path | None = None,
         save_path: Path | None = None,
         overwrite: bool = False,
+        transparent: bool = True,
     ) -> list:
     if output_path is None:
         output_path = get_last_output_path()
@@ -105,5 +107,5 @@ def plot_cells_at_all_iterations(
     return list(tqdm.tqdm(pool.imap(__plotting_helper, arguments), total=len(iterations)))
 
 if __name__ == "__main__":
-    plot_cells_at_all_iterations(4.0, 8.0, overwrite=True)
+    plot_cells_at_all_iterations(0.0, 4.0, overwrite=True, transparent=True)
 
