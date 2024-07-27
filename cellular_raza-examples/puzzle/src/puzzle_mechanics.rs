@@ -195,7 +195,7 @@ mod test_triangulation {
         //    \      /
         //     p6--p5
         let vertices = Vertices(vec![
-            Vector2::from([-2_f64.sqrt(), 0.0]),
+            Vector2::from([-(2_f64.sqrt()), 0.0]),
             Vector2::from([-1.0, 1.0]),
             Vector2::from([1.0, 1.0]),
             Vector2::from([2_f64.sqrt(), 0.0]),
