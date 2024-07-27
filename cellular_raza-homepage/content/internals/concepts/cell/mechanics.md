@@ -88,33 +88,40 @@ struct MyCell {
     mass: f64,
 }
 ```
-The [`Mechanics`](/docs/cellular_raza_concepts/Mechanics.html) trait requires some setters and
-getters but the main driver sits behind the `calculate_increment` function.
-If we implement it with the previous equations, we obtain
+The [`Mechanics`](/docs/cellular_raza_concepts/trait.Mechanics.html) trait interoperates very
+closesly with the [`Position`](/docs/cellular_raza_concepts/trait.Position.html) and
+[`Velocity`](/docs/cellular_raza_concepts/trait.Velocity.html) traits which provide setters and
+getters
+If we implement the properties explained by the preceding equations, we obtain
 ```rust
-impl Mechanics<VectorN, VectorN, VectorN> for MyCell {
-    // Just some getters ..
+impl Position<VectorN> for MyCell {
     fn pos(&self) -> VectorN {
         self.pos.clone()
     }
 
-    fn velocity(&self) -> VectorN {
-        self.vel.clone()
-    }
-
-    // ... and setters
     fn set_pos(&mut self, pos: &VectorN) {
         self.pos = pos.clone();
+    }
+}
+
+impl Velocity<VectorN> for MyCell {
+    fn velocity(&self) -> VectorN {
+        self.vel.clone()
     }
 
     fn set_velocity(&mut self, velocity: &VectorN) {
         self.vel = velocity.clone();
     }
+}
 
-    // Here is the magic
-    fn calculate_increment(&self, force: VectorN) -> Result<(VectorN, VectorN), CalcError> {
+// Here is the magic
+impl Mechanics<VectorN, VectorN, VectorN> for MyCell {
+    fn calculate_increment(
+        &self,
+        force: VectorN
+    ) -> Result<(VectorN, VectorN), CalcError> {
         let dx = self.vel();
-        let dv = 1/self.mass * force;
+        let dv = 1.0/self.mass * force;
         Ok((dx, dv))
     }
 }
