@@ -20,12 +20,12 @@ pub const DOMAIN_SIZE_Y: f64 = 800.0;
 
 // Time parameters
 pub const N_TIMES: u64 = 10_001;
-pub const DT: f64 = 0.05;
+pub const DT: f64 = 0.005;
 pub const T_START: f64 = 0.0;
-pub const SAVE_INTERVAL: u64 = 10;
+pub const SAVE_INTERVAL: u64 = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 4;
+pub const N_THREADS: usize = 1;
 
 mod cell_properties;
 mod custom_domain;
@@ -44,8 +44,7 @@ fn main() -> Result<(), chili::SimulationError> {
         cuboid: CartesianCuboid::from_boundaries_and_interaction_range(
             [0.0; 2],
             [DOMAIN_SIZE_X, DOMAIN_SIZE_Y],
-            2.0 * CELL_MECHANICS_INTERACTION_RANGE
-                .max((CELL_MECHANICS_AREA / std::f64::consts::PI).sqrt()),
+            2.0 * VertexMechanics2D::<6>::inner_radius_from_cell_area(CELL_MECHANICS_AREA),
         )?,
     };
 
@@ -57,48 +56,61 @@ fn main() -> Result<(), chili::SimulationError> {
         CELL_MECHANICS_DAMPING_CONSTANT,
         CELL_MECHANICS_DIFFUSION_CONSTANT,
         [
-            [0.1 * DOMAIN_SIZE_X, 0.1 * DOMAIN_SIZE_Y].into(),
-            [0.9 * DOMAIN_SIZE_X, 0.9 * DOMAIN_SIZE_Y].into(),
+            [0.05 * DOMAIN_SIZE_X, 0.05 * DOMAIN_SIZE_Y].into(),
+            [0.95 * DOMAIN_SIZE_X, 0.95 * DOMAIN_SIZE_Y].into(),
         ],
     );
+    println!("Generated {} cells", models.len());
+
+    let k1 = 0.6662;
+    let k2 = 0.1767;
+    let k3 = 3.1804;
+    let k4 = 5.3583;
+    let k5 = 1.0;
+    // let contact_range = (CELL_MECHANICS_AREA / std::f64::consts::PI).sqrt() * 1.5;
+    let contact_range = 0.9 * DOMAIN_SIZE_X / (models.len() as f64).sqrt() * 1.5;
+    let f = -((k1 * k4 - 1f64).powf(2.0) - 4.0 * k2 * k4 * k5).sqrt();
+    let v0 = nalgebra::vector![
+        (k1 * k4 - 1.0 + f) / (2.0 * k2 * k4),
+        (k1 * (k1 * k4 - 1.0 - f) - 2.0 * k2 * k5) / (2.0 * k5),
+        (k1 * k4 + 1.0 - f) / (2.0 * k4),
+    ];
     let cells = models
         .into_iter()
-        .map(|model| {
-            MyCell {
-                mechanics: model,
-                interaction: VertexDerivedInteraction::from_two_forces(
-                    OutsideInteraction {
-                        potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
-                        interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
-                    },
-                    InsideInteraction {
-                        potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
-                        average_radius: CELL_MECHANICS_AREA.sqrt(),
-                    },
-                ),
-                intracellular: nalgebra::Vector2::from([
-                    rng.gen_range(5.0..6.0),
-                    rng.gen_range(0.0..1.0),
-                ]),
-                k1: 0.01,
-                k2: 0.02,
-                k3: 0.1,
-                exchange: nalgebra::Vector2::from([0.001, 0.1]),
-            }
+        .map(|model| MyCell {
+            mechanics: model,
+            interaction: VertexDerivedInteraction::from_two_forces(
+                OutsideInteraction {
+                    potential_strength: CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    interaction_range: CELL_MECHANICS_INTERACTION_RANGE,
+                },
+                InsideInteraction {
+                    potential_strength: 1.5 * CELL_MECHANICS_POTENTIAL_STRENGTH,
+                    average_radius: CELL_MECHANICS_AREA.sqrt(),
+                },
+            ),
+            intracellular: nalgebra::Vector3::from([
+                rng.gen_range(0.9 * v0[0]..1.1 * v0[0]),
+                rng.gen_range(0.9 * v0[1]..1.1 * v0[1]),
+                rng.gen_range(0.9 * v0[2]..1.1 * v0[2]),
+            ]),
+            k1,
+            k2,
+            k3,
+            k4,
+            k5,
+            contact_range,
         })
         .collect::<Vec<_>>();
-    for cell in cells.iter() {
-        assert!(cell.k2 > 0.0);
-        assert!(cell.k2.powi(3) < cell.k1 * cell.k3.powi(2));
-        assert!(cell.exchange.y / cell.exchange.x * cell.k2.powi(3) > cell.k1 * cell.k3.powi(2));
-    }
 
     // Define settings for storage and time solving
     let settings = chili::Settings {
         time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
         n_threads: N_THREADS.try_into().unwrap(),
         show_progressbar: true,
-        storage: StorageBuilder::new().location("out/semi_vertex"),
+        storage: StorageBuilder::new()
+            .location("out/semi_vertex")
+            .priority([StorageOption::SerdeJson]),
     };
 
     // Run the simulation
