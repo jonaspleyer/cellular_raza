@@ -422,9 +422,9 @@ mod two_component_contact_reaction {
         let y0 = [1.0, 2.0];
         let upper_limit = 12.0;
         let t0 = 3.0;
-        let dt = 0.21;
-        let save_interval = 2;
-        let t_max = 20.000001;
+        let dt = 0.01;
+        let save_interval = 50;
+        let t_max = 20.0;
         let n_agents = 2;
         compare_results(
             production,
@@ -447,9 +447,9 @@ mod two_component_contact_reaction {
         let y0 = [1.0, 2.0];
         let upper_limit = 5.0;
         let t0 = 34.0;
-        let dt = 0.15;
+        let dt = 0.021;
         let save_interval = 10;
-        let t_max = 44.000001;
+        let t_max = 44.0;
         let n_agents = 3;
         compare_results(
             production,
