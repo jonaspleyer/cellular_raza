@@ -72,6 +72,7 @@ def plot_cells_at_iter(
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_xlim(0, 800)
     ax.set_ylim(0, 800)
+    ax.set_axis_off()
     plot_cells(ax, cells, intra_low, intra_high)
     fig.tight_layout()
     fig.savefig(save_path, transparent=transparent)
