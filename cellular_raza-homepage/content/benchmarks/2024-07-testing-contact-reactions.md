@@ -479,31 +479,26 @@ The size of the errorbars is mainly determined by the time interval $\Delta t$ c
 equations.
 The second studied example `config1` shows how a low step-size $\Delta t$ yields results which
 follow the trajectory of the analytical solution to an even higher margin of error than before.
-Only for the last case of `config2`, we can see a visually meaningful discrepancy between the
-analytical solution and the numerical result.
-In the very beginning, the initial ascend of the curve is overestimated and thus a faster growth
-than the analytical solution can be seen.
-However, this difference is still within the margin of error of our solver and the.
-
-The initial overestimation can be explained by the internals of our implementation of the
-Adams-Bashforth [\[3\]](#References) solver.
-The numerical solver does not have any knowledge about the increments $\Delta y_n$ before the
-simulation has started (ie. $n<0$).
-It is thus forced to assume nothing and reverts back to the 1st order case.
-For the second simulation step, the 2nd order Adams-Bashforth solver can be used and only
-afterwards do we have enough information about previous time increments such that the full 3rd order
-solver can take over.
-This overestimation is only to be expected in the very initial steps of our numerical routine.
 
 ![](/benchmarks/contact_reactions/contact_reactions-config0.png)
 ![](/benchmarks/contact_reactions/contact_reactions-config1.png)
-![](/benchmarks/contact_reactions/contact_reactions-config2.png)
 
 ## Discussion
 We have shown how to derive useful bounds for the local and global truncation error of a result
 with a known analytical solution.
 Furthermore, these mathematical results have been implemented in an automated testing scheme to
 measure and verify the solvers behind the `ReactionsContact` simulation aspect of `cellular_raza`.
+
+Results generated initially are of lower accuracy.
+This can be explained by the internals of our implementation of the Adams-Bashforth
+[\[3\]](#References) solver.
+The numerical solver does not have any knowledge about the increments $\Delta y_n$ before the
+simulation has started (ie. $n<0$).
+It is thus forced to assume nothing and reverts back to the 1st order case.
+For the second simulation step, the 2nd order Adams-Bashforth solver can be used and only
+afterwards do we have enough information about previous time increments such that the full 3rd order
+solver can take over.
+This behaviour only occurrs in the very initial steps of our numerical routine.
 
 ## References
 [1]
