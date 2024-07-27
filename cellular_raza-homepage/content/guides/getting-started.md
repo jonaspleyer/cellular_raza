@@ -3,16 +3,15 @@ title: Getting Started
 weight: 10
 ---
 
-## Using a Template
+## Using Templates
 We provide two slightly different templates to quickly get started with running your first
 simulation.
-The first template is purely written in Rust while the second provides bindings to Python.
-Their usage is slightly different.
-We advise users who quickly want to develop new models to opt for the first alternative.
-If you are interested in integrating an existing setup into your Python code, choose the second
-alternative.
-
-### Cell Sorting in 2D
+The [cell_sorting](https://github.com/jonaspleyer/cellular_raza-template) template is purely
+written in Rust while
+[cell_sorting-pyo3](https://github.com/jonaspleyer/cellular_raza-template-pyo3) provides Python
+bindings in addition.
+These templates can serve as a starting point but are not representative of the variability which
+`cellular_raza` offers (see [showcase](/showcase)).
 
 ## From Scratch
 
@@ -27,13 +26,16 @@ Afterwards add `cellular_raza` as a dependency.
 cargo add cellular_raza
 ```
 
-We can quickly build simulations by combining already existing [building_blocks](building-blocks).
-For now, we only implement physical interactions.
-We define a new Cell type.
+For now, we only implement physical interactions via the
+[Mechanics](/internals/concepts/cell/mechanics) and
+[interaction](/internals/concepts/cell/interaction) simulation aspects.
+We can quickly build simulations by combining already existing [building_blocks](building-blocks)
+with the [CellAgent](/docs/cellular_raza-concepts/derive.CellAgent.html) derive macro.
 
+We begin by importing all necessary 
 ```rust
 #[derive(Clone, CellAgent)]
-struct MyOwnCell {
+struct MyCell {
     #[Mechanics]
     mechanics: NewtonDamped3D,
     #[Interaction]
@@ -52,7 +54,7 @@ use cellular_raza::prelude::*;
 
 <!--  Now we can use `cargo` to compile and execute the project in release mode with all possible optimizations
 ```bash
-cargo run --release
+cargo run --releaseHH
 ```
 
 Execute the simulation in `--release` mode whenever performance is critical.
