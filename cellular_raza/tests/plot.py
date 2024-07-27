@@ -24,17 +24,9 @@ if __name__ == "__main__":
         res_exact = results[:,6]
 
         fig, ax = plt.subplots()
-        # ax.fill_between(t, -lerror, lerror, alpha=0.2, color="green")
-        ylim_low = np.inf
-        ylim_high = - np.inf
-        # ax.errorbar(t, 0*t, 0.002 * res_exact, label="0.2% Analytical Solution", color="k", linestyle="--")
-        # ax.plot(t, gerror, label="Global truncation Error", color="blue")
         for n in range(7, results.shape[1]):
             if n % 2 == 0:
                 ax.plot(t, results[:,n], label="Solution {:1.0f}".format(n), linestyle="--")
-                # ax.plot(t, res_exact - results[:,n], label="Solution {:1.0f}".format(n))
-                # ylim_low = min(np.min(res_exact - results[:,n]), ylim_low, 0)
-                # ylim_high = max(np.max(res_exact - results[:,n]), ylim_high, 0)
         ax.errorbar(
             t,
             res_exact,
@@ -44,9 +36,7 @@ if __name__ == "__main__":
             color="k",
             alpha=0.5
         )
-        dx = ylim_high - ylim_low
-        margin = 0.1
-        # ax.set_ylim(ylim_low - margin * dx, ylim_high + margin * dx)
+        ax.set_title("cellular_raza/" + str(file))
         ax.legend()
         fig.tight_layout()
         fig.savefig(file.replace(".csv", ".png"))
