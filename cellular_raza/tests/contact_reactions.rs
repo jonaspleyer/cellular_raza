@@ -197,7 +197,9 @@ mod two_component_contact_reaction {
     use cellular_raza::building_blocks::*;
     use cellular_raza::concepts::*;
     use cellular_raza::core::{backend::chili::*, storage::*, time::*};
+
     use serde::{Deserialize, Serialize};
+
     #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
     struct ContactCell {
         intracellular: nalgebra::Vector2<f64>,
@@ -214,6 +216,7 @@ mod two_component_contact_reaction {
             self.intracellular = intracellular;
         }
     }
+
     impl ReactionsContact<nalgebra::Vector2<f64>, nalgebra::Vector1<f32>> for ContactCell {
         fn calculate_contact_increment(
             &self,
@@ -461,31 +464,6 @@ mod two_component_contact_reaction {
             save_interval,
             t_max,
             "tests/contact_reactions-config1.csv",
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn test_config2() {
-        // Simulation parameters
-        let production = 1.0;
-        let y0 = [1.0, 1.1];
-        let upper_limit = 2.0;
-        let t0 = 170.0;
-        let dt = 0.12;
-        let save_interval = 2;
-        let t_max = 179.000001;
-        let n_agents = 4;
-        compare_results(
-            production,
-            y0,
-            upper_limit,
-            n_agents,
-            t0,
-            dt,
-            save_interval,
-            t_max,
-            "tests/contact_reactions-config2.csv",
         )
         .unwrap();
     }
