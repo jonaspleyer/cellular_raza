@@ -40,8 +40,12 @@ def load_cells(iteration: int, output_path: Path | None = None) -> pd.DataFrame:
 
 def plot_cells(ax, df_cells, intra_low, intra_high):
     viridis = mpl.colormaps['viridis'].resampled(255)
+    thresh = intra_low + 0.5 * (intra_high - intra_low)
     for pos, intracellular in zip(df_cells["cell.mechanics.points"], df_cells["cell.intracellular"]):
-        c = viridis((intracellular[0] - intra_low) / (intra_high - intra_low))
+        if intracellular[2] < thresh:
+            c = viridis(0)
+        else:
+            c = viridis((intracellular[2] - intra_low) / (intra_high - intra_low))
         polygon = mpatches.Polygon(pos, facecolor=c, edgecolor='white')
         ax.add_patch(polygon)
 
