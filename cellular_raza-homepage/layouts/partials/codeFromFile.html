@@ -1,0 +1,34 @@
+{{ $filename := (.Scratch.Get "file") }}
+
+{{ $start := 0 }}
+{{ if (.Scratch.Get "start" )}}
+{{ $start = math.Sub (int (.Scratch.Get "start")) 1 }}
+{{ end }}
+
+{{ $end := (.Scratch.Get "end") }}
+{{ $diff := $end }}
+{{ if (.Scratch.Get "end") }}
+{{ $diff = math.Sub (int $end) $start }}
+{{ end }}
+
+{{ $lang := "rust" }}
+{{ if (.Scratch.Get "lang") }}
+{{ $lang = (.Scratch.Get "lang") }}
+{{ end }}
+
+{{ $highlight_args := dict }}
+{{ if (.Scratch.Get "highlight_args") }}
+{{ $highlight_args = (.Scratch.Get "highlight_args") }}
+{{ end }}
+
+{{ $file := readFile $filename }}
+{{ $file = split $file "\n" }}
+
+{{ $file = after $start $file }}
+{{ if $diff }}
+{{ $file = first $diff $file }}
+{{ end }}
+
+{{ $file = delimit $file "\n" }}
+
+{{ highlight $file $lang $highlight_args }}
