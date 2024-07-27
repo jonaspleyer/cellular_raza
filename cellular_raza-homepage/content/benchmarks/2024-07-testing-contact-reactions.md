@@ -35,7 +35,7 @@ $$\\begin{align}
 ### Implementation in `cellular_raza`
 To model them with `cellular_raza` we define a new agent type `ContactCell`.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=197}
 use cellular_raza::building_blocks::*;
 use cellular_raza::concepts::*;
 use cellular_raza::core::{backend::chili::*, storage::*, time::*};
@@ -58,7 +58,7 @@ Furthermore, we implement the required concepts
 [`Intracellular`](/docs/cellular_raza_concepts/trait.Intracellular.html),
 [`ReactionsContact`](/docs/cellular_raza_concepts/trait.ReactionsContact.html) as follows.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=211}
 impl Intracellular<nalgebra::Vector2<f64>> for ContactCell {
     fn get_intracellular(&self) -> nalgebra::Vector2<f64> {
         self.intracellular
@@ -77,9 +77,7 @@ impl ReactionsContact<nalgebra::Vector2<f64>, nalgebra::Vector1<f32>> for Contac
         _ext_pos: &nalgebra::Vector1<f32>,
         _rinf: &(),
     ) -> Result<(nalgebra::Vector2<f64>, nalgebra::Vector2<f64>), CalcError> {
-        let calculate_incr = |y: f64| -> f64 {
-            self.alpha0 * y * (1.0 - y / self.upper_limit)
-        };
+        let calculate_incr = |y: f64| -> f64 { self.alpha0 * y * (1.0 - y / self.upper_limit) };
         let own_dr = [self.alpha0, calculate_incr(own_intracellular[1])].into();
         let ext_dr = [self.alpha0, calculate_incr(ext_intracellular[1])].into();
         Ok((own_dr, ext_dr))
@@ -107,7 +105,7 @@ Now we are ready to solve our system with the
 [`run_simulation!`](/docs/cellular_raza_core::backend::chili::run_simulation) macro.
 To test various configurations, we write a function which takes in all needed parameters to solve the system.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=237}
 fn run_cellular_raza(
     alpha0: f64,
     y0: [f64; 2],
@@ -115,7 +113,7 @@ fn run_cellular_raza(
     n_agents: usize,
     t0: f64,
     dt: f64,
-    save_interval: f64,
+    save_interval: usize,
     t_max: f64,
 ) -> Result<Vec<(f64, Vec<[f64; 2]>)>, SimulationError> {
     // Define initial values
@@ -136,7 +134,7 @@ fn run_cellular_raza(
 
     // Specify simulation domain, time and only store results intermediately in memory
     let domain = CartesianCuboid::from_boundaries_and_n_voxels([0.0; 1], [1.0; 1], [1; 1])?;
-    let time = FixedStepsize::from_partial_save_interval(t0, dt, t_max, save_interval)?;
+    let time = FixedStepsize::from_partial_save_freq(t0, dt, t_max, save_interval)?;
     let storage = StorageBuilder::new().priority([StorageOption::Memory]);
     let settings = Settings {
         n_threads: 1.try_into().unwrap(),
@@ -232,7 +230,7 @@ that this upper bound is fulfilled.
 We begin by writing down a general formula for the nth drivative of the exact solution to the
 logistic curve ODE problem as given above.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=299}
 fn compare_results(
     production: f64,
     y0: [f64; 2],
@@ -240,17 +238,18 @@ fn compare_results(
     n_agents: usize,
     t0: f64,
     dt: f64,
-    save_interval: f64,
+    save_interval: usize,
     t_max: f64,
+    #[allow(unused)] save_filename: &str,
 ) -> Result<(), SimulationError> {
     // Define exact solution
+    let q = (upper_limit - y0[1]) / y0[1];
     let exact_solution_derivative = |t: f64, n_deriv: i32| -> nalgebra::Vector2<f64> {
         let linear_growth = if n_deriv == 0 {
             y0[0] + (n_agents - 1) as f64 * production * (t - t0)
         } else {
             0.0
         };
-        let q = (upper_limit - y0[1]) / y0[1];
         let logistic_curve = (1..n_deriv).product::<i32>() as f64
             * upper_limit
             * q.powi(n_deriv)
@@ -258,19 +257,31 @@ fn compare_results(
                 .powi(-(n_deriv + 1));
         nalgebra::Vector2::from([linear_growth, logistic_curve])
     };
+
     // ...
 ```
 
-In the next step we use the Lipschitz-constants $L_0=\alpha$ and $L_1=\alpha y_0$ together with the
+In the next step we calculate the Lipschitz-constants $L_0,L_1$ and use them together with the
 fourth derivative bound to calculate the local and global truncation errors.
+The Lipschitz condition is given by
 
-```rust
+$$\begin{equation}
+    |f(s) - f(t)| \leq L |s-t|
+\end{equation}$$
+
+In our case, we can use 
+
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=324}
     // ...
 
     // Estimate upper bound on local and global truncation error
     let lipschitz_constant = nalgebra::vector![
         (n_agents - 1) as f64 * production,
-        (n_agents - 1) as f64 * production * y0[1]
+        y0[1] / (t_max - t0)
+            * (1.0 / (1.0 + q * (-production * (n_agents - 1) as f64 * t0).exp())
+                - 1.0 / (1.0 + q * (-production * (n_agents - 1) as f64 * (t_max - t0)).exp()))
+            .abs()
+            .max(10.0 * std::f64::EPSILON)
     ];
     let fourth_derivative_bound = |t: f64| -> nalgebra::Vector2<f64> {
         nalgebra::vector![
@@ -303,7 +314,7 @@ In the final step, we use the already defined function `` to generate results fr
 and compare them with the exact known results.
 Their difference has to be within the margin of the calculated global truncation error $e$.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=358}
     // ...
 
     // Obtain solutions from cellular_raza
@@ -319,24 +330,64 @@ Their difference has to be within the margin of the calculated global truncation
     )?;
 
     // Compare the results
+    let mut results = vec![];
     for (t, res_cr) in solutions_cr {
         let res_ex = exact_solution_derivative(t, 0);
-        let e = global_truncation_error(t);
-        for r in res_cr {
+        let e_global = global_truncation_error(t);
+        let e_local = local_truncation_error(t);
+        for r in res_cr.iter() {
             let d0 = (r[0] - res_ex[0]).abs();
             let d1 = (r[1] - res_ex[1]).abs();
-            assert!(d0 < e[0]);
-            assert!(d1 < e[1]);
+            assert!(d0 < e_global[0]);
+            assert!(d1 < e_global[1]);
         }
+        results.push((t, res_ex, e_global, e_local, res_cr));
     }
+
+    #[cfg(not(debug_assertions))]
+    save_results(results, save_filename);
+
     Ok(())
+}
+```
+
+In the last step, we also added a function `save_results` which exports all generated results to a
+`.csv` file which.
+
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=393}
+#[allow(unused)]
+fn save_results(
+    results: Vec<(
+        f64,
+        nalgebra::Vector2<f64>,
+        nalgebra::Vector2<f64>,
+        nalgebra::Vector2<f64>,
+        Vec<[f64; 2]>,
+    )>,
+    save_filename: &str,
+) {
+    use std::fs::File;
+    use std::io::prelude::*;
+    let mut file = File::create(save_filename).unwrap();
+    for (t, res_ex, e_global, e_local, res_cr) in results {
+        write!(
+            file,
+            "{},{},{},{},{},{},{}",
+            t, e_global[0], e_global[1], e_local[0], e_local[1], res_ex[0], res_ex[1]
+        )
+        .unwrap();
+        for r_cr in res_cr {
+            write!(file, ",{},{}", r_cr[0], r_cr[1]).unwrap();
+        }
+        writeln!(file, "").unwrap();
+    }
 }
 ```
 
 Equipped with this function `compare_results`, we can now use it for a collection of configurations
 to test the solver.
 
-```rust
+```rust {filename="contact_reactions.rs", linenos=table, linenostart=421}
 #[test]
 fn test_config0() {
     // Simulation parameters
@@ -345,7 +396,7 @@ fn test_config0() {
     let upper_limit = 12.0;
     let t0 = 3.0;
     let dt = 0.21;
-    let save_interval = 0.42;
+    let save_interval = 2;
     let t_max = 20.000001;
     let n_agents = 2;
     compare_results(
@@ -357,10 +408,102 @@ fn test_config0() {
         dt,
         save_interval,
         t_max,
+        "tests/contact_reactions-config0.csv",
     )
     .unwrap();
 }
 ```
+
+The generated files can then be used by a small python script to create the plots seen below.
+
+```python {filename="plot.py", linenos=table}
+import matplotlib.pyplot as plt
+import numpy as np
+from glob import glob
+
+if __name__ == "__main__":
+    files = glob("tests/*.csv")
+
+    for file in files:
+        # One line in such a file has the following entries
+        # (
+        #   t,
+        #   gerror_bound0, gerror_bound1,
+        #   lerror_bound0, lerror_bound1,
+        #   res_exact0, res_exact_1,
+        #   res_cr0_0, res_cr1_0,
+        #   res_cr1_0, res_cr1_1,
+        #   ...
+        # )
+        results = np.genfromtxt(file, delimiter=",")
+
+        t = results[:,0]
+        gerror = results[:,2]
+        lerror = results[:,4]
+        res_exact = results[:,6]
+
+        fig, ax = plt.subplots()
+        for n in range(7, results.shape[1]):
+            if n % 2 == 0:
+                ax.plot(t, results[:,n], label="Solution {:1.0f}".format(n), linestyle="--")
+        ax.errorbar(
+            t,
+            res_exact,
+            gerror,
+            label="Analytical Solution",
+            linestyle=":",
+            color="k",
+            alpha=0.5
+        )
+        ax.set_title("cellular_raza/" + str(file))
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(file.replace(".csv", ".png"))
+```
+
+The full code can be found under
+[`cellular_raza/tests/contact_reactions.rs`](https://github.com/jonaspleyer/cellular_raza/tree/master/cellular_raza/tests/contact_reactions.rs).
+To run it yourself, clone the git repo `git clone https://github.com/jonaspleyer/cellular_raza` and
+execute `cargo test -- two_component_contact_reaction` in the `cellular_raza` repository directory.
+
+## Results
+
+The following plots she the calculated results from `cellular_raza` and the analytical solution of
+the second ODE described above in equation $(2)$ for various configurations of parameters.
+They have been chosen in such a way to capture different dynamics and time-scales.
+The global truncation error is used as errorbars for the analytical solution.
+
+In the first image, we can clearly see the exponential growth of the global truncation error $e$
+over time.
+The size of the errorbars is mainly determined by the time interval $\Delta t$ chosen to solve the
+equations.
+The second studied example `config1` shows how a low step-size $\Delta t$ yields results which
+follow the trajectory of the analytical solution to an even higher margin of error than before.
+Only for the last case of `config2`, we can see a visually meaningful discrepancy between the
+analytical solution and the numerical result.
+In the very beginning, the initial ascend of the curve is overestimated and thus a faster growth
+than the analytical solution can be seen.
+However, this difference is still within the margin of error of our solver and the.
+
+The initial overestimation can be explained by the internals of our implementation of the
+Adams-Bashforth [\[3\]](#References) solver.
+The numerical solver does not have any knowledge about the increments $\Delta y_n$ before the
+simulation has started (ie. $n<0$).
+It is thus forced to assume nothing and reverts back to the 1st order case.
+For the second simulation step, the 2nd order Adams-Bashforth solver can be used and only
+afterwards do we have enough information about previous time increments such that the full 3rd order
+solver can take over.
+This overestimation is only to be expected in the very initial steps of our numerical routine.
+
+![](/benchmarks/contact_reactions/contact_reactions-config0.png)
+![](/benchmarks/contact_reactions/contact_reactions-config1.png)
+![](/benchmarks/contact_reactions/contact_reactions-config2.png)
+
+## Discussion
+We have shown how to derive useful bounds for the local and global truncation error of a result
+with a known analytical solution.
+Furthermore, these mathematical results have been implemented in an automated testing scheme to
+measure and verify the solvers behind the `ReactionsContact` simulation aspect of `cellular_raza`.
 
 ## References
 [1]
