@@ -33,10 +33,15 @@ parameter introduced.
 
 {{< cards >}}
     {{< card
-        link="/benchmarks/2024-02-thread-scaling"
-        title="Multithreading"
-        subtitle="2024-01-29 We analyze scaling with multiple threads using the `chili` backend and the `cell-sorting` simulation."
-        image="/benchmarks/2024-02-thread-scaling/scaling_1.png"
+        link="2024-07-testing-contact-reactions"
+        title="Accuracy Testing of Contact Reactions"
+        subtitle="We compare the solvers of `cellular_raza` with analytical results with estimates for the local and global truncation error."
+    >}}
+    {{< card
+        link="/benchmarks/2024-07-thread-scaling"
+        title="Thread Scaling (Amdahl's Law)"
+        subtitle="We analyze scaling with multiple threads using the `chili` backend and the `cell-sorting` simulation."
+        image="/benchmarks/thread_scaling.png"
     >}}
 {{< /cards >}}
 
