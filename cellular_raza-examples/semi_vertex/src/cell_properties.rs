@@ -84,6 +84,9 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>> for OutsideInteractio
         // Calculate distance and direction between own and other point
         let z = ext_pos - own_pos;
         let r = z.norm();
+        if r == 0.0 {
+            return Ok(([0f64; 2].into(), [0f64; 2].into()));
+        }
         let dir = z.normalize();
 
         // Introduce Non-dimensional length variable
