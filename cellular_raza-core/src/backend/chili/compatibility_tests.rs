@@ -67,10 +67,10 @@ where
 }
 
 #[allow(unused)]
-pub fn reactions_contact_implemented<Ri, Pos, RInf, C, Ci>(agents: &Ci)
+pub fn reactions_contact_implemented<Ri, Pos, Float, RInf, C, Ci>(agents: &Ci)
 where
     Ci: IntoIterator<Item = C>,
-    C: cellular_raza_concepts::ReactionsContact<Ri, Pos, RInf>,
+    C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
 {
 }
 
