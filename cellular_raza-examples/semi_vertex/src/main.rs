@@ -11,7 +11,7 @@ pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
 pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
-pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 1.0;
+pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.2;
 pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0;
 
 // Parameters for domain
@@ -19,7 +19,7 @@ pub const DOMAIN_SIZE_X: f64 = 800.0;
 pub const DOMAIN_SIZE_Y: f64 = 800.0;
 
 // Time parameters
-pub const N_TIMES: u64 = 10_001;
+pub const N_TIMES: u64 = 20_001;
 pub const DT: f64 = 0.005;
 pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: u64 = 50;
@@ -56,8 +56,8 @@ fn main() -> Result<(), chili::SimulationError> {
         CELL_MECHANICS_DAMPING_CONSTANT,
         CELL_MECHANICS_DIFFUSION_CONSTANT,
         [
-            [0.05 * DOMAIN_SIZE_X, 0.05 * DOMAIN_SIZE_Y].into(),
-            [0.95 * DOMAIN_SIZE_X, 0.95 * DOMAIN_SIZE_Y].into(),
+            [0.1 * DOMAIN_SIZE_X, 0.1 * DOMAIN_SIZE_Y].into(),
+            [0.9 * DOMAIN_SIZE_X, 0.9 * DOMAIN_SIZE_Y].into(),
         ],
     );
     println!("Generated {} cells", models.len());
@@ -75,7 +75,7 @@ fn main() -> Result<(), chili::SimulationError> {
         (k1 * (k1 * k4 - 1.0 - f) - 2.0 * k2 * k5) / (2.0 * k5),
         (k1 * k4 + 1.0 - f) / (2.0 * k4),
     ];
-    let mechanics_area_threshold = CELL_MECHANICS_AREA * 3.0;
+    let mechanics_area_threshold = CELL_MECHANICS_AREA * 2.0;
     let growth_rate = 0.01;
     let cells = models
         .into_iter()
@@ -122,7 +122,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Reactions, ReactionsContact],
+        aspects: [Mechanics, Interaction, Reactions, ReactionsContact],
     )?;
     Ok(())
 }
