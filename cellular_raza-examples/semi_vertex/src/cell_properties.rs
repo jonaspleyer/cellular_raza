@@ -42,7 +42,9 @@ pub struct MyCell<const D: usize> {
 impl<const D: usize>
     ReactionsContact<nalgebra::Vector4<f64>, nalgebra::SMatrix<f64, D, 2>, f64, f64> for MyCell<D>
 {
-    fn get_contact_information(&self) -> () {}
+    fn get_contact_information(&self) -> f64 {
+        self.mechanics.cell_area
+    }
 
     fn calculate_contact_increment(
         &self,
@@ -62,7 +64,8 @@ impl<const D: usize>
                 0.0,
                 0.0,
             ];
-            return Ok((incr, -incr));
+            let area_ratio = self.mechanics.cell_area / ext_cell_area;
+            return Ok((incr / area_ratio, -incr * area_ratio));
         }
         let incr = [0.0; 4].into();
         Ok((incr, -incr))
