@@ -102,6 +102,7 @@ def plot_cells_at_all_iterations(
             "output_path": output_path,
             "save_path": save_path,
             "overwrite": overwrite,
+            "transparent": transparent,
         }
     ) for it in iterations]
     pool = mp.Pool()
