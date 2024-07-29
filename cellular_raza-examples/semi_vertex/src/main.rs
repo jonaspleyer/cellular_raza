@@ -75,6 +75,8 @@ fn main() -> Result<(), chili::SimulationError> {
         (k1 * (k1 * k4 - 1.0 - f) - 2.0 * k2 * k5) / (2.0 * k5),
         (k1 * k4 + 1.0 - f) / (2.0 * k4),
     ];
+    let mechanics_area_threshold = CELL_MECHANICS_AREA * 3.0;
+    let growth_rate = 0.01;
     let cells = models
         .into_iter()
         .map(|model| MyCell {
@@ -100,6 +102,8 @@ fn main() -> Result<(), chili::SimulationError> {
             k4,
             k5,
             contact_range,
+            mechanics_area_threshold,
+            growth_rate,
         })
         .collect::<Vec<_>>();
 
