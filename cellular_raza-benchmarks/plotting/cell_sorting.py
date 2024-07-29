@@ -213,7 +213,7 @@ def plot_throughput(
         # Do fit
         def fit_func(n, T, p):
             return T / (1 - p + p / n)
-        popt, _ = sp.optimize.curve_fit(
+        popt, pcov = sp.optimize.curve_fit(
             fit_func,
             x_values,
             y_values,
@@ -234,7 +234,7 @@ def plot_throughput(
             x_values,
             y_values,
             yerr=grp["throughput_std"][filt],
-            label="{} p={:.2f}%".format(label, 100*popt[1]),
+            label="{} $p={:.2f}\pm {:.2f}$%".format(label, 100*popt[1], 100*(pcov[1][1]**0.5)),
             color=color,
             fmt="o",
         )
@@ -242,6 +242,7 @@ def plot_throughput(
         ax.set_title("Scaling with Threads")
         ax.set_xlabel("Number of Threads")
         ax.set_ylabel("Throughput [steps/s/cell]")
+        print("{} S = {:.2f} +- {:.2f}2".format(label, 1/(1-popt[1]), pcov[1][1]**0.5/(1-popt[1])**2))
     ax.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
     fig.tight_layout()
     fig.savefig(str(odir) + "/thread_scaling.png")
