@@ -72,7 +72,7 @@ where
 impl<F> Vertices<F>
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
-    F: core::ops::AddAssign + num::Zero + num::FromPrimitive + nalgebra::ClosedDiv,
+    F: core::ops::AddAssign + num::Zero + num::FromPrimitive + core::ops::Div<Output=F> + core::ops::DivAssign,
 {
     pub fn mean(&self) -> nalgebra::SVector<F, 2> {
         self.0.iter().sum::<SVector<F, 2>>() / F::from_usize(self.0.len()).unwrap()

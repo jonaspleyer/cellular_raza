@@ -115,7 +115,8 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + nalgebra::ClosedDiv<F>,
+        + core::ops::Div<Output=F>
+        + core::ops::DivAssign,
     Ci: IntoIterator<Item = C>,
 {
     type SubDomainIndex = usize;
@@ -137,7 +138,8 @@ where
                 + num::FromPrimitive
                 + num::ToPrimitive
                 + core::ops::SubAssign
-                + nalgebra::ClosedDiv<F>,
+                + core::ops::Div<Output=F>
+                + core::ops::DivAssign,
         {
             #[DomainRngSeed]
             #[DomainCreateSubDomains]
@@ -319,7 +321,8 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + nalgebra::ClosedDiv<F>,
+        + core::ops::Div<Output=F>
+        + core::ops::DivAssign,
 {
     /// Obtains the voxel index given a regular vector
     ///
@@ -353,7 +356,8 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + nalgebra::ClosedDiv<F>,
+        + core::ops::Div<Output=F>
+        + core::ops::DivAssign,
     C: Position<SVector<F, D>>,
 {
     type VoxelIndex = [usize; D];

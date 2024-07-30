@@ -8,7 +8,7 @@ authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 serde = { workspace = true, features=["rc"] }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
-nalgebra = { version="0.32" }
+nalgebra = { version="0.33" }
 num = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 plotters = { workspace = true }
