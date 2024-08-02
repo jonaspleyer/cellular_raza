@@ -86,5 +86,5 @@ def plot_all_spheres(path: Path, **kwargs: dict):
 
 if __name__ == "__main__":
     last_save_path = get_last_save_path(Path("out/cell_sorting"))
-    plot_all_spheres(last_save_path)
 
+    plot_all_spheres(last_save_path, transparent_background=True)
