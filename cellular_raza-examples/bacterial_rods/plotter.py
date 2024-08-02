@@ -77,7 +77,8 @@ def plot_spheres(
         iteration: int,
         path: Path = Path("./"),
         opath: Path | None = None,
-        overwrite:bool = False
+        overwrite: bool = False,
+        transparent_background: bool = False,
     ):
     if opath is None:
         opath = path / "images/{:010}.png".format(iteration)
@@ -114,7 +115,7 @@ def plot_spheres(
 
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()
-    img = plotter.screenshot(opath)
+    img = plotter.screenshot(opath, transparent_background=transparent_background)
     plotter.close()
     return img
 
@@ -122,7 +123,12 @@ def __plot_spheres_helper(args):
     (args, kwargs) = args
     plot_spheres(*args, **kwargs)
 
-def plot_all_spheres(path: Path, n_threads: int | None = None, overwrite:bool=False):
+def plot_all_spheres(
+        path: Path,
+        n_threads: int | None = None,
+        overwrite:bool=False,
+        transparent_background: bool = False
+    ):
     iterations = [it for it in get_all_iterations(path)[1]]
     if n_threads is None:
         n_cpu = os.cpu_count()
@@ -134,6 +140,7 @@ def plot_all_spheres(path: Path, n_threads: int | None = None, overwrite:bool=Fa
     kwargs = {
         "path": path,
         "overwrite": overwrite,
+        "transparent_background": transparent_background,
     }
     with concurrent.futures.ProcessPoolExecutor(max_workers=n_threads) as executor:
         _ = list(tqdm.tqdm(executor.map(
@@ -173,7 +180,7 @@ if __name__ == "_main__":
 if __name__ == "__main__":
     print("Plotting Individual Snapshots")
     output_path = get_last_output_path()
-    plot_all_spheres(output_path)
+    plot_all_spheres(output_path, transparent_background=True)
     print("Generating Movie")
     bashcmd = f"ffmpeg\
         -v quiet\
