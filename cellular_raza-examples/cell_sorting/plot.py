@@ -47,7 +47,7 @@ def get_spheres(iteration: int, path: Path):
     spheres = pset.glyph(geom=sphere, scale="diameter", orient=False)
     return spheres
 
-def plot_spheres(iteration: int, path: Path, opath = None):
+def plot_spheres(iteration: int, path: Path, opath = None, transparent_background: bool = False):
     spheres = get_spheres(iteration, path)
 
     plotter = pv.Plotter(off_screen=True)
@@ -64,21 +64,22 @@ def plot_spheres(iteration: int, path: Path, opath = None):
     if opath == None:
         opath = path / "images/{:010}.png".format(iteration)
         opath.parent.mkdir(parents=True, exist_ok=True)
-    img = plotter.screenshot(opath)
+    img = plotter.screenshot(opath, transparent_background=transparent_background)
     plotter.close()
     return img
 
-def __plot_spheres_helper(args):
-    plot_spheres(*args)
+def __plot_spheres_helper(args_kwargs):
+    args, kwargs = args_kwargs
+    plot_spheres(*args, **kwargs)
 
-def plot_all_spheres(path: Path):
+def plot_all_spheres(path: Path, **kwargs: dict):
     iterations = [it[0] for it in get_all_iterations(path)]
     pool = mp.Pool()
     list(
         tqdm.tqdm(
             pool.imap_unordered(
                 __plot_spheres_helper,
-                zip(iterations, itertools.repeat(path))
+                zip(zip(iterations, itertools.repeat(path)), itertools.repeat(kwargs))
             ),
             total=len(iterations)
     ))
