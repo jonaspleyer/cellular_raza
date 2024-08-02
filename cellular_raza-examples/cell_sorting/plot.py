@@ -8,7 +8,7 @@ import itertools
 import tqdm
 
 def get_all_iterations(path: Path):
-    return [(int(iter_dir.split("/")[-1]), iter_dir) for iter_dir in glob.glob(str(path / "cells/json/*"))]
+    return [(int(iter_dir.split("/")[-1]), iter_dir) for iter_dir in sorted(glob.glob(str(path / "cells/json/*")))]
 
 def __get_iteration_dir(iteration: int, path: Path):
     iterations = get_all_iterations(path)
