@@ -95,7 +95,7 @@ def plot_spheres(
     # Draw box around everything
     dx = 3e-6
     box = pv.Box(bounds=(-dx, 200e-6+dx, 0-dx, 15e-6+dx, 0-dx, 45e-6+dx))
-    plotter.add_mesh(box, style="wireframe")
+    plotter.add_mesh(box, style="wireframe", line_width=15)
     color_min = np.array([69, 124, 214])
     color_max = np.array([82, 191, 106])
     for (cell, growth_rate) in cell_meshes:
