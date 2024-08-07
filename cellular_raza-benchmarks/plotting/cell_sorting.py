@@ -124,7 +124,7 @@ def plot_runtime(
         p0 = np.zeros(fit_order+1)
         if fit_order > 1:
             p0[-2] = list(y_values)[-1] / list(x_values)[-1]
-        popt, _ = sp.optimize.curve_fit(
+        popt, pcov = sp.optimize.curve_fit(
             fit_func,
             fit_x_values,
             fit_y_values,
@@ -148,9 +148,10 @@ def plot_runtime(
         )
         ax.legend()
         print("=============================================")
-        print("| Fitting summary for {} with polynomial of order {}".format(entry.get("label", entry["name"]), len(popt)))
+        print("| Fitting summary for {} with polynomial of order {}".format(entry.get("label", entry["name"]), len(popt)-1))
         print("|--------------------------------------------")
         print("| Coefficients: ", *["p{}={:.3e}".format(len(popt)-i-1, p) for i, p in enumerate(popt)])
+        print("| Variance:     ", *["s{}={:.3e}".format(len(pcov)-i-1, p[i]**0.5) for i, p in enumerate(pcov)])
         print("| Effects at n_agents={}:".format(list(x_values)[-2]))
         for n_x_value in range(len(x_values)):
             x_value = list(x_values)[n_x_value]
