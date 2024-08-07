@@ -150,7 +150,7 @@ def plot_runtime(
         print("=============================================")
         print("| Fitting summary for {} with polynomial of order {}".format(entry.get("label", entry["name"]), len(popt)))
         print("|--------------------------------------------")
-        print("| Coefficients: ", *["p{}={:.4}".format(len(popt)-i-1, p) for i, p in enumerate(popt)])
+        print("| Coefficients: ", *["p{}={:.3e}".format(len(popt)-i-1, p) for i, p in enumerate(popt)])
         print("| Effects at n_agents={}:".format(list(x_values)[-2]))
         for n_x_value in range(len(x_values)):
             x_value = list(x_values)[n_x_value]
@@ -159,21 +159,14 @@ def plot_runtime(
                     np.exp(fit_func(fit_x_value, *[q if i==j else 0 for j, q in enumerate(popt)])) for i in range(len(popt))
             ])
             relative_contrib = contrib / np.sum(contrib)
-            print("| Contribution at n_agents={:10}: ".format(x_value), *["c{}={:.4e}".format(len(popt)-i-1,c) for i, c in enumerate(contrib)])
-            print("| Relative                            ", "", *["r{}={:9.1f}%".format(len(popt)-i-1, 100*r) for i, r in enumerate(relative_contrib)])
-
-        # table_data.append((popt, pcov, x_values))
-
-    # Create table
-    # celltext = [
-    #     [*popt, np.trace(pcov) / (len(x_values) - len(popt))]
-    #     for popt, pcov, x_values in table_data
-    # ]
-    # ax.table(
-    #     cellText=celltext,
-    #     colLabels=["$a$", "$b$", "$c$", "$\\chi^2$"],
-    #     loc="bottom",
-    # )
+            print(
+                "| Contribution at n_agents={:10}: ".format(x_value),
+                *["c{}={:.4e}".format(len(popt)-i-1,c) for i, c in enumerate(contrib)]
+            )
+            print(
+                "| Relative                            ", "",
+                *["r{}={:9.1f}%".format(len(popt)-i-1, 100*r) for i, r in enumerate(relative_contrib)]
+            )
 
     # Set some options
     ax.set_yscale('log')
