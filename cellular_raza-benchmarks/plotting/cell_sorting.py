@@ -254,8 +254,8 @@ plot_runtime(entries=[
         "color": "#58508d",
     },
     {
-        "name": "3700X-at-2200MHz",
-        "label": "3700X @2.2GHz",
+        "name": "3700X-at-2000MHz",
+        "label": "3700X @2GHz",
         "color": "#003f5c",
     },
 ],
