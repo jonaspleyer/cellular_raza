@@ -155,9 +155,10 @@ def plot_runtime(
         for n_x_value in range(len(x_values)):
             x_value = list(x_values)[n_x_value]
             fit_x_value = list(fit_x_values)[n_x_value]
-            contrib = np.array([
-                    np.exp(fit_func(fit_x_value, *[q if i==j else 0 for j, q in enumerate(popt)])) for i in range(len(popt))
-            ])
+            params = [[popt[i] if i==j else 0 for i in range(len(popt))] for j in range(len(popt))]
+            contrib = np.array([fit_func(fit_x_value, *param) for param in params])
+            if fit_exponential:
+                contrib = np.exp(contrib)
             relative_contrib = contrib / np.sum(contrib)
             print(
                 "| Contribution at n_agents={:10}: ".format(x_value),
