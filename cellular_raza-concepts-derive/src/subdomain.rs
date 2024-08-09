@@ -270,11 +270,76 @@ impl SubDomainImplementer {
     }
 
     fn implement_reactions(&self) -> proc_macro2::TokenStream {
-        if let Some(_) = &self.reactions {
-            quote::quote!(unimplemented!(
-                "The Reactions traits are currently reworked and thus not accessible for\
-                derivation via the derive(SubDomain) macro at this point in time."
-            ))
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.reactions {
+            let field_type = &field_info.field_type;
+            let field_name = &field_info.field_name;
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(react_extra, "__cr__private_Re");
+            new_ident!(float, "__cr__private_Float");
+            let tokens = quote::quote!(#position, #react_extra, #float);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, SubDomainReactions, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, position);
+            push_ident!(generics, react_extra);
+            push_ident!(generics, float);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote::quote!(
+                impl #impl_generics SubDomainReactions<#position, #react_extra, #float>
+                for #struct_name #struct_ty_generics #where_clause {
+                    type NeighborValue = <
+                        #field_type as SubDomainReactions<#position, #react_extra, #float>
+                    >::NeighborValue;
+
+                    type BorderInfo = <
+                        #field_type as SubDomainReactions<#position, #react_extra, #float>
+                    >::BorderInfo;
+
+                    fn update_fluid_dynamics<'a, __cr_private_I, __cr_private_J>(
+                        &mut self,
+                        dt: #float,
+                        neighbors: __cr_private_I,
+                        sources: __cr_private_J
+                    ) -> Result<(), CalcError>
+                    where
+                        #position: 'static,
+                        #react_extra: 'static,
+                        Self::NeighborValue: 'static,
+                        __cr_private_I: IntoIterator<Item = Self::NeighborValue>,
+                        __cr_private_J: IntoIterator<Item = &'a (#position, #react_extra)>,
+                    {
+                        <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
+                            update_fluid_dynamics(&mut self.#field_name, dt, neighbors, sources)
+                    }
+
+                    fn get_extracellular_at_pos(
+                        &self,
+                        pos: &#position
+                    ) -> Result<#react_extra, CalcError> {
+                        <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
+                            get_extracellular_at_pos(&self.#field_name, pos)
+                    }
+
+                    fn get_neighbor_values(
+                        &self,
+                        border_info: Self::BorderInfo
+                    ) -> Self::NeighborValue {
+                        <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
+                            get_neighbor_values(&self.#field_name, border_info)
+                    }
+
+                    fn get_border_info(&self) -> Self::BorderInfo {
+                        <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
+                            get_border_info(&self.#field_name)
+                    }
+                }
+            )
         } else {
             proc_macro2::TokenStream::new()
         }
