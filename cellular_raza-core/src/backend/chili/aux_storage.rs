@@ -313,35 +313,35 @@ impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsCo
 // -------------------------------- UPDATE-Interaction -------------------------------
 /// Interface to store intermediate information about interactions.
 pub trait UpdateInteraction {
-    /// Obtain current number of neighbours
-    fn get_current_neighbours(&self) -> usize;
-    /// Set the number of neighbours
-    fn set_current_neighbours(&mut self, neighbours: usize);
-    /// Increment the number of current neighbours by the provided value
-    fn incr_current_neighbours(&mut self, neighbours: usize);
+    /// Obtain current number of neighbors
+    fn get_current_neighbors(&self) -> usize;
+    /// Set the number of neighbors
+    fn set_current_neighbors(&mut self, neighbors: usize);
+    /// Increment the number of current neighbors by the provided value
+    fn incr_current_neighbors(&mut self, neighbors: usize);
 }
 
-/// Helper storage for number of neighbours of
+/// Helper storage for number of neighbors of
 /// [Interaction](cellular_raza_concepts::Interaction) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageInteraction {
-    neighbour_count: usize,
+    neighbor_count: usize,
 }
 
 impl UpdateInteraction for AuxStorageInteraction {
     #[inline]
-    fn get_current_neighbours(&self) -> usize {
-        self.neighbour_count
+    fn get_current_neighbors(&self) -> usize {
+        self.neighbor_count
     }
 
     #[inline]
-    fn incr_current_neighbours(&mut self, neighbours: usize) {
-        self.neighbour_count += neighbours;
+    fn incr_current_neighbors(&mut self, neighbors: usize) {
+        self.neighbor_count += neighbors;
     }
 
     #[inline]
-    fn set_current_neighbours(&mut self, neighbours: usize) {
-        self.neighbour_count = neighbours;
+    fn set_current_neighbors(&mut self, neighbors: usize) {
+        self.neighbor_count = neighbors;
     }
 }
 
@@ -879,10 +879,10 @@ mod test_build_aux_storage {
             ///     (Interaction) => {
             ///         {
             ///             use cellular_raza_core::backend::chili::UpdateInteraction;
-            ///             aux_storage.incr_current_neighbours(1);
-            ///             aux_storage.incr_current_neighbours(2);
-            ///             aux_storage.incr_current_neighbours(1);
-            ///             assert_eq!(aux_storage.get_current_neighbours(), 4);
+            ///             aux_storage.incr_current_neighbors(1);
+            ///             aux_storage.incr_current_neighbors(2);
+            ///             aux_storage.incr_current_neighbors(1);
+            ///             assert_eq!(aux_storage.get_current_neighbors(), 4);
             ///         }
             ///     };
             ///     (Cycle) => {

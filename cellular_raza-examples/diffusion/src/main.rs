@@ -16,14 +16,14 @@ pub struct SubDomain {
     dx: nalgebra::SVector<f64, 2>,
 }
 
-trait FluidDynamics<Pos, Conc, Float> {
+trait SubDomainReactions<Pos, Conc, Float> {
     type NeighborValue;
     type BorderInfo;
 
     fn update_fluid_dynamics<'a, I, J>(
         &mut self,
         dt: Float,
-        neighbours: I,
+        neighbors: I,
         sources: J,
     ) -> Result<(), CalcError>
     where
@@ -50,14 +50,14 @@ struct CartesianNeighbor {
     concentrations: ndarray::Array3<f64>,
 }
 
-impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
+impl SubDomainReactions<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for SubDomain {
     type NeighborValue = CartesianNeighbor;
     type BorderInfo = CartesianBorder;
 
     fn update_fluid_dynamics<'a, I, J>(
         &mut self,
         dt: f64,
-        neighbours: I,
+        neighbors: I,
         sources: J,
     ) -> Result<(), CalcError>
     where
@@ -89,7 +89,7 @@ impl FluidDynamics<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> for Sub
         // x _ _ _ _ _ x
         // x _ _ _ _ _ x
         // _ x x x x x _
-        for neighbor in neighbours.into_iter() {
+        for neighbor in neighbors.into_iter() {
             self.merge_values(neighbor)?;
         }
 

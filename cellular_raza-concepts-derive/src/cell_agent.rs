@@ -498,13 +498,13 @@ impl AgentImplementer {
                         )
                     }
 
-                    fn is_neighbour(
+                    fn is_neighbor(
                         &self,
                         own_pos: &#position,
                         ext_pos: &#position,
                         ext_inf: &#information
                     ) -> Result<bool, CalcError> {
-                        <#field_type as Interaction<#tokens>>::is_neighbour(
+                        <#field_type as Interaction<#tokens>>::is_neighbor(
                             &self.#field_name,
                             own_pos,
                             ext_pos,
@@ -512,13 +512,13 @@ impl AgentImplementer {
                         )
                     }
 
-                    fn react_to_neighbours(
+                    fn react_to_neighbors(
                         &mut self,
-                        neighbours: usize
+                        neighbors: usize
                     ) -> Result<(), CalcError> {
-                        <#field_type as Interaction<#tokens>>::react_to_neighbours(
+                        <#field_type as Interaction<#tokens>>::react_to_neighbors(
                             &mut self.#field_name,
-                            neighbours
+                            neighbors
                         )
                     }
                 }

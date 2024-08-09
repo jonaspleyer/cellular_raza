@@ -23,14 +23,14 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
 
     /// Checks if the other cell represented by position and information is a neighbor to the current one or not.
     #[allow(unused)]
-    fn is_neighbour(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
+    fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
         Ok(false)
     }
 
-    /// Reacts to the results gathered by the [Interaction::is_neighbour]
+    /// Reacts to the results gathered by the [Interaction::is_neighbor]
     /// method and changes the state of the cell.
     #[allow(unused)]
-    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
         Ok(())
     }
     // TODO

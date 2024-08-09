@@ -165,7 +165,7 @@ pub struct AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular> {
     force: For,
     intracellular_concentration_increment: ConcVecIntracellular,
     pub(crate) cycle_events: Vec<CycleEvent>,
-    neighbour_count: usize,
+    neighbor_count: usize,
 
     inc_pos_back_1: Option<Pos>,
     inc_pos_back_2: Option<Pos>,
@@ -184,7 +184,7 @@ where
             force: For::zero(),
             intracellular_concentration_increment: ConcVecIntracellular::zero(),
             cycle_events: Vec::new(),
-            neighbour_count: 0,
+            neighbor_count: 0,
 
             inc_pos_back_1: None,
             inc_pos_back_2: None,
@@ -361,8 +361,8 @@ where
                 aux1.force += force1 * 0.5;
                 aux2.force += force2 * 0.5;
 
-                match c1.is_neighbour(&p1, &p2, &i2)? {
-                    true => aux1.neighbour_count += 1,
+                match c1.is_neighbor(&p1, &p2, &i2)? {
+                    true => aux1.neighbor_count += 1,
                     false => (),
                 }
 
@@ -370,8 +370,8 @@ where
                 aux1.force += force1 * 0.5;
                 aux2.force += force2 * 0.5;
 
-                match c2.is_neighbour(&p2, &p1, &i1)? {
-                    true => aux2.neighbour_count += 1,
+                match c2.is_neighbor(&p2, &p1, &i1)? {
+                    true => aux2.neighbor_count += 1,
                     false => (),
                 }
             }
@@ -408,8 +408,8 @@ where
             aux_storage.force += f1;
             force += f2;
 
-            match cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
-                true => aux_storage.neighbour_count += 1,
+            match cell.is_neighbor(&cell.pos(), &ext_pos, &ext_inf)? {
+                true => aux_storage.neighbor_count += 1,
                 false => (),
             }
         }
@@ -669,8 +669,8 @@ where
                 vox.cells
                     .iter_mut()
                     .map(|(cell, aux_storage)| {
-                        cell.react_to_neighbours(aux_storage.neighbour_count)?;
-                        aux_storage.neighbour_count = 0;
+                        cell.react_to_neighbors(aux_storage.neighbor_count)?;
+                        aux_storage.neighbor_count = 0;
                         Ok(())
                     })
                     .collect::<Result<(), SimulationError>>()?;

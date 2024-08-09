@@ -637,23 +637,23 @@ impl AuxStorageImplementer {
 
             let new_stream = wrap_pre_flags(quote!(
                 impl #impl_generics #backend_path UpdateInteraction for #struct_name #ty_generics #where_clause {
-                    fn get_current_neighbours(&self) -> usize {
-                        <#field_type as #backend_path UpdateInteraction>::get_current_neighbours(
+                    fn get_current_neighbors(&self) -> usize {
+                        <#field_type as #backend_path UpdateInteraction>::get_current_neighbors(
                             &self.#field_name
                         )
                     }
 
-                    fn incr_current_neighbours(&mut self, neighbours: usize) {
-                        <#field_type as #backend_path UpdateInteraction>::incr_current_neighbours(
+                    fn incr_current_neighbors(&mut self, neighbors: usize) {
+                        <#field_type as #backend_path UpdateInteraction>::incr_current_neighbors(
                             &mut self.#field_name,
-                            neighbours
+                            neighbors
                         )
                     }
 
-                    fn set_current_neighbours(&mut self, neighbours: usize) {
-                        <#field_type as #backend_path UpdateInteraction>::set_current_neighbours(
+                    fn set_current_neighbors(&mut self, neighbors: usize) {
+                        <#field_type as #backend_path UpdateInteraction>::set_current_neighbors(
                             &mut self.#field_name,
-                            neighbours
+                            neighbors
                         )
                     }
                 }

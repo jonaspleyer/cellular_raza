@@ -104,12 +104,12 @@ impl<C, A> Voxel<C, A> {
                 aux1.add_force(force1.xapy(one_half, &For::zero()));
                 aux2.add_force(force2.xapy(one_half, &For::zero()));
 
-                // Also check for neighbours
-                if c1.is_neighbour(&p1, &p2, &i2)? {
-                    aux1.incr_current_neighbours(1);
+                // Also check for neighbors
+                if c1.is_neighbor(&p1, &p2, &i2)? {
+                    aux1.incr_current_neighbors(1);
                 }
-                if c2.is_neighbour(&p2, &p1, &i1)? {
-                    aux2.incr_current_neighbours(1);
+                if c2.is_neighbor(&p2, &p1, &i1)? {
+                    aux2.incr_current_neighbors(1);
                 }
             }
         }
@@ -152,9 +152,9 @@ impl<C, A> Voxel<C, A> {
             aux_storage.add_force(f1.xapy(one_half, &For::zero()));
             force = f2.xapy(one_half, &force);
 
-            // Check for neighbours
-            if cell.is_neighbour(&cell.pos(), &ext_pos, &ext_inf)? {
-                aux_storage.incr_current_neighbours(1);
+            // Check for neighbors
+            if cell.is_neighbor(&cell.pos(), &ext_pos, &ext_inf)? {
+                aux_storage.incr_current_neighbors(1);
             }
         }
         Ok(force)
@@ -577,7 +577,7 @@ where
     C: cellular_raza_concepts::Position<Pos>,
     A: UpdateInteraction,
 {
-    cell.react_to_neighbours(aux_storage.get_current_neighbours())?;
-    aux_storage.set_current_neighbours(0);
+    cell.react_to_neighbors(aux_storage.get_current_neighbors())?;
+    aux_storage.set_current_neighbors(0);
     Ok(())
 }

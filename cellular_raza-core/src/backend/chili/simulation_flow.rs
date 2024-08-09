@@ -50,7 +50,7 @@ pub struct BarrierSync {
 
 /// Validates a given map.
 ///
-/// This algorithm checks if every keys neighbours also contain the specified key.
+/// This algorithm checks if every keys neighbors also contain the specified key.
 /// If this is not the case, the map cannot be considered valid.
 /// Note that this algorithm does not check if all keys are connected.
 /// This means, disjoint sets are allowed.
@@ -72,9 +72,9 @@ pub fn validate_map<I>(map: &std::collections::HashMap<I, Vec<I>>) -> bool
 where
     I: Eq + core::hash::Hash + Clone + Ord,
 {
-    for (index, neighbours) in map.iter() {
-        if neighbours.iter().any(|n| match map.get(n) {
-            Some(reverse_neighbours) => !reverse_neighbours.contains(index),
+    for (index, neighbors) in map.iter() {
+        if neighbors.iter().any(|n| match map.get(n) {
+            Some(reverse_neighbors) => !reverse_neighbors.contains(index),
             None => true,
         }) {
             return false;

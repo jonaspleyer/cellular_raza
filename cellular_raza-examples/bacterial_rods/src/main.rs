@@ -193,7 +193,7 @@ impl<const D1: usize, const D2: usize>
         self.radius
     }
 
-    fn is_neighbour(
+    fn is_neighbor(
         &self,
         own_pos: &nalgebra::SMatrix<f64, D1, D2>,
         ext_pos: &nalgebra::SMatrix<f64, D1, D2>,
@@ -209,10 +209,10 @@ impl<const D1: usize, const D2: usize>
         Ok(false)
     }
 
-    fn react_to_neighbours(&mut self, neighbours: usize) -> Result<(), CalcError> {
+    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
         let base_rate = 3.0 * MICRO_METRE / MINUTE;
-        if neighbours > 0 {
-            self.growth_rate = (base_rate * (10.0 - neighbours as f64) / 10.0).max(0.0);
+        if neighbors > 0 {
+            self.growth_rate = (base_rate * (10.0 - neighbors as f64) / 10.0).max(0.0);
         } else {
             self.growth_rate = base_rate;
         }
