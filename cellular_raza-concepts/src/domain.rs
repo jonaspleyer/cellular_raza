@@ -250,19 +250,79 @@ pub trait SubDomainForce<Pos, Vel, For> {
 /// Describes extracellular reactions and fluid dynamics
 ///
 /// # Derivation
-/// ```compile_fail
+/// ```
 /// # use cellular_raza_concepts::*;
-/// struct MyReactions;
 ///
-/// impl SubDomainReactions for MyReactions {}
+/// #[derive(Clone, Debug)]
+/// struct MyReactions<const N: usize> {
+///     values: Vec<f32>,
+///     pos: [f32; N],
+/// }
+///
+/// impl<const N: usize> SubDomainReactions<[f32; N], Vec<f32>, f32> for MyReactions<N> {
+///     type NeighborValue = Vec<f32>;
+///     type BorderInfo = Self;
+///
+///     fn update_fluid_dynamics<'a, I, J>(
+///         &mut self,
+///         dt: f32,
+///         neighbors: I,
+///         sources: J,
+///     ) -> Result<(), CalcError>
+///     where
+///         I: IntoIterator<Item = Self::NeighborValue>,
+///         J: IntoIterator<Item = &'a ([f32; N], Vec<f32>)>,
+///     {
+///         Ok(())
+///     }
+///
+///     fn get_extracellular_at_pos(&self, pos: &[f32; N]) -> Result<Vec<f32>, CalcError> {
+///         Ok(self.values.clone())
+///     }
+///
+///     fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
+///         self.values.clone()
+///     }
+///
+///     fn get_border_info(&self) -> Self::BorderInfo {
+///         self.clone()
+///     }
+/// }
 ///
 /// #[derive(SubDomain)]
-/// struct DerivedSubDomain {
+/// struct DerivedSubDomain<const N: usize> {
 ///     #[Reactions]
-///     reactions: MyReactions,
+///     reactions: MyReactions<N>,
 /// }
 /// ```
-pub trait SubDomainReactions {}
+pub trait SubDomainReactions<Pos, Re, Float> {
+    /// Extracellular value of neighbor
+    type NeighborValue;
+    /// Exchanged information to locate neighboring subdomains.
+    type BorderInfo;
+
+    /// Main update function to calculate new values of extracellular concentrations.
+    fn update_fluid_dynamics<'a, I, J>(
+        &mut self,
+        dt: Float,
+        neighbors: I,
+        sources: J,
+    ) -> Result<(), crate::CalcError>
+    where
+        Pos: 'static,
+        Re: 'static,
+        Self::NeighborValue: 'static,
+        I: IntoIterator<Item = Self::NeighborValue>,
+        J: IntoIterator<Item = &'a (Pos, Re)>;
+
+    /// Obtain extracellular concentrations at given point.
+    fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Re, crate::CalcError>;
+    /// Obtains the [NeighborValue] which should be sent to the neighbor which has exposed the given
+    /// [BorderInfo].
+    fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
+    /// Obtains the [BorderInfo] used to retrieve the [NeighborValue].
+    fn get_border_info(&self) -> Self::BorderInfo;
+}
 
 /// This trait derives the different aspects of a [SubDomain].
 ///
