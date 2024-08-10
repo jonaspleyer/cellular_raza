@@ -47,7 +47,9 @@ impl From<DomainParser> for DomainImplementer {
                             field_type: domain_property_field.field.ty.clone(),
                             field_name: match domain_property_field.field.ident.clone() {
                                 Some(ident) => crate::cell_agent::FieldIdent::Ident(ident),
-                                None => crate::cell_agent::FieldIdent::Int(number),
+                                None => crate::cell_agent::FieldIdent::Int(
+                                    proc_macro2::Literal::usize_unsuffixed(number)
+                                ),
                             },
                         };
                         use DomainProperty::*;

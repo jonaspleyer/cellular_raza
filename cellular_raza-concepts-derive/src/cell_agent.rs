@@ -157,7 +157,7 @@ impl CellAspectField {
 #[derive(Clone)]
 pub enum FieldIdent {
     Ident(syn::Ident),
-    Int(usize),
+    Int(proc_macro2::Literal),
 }
 
 impl ToTokens for FieldIdent {
@@ -217,7 +217,7 @@ impl From<AgentParser> for AgentImplementer {
                         field_type: aspect_field.field.ty.clone(),
                         field_name: match aspect_field.field.ident.clone() {
                             Some(p) => FieldIdent::Ident(p),
-                            None => FieldIdent::Int(number),
+                            None => FieldIdent::Int(proc_macro2::Literal::usize_unsuffixed(number)),
                         },
                     };
                     match aspect {

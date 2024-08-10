@@ -140,7 +140,9 @@ impl From<SubDomainParser> for SubDomainImplementer {
                         field_type: aspect_field.field.ty.clone(),
                         field_name: match aspect_field.field.ident.clone() {
                             Some(ident) => crate::cell_agent::FieldIdent::Ident(ident),
-                            None => crate::cell_agent::FieldIdent::Int(number),
+                            None => crate::cell_agent::FieldIdent::Int(
+                                proc_macro2::Literal::usize_unsuffixed(number)
+                            ),
                         },
                     };
                     match aspect {
