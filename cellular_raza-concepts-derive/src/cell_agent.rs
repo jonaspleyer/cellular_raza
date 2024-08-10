@@ -80,6 +80,8 @@ enum CellAspect {
     Intracellular,
     Reactions,
     ReactionsRaw,
+    ReactionsExtra,
+    ReactionsExtraRaw,
     ReactionsContact,
     ExtracellularGradient,
     Volume,
@@ -101,6 +103,8 @@ impl CellAspect {
                 "Intracellular" => Some(CellAspect::Intracellular),
                 "Reactions" => Some(CellAspect::Reactions),
                 "ReactionsRaw" => Some(CellAspect::ReactionsRaw),
+                "ReactionsExtra" => Some(CellAspect::ReactionsExtra),
+                "ReactionsExtraRaw" => Some(CellAspect::ReactionsExtraRaw),
                 "ReactionsContact" => Some(CellAspect::ReactionsContact),
                 "ExtracellularGradient" => Some(CellAspect::ExtracellularGradient),
                 "Volume" => Some(CellAspect::Volume),
@@ -183,6 +187,7 @@ pub struct AgentImplementer {
     interaction: Option<FieldInfo>,
     intracellular: Option<FieldInfo>,
     reactions_raw: Option<FieldInfo>,
+    reactions_extra_raw: Option<FieldInfo>,
     reactions_contact: Option<FieldInfo>,
     extracellular_gradient: Option<FieldInfo>,
     volume: Option<FieldInfo>,
@@ -203,52 +208,64 @@ impl From<AgentParser> for AgentImplementer {
         let mut volume = None;
 
         value.aspects.into_iter().for_each(|aspect_field| {
-            aspect_field.aspects.into_iter().enumerate().for_each(|(number, aspect)| {
-                let field_info = FieldInfo {
-                    field_type: aspect_field.field.ty.clone(),
-                    field_name: match aspect_field.field.ident.clone() {
-                        Some(p) => FieldIdent::Ident(p),
-                        None => FieldIdent::Int(number),
+            aspect_field
+                .aspects
+                .into_iter()
+                .enumerate()
+                .for_each(|(number, aspect)| {
+                    let field_info = FieldInfo {
+                        field_type: aspect_field.field.ty.clone(),
+                        field_name: match aspect_field.field.ident.clone() {
+                            Some(p) => FieldIdent::Ident(p),
+                            None => FieldIdent::Int(number),
+                        },
+                    };
+                    match aspect {
+                        CellAspect::Cycle => {
+                            cycle = Some(field_info);
+                        }
+                        CellAspect::Mechanics => {
+                            mechanics_raw = Some(field_info.clone());
+                            position = Some(field_info.clone());
+                            velocity = Some(field_info);
+                        }
+                        CellAspect::MechanicsRaw => mechanics_raw = Some(field_info),
+                        CellAspect::Position => position = Some(field_info),
+                        CellAspect::Velocity => velocity = Some(field_info),
+                        CellAspect::Interaction => {
+                            interaction = Some(field_info);
+                        }
+                        CellAspect::Intracellular => {
+                            intracellular = Some(field_info);
+                        }
+                        CellAspect::Reactions => {
+                            intracellular = Some(field_info.clone());
+                            reactions_raw = Some(field_info);
+                        }
+                        CellAspect::ReactionsRaw => {
+                            reactions_raw = Some(field_info);
+                        }
+                        CellAspect::ReactionsExtra => {
+                            intracellular = Some(field_info.clone());
+                            reactions_raw = Some(field_info.clone());
+                            reactions_extra_raw = Some(field_info);
+                        }
+                        CellAspect::ReactionsExtraRaw => {
+                            reactions_extra_raw = Some(field_info);
+                        }
+                        CellAspect::ReactionsContact => {
+                            intracellular = Some(field_info.clone());
+                            reactions_raw = Some(field_info.clone());
+                            reactions_contact = Some(field_info);
+                        }
+                        CellAspect::ExtracellularGradient => {
+                            extracellular_gradient = Some(field_info);
+                        }
+                        CellAspect::Volume => {
+                            volume = Some(field_info);
+                        }
                     }
-                };
-                match aspect {
-                    CellAspect::Cycle => {
-                        cycle = Some(field_info);
-                    }
-                    CellAspect::Mechanics => {
-                        mechanics_raw = Some(field_info.clone());
-                        position = Some(field_info.clone());
-                        velocity = Some(field_info);
-                    }
-                    CellAspect::MechanicsRaw => mechanics_raw = Some(field_info),
-                    CellAspect::Position => position = Some(field_info),
-                    CellAspect::Velocity => velocity = Some(field_info),
-                    CellAspect::Interaction => {
-                        interaction = Some(field_info);
-                    }
-                    CellAspect::Intracellular => {
-                        intracellular = Some(field_info);
-                    }
-                    CellAspect::Reactions => {
-                        intracellular = Some(field_info.clone());
-                        reactions_raw = Some(field_info);
-                    }
-                    CellAspect::ReactionsRaw => {
-                        reactions_raw = Some(field_info);
-                    }
-                    CellAspect::ReactionsContact => {
-                        intracellular = Some(field_info.clone());
-                        reactions_raw = Some(field_info.clone());
-                        reactions_contact = Some(field_info);
-                    }
-                    CellAspect::ExtracellularGradient => {
-                        extracellular_gradient = Some(field_info);
-                    }
-                    CellAspect::Volume => {
-                        volume = Some(field_info);
-                    }
-                }
-            })
+                })
         });
 
         Self {
@@ -261,6 +278,7 @@ impl From<AgentParser> for AgentImplementer {
             interaction,
             intracellular,
             reactions_raw,
+            reactions_extra_raw,
             reactions_contact,
             extracellular_gradient,
             volume,
@@ -632,6 +650,50 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
+    pub fn implement_reactions_extra_raw(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.reactions_extra_raw {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(rintra, "__cr_private_Ri");
+            new_ident!(rextra, "__cr_private_Re");
+            let tokens = quote!(#rintra, #rextra);
+
+            let where_clause =
+                append_where_clause!(struct_where_clause, field_type, ReactionsExtra, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, rintra);
+            push_ident!(generics, rextra);
+            let impl_generics = generics.split_for_impl().0;
+
+            let res = quote! {
+                #[automatically_derived]
+                impl #impl_generics ReactionsExtra<#rintra, #rextra>
+                for #struct_name #struct_ty_generics #where_clause {
+                    fn calculate_combined_increment(
+                        &self,
+                        intracellular: &#rintra,
+                        extracellular: &#rextra,
+                    ) -> Result<(#rintra, #rextra), CalcError> {
+                        <#field_type as ReactionsExtra<
+                            #rintra,
+                            #rextra
+                        >>::calculate_combined_increment(
+                            &self.#field_name,
+                            intracellular,
+                            extracellular
+                        )
+                    }
+                }
+            };
+            return TokenStream::from(res);
+        }
+        TokenStream::new()
+    }
+
     pub fn implement_reactions_contact(&self) -> TokenStream {
         let struct_name = &self.name;
         let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
@@ -770,6 +832,7 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     res.extend(agent.implement_intracellular());
     res.extend(agent.implement_reactions_raw());
     res.extend(agent.implement_reactions_contact());
+    res.extend(agent.implement_reactions_extra_raw());
     res.extend(agent.implement_interaction());
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());

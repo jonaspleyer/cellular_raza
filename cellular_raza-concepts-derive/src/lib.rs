@@ -33,6 +33,8 @@ mod domain;
         Interaction,
         Reactions,
         ReactionsRaw,
+        ReactionsExtra,
+        ReactionsExtraRaw,
         Intracellular,
         ExtracellularGradient,
     )
