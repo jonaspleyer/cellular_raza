@@ -30,11 +30,29 @@ struct DeriveDomain {
     mechanics: DomainMechanics,
 }
 
+#[allow(unused)]
+#[derive(SubDomain)]
+struct DeriveDomainTuple(
+    #[Base]
+    #[Mechanics]
+    DomainMechanics,
+);
+
 #[test]
 fn derive_mechanics() {
     let derived_domain = DeriveDomain {
         mechanics: DomainMechanics,
     };
+    let mut x = 1000.0;
+    let mut y = 1000.0;
+    derived_domain.apply_boundary(&mut x, &mut y).unwrap();
+    assert_eq!(x, 0.0);
+    assert_eq!(y, 1.0);
+}
+
+#[test]
+fn derive_mechanics_tuple() {
+    let derived_domain = DeriveDomainTuple(DomainMechanics);
     let mut x = 1000.0;
     let mut y = 1000.0;
     derived_domain.apply_boundary(&mut x, &mut y).unwrap();

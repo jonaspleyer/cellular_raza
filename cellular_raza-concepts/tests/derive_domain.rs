@@ -100,6 +100,11 @@ struct DerivedDomain2 {
     my_domain: MyDomain,
 }
 
+#[allow(unused)]
+#[derive(Domain)]
+#[DomainPartialDerive]
+struct DeriveDomain2Tuple(#[SortCells] MyDomain);
+
 #[test]
 fn derive_sort_cells() {
     let domain = DerivedDomain2 {
@@ -124,6 +129,10 @@ struct DerivedDomain3 {
     #[DomainRngSeed]
     my_domain: MyDomain,
 }
+
+#[allow(unused)]
+#[derive(Domain)]
+struct DerivedDomain3Tuple(#[DomainRngSeed] MyDomain);
 
 #[test]
 fn derive_rng_seed() {
@@ -168,6 +177,11 @@ struct DerivedDomain4 {
     #[DomainCreateSubDomains]
     domain: MyDomain,
 }
+
+#[allow(unused)]
+#[derive(Domain)]
+#[DomainPartialDerive]
+struct DerivedDomain4Tuple(#[DomainCreateSubDomains] MyDomain);
 
 #[test]
 fn derive_create_subdomains() {
