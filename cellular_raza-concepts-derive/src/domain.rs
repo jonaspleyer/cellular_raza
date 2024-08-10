@@ -37,14 +37,18 @@ impl From<DomainParser> for DomainImplementer {
         value
             .elements
             .into_iter()
-            .for_each(|domain_property_field| {
+            .enumerate()
+            .for_each(|(number, domain_property_field)| {
                 domain_property_field
                     .elements
                     .into_iter()
                     .for_each(|domain_property| {
                         let field_info = FieldInfo {
                             field_type: domain_property_field.field.ty.clone(),
-                            field_name: domain_property_field.field.ident.clone(),
+                            field_name: match domain_property_field.field.ident.clone() {
+                                Some(ident) => crate::cell_agent::FieldIdent::Ident(ident),
+                                None => crate::cell_agent::FieldIdent::Int(number),
+                            },
                         };
                         use DomainProperty::*;
                         match domain_property {

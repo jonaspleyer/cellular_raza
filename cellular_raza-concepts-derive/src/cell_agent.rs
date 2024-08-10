@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 
 macro_rules! new_ident(
     ($name:ident, $ident:literal) => {
@@ -151,9 +151,25 @@ impl CellAspectField {
 }
 
 #[derive(Clone)]
+pub enum FieldIdent {
+    Ident(syn::Ident),
+    Int(usize),
+}
+
+impl ToTokens for FieldIdent {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let new_tokens = match self {
+            FieldIdent::Ident(ident) => quote::quote!(#ident),
+            FieldIdent::Int(number) => quote::quote!(#number),
+        };
+        tokens.extend(new_tokens);
+    }
+}
+
+#[derive(Clone)]
 pub struct FieldInfo {
     pub field_type: syn::Type,
-    pub field_name: Option<syn::Ident>,
+    pub field_name: FieldIdent,
 }
 
 // ################################### IMPLEMENTING ##################################
@@ -181,15 +197,19 @@ impl From<AgentParser> for AgentImplementer {
         let mut interaction = None;
         let mut intracellular = None;
         let mut reactions_raw = None;
+        let mut reactions_extra_raw = None;
         let mut reactions_contact = None;
         let mut extracellular_gradient = None;
         let mut volume = None;
 
         value.aspects.into_iter().for_each(|aspect_field| {
-            aspect_field.aspects.into_iter().for_each(|aspect| {
+            aspect_field.aspects.into_iter().enumerate().for_each(|(number, aspect)| {
                 let field_info = FieldInfo {
                     field_type: aspect_field.field.ty.clone(),
-                    field_name: aspect_field.field.ident.clone(),
+                    field_name: match aspect_field.field.ident.clone() {
+                        Some(p) => FieldIdent::Ident(p),
+                        None => FieldIdent::Int(number),
+                    }
                 };
                 match aspect {
                     CellAspect::Cycle => {
