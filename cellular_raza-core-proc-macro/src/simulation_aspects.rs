@@ -41,7 +41,7 @@ pub enum SimulationAspect {
     Cycle,
     DomainForce,
     Reactions,
-    // ReactionsExtra,
+    ReactionsExtra,
     ReactionsContact,
 }
 
@@ -180,7 +180,7 @@ impl SimulationAspect {
             SimulationAspect::Interaction,
             SimulationAspect::Cycle,
             SimulationAspect::Reactions,
-            // SimulationAspect::ReactionsExtra,
+            SimulationAspect::ReactionsExtra,
             SimulationAspect::ReactionsContact,
             SimulationAspect::DomainForce,
         ]
@@ -201,7 +201,7 @@ impl SimulationAspect {
             SimulationAspect::Interaction => quote::quote!(Interaction),
             SimulationAspect::Cycle => quote::quote!(Cycle),
             SimulationAspect::Reactions => quote::quote!(Reactions),
-            // SimulationAspect::ReactionsExtra => quote::quote!(ReactionsExtra),
+            SimulationAspect::ReactionsExtra => quote::quote!(ReactionsExtra),
             SimulationAspect::ReactionsContact => quote::quote!(ReactionsContact),
             SimulationAspect::DomainForce => quote::quote!(DomainForce),
         }
@@ -215,8 +215,8 @@ impl SimulationAspect {
             SimulationAspect::Interaction => quote::quote!(interaction),
             SimulationAspect::Cycle => quote::quote!(cycle),
             SimulationAspect::Reactions => quote::quote!(reactions),
-            // SimulationAspect::ReactionsExtra => quote::quote!(reactionsExtra),
-            SimulationAspect::ReactionsContact => quote::quote!(reactionsContact),
+            SimulationAspect::ReactionsExtra => quote::quote!(reactionsextra),
+            SimulationAspect::ReactionsContact => quote::quote!(reactionscontact),
             SimulationAspect::DomainForce => quote::quote!(domainforce),
         }
     }
@@ -229,7 +229,7 @@ impl<'a> From<&'a SimulationAspect> for String {
             SimulationAspect::Interaction => "Interaction",
             SimulationAspect::Mechanics => "Mechanics",
             SimulationAspect::Reactions => "Reactions",
-            // SimulationAspect::ReactionsExtra => "ReactionsExtra",
+            SimulationAspect::ReactionsExtra => "ReactionsExtra",
             SimulationAspect::ReactionsContact => "ReactionsContact",
             SimulationAspect::DomainForce => "DomainForce",
         }
