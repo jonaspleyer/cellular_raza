@@ -81,3 +81,13 @@ where
     C: cellular_raza_concepts::Reactions<Ri>,
 {
 }
+
+#[allow(unused)]
+pub fn subdomain_reactions_implemented<D, S, C, Ci, Pos, Ri, Re, Float>(domain: &D, agents: &Ci)
+where
+    D: Domain<C, S, Ci>,
+    S: cellular_raza_concepts::SubDomainReactions<Pos, Re, Float>,
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::ReactionsExtra<Ri, Re>,
+{
+}

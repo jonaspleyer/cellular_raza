@@ -717,6 +717,15 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
             );
         ));
     }
+
+    if kwargs.aspects.contains(&ReactionsExtra) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::subdomain_reactions_implemented(
+                &#domain,
+                &#agents
+            );
+        ));
+    }
     output
 }
 
