@@ -130,12 +130,11 @@ impl From<SubDomainParser> for SubDomainImplementer {
         let mut force = None;
         let mut reactions = None;
 
-        value.elements.into_iter().for_each(|aspect_field| {
+        value.elements.into_iter().enumerate().for_each(|(number, aspect_field)| {
             aspect_field
                 .elements
                 .into_iter()
-                .enumerate()
-                .for_each(|(number, aspect)| {
+                .for_each(|aspect| {
                     let field_info = FieldInfo {
                         field_type: aspect_field.field.ty.clone(),
                         field_name: match aspect_field.field.ident.clone() {
