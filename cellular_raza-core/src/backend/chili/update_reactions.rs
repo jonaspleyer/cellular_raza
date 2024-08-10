@@ -123,6 +123,7 @@ impl<C, A> Voxel<C, A> {
     ) -> Result<(), CalcError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: cellular_raza_concepts::Intracellular<Ri>,
         C: Position<Pos>,
         Ri: cellular_raza_concepts::Xapy<Float>,
         Ri: num::Zero,
@@ -172,6 +173,7 @@ impl<C, A> Voxel<C, A> {
     ) -> Result<Ri, CalcError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: cellular_raza_concepts::Intracellular<Ri>,
         C: Position<Pos>,
         Ri: num::Zero,
         Ri: Xapy<Float>,
@@ -213,6 +215,7 @@ where
     where
         Pos: Clone,
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
+        C: cellular_raza_concepts::Intracellular<Ri>,
         C: cellular_raza_concepts::Position<Pos>,
         A: UpdateReactions<Ri>,
         A: UpdateReactionsContact<Ri, N>,
@@ -286,6 +289,7 @@ where
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf> + Position<Pos>,
+        C: cellular_raza_concepts::Intracellular<Ri>,
         A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, N>,
         Ri: Xapy<Float> + num::Zero,
         Float: num::Float,

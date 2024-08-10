@@ -22,19 +22,19 @@ pub trait Reactions<Ri>: Intracellular<Ri> {
 }
 
 /// TODO
-pub trait ReactionsExtra<Ri, E>: Intracellular<Ri> {
+pub trait ReactionsExtra<Ri, Re> {
     // TODO
     // type IncrementExtracellular;
     /// TODO
     fn calculate_combined_increment(
         &self,
         intracellular: &Ri,
-        extracellular: &E,
-    ) -> Result<(Ri, E), CalcError>;
+        extracellular: &Re,
+    ) -> Result<(Ri, Re), CalcError>;
 }
 
 /// TODO
-pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()>: Intracellular<Ri> {
+pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()> {
     /// TODO
     fn get_contact_information(&self) -> RInf;
 
@@ -82,6 +82,7 @@ fn solver_euler_extra<F, C, Ri, E>(
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     C: ReactionsExtra<Ri, E>,
+    C: Intracellular<Ri>,
     F: num::Zero + num::One + Clone,
     Ri: Xapy<F>,
     E: Xapy<F>,
@@ -101,6 +102,7 @@ fn solver_runge_kutta_4th_combined<F, C, Ri, E>(
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     C: ReactionsExtra<Ri, E>,
+    C: Intracellular<Ri>,
     F: num::Float,
     Ri: Xapy<F> + num::Zero,
     E: Xapy<F> + num::Zero,
