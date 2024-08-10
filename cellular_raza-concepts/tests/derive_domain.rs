@@ -66,6 +66,10 @@ struct DerivedDomain {
     my_domain: MyDomain,
 }
 
+#[allow(unused)]
+#[derive(Domain)]
+struct TupleDomain(#[Base] MyDomain);
+
 #[test]
 fn derive_domain() {
     let domain = DerivedDomain {
