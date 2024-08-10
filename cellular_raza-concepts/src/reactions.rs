@@ -487,6 +487,57 @@ fn derive_reactions_raw() {}
 #[allow(unused)]
 fn derive_reactions_contact() {}
 
+/// ```
+/// use cellular_raza_concepts::*;
+/// #[derive(Clone, Debug, PartialEq)]
+/// struct MyIntracellular(&'static str);
+/// #[derive(Clone, Debug, PartialEq)]
+/// struct MyExtracellular {
+///     forty_two: (),
+/// }
+/// struct MyReactionsExtra {
+///     intracellular: MyIntracellular,
+/// }
+/// /* impl Intracellular<MyIntracellular> for MyReactionsExtra {
+///     fn get_intracellular(&self) -> MyIntracellular {
+///         self.intracellular.clone()
+///     }
+///
+///     fn set_intracellular(&mut self, intracellular: MyIntracellular) {
+///         self.intracellular = intracellular;
+///     }
+/// }*/
+/// impl ReactionsExtra<MyIntracellular, MyExtracellular> for MyReactionsExtra {
+///     fn calculate_combined_increment(
+///         &self,
+///         intracellular: &MyIntracellular,
+///         extracellular: &MyExtracellular,
+///     ) -> Result<(MyIntracellular, MyExtracellular), CalcError> {
+///         Ok((intracellular.clone(), extracellular.clone()))
+///     }
+/// }
+/// #[derive(CellAgent)]
+/// struct MyCell {
+///     #[ReactionsExtra]
+///     reactions_extra: MyReactionsExtra,
+/// }
+/// let mycell = MyCell {
+///     reactions_extra: MyReactionsExtra {
+///         intracellular: MyIntracellular("nice"),
+///     }
+/// };
+/// let (incr_intra, incr_extra) = mycell.calculate_combined_increment(
+///     &MyIntracellular("not so nice"),
+///     &MyExtracellular {
+///         forty_two: (),
+///     }
+/// ).unwrap();
+/// assert_eq!(incr_intra, MyIntracellular("not so nice"));
+/// assert_eq!(incr_extra, MyExtracellular { forty_two: (), });
+/// ```
+#[allow(unused)]
+fn derive_reactions_extra() {}
+
 /* mod test_particle_sim {
     use super::*;
 
