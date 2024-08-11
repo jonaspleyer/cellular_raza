@@ -77,7 +77,7 @@ where
         .enumerate()
         .map(|(i, (subdomain_index, _, _))| (subdomain_index.clone(), SubDomainPlainIndex(i)))
         .collect::<HashMap<_, _>>();
-    let neighbor_map = decomposed_domain
+    let mut neighbor_map = decomposed_domain
         .neighbor_map
         .into_iter()
         .map(|(index, neighbors)| {
@@ -172,7 +172,9 @@ where
                         "Index was not present in subdomain map".into(),
                     ))?;
             let mut subdomain_box = SubDomainBox {
-                _index: index.clone(),
+                index: index.clone(),
+                subdomain_plain_index,
+                neighbors: neighbor_map.remove(&subdomain_plain_index).unwrap(),
                 subdomain,
                 voxels: voxels.collect::<Result<_, SimulationError>>()?,
                 voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
@@ -193,7 +195,9 @@ pub struct SubDomainBox<I, S, C, A, Com, Sy = BarrierSync>
 where
     S: SubDomain,
 {
-    pub(crate) _index: I,
+    pub(crate) index: I,
+    pub(crate) subdomain_plain_index: SubDomainPlainIndex,
+    pub(crate) neighbors: Vec<SubDomainPlainIndex>,
     pub(crate) subdomain: S,
     pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
     pub(crate) voxel_index_to_plain_index:
