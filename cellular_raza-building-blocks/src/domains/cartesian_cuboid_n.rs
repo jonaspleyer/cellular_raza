@@ -115,7 +115,7 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + core::ops::Div<Output=F>
+        + core::ops::Div<Output = F>
         + core::ops::DivAssign,
     Ci: IntoIterator<Item = C>,
 {
@@ -138,7 +138,7 @@ where
                 + num::FromPrimitive
                 + num::ToPrimitive
                 + core::ops::SubAssign
-                + core::ops::Div<Output=F>
+                + core::ops::Div<Output = F>
                 + core::ops::DivAssign,
         {
             #[DomainRngSeed]
@@ -321,7 +321,7 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + core::ops::Div<Output=F>
+        + core::ops::Div<Output = F>
         + core::ops::DivAssign,
 {
     /// Obtains the voxel index given a regular vector
@@ -356,7 +356,7 @@ where
         + num::FromPrimitive
         + num::ToPrimitive
         + core::ops::SubAssign
-        + core::ops::Div<Output=F>
+        + core::ops::Div<Output = F>
         + core::ops::DivAssign,
     C: Position<SVector<F, D>>,
 {

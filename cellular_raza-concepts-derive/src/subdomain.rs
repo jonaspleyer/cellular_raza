@@ -130,17 +130,18 @@ impl From<SubDomainParser> for SubDomainImplementer {
         let mut force = None;
         let mut reactions = None;
 
-        value.elements.into_iter().enumerate().for_each(|(number, aspect_field)| {
-            aspect_field
-                .elements
-                .into_iter()
-                .for_each(|aspect| {
+        value
+            .elements
+            .into_iter()
+            .enumerate()
+            .for_each(|(number, aspect_field)| {
+                aspect_field.elements.into_iter().for_each(|aspect| {
                     let field_info = FieldInfo {
                         field_type: aspect_field.field.ty.clone(),
                         field_name: match aspect_field.field.ident.clone() {
                             Some(ident) => crate::cell_agent::FieldIdent::Ident(ident),
                             None => crate::cell_agent::FieldIdent::Int(
-                                proc_macro2::Literal::usize_unsuffixed(number)
+                                proc_macro2::Literal::usize_unsuffixed(number),
                             ),
                         },
                     };
@@ -152,7 +153,7 @@ impl From<SubDomainParser> for SubDomainImplementer {
                         SubDomainAspect::Reactions => reactions = Some(field_info),
                     }
                 })
-        });
+            });
 
         SubDomainImplementer {
             name: value.name,

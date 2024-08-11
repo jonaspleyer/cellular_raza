@@ -11,7 +11,7 @@ pub trait Intracellular<Ri> {
 
 /// Describes purely intracellular reactions of a cellagent.
 ///
-/// In the most simple case, intracellular values can be assumed to have a homogenous distribution
+/// In the most simple case, intracellular values can be assumed to have a homogeneous distribution
 /// throughout the entire cell.
 /// We can then describe them by a list of values $\vec{u}=(u_0,\dots,u_N)$.
 pub trait Reactions<Ri>: Intracellular<Ri> {
