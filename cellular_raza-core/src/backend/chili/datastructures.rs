@@ -284,6 +284,25 @@ where
         Ok(())
     }
 
+    /// TODO
+    pub fn run_local_subdomain_funcs<Func, F>(
+        &mut self,
+        func: Func,
+        next_time_point: &crate::time::NextTimePoint<F>,
+    ) -> Result<(), super::SimulationError>
+    where
+        Func: Fn(
+            &mut S,
+            F,
+            // &mut rand_chacha::ChaCha8Rng,
+        ) -> Result<(), super::SimulationError>,
+        F: Copy,
+    {
+        let dt = next_time_point.increment;
+        func(&mut self.subdomain, dt)?;
+        Ok(())
+    }
+
     /// Save all voxels (containing all cells) with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
     pub fn save_voxels<
