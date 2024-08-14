@@ -28,6 +28,9 @@ itertools = { workspace = true }
 rayon = { version="1.6" }
 pyo3 = { version = "0.21", optional=true, features=["serde"] }
 
+[dev-dependencies]
+serde_test = "1.0.177"
+
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
 version = "0.0.13"

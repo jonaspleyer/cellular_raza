@@ -757,7 +757,7 @@ impl VertexMechanics2D<6> {
     /// the top border has a flat top.
     ///
     /// The produced pattern will like similar to this.
-    /// ```
+    /// ```ignore
     /// __________________________________
     /// |   ___       ___          ___   |
     /// |  /   \     /   \        /   \  |

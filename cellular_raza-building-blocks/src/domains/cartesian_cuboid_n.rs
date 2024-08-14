@@ -12,7 +12,7 @@ use std::usize;
 use itertools::Itertools;
 use nalgebra::SVector;
 
-use serde::{Deserialize, Serialize};
+use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize};
 
 /// Helper function to calculate the decomposition of a large number N into n as evenly-sizedchunks
 /// chunks as possible
@@ -412,7 +412,7 @@ fn generate_subdomains() {
 }
 
 /// Subdomain corresponding to the [CartesianCuboid] struct.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CartesianSubDomain<F, const D: usize> {
     min: SVector<F, D>,
     max: SVector<F, D>,
@@ -421,6 +421,154 @@ pub struct CartesianSubDomain<F, const D: usize> {
     domain_min: SVector<F, D>,
     domain_max: SVector<F, D>,
     domain_n_voxels: SVector<usize, D>,
+}
+
+
+#[derive(Deserialize)]
+#[serde(rename(
+    serialize = "CartesianSubDomain",
+    deserialize = "CartesianSubDomain",
+))]
+struct __CartesianSubDomainSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize> {
+    min: SVector<F, D>,
+    max: SVector<F, D>,
+    dx: SVector<F, D>,
+    voxels: Vec<SVector<usize, D>>,
+    domain_min: SVector<F, D>,
+    domain_max: SVector<F, D>,
+    domain_n_voxels: SVector<usize, D>,
+}
+
+impl<F, const D: usize> From<__CartesianSubDomainSerde<F, D>> for CartesianSubDomain<F, D>
+where
+    F: 'static + Clone + core::fmt::Debug + PartialEq,
+{
+    fn from(s: __CartesianSubDomainSerde<F, D>) -> Self {
+        CartesianSubDomain {
+            min: s.min,
+            max: s.max,
+            dx: s.dx,
+            voxels: s.voxels.into_iter().map(|vox| <[usize; D]>::from(vox)).collect(),
+            domain_min: s.domain_min,
+            domain_max: s.domain_max,
+            domain_n_voxels: s.domain_n_voxels,
+        }
+    }
+}
+
+impl<F, const D: usize> Serialize for CartesianSubDomain<F, D>
+where
+    F: nalgebra::Scalar + Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("CartesianSubDomain", 7)?;
+        state.serialize_field("min", &self.min)?;
+        state.serialize_field("max", &self.max)?;
+        state.serialize_field("dx", &self.dx)?;
+        let voxels = self
+            .voxels
+            .iter()
+            .map(|ind| ind.clone().into_iter().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        state.serialize_field("voxels", &voxels)?;
+        state.serialize_field("domain_min", &self.domain_min)?;
+        state.serialize_field("domain_max", &self.domain_max)?;
+        state.serialize_field("domain_n_voxels", &self.domain_n_voxels)?;
+        state.end()
+    }
+}
+
+impl<'de, F, const D: usize> Deserialize<'de> for CartesianSubDomain<F, D>
+where
+    F: nalgebra::Scalar + for<'a> Deserialize<'a>,
+{
+    fn deserialize<De>(deserializer: De) -> Result<Self, De::Error>
+    where
+        De: Deserializer<'de>,
+    {
+        let s = __CartesianSubDomainSerde::deserialize(deserializer)?;
+        let subdomain = s.into();
+        Ok(subdomain)
+    }
+}
+
+#[test]
+fn serialize_cartesiansubdomain() {
+    let subdomain = CartesianSubDomain {
+        min: [-30.0, 10.0].into(),
+        max: [55.33, 11.0].into(),
+        dx: [1.0, 0.01].into(),
+        voxels: vec![[1, 2], [3, 4], [5, 6]],
+        domain_min: [-30.0, 10.0].into(),
+        domain_max: [55.33, 22.38].into(),
+        domain_n_voxels: [1, 2].into(),
+    };
+    // TODO finish this test
+    use serde_test::{assert_de_tokens, assert_ser_tokens, Token};
+    let tokens = [
+        Token::Struct {
+            name: "CartesianSubDomain",
+            len: 7,
+        },
+        // subdomain.min
+        Token::Str("min"),
+        Token::Tuple { len: 2 },
+        Token::F64(subdomain.min[0]),
+        Token::F64(subdomain.min[1]),
+        Token::TupleEnd,
+        // subdomain.max
+        Token::Str("max"),
+        Token::Tuple { len: 2 },
+        Token::F64(subdomain.max[0]),
+        Token::F64(subdomain.max[1]),
+        Token::TupleEnd,
+        // subdomain.dx
+        Token::Str("dx"),
+        Token::Tuple { len: 2 },
+        Token::F64(subdomain.dx[0]),
+        Token::F64(subdomain.dx[1]),
+        Token::TupleEnd,
+        // subdomain.voxels
+        Token::Str("voxels"),
+        Token::Seq { len: Some(3) },
+        Token::Seq { len: Some(2) },
+        Token::U64(subdomain.voxels[0][0] as u64),
+        Token::U64(subdomain.voxels[0][1] as u64),
+        Token::SeqEnd,
+        Token::Seq { len: Some(2) },
+        Token::U64(subdomain.voxels[1][0] as u64),
+        Token::U64(subdomain.voxels[1][1] as u64),
+        Token::SeqEnd,
+        Token::Seq { len: Some(2) },
+        Token::U64(subdomain.voxels[2][0] as u64),
+        Token::U64(subdomain.voxels[2][1] as u64),
+        Token::SeqEnd,
+        Token::SeqEnd,
+        // domain.min
+        Token::Str("domain_min"),
+        Token::Tuple { len: 2 },
+        Token::F64(subdomain.domain_min[0]),
+        Token::F64(subdomain.domain_min[1]),
+        Token::TupleEnd,
+        // domain.max
+        Token::Str("domain_max"),
+        Token::Tuple { len: 2 },
+        Token::F64(subdomain.domain_max[0]),
+        Token::F64(subdomain.domain_max[1]),
+        Token::TupleEnd,
+        // domain.dx
+        Token::Str("domain_n_voxels"),
+        Token::Tuple { len: 2 },
+        Token::U64(subdomain.domain_n_voxels[0] as u64),
+        Token::U64(subdomain.domain_n_voxels[1] as u64),
+        Token::TupleEnd,
+        Token::StructEnd,
+    ];
+    assert_ser_tokens(&subdomain, &tokens);
+    assert_de_tokens(&subdomain, &tokens);
 }
 
 impl<F, const D: usize> CartesianSubDomain<F, D>
