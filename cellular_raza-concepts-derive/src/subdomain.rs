@@ -310,21 +310,25 @@ impl SubDomainImplementer {
                         #field_type as SubDomainReactions<#position, #react_extra, #float>
                     >::BorderInfo;
 
-                    fn update_fluid_dynamics<'a, __cr_private_I, __cr_private_J>(
+                    fn treat_increments<__cr_private_I, __cr_private_J>(
                         &mut self,
-                        dt: #float,
                         neighbors: __cr_private_I,
                         sources: __cr_private_J
                     ) -> Result<(), CalcError>
                     where
-                        #position: 'static,
-                        #react_extra: 'static,
-                        Self::NeighborValue: 'static,
                         __cr_private_I: IntoIterator<Item = Self::NeighborValue>,
-                        __cr_private_J: IntoIterator<Item = &'a (#position, #react_extra)>,
+                        __cr_private_J: IntoIterator<Item = (#position, #react_extra)>,
                     {
                         <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
-                            update_fluid_dynamics(&mut self.#field_name, dt, neighbors, sources)
+                            treat_increments(&mut self.#field_name, neighbors, sources)
+                    }
+
+                    fn update_fluid_dynamics(
+                        &mut self,
+                        dt: #float,
+                    ) -> Result<(), CalcError> {
+                        <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
+                            update_fluid_dynamics(&mut self.#field_name, dt)
                     }
 
                     fn get_extracellular_at_pos(
