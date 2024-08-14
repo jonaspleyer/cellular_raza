@@ -44,7 +44,7 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
     }
 }
 
-#[derive(SubDomain, Clone, Debug)]
+#[derive(SubDomain, Clone, Debug, Serialize)]
 struct MySubDomain {
     #[Base]
     #[SortCells]

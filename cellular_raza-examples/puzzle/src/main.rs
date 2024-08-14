@@ -118,7 +118,7 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
     }
 }
 
-#[derive(Clone, SubDomain)]
+#[derive(Clone, SubDomain, Serialize)]
 pub struct MySubDomain {
     #[Base]
     pub subdomain: CartesianSubDomain<f64, 2>,

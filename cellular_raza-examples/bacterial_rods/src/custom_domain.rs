@@ -1,6 +1,8 @@
 use cellular_raza::building_blocks::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza::concepts::*;
 
+use serde::Serialize;
+
 use crate::Agent;
 
 #[derive(Clone, Domain)]
@@ -52,7 +54,7 @@ impl<const D1: usize, const D2: usize> SortCells<Agent<D1, D2>> for MyDomain<D2>
     }
 }
 
-#[derive(Clone, SubDomain)]
+#[derive(Clone, SubDomain, Serialize)]
 pub struct MySubDomain<const D2: usize> {
     #[Base]
     pub subdomain: CartesianSubDomain<f64, D2>,
@@ -110,7 +112,7 @@ impl<const D1: usize, const D2: usize>
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct MySubDomainForce {
     pub damping: f64, // 0.75 / SECOND,
     pub gravity: f64,
