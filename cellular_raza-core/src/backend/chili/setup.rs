@@ -172,7 +172,15 @@ mod test {
                 n_subdomains: n_subdomains.try_into().unwrap(),
                 index_subdomain_cells,
                 neighbor_map: (0..n_subdomains)
-                    .map(|i| (i, vec![if i == 0 { n_subdomains } else { i - 1 }, i + 1]))
+                    .map(|i| {
+                        (
+                            i,
+                            std::collections::BTreeSet::from([
+                                if i == 0 { n_subdomains } else { i - 1 },
+                                i + 1,
+                            ]),
+                        )
+                    })
                     .collect(),
                 rng_seed: self.rng_seed,
             };

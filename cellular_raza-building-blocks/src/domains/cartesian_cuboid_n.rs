@@ -1016,12 +1016,12 @@ macro_rules! implement_cartesian_cuboid_domain {
                                         neighbor_voxel_index))
                                 )
                             ))
-                            .collect::<Result<Vec<usize>, _>>()
-                            .and_then(|neighbors| Ok(neighbors
+                            .collect::<Result<std::collections::BTreeSet<usize>, _>>()?;
+                            /* .and_then(|neighbors| Ok(neighbors
                                 .into_iter()
                                 .unique()
                                 .filter(|neighbor_index| *neighbor_index!=subdomain_index)
-                                .collect::<Vec<_>>()))?;
+                                .collect::<std::collections::BTreeSet<_>>()))?;*/
                         Ok((subdomain_index, neighbor_subdomains))
                     })
                     .collect::<Result<_, DecomposeError>>()?;

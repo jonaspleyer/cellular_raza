@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::hash::Hash;
 use std::num::NonZeroUsize;
 
@@ -25,7 +25,7 @@ pub struct SimulationRunner<I, Sb> {
     // TODO make this private
     /// One [SubDomainBox] represents one single thread over which we are parallelizing
     /// our simulation.
-    pub subdomain_boxes: HashMap<I, Sb>,
+    pub subdomain_boxes: BTreeMap<I, Sb>,
 }
 
 /// Stores information related to a voxel of the physical simulation domain.
@@ -34,7 +34,7 @@ pub struct Voxel<C, A> {
     /// The index which is given when decomposing the domain and all indices are counted.
     pub plain_index: VoxelPlainIndex,
     /// Indices of neighboring voxels
-    pub neighbors: Vec<VoxelPlainIndex>,
+    pub neighbors: BTreeSet<VoxelPlainIndex>,
     /// Cells currently in the voxel
     pub cells: Vec<(CellBox<C>, A)>,
     /// New cells which are about to be included into this voxels cells.
@@ -76,7 +76,7 @@ where
         .iter()
         .enumerate()
         .map(|(i, (subdomain_index, _, _))| (subdomain_index.clone(), SubDomainPlainIndex(i)))
-        .collect::<HashMap<_, _>>();
+        .collect::<BTreeMap<_, _>>();
     let mut neighbor_map = decomposed_domain
         .neighbor_map
         .into_iter()
@@ -89,7 +89,7 @@ where
                     .collect::<Vec<_>>(),
             )
         })
-        .collect::<HashMap<_, _>>();
+        .collect::<BTreeMap<_, _>>();
     let mut syncers = Sy::from_map(&neighbor_map)?;
     let mut communicators = Com::from_map(&neighbor_map)?;
     let voxel_index_to_plain_index = decomposed_domain
@@ -99,7 +99,7 @@ where
         .flatten()
         .enumerate()
         .map(|(i, x)| (x, VoxelPlainIndex(i)))
-        .collect::<HashMap<<S as SubDomain>::VoxelIndex, VoxelPlainIndex>>();
+        .collect::<BTreeMap<<S as SubDomain>::VoxelIndex, VoxelPlainIndex>>();
     let plain_index_to_subdomain: std::collections::BTreeMap<_, _> = decomposed_domain
         .index_subdomain_cells
         .iter()
@@ -125,7 +125,7 @@ where
         .map(|(index, subdomain, cells)| {
             let subdomain_plain_index = subdomain_index_to_subdomain_plain_index[&index];
             let mut cells = cells.into_iter().map(|c| (c, None)).collect();
-            let mut voxel_index_to_neighbor_plain_indices: HashMap<_, _> = subdomain
+            let mut voxel_index_to_neighbor_plain_indices: BTreeMap<_, _> = subdomain
                 .get_all_indices()
                 .into_iter()
                 .map(|voxel_index| {
@@ -135,7 +135,7 @@ where
                             .get_neighbor_voxel_indices(&voxel_index)
                             .into_iter()
                             .map(|neighbor_index| voxel_index_to_plain_index[&neighbor_index])
-                            .collect::<Vec<_>>(),
+                            .collect::<BTreeSet<_>>(),
                     )
                 })
                 .collect();
@@ -174,7 +174,11 @@ where
             let mut subdomain_box = SubDomainBox {
                 index: index.clone(),
                 subdomain_plain_index,
-                neighbors: neighbor_map.remove(&subdomain_plain_index).unwrap(),
+                neighbors: neighbor_map
+                    .remove(&subdomain_plain_index)
+                    .unwrap()
+                    .into_iter()
+                    .collect(),
                 subdomain,
                 voxels: voxels.collect::<Result<_, SimulationError>>()?,
                 voxel_index_to_plain_index: voxel_index_to_plain_index.clone(),
@@ -185,7 +189,7 @@ where
             subdomain_box.insert_cells(&mut cells)?;
             Ok((index, subdomain_box))
         })
-        .collect::<Result<HashMap<_, _>, SimulationError>>()?;
+        .collect::<Result<BTreeMap<_, _>, SimulationError>>()?;
     let simulation_runner = SimulationRunner { subdomain_boxes };
     Ok(simulation_runner)
 }
@@ -197,11 +201,10 @@ where
 {
     pub(crate) index: I,
     pub(crate) subdomain_plain_index: SubDomainPlainIndex,
-    pub(crate) neighbors: Vec<SubDomainPlainIndex>,
+    pub(crate) neighbors: BTreeSet<SubDomainPlainIndex>,
     pub(crate) subdomain: S,
     pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
-    pub(crate) voxel_index_to_plain_index:
-        std::collections::HashMap<S::VoxelIndex, VoxelPlainIndex>,
+    pub(crate) voxel_index_to_plain_index: BTreeMap<S::VoxelIndex, VoxelPlainIndex>,
     pub(crate) plain_index_to_subdomain:
         std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
     pub(crate) communicator: Com,

@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use cellular_raza_concepts::*;
 
 #[allow(unused)]
@@ -53,7 +55,7 @@ impl Domain<Agent, MySubDomain> for MyDomain {
                 },
                 cells,
             )],
-            neighbor_map: std::collections::HashMap::from([(1, Vec::new())]),
+            neighbor_map: BTreeMap::from([(1, BTreeSet::new())]),
             rng_seed: 1,
         })
     }

@@ -418,7 +418,7 @@ where
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
-        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
+        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash + Ord,
     {
         // Store all cells which need to find a new home in this variable
         let mut find_new_home_cells = Vec::<_>::new();
@@ -475,7 +475,7 @@ where
     pub fn sort_cells_in_voxels_step_2(&mut self, determinism: bool) -> Result<(), SimulationError>
     where
         Com: Communicator<SubDomainPlainIndex, SendCell<CellBox<C>, A>>,
-        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash,
+        <S as SubDomain>::VoxelIndex: Eq + core::hash::Hash + Ord,
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
         // Now receive new cells and insert them

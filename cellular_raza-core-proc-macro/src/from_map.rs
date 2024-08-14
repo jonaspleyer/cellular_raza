@@ -165,16 +165,20 @@ impl FromMapper {
                 impl #impl_generics #backend_path FromMap<#index>
                 for #struct_name #ty_generics #where_clause {
                     fn from_map(
-                        map: &std::collections::HashMap<#index, Vec<#index>>
+                        map: &std::collections::BTreeMap<#index, std::collections::BTreeSet<
+                            #index>
+                        >
                     ) -> Result<
-                        std::collections::HashMap<#index, Self>,
+                        std::collections::BTreeMap<#index, Self>,
                         #backend_path IndexError
                     >
                     where
                         #index: Eq + core::hash::Hash + Clone + Ord,
                     {
                         #(
-                            let mut #field_names_maps = <#field_types as #backend_path FromMap<#index>>::from_map(map)?;
+                            let mut #field_names_maps = <
+                                #field_types as #backend_path FromMap<#index>
+                            >::from_map(map)?;
                         )*
                         map.keys().into_iter().map(|key| {
                             Ok((

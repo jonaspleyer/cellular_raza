@@ -273,7 +273,7 @@ impl DomainImplementer {
                     VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
                 >,
                 <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone
-                    + core::hash::Hash + Eq,
+                    + core::hash::Hash + Eq + Ord,
                 <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone
                     + core::hash::Hash + Eq + Ord,
                 #cell_iterator: IntoIterator<Item = #cell>,
@@ -308,9 +308,9 @@ impl DomainImplementer {
                         .collect();
 
                     // Build neighbor map
-                    let mut neighbor_map: ::std::collections::HashMap<
+                    let mut neighbor_map: ::std::collections::BTreeMap<
                         Self::SubDomainIndex,
-                        Vec<Self::SubDomainIndex>
+                        std::collections::BTreeSet<Self::SubDomainIndex>
                     > = subdomains
                         .iter()
                         .map(|(subdomain_index, subdomain, voxels)| voxels
@@ -332,21 +332,19 @@ impl DomainImplementer {
                             )))
                         .flatten()
                         .fold(
-                            ::std::collections::HashMap::<
+                            ::std::collections::BTreeMap::<
                                 Self::SubDomainIndex,
-                                Vec<Self::SubDomainIndex>
+                                std::collections::BTreeSet<Self::SubDomainIndex>
                                 >::new(),
                             |mut acc, (subdomain_index, voxel_index)| {
                             let mut values = acc
                                 .entry(subdomain_index.clone())
-                                .or_insert(Vec::new());
+                                .or_insert(std::collections::BTreeSet::new());
                             let subdomain_index = voxel_index_to_subdomain_index
                                 .get(&voxel_index)
                                 .ok_or(DecomposeError::IndexError(IndexError(format!(
                                 "could not find subdomain index")))).unwrap().clone();
-                            if !values.contains(&subdomain_index) {
-                                values.push(subdomain_index);
-                            }
+                            values.insert(subdomain_index);
                             acc
                         });
 
@@ -394,9 +392,7 @@ impl DomainImplementer {
                                 let neighbors = neighbor_map.get_mut(&subdomain_index).ok_or(
                                     DecomposeError::IndexError(IndexError(format!("TODO"))),
                                 )?;
-                                if neighbors.contains(neighbor_subdomain) {
-                                    neighbors.push(neighbor_subdomain.clone());
-                                }
+                                neighbors.insert(neighbor_subdomain.clone());
                             }
                         }
 

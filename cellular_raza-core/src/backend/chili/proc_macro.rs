@@ -56,11 +56,11 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// // Use the new struct in the following.
 /// use cellular_raza_core::backend::chili::FromMap;
 ///
-/// let new_map = std::collections::HashMap::from([
-///     (0, vec![1,3]),
-///     (1, vec![0,2]),
-///     (2, vec![1,3]),
-///     (3, vec![2,0]),
+/// let new_map = std::collections::BTreeMap::from([
+///     (0, std::collections::BTreeSet::from([1,3])),
+///     (1, std::collections::BTreeSet::from([0,2])),
+///     (2, std::collections::BTreeSet::from([1,3])),
+///     (3, std::collections::BTreeSet::from([2,0])),
 /// ]);
 /// let communicators = MyCommunicator::from_map(&new_map).unwrap();
 /// assert_eq!(communicators.len(), 4);

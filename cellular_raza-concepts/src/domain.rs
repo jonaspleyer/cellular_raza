@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::errors::{BoundaryError, DecomposeError};
 
@@ -82,8 +82,8 @@ pub struct DecomposedDomain<I, S, C> {
     /// Encapsulates how the subdomains are linked to each other.
     /// Eg. two subdomains without any boundary will never appear in each others collection
     /// of neighbors.
-    /// For the future, we might opt to change to an undirected graph rather than a hashmap.
-    pub neighbor_map: HashMap<I, Vec<I>>,
+    /// For the future, we might opt to change to an undirected graph rather than a [BTreeMap].
+    pub neighbor_map: BTreeMap<I, BTreeSet<I>>,
     /// Initial seed of the simulation for random number generation.
     pub rng_seed: u64,
 }

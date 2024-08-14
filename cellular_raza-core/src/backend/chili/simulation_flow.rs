@@ -1,7 +1,10 @@
 use cellular_raza_concepts::IndexError;
 use itertools::Itertools;
 
-use std::{collections::HashMap, marker::PhantomData};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    marker::PhantomData,
+};
 
 use super::errors::SimulationError;
 
@@ -12,11 +15,11 @@ use super::errors::SimulationError;
 /// By using the [SyncSubDomains] trait, we can automatically create a collection of syncers
 /// which can then be simply given to the respective threads and handle synchronization.
 /// ```
-/// # use std::collections::HashMap;
+/// # use std::collections::BTreeMap;
 /// # use cellular_raza_core::backend::chili::{BarrierSync, FromMap, SyncSubDomains};
-/// let map = HashMap::from_iter([
-///     (0, vec![1]),
-///     (1, vec![0]),
+/// let map = BTreeMap::from_iter([
+///     (0, std::collections::BTreeSet::from([1])),
+///     (1, std::collections::BTreeSet::from([0])),
 /// ]);
 /// let mut syncers = BarrierSync::from_map(&map).unwrap();
 /// assert_eq!(syncers.len(), 2);
@@ -58,17 +61,17 @@ pub struct BarrierSync {
 /// ```
 /// use cellular_raza_core::backend::chili::validate_map;
 ///
-/// let new_map = std::collections::HashMap::from([
-///     (1_usize, vec![0,2]),
-///     (2_usize, vec![1,3]),
-///     (3_usize, vec![2,0]),
-///     (0_usize, vec![3,1]),
+/// let new_map = std::collections::BTreeMap::from([
+///     (1_usize, std::collections::BTreeSet::from([0,2])),
+///     (2_usize, std::collections::BTreeSet::from([1,3])),
+///     (3_usize, std::collections::BTreeSet::from([2,0])),
+///     (0_usize, std::collections::BTreeSet::from([3,1])),
 /// ]);
 ///
 /// let is_valid = validate_map(&new_map);
 /// assert_eq!(is_valid, true);
 /// ```
-pub fn validate_map<I>(map: &std::collections::HashMap<I, Vec<I>>) -> bool
+pub fn validate_map<I>(map: &std::collections::BTreeMap<I, BTreeSet<I>>) -> bool
 where
     I: Eq + core::hash::Hash + Clone + Ord,
 {
@@ -216,9 +219,9 @@ impl<I> IntoIterator for UDGraph<I> {
 
 impl<I> UDGraph<I>
 where
-    I: core::hash::Hash + Clone + Eq,
+    I: core::hash::Hash + Clone + Eq + Ord,
 {
-    /// Convert the [UDGraph] into a regular [HashMap].
+    /// Convert the [UDGraph] into a regular [BTreeMap].
     ///
     /// ```
     /// # use cellular_raza_core::backend::chili::UDGraph;
@@ -230,16 +233,26 @@ where
     /// let map = ud_graph.to_hash_map();
     /// assert_eq!(map.keys().len(), 3);
     /// ```
-    pub fn to_hash_map(self) -> std::collections::HashMap<I, Vec<I>> {
-        let mut map: HashMap<_, Vec<I>> = self
+    pub fn to_btree(self) -> BTreeMap<I, BTreeSet<I>> {
+        let mut map: BTreeMap<_, BTreeSet<I>> = self
             .0
             .iter()
-            .map(|x| [(x.0.clone(), Vec::new()), (x.1.clone(), Vec::new())].into_iter())
+            .map(|x| {
+                [
+                    (x.0.clone(), BTreeSet::new()),
+                    (x.1.clone(), BTreeSet::new()),
+                ]
+                .into_iter()
+            })
             .flatten()
             .collect();
         self.0.iter().for_each(|(c1, c2)| {
-            map.entry(c1.clone()).and_modify(|v| v.push(c2.clone()));
-            map.entry(c2.clone()).and_modify(|v| v.push(c1.clone()));
+            map.entry(c1.clone()).and_modify(|v| {
+                v.insert(c2.clone());
+            });
+            map.entry(c2.clone()).and_modify(|v| {
+                v.insert(c1.clone());
+            });
         });
         map
     }
@@ -260,20 +273,18 @@ impl<I> From<UDGraph<I>> for PhantomData<I> {
     }
 }
 
-/// Construct a HashMap of the type from a graph
+/// Construct a BTreeMap of the type from a graph
 ///
 /// The types should be connected according to the connections specified in the graph.
-/// Afterwards, this HashMap can over multiple threads and used since all components
+/// Afterwards, this BTreeMap can over multiple threads and used since all components
 /// are connected according the the initial graph.
 pub trait BuildFromGraph<I>
 where
     Self: Sized,
     I: Clone + Eq + core::hash::Hash + Ord,
 {
-    /// Builds the HashMap
-    fn build_from_graph(
-        graph: UDGraph<I>,
-    ) -> Result<std::collections::HashMap<I, Self>, IndexError>;
+    /// Builds the BTreeMap
+    fn build_from_graph(graph: UDGraph<I>) -> Result<BTreeMap<I, Self>, IndexError>;
 }
 
 impl<I> BuildFromGraph<I> for PhantomData<I>
@@ -281,26 +292,13 @@ where
     Self: Sized,
     I: Clone + Eq + core::hash::Hash + Ord,
 {
-    fn build_from_graph(
-        graph: UDGraph<I>,
-    ) -> Result<std::collections::HashMap<I, Self>, IndexError> {
+    fn build_from_graph(graph: UDGraph<I>) -> Result<BTreeMap<I, Self>, IndexError> {
         Ok(graph
             .into_iter()
             .map(|(key, _)| (key, PhantomData::<I>))
             .collect())
     }
 }
-
-/* impl<I, T> From<UDGraph<I>> for Result<std::collections::HashMap<I, T>, IndexError>
-where
-    T: FromMap<I>,
-    I: Ord + Clone + core::hash::Hash,
-{
-    fn from(value: UDGraph<I>) -> Self {
-        let map = value.to_hash_map();
-        T::from_map(&map)
-    }
-}*/
 
 // TODO migrate to FromGraph eventually!
 /// Constructs a collection of Items from a map (graph)
@@ -310,15 +308,15 @@ where
 {
     /// [SubDomains](cellular_raza_concepts::SubDomain) can be neighboring each
     /// other via complicated graphs.
-    /// An easy way to represent this is by using a [HashMap]. We want to create Barriers which match
+    /// An easy way to represent this is by using a [BTreeMap]. We want to create Barriers which match
     /// the specified subdomain indices.
-    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    fn from_map(map: &BTreeMap<I, BTreeSet<I>>) -> Result<BTreeMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone + Ord;
 }
 
 impl<I> FromMap<I> for PhantomData<I> {
-    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    fn from_map(map: &BTreeMap<I, BTreeSet<I>>) -> Result<BTreeMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone + Ord,
     {
@@ -338,7 +336,7 @@ pub trait SyncSubDomains {
 }
 
 impl<I> FromMap<I> for BarrierSync {
-    fn from_map(map: &std::collections::HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    fn from_map(map: &BTreeMap<I, BTreeSet<I>>) -> Result<BTreeMap<I, Self>, IndexError>
     where
         I: Eq + core::hash::Hash + Clone + Ord,
     {
@@ -362,9 +360,7 @@ impl<I> BuildFromGraph<I> for BarrierSync
 where
     I: Clone + Eq + core::hash::Hash + std::cmp::Ord,
 {
-    fn build_from_graph(
-        graph: UDGraph<I>,
-    ) -> Result<std::collections::HashMap<I, Self>, IndexError> {
+    fn build_from_graph(graph: UDGraph<I>) -> Result<BTreeMap<I, Self>, IndexError> {
         let barrier = hurdles::Barrier::new(graph.len());
         let res = graph
             .nodes()
@@ -421,11 +417,10 @@ where
 /// It can be constructed by using the [FromMap] trait.
 /// ```
 /// # use cellular_raza_core::backend::chili::{ChannelComm, Communicator, FromMap};
-/// # use std::collections::HashMap;
-/// let map = HashMap::from([
-///     (0, vec![1]),
-///     (1, vec![0, 2]),
-///     (2, vec![1]),
+/// let map = std::collections::BTreeMap::from([
+///     (0, std::collections::BTreeSet::from([1])),
+///     (1, std::collections::BTreeSet::from([0, 2])),
+///     (2, std::collections::BTreeSet::from([1])),
 /// ]);
 ///
 /// // Construct multiple communicators from a given map.
@@ -449,11 +444,11 @@ impl<T, I> FromMap<I> for ChannelComm<I, T>
 where
     I: Ord,
 {
-    fn from_map(map: &HashMap<I, Vec<I>>) -> Result<HashMap<I, Self>, IndexError>
+    fn from_map(map: &BTreeMap<I, BTreeSet<I>>) -> Result<BTreeMap<I, Self>, IndexError>
     where
         I: Clone + core::hash::Hash + Eq,
     {
-        let channels: HashMap<_, _> = map
+        let channels: BTreeMap<_, _> = map
             .keys()
             .into_iter()
             .map(|sender_key| {
@@ -461,7 +456,7 @@ where
                 (sender_key, (s, r))
             })
             .collect();
-        let mut comms = HashMap::new();
+        let mut comms = BTreeMap::new();
         for key in map.keys().into_iter() {
             let senders = map
                 .get(&key)
@@ -488,11 +483,11 @@ mod test_channel_comm {
 
     #[test]
     fn test_from_map() -> Result<(), IndexError> {
-        let map = std::collections::HashMap::from([
-            (0_usize, vec![3, 1]),
-            (1_usize, vec![0, 2]),
-            (2_usize, vec![1, 3]),
-            (3_usize, vec![2, 0]),
+        let map = BTreeMap::from([
+            (0_usize, BTreeSet::from([3, 1])),
+            (1_usize, BTreeSet::from([0, 2])),
+            (2_usize, BTreeSet::from([1, 3])),
+            (3_usize, BTreeSet::from([2, 0])),
         ]);
         assert!(validate_map(&map));
         let channel_comms = ChannelComm::<usize, ()>::from_map(&map)?;
@@ -511,11 +506,11 @@ mod test_channel_comm {
 
     #[test]
     fn test_from_map_2() -> Result<(), Box<dyn std::error::Error>> {
-        let map = std::collections::HashMap::from([
-            (0, vec![1, 2, 3]),
-            (1, vec![0, 2, 3]),
-            (2, vec![0, 1, 3]),
-            (3, vec![0, 1, 2]),
+        let map = BTreeMap::from([
+            (0, BTreeSet::from([1, 2, 3])),
+            (1, BTreeSet::from([0, 2, 3])),
+            (2, BTreeSet::from([0, 1, 3])),
+            (3, BTreeSet::from([0, 1, 2])),
         ]);
         assert!(validate_map(&map));
         let channel_comms = ChannelComm::<usize, Option<()>>::from_map(&map)?;
@@ -535,9 +530,10 @@ mod test_channel_comm {
         if n <= 1 {
             return Ok(());
         }
-        let mut map = std::collections::HashMap::from([(0, vec![1, n]), (n, vec![n - 1, 0])]);
+        let mut map =
+            BTreeMap::from([(0, BTreeSet::from([1, n])), (n, BTreeSet::from([n - 1, 0]))]);
         for i in 1..n {
-            map.insert(i, vec![i - 1, i + 1]);
+            map.insert(i, BTreeSet::from([i - 1, i + 1]));
         }
         assert!(validate_map(&map));
         let mut channel_comms = ChannelComm::<usize, usize>::from_map(&map)?;
@@ -569,7 +565,10 @@ mod test_channel_comm {
 
     #[test]
     fn test_send() -> Result<(), Box<dyn std::error::Error>> {
-        let map = std::collections::HashMap::from([(1_usize, vec![2]), (2_usize, vec![1])]);
+        let map = BTreeMap::from([
+            (1_usize, BTreeSet::from([2])),
+            (2_usize, BTreeSet::from([1])),
+        ]);
         let mut channel_comms = ChannelComm::<usize, bool>::from_map(&map)?;
         channel_comms.get_mut(&1).unwrap().send(&2, true)?;
         channel_comms.get_mut(&2).unwrap().send(&1, false)?;
@@ -578,7 +577,10 @@ mod test_channel_comm {
 
     #[test]
     fn test_empty_receive() -> Result<(), Box<dyn std::error::Error>> {
-        let map = std::collections::HashMap::from([(1_usize, vec![2]), (2_usize, vec![1])]);
+        let map = BTreeMap::from([
+            (1_usize, BTreeSet::from([2])),
+            (2_usize, BTreeSet::from([1])),
+        ]);
         let mut channel_comms = ChannelComm::<usize, f64>::from_map(&map)?;
         for (_, comm) in channel_comms.iter_mut() {
             let received_elements = comm.receive().into_iter().collect::<Vec<_>>();
@@ -589,8 +591,11 @@ mod test_channel_comm {
 
     #[test]
     fn test_send_receive() -> Result<(), Box<dyn std::error::Error>> {
-        let map =
-            std::collections::HashMap::from([(0, vec![1, 2]), (1, vec![0, 2]), (2, vec![0, 1])]);
+        let map = BTreeMap::from([
+            (0, BTreeSet::from([1, 2])),
+            (1, BTreeSet::from([0, 2])),
+            (2, BTreeSet::from([0, 1])),
+        ]);
         let mut channel_comms = ChannelComm::from_map(&map)?;
 
         // Send a dummy value
@@ -610,18 +615,18 @@ mod test_channel_comm {
     #[test]
     fn test_send_plain_voxel() -> Result<(), Box<dyn std::error::Error>> {
         use crate::backend::chili::SubDomainPlainIndex;
-        let map = std::collections::HashMap::from([
+        let map = BTreeMap::from([
             (
                 SubDomainPlainIndex(0),
-                vec![SubDomainPlainIndex(1), SubDomainPlainIndex(2)],
+                BTreeSet::from([SubDomainPlainIndex(1), SubDomainPlainIndex(2)]),
             ),
             (
                 SubDomainPlainIndex(1),
-                vec![SubDomainPlainIndex(0), SubDomainPlainIndex(2)],
+                BTreeSet::from([SubDomainPlainIndex(0), SubDomainPlainIndex(2)]),
             ),
             (
                 SubDomainPlainIndex(2),
-                vec![SubDomainPlainIndex(0), SubDomainPlainIndex(1)],
+                BTreeSet::from([SubDomainPlainIndex(0), SubDomainPlainIndex(1)]),
             ),
         ]);
         let mut channel_comms = ChannelComm::from_map(&map)?;
@@ -788,9 +793,9 @@ mod test_build_communicator {
             ///     ],
             ///     core_path: cellular_raza_core
             /// );
-            /// let mut map = std::collections::HashMap::new();
-            /// map.insert(0, vec![1]);
-            /// map.insert(1, vec![0]);
+            /// let mut map = std::collections::BTreeMap::new();
+            /// map.insert(0, std::collections::BTreeSet::from([1]));
+            /// map.insert(1, std::collections::BTreeSet::from([0]));
             /// use cellular_raza_core::backend::chili::{ReactionsContactInformation, FromMap,
             /// Communicator, PosInformation, ForceInformation, VoxelPlainIndex, SendCell};
             /// let mut communicator = __MyComm::from_map(&map).unwrap().remove(&0).unwrap();
@@ -864,7 +869,7 @@ pub mod test_sync {
     use super::*;
     use std::sync::*;
 
-    fn test_single_map<S>(map: HashMap<usize, Vec<usize>>)
+    fn test_single_map<S>(map: BTreeMap<usize, BTreeSet<usize>>)
     where
         S: 'static + SyncSubDomains + FromMap<usize> + Send + Sync,
     {
@@ -904,34 +909,38 @@ pub mod test_sync {
     where
         S: 'static + SyncSubDomains + FromMap<usize> + Send + Sync,
     {
-        let map0 = HashMap::from_iter([(0, vec![1]), (1, vec![0])]);
+        let map0 = BTreeMap::from_iter([(0, BTreeSet::from([1])), (1, BTreeSet::from([0]))]);
         test_single_map::<S>(map0);
 
-        let map1 = HashMap::from_iter([(0, vec![1, 2]), (1, vec![0, 2]), (2, vec![0, 1])]);
+        let map1 = BTreeMap::from_iter([
+            (0, BTreeSet::from([1, 2])),
+            (1, BTreeSet::from([0, 2])),
+            (2, BTreeSet::from([0, 1])),
+        ]);
         test_single_map::<S>(map1);
 
-        let map2 = HashMap::from_iter([
-            (0, vec![1, 2, 3]),
-            (1, vec![0, 2, 3]),
-            (2, vec![0, 1, 3]),
-            (3, vec![0, 1, 2]),
+        let map2 = BTreeMap::from_iter([
+            (0, BTreeSet::from([1, 2, 3])),
+            (1, BTreeSet::from([0, 2, 3])),
+            (2, BTreeSet::from([0, 1, 3])),
+            (3, BTreeSet::from([0, 1, 2])),
         ]);
         test_single_map::<S>(map2);
 
-        let map3 = HashMap::from_iter([
-            (0, vec![1, 2]),
-            (1, vec![0, 3]),
-            (2, vec![0, 3]),
-            (3, vec![1, 2]),
+        let map3 = BTreeMap::from_iter([
+            (0, BTreeSet::from([1, 2])),
+            (1, BTreeSet::from([0, 3])),
+            (2, BTreeSet::from([0, 3])),
+            (3, BTreeSet::from([1, 2])),
         ]);
         test_single_map::<S>(map3);
 
-        let map4 = HashMap::from_iter([
-            (0, vec![1]),
-            (1, vec![2]),
-            (2, vec![3]),
-            (3, vec![4]),
-            (4, vec![0]),
+        let map4 = BTreeMap::from_iter([
+            (0, BTreeSet::from([1])),
+            (1, BTreeSet::from([2])),
+            (2, BTreeSet::from([3])),
+            (3, BTreeSet::from([4])),
+            (4, BTreeSet::from([0])),
         ]);
         test_single_map::<BarrierSync>(map4);
     }
