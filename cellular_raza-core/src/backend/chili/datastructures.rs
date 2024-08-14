@@ -85,8 +85,14 @@ where
                 subdomain_index_to_subdomain_plain_index[&index],
                 neighbors
                     .into_iter()
-                    .map(|index| subdomain_index_to_subdomain_plain_index[&index])
-                    .collect::<Vec<_>>(),
+                    .filter_map(|sindex| {
+                        if index != sindex {
+                            Some(subdomain_index_to_subdomain_plain_index[&sindex])
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<BTreeSet<_>>(),
             )
         })
         .collect::<BTreeMap<_, _>>();
