@@ -53,9 +53,25 @@ impl Parallelizer {
                     ))?;
                 Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_access)
             }),
-            Self::Rayon => quote::quote!(unimplemented!(
-                "We currently do not support parallelization via rayon."
-            )),
+            Self::Rayon => quote::quote!({
+                // extern crate rayon;
+                use rayon::prelude::*;
+                let mut storage_accesses = runner.subdomain_boxes
+                    .into_par_iter()
+                    .map(|(key, mut sbox)| -> Result<
+                        _,
+                        #core_path::backend::chili::SimulationError
+                    > {
+                        #code
+                    })
+                    .collect::<Result<Vec<_>, #core_path::backend::chili::SimulationError>>()?;
+                let storage_access = storage_accesses
+                    .pop()
+                    .ok_or(#core_path::storage::StorageError::InitError(
+                        format!("Simulation threads did not yield any storage managers")
+                    ))?;
+                Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_access)
+            }),
         }
     }
 }
