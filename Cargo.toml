@@ -8,6 +8,7 @@ members = [
 
     # Examples
     # "cellular_raza-examples/*",
+    "cellular_raza-examples/bacterial_branching",
     "cellular_raza-examples/bacteria_population",
     "cellular_raza-examples/cell_sorting",
     "cellular_raza-examples/cell_sorting_brownian",

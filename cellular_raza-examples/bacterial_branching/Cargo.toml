@@ -1,0 +1,16 @@
+[package]
+name = "cr_bacteria_branching"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+
+[dependencies]
+serde = { workspace = true, features=["rc"] }
+rand = { workspace = true, features=["small_rng"] }
+rand_chacha = { workspace = true }
+nalgebra = { version="0.33" }
+num = { workspace = true }
+cellular_raza = { path="../../cellular_raza", features=["default"] }
+plotters = { workspace = true }
+rayon = "1.10.0"
+ndarray = { version = "0.16.0", features = ["blas", "serde", "serde-1"] }
