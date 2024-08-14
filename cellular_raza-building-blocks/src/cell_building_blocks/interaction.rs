@@ -260,7 +260,7 @@ where
     let ca = strength_attracting;
     let lr_combined = *ext_length_repelling + length_repelling;
     let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
-    Ok((-dir * force, dir * force))
+    Ok((dir * force, -dir * force))
 }
 
 fn product_log<F>(x: F, n_steps: usize) -> F
