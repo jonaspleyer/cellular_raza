@@ -205,6 +205,7 @@ pub struct SubDomainBox<I, S, C, A, Com, Sy = BarrierSync>
 where
     S: SubDomain,
 {
+    #[allow(unused)]
     pub(crate) index: I,
     pub(crate) subdomain_plain_index: SubDomainPlainIndex,
     pub(crate) neighbors: BTreeSet<SubDomainPlainIndex>,
