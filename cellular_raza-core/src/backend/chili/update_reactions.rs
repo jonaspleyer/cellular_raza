@@ -9,72 +9,129 @@ use num::FromPrimitive;
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
-/* impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
+/// Carries information about the border given by the [ReactionsExtra] trait between subdomains.
+pub struct ReactionsExtraBorderInfo<Binfo>(pub SubDomainPlainIndex, pub Binfo);
+
+/// Return information of border value after having obtained the [ReactionsExtra::BorderInfo]
+pub struct ReactionsExtraBorderReturn<Bvalue>(pub SubDomainPlainIndex, pub Bvalue);
+
+impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
-    ///
+    /// TODO
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn update_contact_reactions<Ri, Pos, Inf>(
+    pub fn update_reactions_extra_step_1<Pos, Ri, Re, Float>(
         &mut self,
-        _dt: &f64,
     ) -> Result<(), SimulationError>
     where
-        C: ReactionsContact<Ri, Pos, Inf>,
+        C: ReactionsExtra<Ri, Re>,
+        S: SubDomainReactions<Pos, Re, Float>,
+        Com: Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
+        >,
     {
-        self.voxels
-            .iter_mut()
-            .map(|(_, voxelbox)| {
-                voxelbox.cells.iter_mut().map(
-                    |(cell, aux_storage)| -> Result<(), SimulationError> {
-                        let intracellular = cell.get_intracellular();
-                        Ok(())
-                    },
-                )
-            })
-            .flatten()
-            .collect::<Result<(), SimulationError>>()?;
-        /* self.voxels
-        .iter_mut()
-        .map(|(_, voxelbox)| {
-            voxelbox.cells.iter_mut().map(
-                |(cellbox, _aux_storage)| -> Result<(), SimulationError> {
-                    let internal_concentration_vector = cellbox.cell.get_intracellular();
-
-                    let external_concentration_vector = voxelbox
-                        .voxel
-                        .get_extracellular_at_point(&cellbox.cell.pos())?;
-                    let (increment_intracellular, increment_extracellular) = cellbox
-                        .cell
-                        .calculate_intra_and_extracellular_reaction_increment(
-                            &internal_concentration_vector,
-                            &external_concentration_vector,
-                        )?;
-
-                    let cell_volume = cellbox.cell.get_volume();
-                    let voxel_volume = voxelbox.voxel.get_volume();
-                    let cell_to_voxel_volume = cell_volume / voxel_volume;
-
-                    // aux_storage.intracellular_concentration_increment += increment_intracellular;
-                    voxelbox.extracellular_concentration_increments.push((
-                        cellbox.cell.pos(),
-                        increment_extracellular * cell_to_voxel_volume,
-                    ));
-                    // TODO these reactions are currently on the same timescale as the fluid-dynamics but we should consider how this may change if we have different time-scales here
-                    // ALso the solver is currently simply an euler stepper.
-                    // This should be altered to have something like an (adaptive) Runge Kutta or Dopri (or better)
-                    cellbox.cell.set_intracellular(
-                        internal_concentration_vector + increment_intracellular * *dt,
-                    );
-                    Ok(())
-                },
-            )
-        })
-        .flatten()
-        .collect::<Result<(), SimulationError>>()*/
+        for neighbor_index in self.neighbors.iter() {
+            let border_info = self.subdomain.get_border_info();
+            self.communicator.send(
+                neighbor_index,
+                ReactionsExtraBorderInfo(self.subdomain_plain_index, border_info),
+            )?;
+        }
         Ok(())
     }
-}*/
+
+    /// TODO
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn update_reactions_extra_step_2<Pos, Ri, Re, Float>(
+        &mut self,
+        determinism: bool,
+    ) -> Result<(), SimulationError>
+    where
+        C: ReactionsExtra<Ri, Re>,
+        S: SubDomainReactions<Pos, Re, Float>,
+        Com: Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
+        >,
+        Com: Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
+        >,
+    {
+        let mut received_infos = <Com as Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
+        >>::receive(&mut self.communicator);
+        if determinism {
+            received_infos.sort_by_key(|info| info.0);
+        }
+        for border_info in received_infos {
+            let boundary_value = self.subdomain.get_neighbor_values(border_info.1);
+            // Send back information about the increment
+            self.communicator.send(
+                &border_info.0,
+                ReactionsExtraBorderReturn(self.subdomain_plain_index, boundary_value),
+            )?;
+        }
+        Ok(())
+    }
+
+    /// TODO
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn update_reactions_extra_step_3<Pos, Ri, Re, Float>(
+        &mut self,
+        determinism: bool,
+    ) -> Result<(), SimulationError>
+    where
+        C: ReactionsExtra<Ri, Re>,
+        C: Intracellular<Ri>,
+        A: UpdateReactions<Ri>,
+        C: Position<Pos>,
+        S: SubDomainReactions<Pos, Re, Float>,
+        Com: Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
+        >,
+    {
+        let mut errors: Vec<CalcError> = vec![];
+        // TODO Think about doing this in two passes
+        // Pass 1: Calculate increments (dintra, dextra) and store them in AuxStorage (both!)
+        // Pass 2: Use non-mutable iterator (ie. self.voxels.iter()) instead of .iter_mut()
+        //         to give results to treat_increments function.
+        let sources = self
+            .voxels
+            .iter_mut()
+            .map(|(_, vox)| {
+                vox.cells.iter_mut().map(|(cbox, aux_storage)| {
+                    let intracellular = cbox.get_intracellular();
+                    let pos = cbox.pos();
+                    let extracellular = self.subdomain.get_extracellular_at_pos(&pos)?;
+                    let (dintra, dextra) =
+                        cbox.calculate_combined_increment(&intracellular, &extracellular)?;
+                    aux_storage.incr_conc(dintra);
+                    Result::<_, CalcError>::Ok((pos, dextra))
+                })
+            })
+            .flatten()
+            .collect::<Result<Vec<_>, CalcError>>()?;
+        match errors.len() {
+            1 => return Err(errors.pop().unwrap().into()),
+            _ => (),
+        }
+        let mut neighbors = <Com as Communicator<
+            SubDomainPlainIndex,
+            ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
+        >>::receive(&mut self.communicator);
+        if determinism {
+            neighbors.sort_by_key(|v| v.0);
+        }
+        self.subdomain
+            .treat_increments(neighbors.into_iter().map(|n| n.1), sources.into_iter())?;
+        Ok(())
+    }
+}
 
 /// TODO
 pub struct ReactionsContactInformation<Pos, Ri, RInf> {
@@ -442,5 +499,20 @@ where
     Ri: num::Zero,
 {
     aux_storage.set_conc(Ri::zero());
+    Ok(())
+}
+
+/// Performs the increment operation.
+///
+/// The [SubDomainReactions::update_fluid_dynamics] and [SubDomainReactions::treat_increments] work
+/// together as an abstraction to allow for more complicated solvers.
+pub fn local_subdomain_update_reactions_extra<S, Ri, Re, Float>(
+    subdomain: &mut S,
+    dt: Float,
+) -> Result<(), SimulationError>
+where
+    S: SubDomainReactions<Ri, Re, Float>,
+{
+    subdomain.update_fluid_dynamics(dt)?;
     Ok(())
 }

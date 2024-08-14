@@ -470,6 +470,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
     let mut local_func_names = Vec::<proc_macro2::TokenStream>::new();
+    let mut local_subdomain_func_names = Vec::<proc_macro2::TokenStream>::new();
 
     let core_path = &kwargs.core_path;
     let settings = &kwargs.settings;
@@ -522,10 +523,16 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             .push(quote!(#core_path::backend::chili::local_update_contact_reactions_step_3));
     }
 
-    if kwargs.aspects.contains(&ReactionsContact)
-    // || kwargs.aspects.contains(&ReactionsExtra)
-    {
+    if kwargs.aspects.contains(&ReactionsContact) || kwargs.aspects.contains(&ReactionsExtra) {
         local_func_names.push(quote!(#core_path::backend::chili::local_reactions_clear_increment));
+    }
+
+    if kwargs.aspects.contains(&ReactionsExtra) {
+        step_1.extend(quote!(sbox.update_reactions_extra_step_1()?;));
+        step_2.extend(quote!(sbox.update_reactions_extra_step_2(#determinism)?;));
+        step_3.extend(quote!(sbox.update_reactions_extra_step_3(#determinism)?;));
+        local_subdomain_func_names
+            .push(quote!(#core_path::backend::chili::local_subdomain_update_reactions_extra));
     }
 
     let update_local_funcs = quote!(
@@ -540,7 +547,20 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             )*
             Ok(())
         };
+        let __cr_private_combined_local_subdomain_funcs = |
+            subdomain: &mut _,
+            dt,
+        | -> Result<(), #core_path::backend::chili::SimulationError> {
+            #(
+                #local_subdomain_func_names(subdomain, dt)?;
+            )*
+            Ok(())
+        };
         sbox.run_local_cell_funcs(__cr_private_combined_local_cell_funcs, &next_time_point)?;
+        sbox.run_local_subdomain_funcs(
+            __cr_private_combined_local_subdomain_funcs,
+            &next_time_point
+        )?;
     );
 
     quote!(

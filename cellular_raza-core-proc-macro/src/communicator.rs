@@ -210,6 +210,34 @@ impl SimulationAspect {
         match self {
             SimulationAspect::Cycle => (vec![], vec![]),
             SimulationAspect::Reactions => (vec![], vec![]),
+            SimulationAspect::ReactionsExtra => (
+                vec![
+                    syn::parse2(quote!(Binfo)).unwrap(),
+                    syn::parse2(quote!(NValue)).unwrap(),
+                ],
+                vec![
+                    quote!(
+                        #[Comm(
+                            #index_type,
+                            #backend_path ReactionsExtraBorderInfo<Binfo>
+                        )]
+                        comm_reactions_extra: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path ReactionsExtraBorderInfo<Binfo>
+                        >
+                    ),
+                    quote!(
+                        #[Comm(
+                            #index_type,
+                            #backend_path ReactionsExtraBorderReturn<NValue>
+                        )]
+                        comm_reactions_extra_return: #backend_path ChannelComm<
+                            #index_type,
+                            #backend_path ReactionsExtraBorderReturn<NValue>
+                        >
+                    ),
+                ],
+            ),
             SimulationAspect::ReactionsContact => (
                 vec![
                     syn::parse2(quote!(Pos)).unwrap(),
