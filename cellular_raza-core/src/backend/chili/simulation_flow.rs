@@ -88,8 +88,9 @@ where
 
 /// Undirected graph
 ///
-/// This datatype is currently only used to create the simulation subdomains.
+/// This datatype is planned to be used in order to create the simulation subdomains.
 /// There are no plans to extend the use of this object.
+// TODO actually use the specifically designed UDGraph instead of FromMap trait.
 pub struct UDGraph<I>(pub(crate) Vec<(I, I)>);
 
 impl<I> UDGraph<I> {

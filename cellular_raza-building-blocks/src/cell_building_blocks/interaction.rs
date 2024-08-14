@@ -228,7 +228,8 @@ pub struct MorsePotentialF32 {
     pub strength_attracting: f32,
 }
 
-/// TODO
+/// Calculates the interaction strength behind the [MorsePotential] and [MorsePotentialF32]
+/// structs.
 pub fn calculate_morse_interaction<F, const D: usize>(
     own_pos: &nalgebra::SVector<F, D>,
     ext_pos: &nalgebra::SVector<F, D>,
@@ -273,7 +274,8 @@ where
     w
 }
 
-/// TODO
+/// TODO We should find a way to specify cell radii after which interactions are repelling instead
+/// of general length scales with no direct interpretation.
 pub fn calculate_morse_interaction_cell_radii<F, const D: usize>(
     own_pos: &nalgebra::SVector<F, D>,
     ext_pos: &nalgebra::SVector<F, D>,

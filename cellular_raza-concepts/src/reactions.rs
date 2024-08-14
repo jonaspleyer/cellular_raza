@@ -14,18 +14,29 @@ pub trait Intracellular<Ri> {
 /// In the most simple case, intracellular values can be assumed to have a homogeneous distribution
 /// throughout the entire cell.
 /// We can then describe them by a list of values $\vec{u}=(u_0,\dots,u_N)$.
-pub trait Reactions<Ri>: Intracellular<Ri> {
+// TODO introduce this float parameter for the set_random_variable function below
+pub trait Reactions<Ri/*, Float = f64*/>: Intracellular<Ri> {
     /// Calculates the purely intracellular reaction increment.
     /// Users who implement this trait should always use the given argument instead of relying on
     /// values obtained via `self`.
     fn calculate_intracellular_increment(&self, intracellular: &Ri) -> Result<Ri, CalcError>;
+
+    // This allows to internally set a random variable to model stochastic reactions.
+    /* #[allow(unused)]
+    fn set_random_variable(
+        &mut self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: Float,
+    ) -> Result<(), crate::RngError> {
+        Ok(())
+    }*/
 }
 
-/// TODO
+/// TODO add description
 pub trait ReactionsExtra<Ri, Re> {
-    // TODO
+    // TODO do we need this associated type?
     // type IncrementExtracellular;
-    /// TODO
+    /// TODO add description
     fn calculate_combined_increment(
         &self,
         intracellular: &Ri,
@@ -33,12 +44,12 @@ pub trait ReactionsExtra<Ri, Re> {
     ) -> Result<(Ri, Re), CalcError>;
 }
 
-/// TODO
+/// TODO add description
 pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()> {
-    /// TODO
+    /// TODO add description
     fn get_contact_information(&self) -> RInf;
 
-    /// TODO
+    /// TODO add description
     fn calculate_contact_increment(
         &self,
         own_intracellular: &Ri,
@@ -479,11 +490,11 @@ fn derive_reactions() {}
 #[allow(unused)]
 fn derive_intracellular() {}
 
-/// TODO
+/// TODO add description
 #[allow(unused)]
 fn derive_reactions_raw() {}
 
-/// TODO
+/// TODO add description
 #[allow(unused)]
 fn derive_reactions_contact() {}
 

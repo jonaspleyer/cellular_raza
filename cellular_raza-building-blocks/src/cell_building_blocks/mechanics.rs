@@ -753,7 +753,21 @@ impl<const D: usize> VertexMechanics2D<D> {
 }
 
 impl VertexMechanics2D<6> {
-    /// TODO
+    /// Fills the area of a given rectangle with hexagonal cells. Their orientation is such that
+    /// the top border has a flat top.
+    ///
+    /// The produced pattern will like similar to this.
+    /// ```
+    /// __________________________________
+    /// |   ___       ___          ___   |
+    /// |  /   \     /   \        /   \  |
+    /// | /     \___/     \_ ..._/     \ |
+    /// | \     /   \     /      \     / |
+    /// |  \___/     \___/        \___/  |
+    /// |  /   \     /   \        /   \  |
+    /// | .     .   .     .      .     . |
+    /// ```
+    /// The padding around the generated cells will be determined automatically.
     pub fn fill_rectangle_flat_top(
         cell_area: f64,
         spring_tensions: f64,

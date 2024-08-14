@@ -424,7 +424,7 @@ where
     Ok(())
 }
 
-/// TODO
+/// Ensures that intracellular increments have been cleared before the next update step.
 pub fn local_reactions_clear_increment<
     C,
     A,

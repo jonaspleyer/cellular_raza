@@ -453,12 +453,10 @@ enum SubCommand {
 #[command(version, about, long_about = None)]
 struct CLIArgs {
     /// Name of the current runs such as name of the device to be benchmarked
-    // TODO use this
     #[arg(required = true)]
     name: String,
 
     /// Output directory of benchmark results
-    // TODO use this
     #[arg(short, long, default_value_t = format!("benchmark_results"))]
     output_directory: String,
 
