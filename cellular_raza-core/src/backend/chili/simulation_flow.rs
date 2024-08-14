@@ -231,7 +231,7 @@ where
     /// ud_graph.push((2, 3));
     /// ud_graph.push((3, 1));
     ///
-    /// let map = ud_graph.to_hash_map();
+    /// let map = ud_graph.to_btree();
     /// assert_eq!(map.keys().len(), 3);
     /// ```
     pub fn to_btree(self) -> BTreeMap<I, BTreeSet<I>> {
