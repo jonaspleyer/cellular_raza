@@ -304,23 +304,26 @@ where
         Ok(())
     }
 
-    /// Save all voxels (containing all cells) with the given storage manager.
+    /// Save all subdomains with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
-    pub fn save_voxels<
+    pub fn save_subdomains<
         #[cfg(feature = "tracing")] F: core::fmt::Debug,
         #[cfg(not(feature = "tracing"))] F,
     >(
         &self,
-        storage_manager: &mut crate::storage::StorageManager<VoxelPlainIndex, Voxel<C, A>>,
+        storage_manager: &mut crate::storage::StorageManager<SubDomainPlainIndex, S>,
         next_time_point: &crate::time::NextTimePoint<F>,
     ) -> Result<(), StorageError>
     where
-        Voxel<C, A>: Clone + Serialize,
+        S: Clone + Serialize,
     {
-        if let Some(crate::time::TimeEvent::FullSave) = next_time_point.event {
+        if let Some(crate::time::TimeEvent::PartialSave) = next_time_point.event {
             use crate::storage::StorageInterfaceStore;
-            let iter = self.voxels.iter();
-            storage_manager.store_batch_elements(next_time_point.iteration as u64, iter)?;
+            storage_manager.store_single_element(
+                next_time_point.iteration as u64,
+                &self.subdomain_plain_index,
+                &self.subdomain,
+            )?;
         }
         Ok(())
     }

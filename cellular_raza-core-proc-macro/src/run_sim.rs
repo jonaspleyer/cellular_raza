@@ -565,11 +565,14 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     quote!(
         let builder = #settings.storage.clone().init();
-        let builder_voxels = builder.clone().suffix(builder.get_suffix().join("voxels"));
+        let builder_subdomains = builder.clone().suffix(builder.get_suffix().join("subdomains"));
         let builder_cells = builder.clone().suffix(builder.get_suffix().join("cells"));
 
-        let mut _storage_manager_voxels: #core_path::storage::StorageManager<_, _> =
-           #core_path::storage::StorageManager::open_or_create(builder_voxels, key as u64)?;
+        let mut _storage_manager_subdomains: #core_path::storage::StorageManager<
+            #core_path::backend::chili::SubDomainPlainIndex,
+            _
+        > =
+           #core_path::storage::StorageManager::open_or_create(builder_subdomains, key as u64)?;
         let mut _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
            #core_path::storage::StorageManager::open_or_create(builder_cells, key as u64)?;
 
@@ -598,12 +601,12 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 (Some(bar), true) => _time_stepper.update_bar(bar)?,
                 _ => (),
             };
-            sbox.save_voxels(&mut _storage_manager_voxels, &next_time_point)?;
+            sbox.save_subdomains(&mut _storage_manager_subdomains, &next_time_point)?;
             sbox.save_cells(&mut _storage_manager_cells, &next_time_point)?;
         }
         Ok(#core_path::backend::chili::StorageAccess {
-            voxels: _storage_manager_voxels.clone(),
             cells: _storage_manager_cells.clone(),
+            subdomains: _storage_manager_subdomains.clone(),
         })
     )
 }
