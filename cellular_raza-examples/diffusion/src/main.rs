@@ -20,18 +20,15 @@ trait SubDomainReactions<Pos, Conc, Float> {
     type NeighborValue;
     type BorderInfo;
 
-    fn update_fluid_dynamics<'a, I, J>(
+    fn update_fluid_dynamics<I, J>(
         &mut self,
         dt: Float,
         neighbors: I,
         sources: J,
     ) -> Result<(), CalcError>
     where
-        Pos: 'static,
-        Conc: 'static,
-        Self::NeighborValue: 'static,
         I: IntoIterator<Item = Self::NeighborValue>,
-        J: IntoIterator<Item = &'a (Pos, Conc)>;
+        J: IntoIterator<Item = (Pos, Conc)>;
 
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Conc, CalcError>;
     fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
@@ -54,7 +51,7 @@ impl SubDomainReactions<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> fo
     type NeighborValue = CartesianNeighbor;
     type BorderInfo = CartesianBorder;
 
-    fn update_fluid_dynamics<'a, I, J>(
+    fn update_fluid_dynamics<I, J>(
         &mut self,
         dt: f64,
         neighbors: I,
@@ -62,7 +59,7 @@ impl SubDomainReactions<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> fo
     ) -> Result<(), CalcError>
     where
         I: IntoIterator<Item = Self::NeighborValue>,
-        J: IntoIterator<Item = &'a (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
+        J: IntoIterator<Item = (nalgebra::SVector<f64, 2>, ndarray::Array1<f64>)>,
     {
         use ndarray::s;
 
@@ -109,10 +106,10 @@ impl SubDomainReactions<nalgebra::SVector<f64, 2>, ndarray::Array1<f64>, f64> fo
         sources
             .into_iter()
             .map(|(pos, source_increment)| {
-                let index = self.get_index_of_position(pos)?;
+                let index = self.get_index_of_position(&pos)?;
                 self.increment
                     .slice_mut(s![index[0], index[1], ..])
-                    .add_assign(source_increment);
+                    .add_assign(&source_increment);
                 Ok(())
             })
             .collect::<Result<Vec<_>, CalcError>>()?;
@@ -441,7 +438,7 @@ fn main() {
                 .collect::<Result<Vec<_>, CalcError>>()
                 .unwrap();
             subdomain
-                .update_fluid_dynamics(dt, neighbor_values, &sources)
+                .update_fluid_dynamics(dt, neighbor_values, sources)
                 .unwrap();
         }
     }
