@@ -59,10 +59,10 @@ where
 }
 
 #[allow(unused)]
-pub fn cycle_implemented<C, Ci>(agents: &Ci)
+pub fn cycle_implemented<Float, C, Ci>(agents: &Ci)
 where
     Ci: IntoIterator<Item = C>,
-    C: cellular_raza_concepts::Cycle<C>,
+    C: cellular_raza_concepts::Cycle<C, Float>,
 {
 }
 
