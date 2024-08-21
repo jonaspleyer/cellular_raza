@@ -431,8 +431,8 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
         // Introduce padding on the outside of the simulated domain.
         let min = self.domain.get_min();
         let max = self.domain.get_max();
-        let nrows = ((max[0] - min[0]) / dx).ceil() as usize;
-        let ncols = ((max[1] - min[1]) / dx).ceil() as usize;
+        let nrows = ((max[0] - min[0] - f32::EPSILON) / dx).ceil() as usize;
+        let ncols = ((max[1] - min[1] - f32::EPSILON) / dx).ceil() as usize;
 
         let extracellular_total =
             ndarray::Array3::from_shape_fn((nrows, ncols, N_REACTIONS), |(_, _, n)| {
@@ -444,15 +444,16 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
             .create_subdomains(n_subdomains)?
             .into_iter()
             .map(move |(index, subdomain, voxels)| {
-                let n_min = (subdomain.get_min() - subdomain.get_domain_min()) / dx;
-                let n_max = (subdomain.get_max() - subdomain.get_domain_min()) / dx;
+                let eps = nalgebra::Vector2::from([f32::EPSILON; 2]);
+                let n_min = (subdomain.get_min() - subdomain.get_domain_min() + eps) / dx;
+                let n_max = (subdomain.get_max() - subdomain.get_domain_min() + eps) / dx;
                 let n_min = [
                     (n_min[0].floor() as usize).max(0),
                     (n_min[1].floor() as usize).max(0),
                 ];
                 let n_max = [
-                    (n_max[0].ceil() as usize).min(nrows),
-                    (n_max[1].ceil() as usize).min(ncols),
+                    (n_max[0].floor() as usize).min(nrows),
+                    (n_max[1].floor() as usize).min(ncols),
                 ];
 
                 let extracellular = extracellular_total
