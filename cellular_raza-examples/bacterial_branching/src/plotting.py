@@ -48,11 +48,7 @@ def load_cells_at_iteration(
     for key in [
         "cell.mechanics.pos",
         "cell.mechanics.vel",
-        "cell.reactions.intracellular",
-        "cell.reactions.turnover_rate",
-        "cell.reactions.production_term",
-        "cell.reactions.secretion_rate",
-        "cell.reactions.uptake_rate",
+        "cell.intracellular_food",
     ]:
         df[key] = df[key].apply(lambda x: np.array(x, dtype=float))
     return df
@@ -106,19 +102,24 @@ def plot_iteration(
         smax = dfsi["reactions_max"]
         values = dfsi["extracellular.data"].reshape(dfsi["extracellular.dim"])[:,:,0]
         ax.imshow(
-            values,
+            values.T,
             vmin=extra_bounds[0],
             vmax=extra_bounds[1],
-            extent=[smin[0], smax[0], smin[1], smax[1]]
+            extent=[smin[0], smax[0], smin[1], smax[1]],
+            origin='lower',
         )
 
     # Plot cells
     points = np.array([p for p in dfc["cell.mechanics.pos"]])
-    radii = np.array([r for r in dfc["cell.interaction.length_repelling"]])
-    color = (
-        np.array([(r[0], 0, 0) for r in dfc["cell.reactions.intracellular"]]) - intra_bounds[0]
+    radii = np.array([r for r in dfc["cell.interaction.cell_radius"]])
+    s = np.clip((
+        np.array([r for r in dfc["cell.intracellular_food"]]) - intra_bounds[0]
     ) /\
-        (intra_bounds[1] - intra_bounds[0])
+        (intra_bounds[1] - intra_bounds[0]), 0, 1)
+
+    color_high = np.array([233, 170, 242]) / 255
+    color_low = np.array([129, 12, 145]) / 255
+    color = np.tensordot((1-s), color_low, 0) + np.tensordot(s, color_high, 0)
 
     # Plot cells as circles
     from matplotlib.patches import Circle
@@ -130,6 +131,7 @@ def plot_iteration(
         )
         for i in range(points.shape[0])],
         facecolors=color,
+        edgecolors="black",
     )
     ax.add_collection(collection)
 
