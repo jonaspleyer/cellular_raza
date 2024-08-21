@@ -98,7 +98,7 @@ fn main() -> Result<(), chili::SimulationError> {
         initial_value: ReactionVector::from([FOOD_INITIAL_CONCENTRATION]),
     };
 
-    let storage = StorageBuilder::new().priority([StorageOption::Ron]);
+    let storage = StorageBuilder::new().priority([StorageOption::SerdeJson]);
     let time = FixedStepsize::from_partial_save_freq(0.0, DT, T_MAX, SAVE_INTERVAL)?;
     let settings = Settings {
         n_threads: N_THREADS.try_into().unwrap(),
