@@ -181,93 +181,77 @@ pub struct MySubDomain {
     pub reactions_dx: nalgebra::Vector2<f32>,
     pub extracellular: ndarray::Array3<f32>,
     pub diffusion_constant: f32,
-    increment: ndarray::Array3<f32>,
+    increments: [ndarray::Array3<f32>; 3],
+    increments_start: usize,
     helper: ndarray::Array3<f32>,
 }
 
 impl MySubDomain {
-    fn merge_values(&mut self, neighbor: NeighborValue) -> Result<(), CalcError> {
-        // First calculate the intersection of the rectangles
-        // TODO In the future we hope to use the component-wise functions
-        // https://github.com/dimforge/nalgebra/pull/665
-        let min = (self.reactions_min - self.reactions_dx).zip_map(&neighbor.min, |a, b| a.max(b));
-        let max = (self.reactions_max + self.reactions_dx).zip_map(&neighbor.max, |a, b| a.min(b));
-
-        // Check that the discretization is identical
-        #[cfg(debug_assertions)]
-        {
-            let s = neighbor.extracellular.shape();
-            let s = nalgebra::SVector::<f32, 2>::from([s[0] as f32, s[1] as f32]);
-            let dx_neighbor = (neighbor.max - neighbor.min).zip_map(&s, |diff, si| diff / si);
-            assert_eq!(
-                dx_neighbor, self.reactions_dx,
-                "spatial discretization does not match! {:?} != {:?}",
-                dx_neighbor, self.reactions_dx
-            );
-        }
-
-        // Now calculate which indices we compare of our own domain
-        // end the neighbor domain
-        let ind_calculator = |upper: &nalgebra::SVector<f32, 2>,
-                              lower: &nalgebra::SVector<f32, 2>|
-         -> nalgebra::SVector<usize, 2> {
-            (upper - lower)
-                .component_div(&self.reactions_dx)
-                .map(|i| i as usize)
-        };
-        let ind_min_self = ind_calculator(&min, &(self.reactions_min - self.reactions_dx));
-        let ind_max_self = ind_calculator(&max, &(self.reactions_min - self.reactions_dx));
-        let ind_min_neighbor = ind_calculator(&min, &neighbor.min);
-        let ind_max_neighbor = ind_calculator(&max, &neighbor.min);
-
-        use ndarray::s;
-        let neighbor_slice = neighbor.extracellular.slice(s![
-            ind_min_neighbor[0]..ind_max_neighbor[0],
-            ind_min_neighbor[1]..ind_max_neighbor[1],
-            ..
-        ]);
-
-        use core::ops::AddAssign;
+    fn merge_values(
+        &mut self,
+        neighbor: Result<NeighborValue, CalcError>,
+    ) -> Result<(), CalcError> {
+        let neighbor = neighbor?;
+        let neighbor_slice = neighbor.extracellular_slice;
         self.helper
-            .slice_mut(s![
-                ind_min_self[0]..ind_max_self[0],
-                ind_min_self[1]..ind_max_self[1],
+            .slice_mut(ndarray::s![
+                neighbor.index_min[0]..neighbor.index_max[0],
+                neighbor.index_min[1]..neighbor.index_max[1],
                 ..
             ])
-            .add_assign(&neighbor_slice);
+            .assign(&neighbor_slice);
         Ok(())
+    }
+
+    pub fn get_extracellular_index_raw(
+        reactions_min: &nalgebra::Vector2<f32>,
+        reactions_max: &nalgebra::Vector2<f32>,
+        reactions_dx: &nalgebra::Vector2<f32>,
+        pos: &nalgebra::Vector2<f32>,
+    ) -> Result<nalgebra::Vector2<usize>, CalcError> {
+        if pos[0] < reactions_min[0]
+            || pos[0] > reactions_max[0]
+            || pos[1] < reactions_min[1]
+            || pos[1] > reactions_max[1]
+        {
+            return Err(CalcError(format!(
+                "position {:?} is not contained in domain with boundaries {:?} {:?}",
+                pos, reactions_min, reactions_max
+            )));
+        }
+        let index = (pos - reactions_min)
+            .component_div(&reactions_dx)
+            .map(|i| i as usize);
+        Ok(index)
     }
 
     pub fn get_extracellular_index(
         &self,
         pos: &nalgebra::Vector2<f32>,
     ) -> Result<nalgebra::Vector2<usize>, CalcError> {
-        if pos[0] < self.reactions_min[0]
-            || pos[0] > self.reactions_max[0]
-            || pos[1] < self.reactions_min[1]
-            || pos[1] > self.reactions_max[1]
-        {
-            return Err(CalcError(format!(
-                "position {:?} is not contained in domain with boundaries {:?} {:?}",
-                pos, self.reactions_min, self.reactions_max
-            )));
-        }
-        let index = (pos - self.reactions_min)
-            .component_div(&self.reactions_dx)
-            .map(|i| i as usize);
-        Ok(index)
+        Self::get_extracellular_index_raw(
+            &self.reactions_min,
+            &self.reactions_max,
+            &self.reactions_dx,
+            &pos,
+        )
     }
 }
 
 pub struct NeighborValue {
-    min: nalgebra::Vector2<f32>,
-    max: nalgebra::Vector2<f32>,
-    extracellular: ndarray::Array3<f32>,
+    index_min: nalgebra::Vector2<usize>,
+    index_max: nalgebra::Vector2<usize>,
+    extracellular_slice: ndarray::Array3<f32>,
+}
+
+pub struct BorderInfo {
+    min_sent: nalgebra::Vector2<f32>,
+    max_sent: nalgebra::Vector2<f32>,
 }
 
 impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySubDomain {
-    type NeighborValue = NeighborValue;
-    type BorderInfo = ();
+    type NeighborValue = Result<NeighborValue, CalcError>;
+    type BorderInfo = BorderInfo;
 
     fn treat_increments<I, J>(&mut self, neighbors: I, sources: J) -> Result<(), CalcError>
     where
@@ -276,9 +260,8 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySu
     {
         use core::ops::AddAssign;
         use ndarray::s;
-        let s = self.extracellular.shape();
-        let dx = (self.reactions_max[0] - self.reactions_min[0]) / s[0] as f32;
-        let dy = (self.reactions_max[1] - self.reactions_min[1]) / s[1] as f32;
+        let dx = self.reactions_dx[0];
+        let dy = self.reactions_dx[1];
         let dd2 = dx.powf(-2.0) + dy.powf(-2.0);
 
         // Helper variable to store current concentrations
@@ -299,10 +282,19 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySu
         // x _ _ _ _ _ x
         // x _ _ _ _ _ x
         // _ x x x x x _
-        self.helper.slice_mut(s![0,1..-1,..]).assign(&co.slice(s![0,..,..]));
-        self.helper.slice_mut(s![-1,1..-1,..]).assign(&co.slice(s![-1,..,..]));
-        self.helper.slice_mut(s![1..-1,0,..]).assign(&co.slice(s![..,0,..]));
-        self.helper.slice_mut(s![1..-1,-1,..]).assign(&co.slice(s![..,-1,..]));
+        let co = &self.extracellular;
+        self.helper
+            .slice_mut(s![0, 1..-1, ..])
+            .assign(&co.slice(s![0, .., ..]));
+        self.helper
+            .slice_mut(s![-1, 1..-1, ..])
+            .assign(&co.slice(s![-1, .., ..]));
+        self.helper
+            .slice_mut(s![1..-1, 0, ..])
+            .assign(&co.slice(s![.., 0, ..]));
+        self.helper
+            .slice_mut(s![1..-1, -1, ..])
+            .assign(&co.slice(s![.., -1, ..]));
 
         // Now overwrite previous assumptions with values from neighbors
         for neighbor in neighbors.into_iter() {
@@ -310,22 +302,26 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySu
         }
 
         // Set increment to next time-step to 0.0 everywhere
-        self.increment.fill(0.0);
-        self.increment
-            .assign(&(-2.0 * dd2 * &self.helper.slice(s![1..-1, 1..-1, ..])));
-        self.increment
+        let n_incr = self.increments.len();
+        self.increments_start = (self.increments_start + n_incr - 1) % n_incr;
+        let start = self.increments_start;
+        self.increments[start].fill(0.0);
+
+        // Calculate diffusion part
+        self.increments[start].assign(&(-2.0 * dd2 * &self.helper.slice(s![1..-1, 1..-1, ..])));
+        self.increments[start]
             .add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![2.., 1..-1, ..])));
-        self.increment
+        self.increments[start]
             .add_assign(&(dx.powf(-2.0) * &self.helper.slice(s![0..-2, 1..-1, ..])));
-        self.increment
+        self.increments[start]
             .add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 2.., ..])));
-        self.increment
+        self.increments[start]
             .add_assign(&(dy.powf(-2.0) * &self.helper.slice(s![1..-1, 0..-2, ..])));
 
         for (pos, dextra) in sources {
             let index = self.get_extracellular_index(&pos)?;
             let dextra: [f32; N_REACTIONS] = dextra.into();
-            self.increment
+            self.increments[start]
                 .slice_mut(ndarray::s![index[0], index[1], ..])
                 .scaled_add(1.0, &ndarray::Array1::<f32>::from_iter(dextra));
         }
@@ -335,9 +331,17 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySu
 
     fn update_fluid_dynamics(&mut self, dt: f32) -> Result<(), cellular_raza::concepts::CalcError> {
         use core::ops::AddAssign;
-        self.extracellular
-            .add_assign(&(self.diffusion_constant * dt * &self.increment));
-        self.increment *= 0.0;
+        let k1 = 5.0 / 12.0;
+        let k2 = 8.0 / 12.0;
+        let k3 = -1.0 / 12.0;
+        let start = self.increments_start;
+        let n_incr = self.increments.len();
+        self.extracellular.add_assign(
+            &(k1 * self.diffusion_constant * dt * &self.increments[start]
+                + k2 * self.diffusion_constant * dt * &self.increments[(start + 1) % n_incr]
+                + k3 * self.diffusion_constant * dt * &self.increments[(start + 2) % n_incr]),
+        );
+        self.extracellular.map_inplace(|x| *x = x.max(0.0));
         Ok(())
     }
 
@@ -348,15 +352,64 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32> for MySu
         }))
     }
 
-    fn get_neighbor_values(&self, _: Self::BorderInfo) -> Self::NeighborValue {
-        NeighborValue {
-            min: self.reactions_min,
-            max: self.reactions_max,
-            extracellular: self.extracellular.clone(),
-        }
+    fn get_neighbor_value(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
+        // Calculate the intersection of both boxes
+        let (intersection_min, intersection_max) = (
+            self.reactions_min
+                .zip_map(&border_info.min_sent, |x, y| x.max(y)),
+            self.reactions_max
+                .zip_map(&border_info.max_sent, |x, y| x.min(y)),
+        );
+        let intersection_min_padded =
+            (intersection_min - self.reactions_dx).zip_map(&self.reactions_min, |x, y| x.max(y));
+        let intersection_max_padded =
+            (intersection_max + self.reactions_dx).zip_map(&self.reactions_max, |x, y| x.min(y));
+        let ind_min_self = Self::get_extracellular_index_raw(
+            &self.reactions_min,
+            &self.reactions_max,
+            &self.reactions_dx,
+            &intersection_min_padded,
+        )?;
+        let ind_max_self = Self::get_extracellular_index_raw(
+            &self.reactions_min,
+            &self.reactions_max,
+            &self.reactions_dx,
+            &intersection_max_padded,
+        )?;
+        let ind_min_other = Self::get_extracellular_index_raw(
+            &(border_info.min_sent - self.reactions_dx),
+            &(border_info.max_sent + self.reactions_dx),
+            &self.reactions_dx,
+            &intersection_min_padded,
+        )?;
+        let ind_max_other = Self::get_extracellular_index_raw(
+            &(border_info.min_sent - self.reactions_dx),
+            &(border_info.max_sent + self.reactions_dx),
+            &self.reactions_dx,
+            &intersection_max_padded,
+        )?;
+        let extracellular_slice = self
+            .extracellular
+            .slice(ndarray::s![
+                ind_min_self[0]..ind_max_self[0],
+                ind_min_self[1]..ind_max_self[1],
+                ..
+            ])
+            .to_owned();
+
+        Ok(NeighborValue {
+            index_min: ind_min_other,
+            index_max: ind_max_other,
+            extracellular_slice,
+        })
     }
 
-    fn get_border_info(&self) -> Self::BorderInfo {}
+    fn get_border_info(&self) -> Self::BorderInfo {
+        BorderInfo {
+            min_sent: self.reactions_min,
+            max_sent: self.reactions_max,
+        }
+    }
 }
 
 impl DomainCreateSubDomains<MySubDomain> for MyDomain {
@@ -370,7 +423,6 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
         impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain, Vec<Self::VoxelIndex>)>,
         DecomposeError,
     > {
-        // TODO actually correctly implement initial config of extracellular values
         let dx = self.reactions_dx;
         let diffusion_constant = self.diffusion_constant;
 
@@ -421,7 +473,8 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
                         reactions_dx,
                         extracellular,
                         diffusion_constant,
-                        increment,
+                        increments_start: 0,
+                        increments: [increment.clone(), increment.clone(), increment.clone()],
                         helper,
                     },
                     voxels,
