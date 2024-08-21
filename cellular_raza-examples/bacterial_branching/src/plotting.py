@@ -1,4 +1,4 @@
-import pyron
+import json
 from pathlib import Path
 from glob import glob
 import os
@@ -25,10 +25,10 @@ def get_last_output_path(search_dir: Path | None = Path("out")) -> Path:
     return Path(sorted(list(glob(str(search_dir) + "/*")))[-1])
 
 def _get_all_iteration_files(output_path: Path = get_last_output_path()) -> list[Path]:
-    return [Path(p) for p in sorted(glob(str(output_path) + "/cells/ron/*"))]
+    return [Path(p) for p in sorted(glob(str(output_path) + "/cells/json/*"))]
 
 def _iteration_to_file(iteration: int, output_path: Path, cs: str = "cells") -> Path:
-    return output_path / "{}/ron/{:020}".format(cs, iteration)
+    return output_path / "{}/json/{:020}".format(cs, iteration)
 
 def get_all_iterations(output_path: Path = get_last_output_path()) -> list[int]:
     iterations_files = _get_all_iteration_files(output_path)
@@ -40,8 +40,9 @@ def load_cells_at_iteration(
     ):
     iteration_file = _iteration_to_file(iteration, output_path, "cells")
     data = []
-    for file in glob(str(iteration_file) + "/*"):
-        di = pyron.load(file)["data"]
+    for filename in glob(str(iteration_file) + "/*"):
+        file = open(filename)
+        di = json.load(file)["data"]
         data.extend([b["element"][0] for b in di])
     df = pd.json_normalize(data)
     for key in [
@@ -62,8 +63,9 @@ def load_subdomains_at_iteration(
     ) -> pd.DataFrame:
     iteration_file = _iteration_to_file(iteration, output_path, "subdomains")
     data = []
-    for file in glob(str(iteration_file) + "/*"):
-        di = pyron.load(file)["element"]
+    for filename in glob(str(iteration_file) + "/*"):
+        file = open(filename)
+        di = json.load(file)["element"]
         data.append(di)
     df = pd.json_normalize(data)
     for key in [
