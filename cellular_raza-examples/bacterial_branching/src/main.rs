@@ -74,22 +74,15 @@ fn main() -> Result<(), chili::SimulationError> {
                     damping_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,
                     mass: 1.0,
                 },
-                interaction: MorsePotentialF32 {
-                    length_repelling: BACTERIA_MECHANICS_RADIUS,
-                    length_attracting: 1.0,
-                    cutoff: BACTERIA_MECHANICS_RADIUS,
-                    strength_repelling: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,
-                    strength_attracting: 0.0,
+                interaction: MyInteraction {
+                    cell_radius: BACTERIA_MECHANICS_RADIUS,
+                    relative_interaction_range: BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE,
+                    potential_strength: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,
                 },
-                reactions: SimpleReactions {
-                    intracellular: ReactionVector::from(
-                        [BACTERIA_FOOD_INITIAL_CONCENTRATION; N_REACTIONS],
-                    ),
-                    turnover_rate: ReactionVector::from([BACTERIA_FOOD_TURNOVER_RATE; N_REACTIONS]),
-                    production_term: ReactionVector::zero(),
-                    secretion_rate: ReactionVector::zero(),
-                    uptake_rate: ReactionVector::from([BACTERIA_FOOD_UPTAKE_RATE; N_REACTIONS]),
-                },
+                intracellular_food: 0.0,
+                uptake_rate: BACTERIA_FOOD_UPTAKE_RATE,
+                division_radius: BACTERIA_MECHANICS_RADIUS * 2.0,
+                growth_rate: BACTERIA_CYCLE_GROWTH_RATE,
             }
         })
         .collect::<Vec<_>>();
@@ -101,8 +94,8 @@ fn main() -> Result<(), chili::SimulationError> {
             BACTERIA_MECHANICS_RADIUS * BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE,
         )?,
         reactions_dx: 50.0,
-        diffusion_constant: 1.0,
-        initial_value: ReactionVector::from([1.0]),
+        diffusion_constant: FOOD_DIFFUSION_CONSTANT,
+        initial_value: ReactionVector::from([FOOD_INITIAL_CONCENTRATION]),
     };
 
     let storage = StorageBuilder::new().priority([StorageOption::Ron]);
