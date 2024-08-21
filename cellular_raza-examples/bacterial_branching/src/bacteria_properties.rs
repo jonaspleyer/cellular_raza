@@ -69,39 +69,14 @@ impl Interaction<Vector2<f32>, Vector2<f32>, Vector2<f32>, f32> for MyInteractio
     }
 }
 
-/* impl Cycle<MyAgent> for OwnCycle {
+impl Cycle<MyAgent, f32> for MyAgent {
     fn update_cycle(
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: &f32,
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        _dt: &f32,
         cell: &mut MyAgent,
     ) -> Option<CycleEvent> {
         // If the cell is not at the maximum size let it grow
-        if cell.interaction.cell_radius < cell.cycle.maximum_cell_radius {
-            let growth_difference = (cell.cycle.maximum_cell_radius * cell.cycle.growth_rate * dt)
-                .min(cell.cycle.maximum_cell_radius - cell.interaction.cell_radius);
-            cell.cellular_reactions.intracellular_concentrations[0] -=
-                cell.cycle.food_growth_rate_multiplier * growth_difference
-                    / cell.cycle.maximum_cell_radius;
-            cell.interaction.cell_radius += growth_difference;
-        }
-
-        // Increase the age of the cell and divide if possible
-        cell.cycle.age += dt;
-
-        // Calculate the modifier (between 0.0 and 1.0) based on food threshold
-        let relative_division_food_level = ((cell.get_intracellular()[0]
-            - cell.cycle.food_division_threshold)
-            / (cell.cycle.food_threshold - cell.cycle.food_division_threshold))
-            .clamp(0.0, 1.0);
-
-        if
-        // Check if the cell has aged enough
-        cell.cycle.age > cell.cycle.division_age &&
-            // Check if the cell has grown enough
-            cell.interaction.cell_radius >= cell.cycle.maximum_cell_radius &&
-            // Random selection but chance increased when significantly above the food threshold
-            rng.gen_range(0.0..1.0) < relative_division_food_level
-        {
+        if cell.interaction.cell_radius > cell.division_radius {
             return Some(CycleEvent::Division);
         }
         None
@@ -118,13 +93,13 @@ impl Interaction<Vector2<f32>, Vector2<f32>, Vector2<f32>, f32> for MyInteractio
 
         // Make both cells smaller
         // Also keep old cell larger
-        let relative_size_difference = 0.2;
-        c1.interaction.cell_radius *= (1.0 + relative_size_difference) / std::f32::consts::SQRT_2;
-        c2.interaction.cell_radius *= (1.0 - relative_size_difference) / std::f32::consts::SQRT_2;
+        c1.interaction.cell_radius /= std::f32::consts::SQRT_2;
+        c2.interaction.cell_radius /= std::f32::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
+        use rand::Rng;
         let angle_1 = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
-        let dir_vec = nalgebra::Rotation2::new(angle_1) * Vector2::from([1.0, 0.0]);
+        let dir_vec = nalgebra::Rotation2::new(angle_1) * nalgebra::Vector2::from([1.0, 0.0]);
 
         // Define new positions for cells
         // It is randomly chosen if the old cell is left or right
@@ -135,62 +110,38 @@ impl Interaction<Vector2<f32>, Vector2<f32>, Vector2<f32>, f32> for MyInteractio
         c2.set_pos(&(old_pos - offset));
 
         // Decrease the amount of food in the cells
-        c1.cellular_reactions.intracellular_concentrations *=
-            (1.0 + relative_size_difference) * 0.5;
-        c2.cellular_reactions.intracellular_concentrations *=
-            (1.0 - relative_size_difference) * 0.5;
-
-        // New cell is completely new so set age to 0
-        c2.cycle.age = 0.0;
+        c1.intracellular_food *= 0.5;
+        c2.intracellular_food *= 0.5;
 
         Ok(c2)
     }
-}*/
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SimpleReactions {
-    pub intracellular: ReactionVector,
-    pub turnover_rate: ReactionVector,
-    pub production_term: ReactionVector,
-    pub secretion_rate: ReactionVector,
-    pub uptake_rate: ReactionVector,
 }
 
-impl Intracellular<ReactionVector> for SimpleReactions {
+// COMPONENT DESCRIPTION
+// 0         CELL RADIUS
+impl Intracellular<ReactionVector> for MyAgent {
     fn set_intracellular(&mut self, intracellular: ReactionVector) {
-        self.intracellular = intracellular;
+        self.interaction.cell_radius = intracellular[0];
     }
 
     fn get_intracellular(&self) -> ReactionVector {
-        self.intracellular.clone()
+        [self.interaction.cell_radius].into()
     }
 }
 
-impl Reactions<ReactionVector> for SimpleReactions {
-    fn calculate_intracellular_increment(
-        &self,
-        intracellular: &ReactionVector,
-    ) -> Result<ReactionVector, CalcError> {
-        Ok(&self.production_term - &self.turnover_rate * intracellular)
-    }
-}
-
-impl ReactionsExtra<ReactionVector, ReactionVector> for SimpleReactions {
+impl ReactionsExtra<ReactionVector, ReactionVector> for MyAgent {
     fn calculate_combined_increment(
         &self,
-        intracellular: &ReactionVector,
+        _intracellular: &ReactionVector,
         extracellular: &ReactionVector,
     ) -> Result<(ReactionVector, ReactionVector), CalcError> {
-        let intra = intracellular;
         let extra = extracellular;
-        let u = &self.uptake_rate;
-        let s = &self.secretion_rate;
+        let u = self.uptake_rate;
 
         let uptake = u * extra;
-        let secretion = s * intra;
 
-        let incr_intra = uptake - secretion;
-        let incr_extra = -incr_intra.clone();
+        let incr_intra: ReactionVector = [self.growth_rate * uptake[0]].into();
+        let incr_extra = -uptake;
 
         Ok((incr_intra, incr_extra))
     }
@@ -201,10 +152,11 @@ pub struct MyAgent {
     #[Mechanics]
     pub mechanics: NewtonDamped2DF32,
     #[Interaction]
-    pub interaction: MorsePotentialF32,
-    #[Reactions]
-    #[ReactionsExtra]
-    pub reactions: SimpleReactions,
+    pub interaction: MyInteraction,
+    pub intracellular_food: f32,
+    pub uptake_rate: f32,
+    pub division_radius: f32,
+    pub growth_rate: f32,
 }
 
 #[derive(Domain, Clone)]
