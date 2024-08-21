@@ -96,7 +96,7 @@ def plot_iteration(
     # Set size of the image
     domain_min = dfs["subdomain.domain_min"][0]
     domain_max = dfs["subdomain.domain_max"][0]
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(16,16))
     ax.set_xlim([domain_min[0], domain_max[0]])
     ax.set_ylim([domain_min[1], domain_max[1]])
 
