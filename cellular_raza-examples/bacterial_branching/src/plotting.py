@@ -190,11 +190,10 @@ def generate_movie(opath: Path | None = None, play_movie: bool = True):
 
 if __name__ == "__main__":
     output_path = get_last_output_path()
-    iterations = get_all_iterations(output_path)
     plot_all_iterations(
-        (0, 1.0),
-        (0, 1.0),
-        output_path, 
+        (0, 0.01),
+        (0, 10.0),
+        output_path,
     )
 
     generate_movie(output_path)
