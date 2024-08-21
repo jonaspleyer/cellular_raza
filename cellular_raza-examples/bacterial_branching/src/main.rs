@@ -12,49 +12,45 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 // Number of cells to put into simulation in the Beginning
-pub const N_BACTERIA_INITIAL: u32 = 400;
+pub const N_BACTERIA_INITIAL: u32 = 1;
 
 // Mechanical parameters
 pub const BACTERIA_MECHANICS_RADIUS: f32 = 6.0;
 pub const BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE: f32 = 1.6;
-pub const BACTERIA_MECHANICS_POTENTIAL_STRENGTH: f32 = 1e-2;
-pub const BACTERIA_MECHANICS_VELOCITY_REDUCTION: f32 = 2e-1;
+pub const BACTERIA_MECHANICS_POTENTIAL_STRENGTH: f32 = 4.0;
+pub const BACTERIA_MECHANICS_VELOCITY_REDUCTION: f32 = 1.0;
 
 // Reaction parameters of the cell
-pub const BACTERIA_FOOD_INITIAL_CONCENTRATION: f32 = 1.0;
-pub const BACTERIA_FOOD_TURNOVER_RATE: f32 = 0.025;
-pub const BACTERIA_FOOD_UPTAKE_RATE: f32 = 0.05;
+pub const BACTERIA_FOOD_INITIAL_CONCENTRATION_LOW: f32 = 0.0;
+pub const BACTERIA_FOOD_INITIAL_CONCENTRATION_HIGH: f32 = 0.0;
+pub const BACTERIA_FOOD_TURNOVER_RATE: f32 = 0.0;
+pub const BACTERIA_FOOD_UPTAKE_RATE: f32 = 0.5;
 
 // Parameters for cell cycle
-pub const BACTERIA_CYCLE_DIVISION_AGE_MIN: f32 = 60.0;
-pub const BACTERIA_CYCLE_DIVISION_AGE_MAX: f32 = 70.0;
-pub const BACTERIA_CYCLE_GROWTH_RATE: f32 = 0.1;
-pub const BACTERIA_CYCLE_FOOD_THRESHOLD: f32 = 2.0;
-pub const BACTERIA_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER: f32 = 10.0;
-pub const BACTERIA_CYCLE_FOOD_DIVISION_THRESHOLD: f32 = BACTERIA_FOOD_INITIAL_CONCENTRATION * 0.8;
+pub const BACTERIA_CYCLE_GROWTH_RATE: f32 = 1.2;
 
 // Parameters for domain
-pub const DOMAIN_SIZE: f32 = 3_000.0;
+pub const DOMAIN_SIZE: f32 = 500.0;
 pub const DOMAIN_MIDDLE: Vector2<f32> = nalgebra::vector![DOMAIN_SIZE / 2.0, DOMAIN_SIZE / 2.0];
 
 // Where will the cells be placed initially
-pub const STARTING_DOMAIN_X_LOW: f32 = DOMAIN_SIZE / 2.0 - 150.0;
-pub const STARTING_DOMAIN_X_HIGH: f32 = DOMAIN_SIZE / 2.0 + 150.0;
-pub const STARTING_DOMAIN_Y_LOW: f32 = DOMAIN_SIZE / 2.0 - 150.0;
-pub const STARTING_DOMAIN_Y_HIGH: f32 = DOMAIN_SIZE / 2.0 + 150.0;
+pub const STARTING_DOMAIN_X_LOW: f32 = DOMAIN_SIZE / 2.0 - 50.0;
+pub const STARTING_DOMAIN_X_HIGH: f32 = DOMAIN_SIZE / 2.0 + 50.0;
+pub const STARTING_DOMAIN_Y_LOW: f32 = DOMAIN_SIZE / 2.0 - 50.0;
+pub const STARTING_DOMAIN_Y_HIGH: f32 = DOMAIN_SIZE / 2.0 + 50.0;
 
 // Parameters for Voxel Reaction+Diffusion
-pub const VOXEL_FOOD_DIFFUSION_CONSTANT: f32 = 25.0;
-pub const VOXEL_FOOD_INITIAL_CONCENTRATION: f32 = 12.0;
+pub const FOOD_DIFFUSION_CONSTANT: f32 = 125.0;
+pub const FOOD_INITIAL_CONCENTRATION: f32 = 10.0;
 
 // Time parameters
-pub const DT: f32 = 0.1;
+pub const DT: f32 = 0.02;
 pub const T_START: f32 = 0.0;
-pub const T_MAX: f32 = 100.0;
-pub const SAVE_INTERVAL: usize = 10;
+pub const T_MAX: f32 = 1_000.0;
+pub const SAVE_INTERVAL: usize = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 1;
+pub const N_THREADS: usize = 8;
 
 mod bacteria_properties;
 
