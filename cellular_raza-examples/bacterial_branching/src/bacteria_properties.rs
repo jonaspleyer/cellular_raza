@@ -1,6 +1,7 @@
+use core::f32;
+
 use cellular_raza::prelude::*;
-use nalgebra::{ComplexField, SVector};
-use num::Float;
+use nalgebra::{SVector, SimdPartialOrd, Vector2};
 use serde::{Deserialize, Serialize};
 
 pub const N_REACTIONS: usize = 1;
