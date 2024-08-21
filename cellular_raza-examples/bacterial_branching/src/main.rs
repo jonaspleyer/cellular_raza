@@ -107,11 +107,11 @@ fn main() -> Result<(), chili::SimulationError> {
         show_progressbar: true,
     };
 
-    let mut storager = chili::run_simulation!(
+    let _storager = chili::run_simulation!(
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction, Reactions, ReactionsExtra],
+        aspects: [Mechanics, Interaction, ReactionsExtra, Cycle],
         parallelizer: Rayon,
     )?;
     Ok(())
