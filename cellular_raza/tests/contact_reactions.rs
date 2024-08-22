@@ -298,56 +298,57 @@ mod two_component_contact_reaction {
 
     fn compare_results(
         production: f64,
-        y0: [f64; 2],
+        y0_first: [f64; 2],
         upper_limit: f64,
         n_agents: usize,
-        t0: f64,
+        t0_first: f64,
         dt: f64,
         save_interval: usize,
         t_max: f64,
         #[allow(unused)] save_filename: &str,
     ) -> Result<(), SimulationError> {
         // Define exact solution
-        let q = (upper_limit - y0[1]) / y0[1];
-        let exact_solution_derivative = |t: f64, n_deriv: i32| -> nalgebra::Vector2<f64> {
-            let linear_growth = if n_deriv == 0 {
-                y0[0] + (n_agents - 1) as f64 * production * (t - t0)
-            } else {
-                0.0
+        let exact_solution_derivative =
+            |t: f64, y0: [f64; 2], t0: f64, n_deriv: i32| -> nalgebra::Vector2<f64> {
+                let q = (upper_limit - y0[1]) / y0[1];
+                let linear_growth = if n_deriv == 0 {
+                    y0[0] + (n_agents - 1) as f64 * production * (t - t0)
+                } else {
+                    0.0
+                };
+                let logistic_curve = (1..n_deriv).product::<i32>() as f64
+                    * upper_limit
+                    * q.powi(n_deriv)
+                    * (1.0 + q * (-production * (n_agents - 1) as f64 * (t - t0)).exp())
+                        .powi(-(n_deriv + 1));
+                nalgebra::Vector2::from([linear_growth, logistic_curve])
             };
-            let logistic_curve = (1..n_deriv).product::<i32>() as f64
-                * upper_limit
-                * q.powi(n_deriv)
-                * (1.0 + q * (-production * (n_agents - 1) as f64 * (t - t0)).exp())
-                    .powi(-(n_deriv + 1));
-            nalgebra::Vector2::from([linear_growth, logistic_curve])
-        };
 
         // Estimate upper bound on local and global truncation error
         let lipschitz_constant = nalgebra::vector![
             (n_agents - 1) as f64 * production,
             (n_agents - 1) as f64
                 * production
-                * (upper_limit - 2.0 * y0[1])
-                    .abs()
-                    .max((upper_limit - 2.0 * exact_solution_derivative(t_max, 0)[1]).abs())
+                * (upper_limit - 2.0 * y0_first[1]).abs().max(
+                    (upper_limit - 2.0 * exact_solution_derivative(t_max, y0_first, t0_first, 0)[1]).abs()
+                )
                 / upper_limit
         ];
-        let fourth_derivative_bound = exact_solution_derivative(t_max, 4)[1];
+        let fourth_derivative_bound = exact_solution_derivative(t_max, y0_first, t0_first, 4)[1];
 
         // Calculate upper bound on local and global truncation error
         let local_truncation_error = nalgebra::vector![
             n_agents as f64
-                * (y0[0] + (n_agents - 1) as f64 * production * (t_max - t0))
+                * (y0_first[0] + (n_agents - 1) as f64 * production * (t_max - t0_first))
                 * f64::EPSILON,
             fourth_derivative_bound * (3f64 / 8.0 * dt.powi(4))
         ];
         let global_truncation_error = |t: f64| -> nalgebra::Vector2<f64> {
             let res = nalgebra::Vector2::from([
-                ((lipschitz_constant[0] * (t - t0)).exp() - 1.0) * local_truncation_error[0]
+                ((lipschitz_constant[0] * (t - t0_first)).exp() - 1.0) * local_truncation_error[0]
                     / dt
                     / lipschitz_constant[0],
-                ((lipschitz_constant[1] * (t - t0)).exp() - 1.0) * local_truncation_error[1]
+                ((lipschitz_constant[1] * (t - t0_first)).exp() - 1.0) * local_truncation_error[1]
                     / dt
                     / lipschitz_constant[1],
             ]);
@@ -357,10 +358,10 @@ mod two_component_contact_reaction {
         // Obtain solutions from cellular_raza
         let solutions_cr = run_cellular_raza(
             production,
-            y0,
+            y0_first,
             upper_limit,
             n_agents,
-            t0,
+            t0_first,
             dt,
             save_interval,
             t_max,
@@ -368,17 +369,24 @@ mod two_component_contact_reaction {
 
         // Compare the results
         let mut results = vec![];
-        for (t, res_cr) in solutions_cr {
-            let res_ex = exact_solution_derivative(t, 0);
-            let e_global = global_truncation_error(t);
-            let e_local = local_truncation_error;
-            for r in res_cr.iter() {
-                let d0 = (r[0] - res_ex[0]).abs();
-                let d1 = (r[1] - res_ex[1]).abs();
-                assert!(d0 < e_global[0]);
-                assert!(d1 < e_global[1]);
+        let mut t0 = t0_first;
+        let mut y0 = y0_first;
+        for (n_run, (t, res_cr)) in solutions_cr.into_iter().enumerate() {
+            if n_run < 3 {
+                t0 = t;
+                y0 = res_cr[0];
+            } else {
+                let res_ex = exact_solution_derivative(t, y0, t0, 0);
+                let e_global = global_truncation_error(t);
+                let e_local = local_truncation_error;
+                for r in res_cr.iter() {
+                    let d0 = (r[0] - res_ex[0]).abs();
+                    let d1 = (r[1] - res_ex[1]).abs();
+                    assert!(d0 < e_global[0]);
+                    assert!(d1 < e_global[1]);
+                }
+                results.push((t, res_ex, e_global, e_local, res_cr));
             }
-            results.push((t, res_ex, e_global, e_local, res_cr));
         }
 
         #[cfg(not(debug_assertions))]
