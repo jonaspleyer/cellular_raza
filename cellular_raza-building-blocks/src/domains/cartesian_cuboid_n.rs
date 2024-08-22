@@ -623,7 +623,7 @@ impl<F, const D: usize> CartesianSubDomain<F, D> {
         let pos: [F; D] = pos.into();
         let mut res = [0usize; D];
         for i in 0..D {
-            let n_vox = (pos[i] - self.min[i]) / self.dx[i];
+            let n_vox = (pos[i] - self.domain_min[i]) / self.dx[i];
             res[i] = n_vox.to_usize().ok_or(BoundaryError(
                 cellular_raza_concepts::format_error_message!(
                     "conversion error during domain setup",
@@ -679,7 +679,7 @@ where
         });
         let mut res = Vec::new();
         for (n_subdomain, indices) in indices_grouped.into_iter() {
-            let mut min_vox = [0; D];
+            let mut min_vox = [usize::MAX; D];
             let mut max_vox = [0; D];
             let voxels = indices
                 .into_iter()
