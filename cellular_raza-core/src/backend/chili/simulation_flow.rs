@@ -407,9 +407,7 @@ impl SyncSubDomains for BarrierSync {
     ) -> Result<bool, SimulationError> {
         match maybe_error {
             Ok(_) => Ok(false),
-            Err(SimulationError::OtherThreadError(_)) => {
-                Ok(true)
-            }
+            Err(SimulationError::OtherThreadError(_)) => Ok(true),
             Err(x) => {
                 self.got_error
                     .store(true, std::sync::atomic::Ordering::Relaxed);

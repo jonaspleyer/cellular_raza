@@ -259,13 +259,7 @@ impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
-    /// Update cells position and velocity
-    ///
-    /// We assume that cells implement the
-    /// [Mechanics](cellular_raza_concepts::Mechanics) and
-    /// [Interaction](cellular_raza_concepts::Interaction) traits.
-    /// Then, threads will exchange information in the [PosInformation] format
-    /// to calculate the forces acting on the cells.
+    /// TODO
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_contact_reactions_step_1<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,

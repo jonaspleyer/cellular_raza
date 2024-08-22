@@ -180,6 +180,7 @@ pub use cellular_raza_core_proc_macro::test_compatibility;
 /// ```
 ///
 /// ### Rayon
+// TODO
 /// This feature is currently not supported.
 /// In the future, we plan on supporting additional parallelization strategies such as
 /// [rayon](https://docs.rs/rayon/latest/rayon/).
