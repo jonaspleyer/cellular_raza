@@ -281,45 +281,47 @@ where
     Ok(())
 }
 
-/// TODO
+/// TODO IMPORTANT This function sets the intracellular concentration but this is wrong. Find out
+/// how to properly combine this with the new use_increment function.
 #[inline]
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn reactions_contact_adams_bashforth_3rd<C, A, F, Ri>(
-    cell: &mut C,
+    _cell: &mut C,
     aux_storage: &mut A,
-    dt: F,
 ) -> Result<(), CalcError>
 where
     A: UpdateReactions<Ri>,
     A: UpdateReactionsContact<Ri, 3>,
-    C: cellular_raza_concepts::Intracellular<Ri>,
     Ri: Xapy<F> + num::Zero + Clone,
     F: FromPrimitive + num::Float,
 {
     // let dintra0 = aux_storage
-    let intracellular = cell.get_intracellular();
     let dintra = aux_storage.get_conc();
-    aux_storage.set_last_increment(dintra.clone());
+    let dintra_contact = <A as UpdateReactionsContact<Ri, 3>>::get_current_increment(&aux_storage);
+    aux_storage.set_last_increment(dintra_contact.clone());
     let n_previous_values = aux_storage.n_previous_values();
     let mut old_intracellular_increments = aux_storage.previous_increments();
-    let new_intracellular = match n_previous_values {
+    let dintra_new = match n_previous_values {
         2 => adams_bashforth_3(
-            intracellular,
+            dintra,
             [
-                dintra,
+                dintra_contact,
                 old_intracellular_increments.next().unwrap().clone(),
                 old_intracellular_increments.next().unwrap().clone(),
             ],
-            dt,
+            F::one(),
         )?,
         1 => adams_bashforth_2(
-            intracellular,
-            [dintra, old_intracellular_increments.next().unwrap().clone()],
-            dt,
+            dintra,
+            [
+                dintra_contact,
+                old_intracellular_increments.next().unwrap().clone(),
+            ],
+            F::one(),
         )?,
-        _ => euler(intracellular, dintra, dt)?,
+        _ => euler(dintra, dintra_contact, F::one())?,
     };
-    cell.set_intracellular(new_intracellular);
+    aux_storage.set_conc(dintra_new);
     Ok(())
 }
 

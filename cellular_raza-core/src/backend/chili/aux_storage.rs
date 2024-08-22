@@ -279,6 +279,12 @@ where
 
 /// Used to update properties of the cell related to the [ReactionsContact] trait.
 pub trait UpdateReactionsContact<Ri, const N: usize> {
+    /// Sets the current contact reactions increment
+    fn set_current_increment(&mut self, new_increment: Ri);
+    /// Adds to the current increment
+    fn incr_current_increment(&mut self, increment: Ri);
+    /// Obtains the current increment
+    fn get_current_increment(&self) -> Ri;
     /// Obtain previous increments used for adams_bashforth integrators
     fn previous_increments<'a>(&'a self) -> RingBufferIterRef<'a, Ri, N>;
     /// Set the last increment in the ring buffer
@@ -290,10 +296,29 @@ pub trait UpdateReactionsContact<Ri, const N: usize> {
 /// Implementor of the [UpdateReactionsContact] trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactionsContact<Ri, const N: usize> {
+    current_increment: Ri,
     increments: RingBuffer<Ri, N>,
 }
 
-impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N> {
+impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N>
+where
+    Ri: Clone + core::ops::Add<Ri, Output = Ri>,
+{
+    #[inline]
+    fn get_current_increment(&self) -> Ri {
+        self.current_increment.clone()
+    }
+
+    #[inline]
+    fn incr_current_increment(&mut self, increment: Ri) {
+        self.current_increment = self.current_increment.clone() + increment;
+    }
+
+    #[inline]
+    fn set_current_increment(&mut self, new_increment: Ri) {
+        self.current_increment = new_increment;
+    }
+
     #[inline]
     fn previous_increments<'a>(&'a self) -> RingBufferIterRef<'a, Ri, N> {
         self.increments.iter()
