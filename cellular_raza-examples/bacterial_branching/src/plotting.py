@@ -133,6 +133,15 @@ def plot_iteration(
         edgecolors="black",
     )
     ax.add_collection(collection)
+    ax.text(
+        0.05,
+        0.05,
+        "Agents: {:9}".format(points.shape[0]),
+        transform=ax.transAxes,
+        fontsize=14,
+        verticalalignment='center',
+        bbox=dict(boxstyle='square', facecolor='#FFFFFF'),
+    )
 
     ax.set_axis_off()
     fig.tight_layout()
