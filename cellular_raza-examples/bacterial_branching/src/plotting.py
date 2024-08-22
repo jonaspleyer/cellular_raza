@@ -176,6 +176,7 @@ def plot_all_iterations(
         iterations,
         itertools.repeat(kwargs),
     )
+    print("Plotting Results")
     _ = list(tqdm.tqdm(pool.imap(__plot_all_iterations_helper, args), total=len(iterations)))
 
 def generate_movie(opath: Path | None = None, play_movie: bool = True):
