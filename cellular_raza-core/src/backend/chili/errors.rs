@@ -241,7 +241,10 @@ impl From<SimulationError> for pyo3::PyErr {
             ReceiveError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             StorageError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
             RngError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
-            IoError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}")),
+            IoError(e) => pyo3::PyErr::new::<PyIOError, _>(format!("cellular_raza: {e}")),
+            OtherThreadError(e) => {
+                pyo3::PyErr::new::<PyValueError, _>(format!("cellular_raza: {e}"))
+            }
         }
     }
 }
