@@ -224,11 +224,24 @@ where
 {
     /// Allows to sync between threads. In the most simplest
     /// case of [BarrierSync] syncing is done by a global barrier.
-    pub fn sync(&mut self)
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn sync(&mut self) -> Result<(), SimulationError>
     where
         Sy: SyncSubDomains,
     {
-        self.syncer.sync();
+        self.syncer.sync()
+    }
+
+    /// Stores an error which has occurred and notifies other running threads to wind down.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn store_error(
+        &mut self,
+        maybe_error: Result<(), SimulationError>,
+    ) -> Result<bool, SimulationError>
+    where
+        Sy: SyncSubDomains,
+    {
+        self.syncer.store_error(maybe_error)
     }
 
     // TODO this is not a boundary error!

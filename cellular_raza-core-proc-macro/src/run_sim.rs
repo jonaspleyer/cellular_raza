@@ -588,21 +588,26 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         };
 
         while let Some(next_time_point) = _time_stepper.advance()? {
-            #step_1
-            sbox.sync();
-            #step_2
-            sbox.sync();
-            #step_3
-            #update_local_funcs
-            sbox.sync();
-            #step_4
+            let mut f = || -> Result<(), #core_path::backend::chili::SimulationError> {
+                #step_1
+                sbox.sync()?;
+                #step_2
+                sbox.sync()?;
+                #step_3
+                #update_local_funcs
+                sbox.sync()?;
+                #step_4
 
-            match (&mut pb, #settings.show_progressbar) {
-                (Some(bar), true) => _time_stepper.update_bar(bar)?,
-                _ => (),
+                match (&mut pb, #settings.show_progressbar) {
+                    (Some(bar), true) => _time_stepper.update_bar(bar)?,
+                    _ => (),
+                };
+                sbox.save_subdomains(&mut _storage_manager_subdomains, &next_time_point)?;
+                sbox.save_cells(&mut _storage_manager_cells, &next_time_point)?;
+                Ok(())
             };
-            sbox.save_subdomains(&mut _storage_manager_subdomains, &next_time_point)?;
-            sbox.save_cells(&mut _storage_manager_cells, &next_time_point)?;
+            let e = f();
+            if sbox.store_error(e)? {break}
         }
         Ok(#core_path::backend::chili::StorageAccess {
             cells: _storage_manager_cells.clone(),

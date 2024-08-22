@@ -107,6 +107,9 @@ pub enum SimulationError {
 
     /// Error related to random number generation by the [rand_chacha::ChaCha8Rng] struct.
     RngError(RngError),
+
+    /// Only occurs when another thread returns an error
+    OtherThreadError(String),
 }
 
 impl_from_error! {SimulationError,
@@ -139,7 +142,8 @@ impl_error_variant! {SimulationError,
     IoError,
     DrawingError,
     StorageError,
-    RngError
+    RngError,
+    OtherThreadError
 }
 
 // Implement the general error property

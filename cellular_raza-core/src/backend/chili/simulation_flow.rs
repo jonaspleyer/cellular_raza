@@ -4,6 +4,7 @@ use itertools::Itertools;
 use std::{
     collections::{BTreeMap, BTreeSet},
     marker::PhantomData,
+    sync::atomic::AtomicBool,
 };
 
 use super::errors::SimulationError;
@@ -49,6 +50,7 @@ use super::errors::SimulationError;
 /// ```
 pub struct BarrierSync {
     barrier: hurdles::Barrier,
+    got_error: std::sync::Arc<AtomicBool>,
 }
 
 /// Validates a given map.
@@ -333,7 +335,12 @@ pub trait SyncSubDomains {
     /// Function which forces connected syncers to wait for each other.
     /// This approach does not necessarily require all threads to wait but can mean that
     /// only depending threads wait for each other.
-    fn sync(&mut self);
+    fn sync(&mut self) -> Result<(), SimulationError>;
+    /// TODO
+    fn store_error(
+        &mut self,
+        maybe_error: Result<(), SimulationError>,
+    ) -> Result<bool, SimulationError>;
 }
 
 impl<I> FromMap<I> for BarrierSync {
@@ -342,6 +349,7 @@ impl<I> FromMap<I> for BarrierSync {
         I: Eq + core::hash::Hash + Clone + Ord,
     {
         let barrier = hurdles::Barrier::new(map.len());
+        let got_error = std::sync::Arc::new(AtomicBool::new(false));
         let res = map
             .keys()
             .map(|i| {
@@ -349,6 +357,7 @@ impl<I> FromMap<I> for BarrierSync {
                     i.clone(),
                     Self {
                         barrier: barrier.clone(),
+                        got_error: std::sync::Arc::clone(&got_error),
                     },
                 )
             })
@@ -363,6 +372,7 @@ where
 {
     fn build_from_graph(graph: UDGraph<I>) -> Result<BTreeMap<I, Self>, IndexError> {
         let barrier = hurdles::Barrier::new(graph.len());
+        let got_error = std::sync::Arc::new(AtomicBool::new(false));
         let res = graph
             .nodes()
             .into_iter()
@@ -371,6 +381,7 @@ where
                     key.clone(),
                     Self {
                         barrier: barrier.clone(),
+                        got_error: std::sync::Arc::clone(&got_error),
                     },
                 )
             })
@@ -380,8 +391,32 @@ where
 }
 
 impl SyncSubDomains for BarrierSync {
-    fn sync(&mut self) {
+    fn sync(&mut self) -> Result<(), SimulationError> {
         self.barrier.wait();
+        match self.got_error.load(std::sync::atomic::Ordering::Relaxed) {
+            true => Err(SimulationError::OtherThreadError(format!(
+                "Another thread returned an error. Winding down."
+            ))),
+            false => Ok(()),
+        }
+    }
+
+    fn store_error(
+        &mut self,
+        maybe_error: Result<(), SimulationError>,
+    ) -> Result<bool, SimulationError> {
+        match maybe_error {
+            Ok(_) => Ok(false),
+            Err(SimulationError::OtherThreadError(_)) => {
+                Ok(true)
+            }
+            Err(x) => {
+                self.got_error
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
+                self.barrier.wait();
+                Err(x)
+            }
+        }
     }
 }
 
