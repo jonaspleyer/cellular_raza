@@ -144,10 +144,13 @@ def plot_iteration(
     )
 
     ax.set_axis_off()
-    fig.tight_layout()
     if save_figure:
         os.makedirs(output_path / "images", exist_ok=True)
-        fig.savefig(output_path / "images/cells_at_iter_{:010}".format(iteration))
+        fig.savefig(
+            output_path / "images/cells_at_iter_{:010}".format(iteration),
+            bbox_inches='tight',
+            pad_inches=0,
+        )
         plt.close(fig)
         return None
     else:
