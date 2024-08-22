@@ -163,7 +163,9 @@ where
                         cells: Vec::new(),
                         new_cells: Vec::new(),
                         id_counter: 0,
-                        rng: rand_chacha::ChaCha8Rng::seed_from_u64(decomposed_domain.rng_seed),
+                        rng: rand_chacha::ChaCha8Rng::seed_from_u64(
+                            decomposed_domain.rng_seed + plain_index.0 as u64,
+                        ),
                     },
                 ))
             });
