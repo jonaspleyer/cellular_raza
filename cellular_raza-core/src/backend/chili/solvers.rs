@@ -327,12 +327,14 @@ where
 
 #[cfg(test)]
 mod test_solvers_reactions {
-    use crate::backend::chili::UpdateReactions;
+    use rand::SeedableRng;
+
+    use crate::backend::chili::{local_reactions_use_increment, UpdateReactions};
 
     use super::*;
 
     #[test]
-    fn exponential_decay_rk4() -> Result<(), CalcError> {
+    fn exponential_decay_rk4() -> Result<(), super::super::SimulationError> {
         use cellular_raza_concepts::*;
         struct PlainCell {
             intracellular: f64,
@@ -382,6 +384,9 @@ mod test_solvers_reactions {
         let mut t = 0.0;
         for _ in 0..100 {
             reactions_intracellular_runge_kutta_4th(&mut cell, &mut aux_storage, dt)?;
+            // This rng is just a placeholder and will not be used.
+            let mut _rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
+            local_reactions_use_increment(&mut cell, &mut aux_storage, dt, &mut _rng)?;
             t += dt;
             results_cr.push((t, cell.get_intracellular()));
         }
