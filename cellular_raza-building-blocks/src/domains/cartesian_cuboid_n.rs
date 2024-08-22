@@ -423,13 +423,10 @@ pub struct CartesianSubDomain<F, const D: usize> {
     domain_n_voxels: SVector<usize, D>,
 }
 
-
 #[derive(Deserialize)]
-#[serde(rename(
-    serialize = "CartesianSubDomain",
-    deserialize = "CartesianSubDomain",
-))]
-struct __CartesianSubDomainSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize> {
+#[serde(rename(serialize = "CartesianSubDomain", deserialize = "CartesianSubDomain",))]
+struct __CartesianSubDomainSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize>
+{
     min: SVector<F, D>,
     max: SVector<F, D>,
     dx: SVector<F, D>,
@@ -448,7 +445,11 @@ where
             min: s.min,
             max: s.max,
             dx: s.dx,
-            voxels: s.voxels.into_iter().map(|vox| <[usize; D]>::from(vox)).collect(),
+            voxels: s
+                .voxels
+                .into_iter()
+                .map(|vox| <[usize; D]>::from(vox))
+                .collect(),
             domain_min: s.domain_min,
             domain_max: s.domain_max,
             domain_n_voxels: s.domain_n_voxels,
@@ -1217,12 +1218,6 @@ macro_rules! implement_cartesian_cuboid_domain {
 
         impl<C> SortCells<C> for $subdomain_name
         where
-            /* C: Mechanics<
-            SVector<$float_type, $d>,
-            SVector<$float_type, $d>,
-            SVector<$float_type, $d>,
-            $float_type,
-        >,*/
             C: Position<SVector<$float_type, $d>>,
         {
             type VoxelIndex = [i64; $d];
