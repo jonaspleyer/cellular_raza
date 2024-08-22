@@ -79,7 +79,6 @@ fn main() -> Result<(), chili::SimulationError> {
                     exponent: BACTERIA_MECHANICS_EXPONENT,
                     potential_strength: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,
                 },
-                intracellular_food: 0.0,
                 uptake_rate: BACTERIA_FOOD_UPTAKE_RATE,
                 division_radius: BACTERIA_MECHANICS_RADIUS * 2.0,
                 growth_rate: BACTERIA_CYCLE_GROWTH_RATE,

@@ -84,10 +84,6 @@ impl Cycle<MyAgent, f32> for MyAgent {
         c1.set_pos(&(old_pos + offset));
         c2.set_pos(&(old_pos - offset));
 
-        // Decrease the amount of food in the cells
-        c1.intracellular_food *= 0.5;
-        c2.intracellular_food *= 0.5;
-
         Ok(c2)
     }
 }
@@ -128,7 +124,6 @@ pub struct MyAgent {
     pub mechanics: NewtonDamped2DF32,
     #[Interaction]
     pub interaction: MyInteraction,
-    pub intracellular_food: f32,
     pub uptake_rate: f32,
     pub division_radius: f32,
     pub growth_rate: f32,

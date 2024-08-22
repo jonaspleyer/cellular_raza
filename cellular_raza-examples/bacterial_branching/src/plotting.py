@@ -48,7 +48,6 @@ def load_cells_at_iteration(
     for key in [
         "cell.mechanics.pos",
         "cell.mechanics.vel",
-        "cell.intracellular_food",
     ]:
         df[key] = df[key].apply(lambda x: np.array(x, dtype=float))
     return df
