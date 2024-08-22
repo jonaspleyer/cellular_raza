@@ -138,11 +138,24 @@ impl SimulationAspects {
         aspects: impl IntoIterator<Item = &'a SimulationAspect>,
     ) -> bool {
         for aspect in aspects.into_iter() {
-            if !self.contains(aspect) {
+            if !self.contains(&aspect) {
                 return false;
             }
         }
         true
+    }
+
+    /// Checks if any of the given aspects are in the list
+    pub fn contains_any<'a>(
+        &self,
+        aspects: impl IntoIterator<Item = &'a SimulationAspect>,
+    ) -> bool {
+        for aspect in aspects.into_iter() {
+            if self.contains(&aspect) {
+                return true;
+            }
+        }
+        false
     }
 
     /// Alternative implementation to the [syn::parse::Parse] trait.

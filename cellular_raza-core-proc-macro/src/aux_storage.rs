@@ -786,7 +786,10 @@ impl Builder {
             ));
         }
 
-        if self.aspects.contains(&Reactions) || self.aspects.contains(&ReactionsContact) {
+        if self
+            .aspects
+            .contains_any([&Reactions, &ReactionsContact, &ReactionsExtra])
+        {
             generics.push(quote!(Ri));
             fields.push(quote!(
                 #[UpdateReactions(Ri)]
