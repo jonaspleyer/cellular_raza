@@ -469,6 +469,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_2 = proc_macro2::TokenStream::new();
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
+    let mut step_5 = proc_macro2::TokenStream::new();
     let mut local_func_names = Vec::<proc_macro2::TokenStream>::new();
     let mut local_subdomain_func_names = Vec::<proc_macro2::TokenStream>::new();
 
@@ -487,7 +488,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&Mechanics) {
         local_func_names.push(quote!(#core_path::backend::chili::local_mechanics_update_step_3));
-        step_3.extend(quote!(sbox.apply_boundary()?;));
+        step_4.extend(quote!(sbox.apply_boundary()?;));
     }
 
     if kwargs.aspects.contains(&Interaction) {
@@ -501,14 +502,14 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&Cycle) {
         local_func_names.push(quote!(#core_path::backend::chili::local_cycle_update));
-        step_3.extend(quote!(sbox.update_cell_cycle_3()?;));
+        step_4.extend(quote!(sbox.update_cell_cycle_4()?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
         local_func_names
             .push(quote!(#core_path::backend::chili::local_mechanics_set_random_variable));
-        step_3.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
-        step_4.extend(quote!(sbox.sort_cells_in_voxels_step_2(#determinism)?;));
+        step_4.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
+        step_5.extend(quote!(sbox.sort_cells_in_voxels_step_2(#determinism)?;));
     }
 
     if kwargs.aspects.contains(&Reactions) {
@@ -539,6 +540,19 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     let update_local_funcs = quote!(
+        let __cr_private_combined_local_subdomain_funcs = |
+            subdomain: &mut _,
+            dt,
+        | -> Result<(), #core_path::backend::chili::SimulationError> {
+            #(
+                #local_subdomain_func_names(subdomain, dt)?;
+            )*
+            Ok(())
+        };
+        sbox.run_local_subdomain_funcs(
+            __cr_private_combined_local_subdomain_funcs,
+            &next_time_point
+        )?;
         let __cr_private_combined_local_cell_funcs = |
             cell: &mut _,
             aux_storage: &mut _,
@@ -550,20 +564,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             )*
             Ok(())
         };
-        let __cr_private_combined_local_subdomain_funcs = |
-            subdomain: &mut _,
-            dt,
-        | -> Result<(), #core_path::backend::chili::SimulationError> {
-            #(
-                #local_subdomain_func_names(subdomain, dt)?;
-            )*
-            Ok(())
-        };
         sbox.run_local_cell_funcs(__cr_private_combined_local_cell_funcs, &next_time_point)?;
-        sbox.run_local_subdomain_funcs(
-            __cr_private_combined_local_subdomain_funcs,
-            &next_time_point
-        )?;
     );
 
     quote!(
@@ -598,8 +599,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 sbox.sync()?;
                 #step_3
                 #update_local_funcs
-                sbox.sync()?;
                 #step_4
+                sbox.sync()?;
+                #step_5
 
                 match (&mut pb, #settings.show_progressbar) {
                     (Some(bar), true) => _time_stepper.update_bar(bar)?,
