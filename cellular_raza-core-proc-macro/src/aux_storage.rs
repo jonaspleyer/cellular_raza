@@ -379,38 +379,46 @@ impl AuxStorageImplementer {
                 impl #struct_impl_generics #backend_path UpdateMechanics<#field_generics>
                 for #struct_name #struct_ty_generics #where_clause
                 {
+                    #[inline]
                     fn set_last_position(&mut self, pos: #position) {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::set_last_position(&mut self.#field_name, pos)
                     }
+                    #[inline]
                     fn previous_positions<'a>(
                         &'a self
                     ) -> #backend_path RingBufferIterRef<'a, #position, #n_saves> {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::previous_positions(&self.#field_name)
                     }
+                    #[inline]
                     fn set_last_velocity(&mut self, vel: #velocity) {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::set_last_velocity(&mut self.#field_name, vel)
                     }
+                    #[inline]
                     fn previous_velocities<'a>(
                         &'a self
                     ) -> #backend_path RingBufferIterRef<'a, #velocity, #n_saves> {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::previous_velocities(&self.#field_name)
                     }
+                    #[inline]
                     fn n_previous_values(&self) -> usize {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::n_previous_values(&self.#field_name)
                     }
+                    #[inline]
                     fn add_force(&mut self, force: #force) {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::add_force(&mut self.#field_name, force);
                     }
+                    #[inline]
                     fn get_current_force(&self) -> #force {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::get_current_force(&self.#field_name)
                     }
+                    #[inline]
                     fn clear_forces(&mut self) {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
                             ::clear_forces(&mut self.#field_name)
@@ -447,6 +455,7 @@ impl AuxStorageImplementer {
             let new_stream = wrap_pre_flags(quote!(
                 impl #impl_generics #backend_path UpdateCycle
                 for #struct_name #ty_generics #where_clause {
+                    #[inline]
                     fn set_cycle_events(&mut self, events: Vec<#backend_path CycleEvent>) {
                         <#field_type as #backend_path UpdateCycle>::set_cycle_events(
                             &mut self.#field_name,
@@ -454,18 +463,21 @@ impl AuxStorageImplementer {
                         )
                     }
 
+                    #[inline]
                     fn get_cycle_events(&self) -> &Vec<#backend_path CycleEvent> {
                         <#field_type as #backend_path UpdateCycle>::get_cycle_events(
                             &self.#field_name
                         )
                     }
 
+                    #[inline]
                     fn drain_cycle_events(&mut self) -> std::vec::Drain<#backend_path CycleEvent> {
                         <#field_type as #backend_path UpdateCycle>::drain_cycle_events(
                             &mut self.#field_name
                         )
                     }
 
+                    #[inline]
                     fn add_cycle_event(&mut self, event: #backend_path CycleEvent) {
                         <#field_type as #backend_path UpdateCycle>::add_cycle_event(
                             &mut self.#field_name,
@@ -521,6 +533,7 @@ impl AuxStorageImplementer {
             let new_stream = wrap_pre_flags(quote!(
                 impl #impl_generics #backend_path UpdateReactions<#rintra>
                 for #struct_name #ty_generics #where_clause {
+                    #[inline]
                     fn set_conc(&mut self, conc: #rintra) {
                         <#field_type as #backend_path UpdateReactions<#rintra>>::set_conc(
                             &mut self.#field_name,
@@ -528,12 +541,14 @@ impl AuxStorageImplementer {
                         )
                     }
 
+                    #[inline]
                     fn get_conc(&self) -> #rintra {
                         <#field_type as #backend_path UpdateReactions<#rintra>>::get_conc(
                             &self.#field_name
                         )
                     }
 
+                    #[inline]
                     fn incr_conc(&mut self, incr: #rintra) {
                         <#field_type as #backend_path UpdateReactions<#rintra>>::incr_conc(
                             &mut self.#field_name,
@@ -591,22 +606,26 @@ impl AuxStorageImplementer {
             let new_stream = wrap_pre_flags(quote!(
                     impl #impl_generics #backend_path UpdateReactionsContact<#rintra, #nsaves>
                     for #struct_name #ty_generics #where_clause {
+                        #[inline]
                         fn get_current_increment(&self) -> Ri {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::get_current_increment(&self.#field_name)
                         }
 
+                        #[inline]
                         fn incr_current_increment(&mut self, increment: Ri) {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::incr_current_increment(&mut self.#field_name, increment)
 
                         }
 
+                        #[inline]
                         fn set_current_increment(&mut self, new_increment: Ri) {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::set_current_increment(&mut self.#field_name, new_increment)
                         }
 
+                        #[inline]
                         fn previous_increments<'a>(
                             &'a self
                         ) -> #backend_path RingBufferIterRef<'a, #rintra, #nsaves> {
@@ -614,11 +633,13 @@ impl AuxStorageImplementer {
                                 ::previous_increments(&self.#field_name)
                         }
 
+                        #[inline]
                         fn set_last_increment(&mut self, increment: #rintra) {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::set_last_increment(&mut self.#field_name, increment)
                         }
 
+                        #[inline]
                         fn n_previous_values(&self) -> usize {
                             <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
                                 ::n_previous_values(&self.#field_name)
@@ -653,12 +674,14 @@ impl AuxStorageImplementer {
 
             let new_stream = wrap_pre_flags(quote!(
                 impl #impl_generics #backend_path UpdateInteraction for #struct_name #ty_generics #where_clause {
+                    #[inline]
                     fn get_current_neighbors(&self) -> usize {
                         <#field_type as #backend_path UpdateInteraction>::get_current_neighbors(
                             &self.#field_name
                         )
                     }
 
+                    #[inline]
                     fn incr_current_neighbors(&mut self, neighbors: usize) {
                         <#field_type as #backend_path UpdateInteraction>::incr_current_neighbors(
                             &mut self.#field_name,
@@ -666,6 +689,7 @@ impl AuxStorageImplementer {
                         )
                     }
 
+                    #[inline]
                     fn set_current_neighbors(&mut self, neighbors: usize) {
                         <#field_type as #backend_path UpdateInteraction>::set_current_neighbors(
                             &mut self.#field_name,
