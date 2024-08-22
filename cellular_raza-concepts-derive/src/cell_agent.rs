@@ -328,6 +328,7 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics Cycle<#tokens>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn update_cycle(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: &#float_type,
@@ -336,6 +337,7 @@ impl AgentImplementer {
                         <#field_type as Cycle<#tokens>>::update_cycle(rng, dt, cell)
                     }
 
+                    #[inline]
                     fn divide(
                         rng: &mut rand_chacha::ChaCha8Rng,
                         cell: &mut Self
@@ -390,6 +392,7 @@ impl AgentImplementer {
                 impl #impl_generics Mechanics<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
+                    #[inline]
                     fn calculate_increment(&self, force: #force)
                         -> Result<(#position, #velocity), CalcError> {
                         <#field_type as Mechanics<#tokens>>::calculate_increment(
@@ -397,6 +400,7 @@ impl AgentImplementer {
                             force
                         )
                     }
+                    #[inline]
                     fn set_random_variable(&mut self,
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: #float_type,
@@ -435,10 +439,12 @@ impl AgentImplementer {
                 impl #impl_generics Position<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
+                    #[inline]
                     fn pos(&self) -> #position {
                         <#field_type as Position<#tokens>>::pos(&self.#field_name)
                     }
 
+                    #[inline]
                     fn set_pos(&mut self, pos: &#position) {
                         <#field_type as Position<#tokens>>::set_pos(&mut self.#field_name, pos)
                     }
@@ -470,10 +476,12 @@ impl AgentImplementer {
                 impl #impl_generics Velocity<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
+                    #[inline]
                     fn velocity(&self) -> #velocity {
                         <#field_type as Velocity<#tokens>>::velocity(&self.#field_name)
                     }
 
+                    #[inline]
                     fn set_velocity(&mut self, velocity: &#velocity) {
                         <#field_type as Velocity<#tokens>>::set_velocity(&mut self.#field_name, velocity)
                     }
@@ -511,6 +519,7 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics Interaction<#tokens>
                     for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn get_interaction_information(&self) -> #information {
                         <#field_type as Interaction<#tokens
                         >>::get_interaction_information(
@@ -518,6 +527,7 @@ impl AgentImplementer {
                         )
                     }
 
+                    #[inline]
                     fn calculate_force_between(
                         &self,
                         own_pos: &#position,
@@ -536,6 +546,7 @@ impl AgentImplementer {
                         )
                     }
 
+                    #[inline]
                     fn is_neighbor(
                         &self,
                         own_pos: &#position,
@@ -550,6 +561,7 @@ impl AgentImplementer {
                         )
                     }
 
+                    #[inline]
                     fn react_to_neighbors(
                         &mut self,
                         neighbors: usize
@@ -587,12 +599,14 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics Intracellular<#rintra>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn get_intracellular(&self) -> #rintra {
                         <#field_type as Intracellular<
                             #rintra,
                         >>::get_intracellular(&self.#field_name)
                     }
 
+                    #[inline]
                     fn set_intracellular(
                         &mut self,
                         concentration_vector: #rintra
@@ -632,6 +646,7 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics Reactions<#rintra>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn calculate_intracellular_increment(
                         &self,
                         intracellular: &#rintra,
@@ -673,6 +688,7 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics ReactionsExtra<#rintra, #rextra>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn calculate_combined_increment(
                         &self,
                         intracellular: &#rintra,
@@ -717,12 +733,14 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics Reactions<#tokens>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn get_contact_information(&self) -> #rinf {
                         <#field_type as ReactionsContact<#tokens>>::get_contact_information(
                             &self.#field_name
                         )
                     }
 
+                    #[inline]
                     fn calculate_contact_increment(
                         &self,
                         own_intracellular: &#rintra,
@@ -771,6 +789,7 @@ impl AgentImplementer {
                 #[automatically_derived]
                 impl #impl_generics InteractionExtracellularGradient<#tokens>
                     for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn sense_gradient(
                         cell: &mut #struct_name #struct_ty_generics,
                         gradient: &#extra_gradient,
@@ -806,6 +825,7 @@ impl AgentImplementer {
                 impl #impl_generics Volume<#float_type> for #struct_name #struct_ty_generics
                     #where_clause
                 {
+                    #[inline]
                     fn get_volume(&self) -> #float_type {
                         <#field_type as Volume<#float_type>>::get_volume(
                             &self.#field_name

@@ -104,6 +104,7 @@ impl DomainImplementer {
                     type SubDomainIndex = <#field_type as Domain<#tokens>>::SubDomainIndex;
                     type VoxelIndex = <#field_type as Domain<#tokens>>::VoxelIndex;
 
+                    #[inline]
                     fn decompose(
                         self,
                         n_subdomains: core::num::NonZeroUsize,
@@ -148,6 +149,7 @@ impl DomainImplementer {
                 {
                     type VoxelIndex = <#field_type as SortCells<#tokens>>::VoxelIndex;
 
+                    #[inline]
                     fn get_voxel_index_of(&self, cell: &#cell) -> Result<
                         Self::VoxelIndex,
                         BoundaryError
@@ -176,6 +178,7 @@ impl DomainImplementer {
                 impl #impl_generics DomainRngSeed for #struct_name #struct_ty_generics
                     #where_clause
                 {
+                    #[inline]
                     fn get_rng_seed(&self) -> u64 {
                         <#field_type as DomainRngSeed>::get_rng_seed(&self.#field_name)
                     }
@@ -216,6 +219,7 @@ impl DomainImplementer {
                         ::SubDomainIndex;
                     type VoxelIndex = <#field_type as DomainCreateSubDomains<#tokens>>::VoxelIndex;
 
+                    #[inline]
                     fn create_subdomains(
                         &self,
                         n_subdomains: core::num::NonZeroUsize,

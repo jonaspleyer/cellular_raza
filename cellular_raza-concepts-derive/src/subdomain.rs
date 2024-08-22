@@ -180,6 +180,7 @@ impl SubDomainImplementer {
                 impl #impl_generics SubDomain for #struct_name #struct_ty_generics #where_clause {
                     type VoxelIndex = <#field_type as SubDomain>::VoxelIndex;
 
+                    #[inline]
                     fn get_neighbor_voxel_indices(
                         &self,
                         voxel_index: &Self::VoxelIndex
@@ -190,6 +191,7 @@ impl SubDomainImplementer {
                         )
                     }
 
+                    #[inline]
                     fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
                         <#field_type as SubDomain>::get_all_indices(&self.#field_name)
                     }
@@ -222,6 +224,7 @@ impl SubDomainImplementer {
                 for #struct_name #struct_ty_generics #where_clause {
                     type VoxelIndex = <#field_type as SortCells<#cell>>::VoxelIndex;
 
+                    #[inline]
                     fn get_voxel_index_of(
                         &self,
                         cell: &#cell
@@ -260,6 +263,7 @@ impl SubDomainImplementer {
             quote::quote!(
                 impl #impl_generics SubDomainMechanics<#position, #velocity>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn apply_boundary(
                         &self,
                         pos: &mut #position,
@@ -310,6 +314,7 @@ impl SubDomainImplementer {
                         #field_type as SubDomainReactions<#position, #react_extra, #float>
                     >::BorderInfo;
 
+                    #[inline]
                     fn treat_increments<__cr_private_I, __cr_private_J>(
                         &mut self,
                         neighbors: __cr_private_I,
@@ -323,6 +328,7 @@ impl SubDomainImplementer {
                             treat_increments(&mut self.#field_name, neighbors, sources)
                     }
 
+                    #[inline]
                     fn update_fluid_dynamics(
                         &mut self,
                         dt: #float,
@@ -331,6 +337,7 @@ impl SubDomainImplementer {
                             update_fluid_dynamics(&mut self.#field_name, dt)
                     }
 
+                    #[inline]
                     fn get_extracellular_at_pos(
                         &self,
                         pos: &#position
@@ -339,6 +346,7 @@ impl SubDomainImplementer {
                             get_extracellular_at_pos(&self.#field_name, pos)
                     }
 
+                    #[inline]
                     fn get_neighbor_value(
                         &self,
                         border_info: Self::BorderInfo
@@ -347,6 +355,7 @@ impl SubDomainImplementer {
                             get_neighbor_value(&self.#field_name, border_info)
                     }
 
+                    #[inline]
                     fn get_border_info(&self) -> Self::BorderInfo {
                         <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
                             get_border_info(&self.#field_name)
@@ -382,6 +391,7 @@ impl SubDomainImplementer {
             quote::quote!(
                 impl #impl_generics SubDomainForce<#position, #velocity, #force>
                 for #struct_name #struct_ty_generics #where_clause {
+                    #[inline]
                     fn calculate_custom_force(
                         &self,
                         pos: &#position,
