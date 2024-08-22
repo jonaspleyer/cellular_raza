@@ -283,7 +283,7 @@ pub trait SubDomainForce<Pos, Vel, For> {
 ///         Ok(self.values.clone())
 ///     }
 ///
-///     fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
+///     fn get_neighbor_value(&self, border_info: Self::BorderInfo) -> Self::NeighborValue {
 ///         self.values.clone()
 ///     }
 ///
@@ -317,7 +317,7 @@ pub trait SubDomainReactions<Pos, Re, Float> {
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Re, crate::CalcError>;
     /// Obtains the [NeighborValue] which should be sent to the neighbor which has exposed the given
     /// [BorderInfo].
-    fn get_neighbor_values(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
+    fn get_neighbor_value(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
     /// Obtains the [BorderInfo] used to retrieve the [NeighborValue].
     fn get_border_info(&self) -> Self::BorderInfo;
 }

@@ -68,7 +68,7 @@ where
             received_infos.sort_by_key(|info| info.0);
         }
         for border_info in received_infos {
-            let boundary_value = self.subdomain.get_neighbor_values(border_info.1);
+            let boundary_value = self.subdomain.get_neighbor_value(border_info.1);
             // Send back information about the increment
             self.communicator.send(
                 &border_info.0,
