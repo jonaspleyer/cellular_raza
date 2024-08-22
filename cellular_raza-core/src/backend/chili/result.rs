@@ -1,4 +1,4 @@
-use super::{CellIdentifier, SimulationError, SubDomainPlainIndex, VoxelPlainIndex};
+use super::{CellIdentifier, SimulationError, SubDomainPlainIndex};
 use crate::storage::StorageManager;
 
 /// Gathers the [StorageManager] for cells and voxels of the previously run simulation

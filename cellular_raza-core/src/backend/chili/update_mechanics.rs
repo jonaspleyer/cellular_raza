@@ -368,7 +368,7 @@ where
                 .ok_or(cellular_raza_concepts::IndexError(error_1))?;
             let error_2 = format!(
                 "\
-                EngineError: Force Information with sender index {:?} and\
+                EngineError: Force Information with sender index {:?} and \
                 cell at vector position {} could not be matched",
                 obt_forces.index_sender, obt_forces.cell_index_in_vector
             );
