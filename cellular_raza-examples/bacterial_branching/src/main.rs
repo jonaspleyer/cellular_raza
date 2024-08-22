@@ -16,7 +16,7 @@ pub const N_BACTERIA_INITIAL: u32 = 1;
 
 // Mechanical parameters
 pub const BACTERIA_MECHANICS_RADIUS: f32 = 6.0;
-pub const BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE: f32 = 1.6;
+pub const BACTERIA_MECHANICS_EXPONENT: f32 = 0.2;
 pub const BACTERIA_MECHANICS_POTENTIAL_STRENGTH: f32 = 4.0;
 pub const BACTERIA_MECHANICS_VELOCITY_REDUCTION: f32 = 1.0;
 
@@ -76,7 +76,7 @@ fn main() -> Result<(), chili::SimulationError> {
                 },
                 interaction: MyInteraction {
                     cell_radius: BACTERIA_MECHANICS_RADIUS,
-                    relative_interaction_range: BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE,
+                    exponent: BACTERIA_MECHANICS_EXPONENT,
                     potential_strength: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,
                 },
                 intracellular_food: 0.0,

@@ -1,7 +1,7 @@
 use core::f32;
 
 use cellular_raza::prelude::*;
-use nalgebra::{SVector, SimdPartialOrd, Vector2};
+use nalgebra::{SVector, Vector2};
 use serde::{Deserialize, Serialize};
 
 pub const N_REACTIONS: usize = 1;
@@ -10,7 +10,7 @@ pub type ReactionVector = nalgebra::SVector<f32, N_REACTIONS>;
 #[derive(Serialize, Deserialize, Clone, core::fmt::Debug)]
 pub struct MyInteraction {
     pub potential_strength: f32,
-    pub relative_interaction_range: f32,
+    pub exponent: f32,
     pub cell_radius: f32,
 }
 
@@ -23,46 +23,20 @@ impl Interaction<Vector2<f32>, Vector2<f32>, Vector2<f32>, f32> for MyInteractio
         _ext_vel: &Vector2<f32>,
         ext_radius: &f32,
     ) -> Result<(Vector2<f32>, Vector2<f32>), CalcError> {
-        let min_relative_distance_to_center = 0.3162277660168379;
-        let (r, dir) =
-            match (own_pos - ext_pos).norm() < self.cell_radius * min_relative_distance_to_center {
-                false => {
-                    let z = own_pos - ext_pos;
-                    let r = z.norm();
-                    (r, z.normalize())
-                }
-                true => {
-                    let dir = match own_pos == ext_pos {
-                        true => {
-                            return Ok((nalgebra::Vector2::zeros(), nalgebra::Vector2::zeros()));
-                        }
-                        false => (own_pos - ext_pos).normalize(),
-                    };
-                    let r = self.cell_radius * min_relative_distance_to_center;
-                    (r, dir)
-                }
-            };
-        // Introduce Non-dimensional length variable
+        let z = own_pos - ext_pos;
+        let r = z.norm();
+        if r == 0.0 {
+            return Ok((num::Zero::zero(), num::Zero::zero()));
+        }
+
         let sigma = r / (self.cell_radius + ext_radius);
-        let bound = 4.0 + 1.0 / sigma;
-        let spatial_cutoff = (1.0
-            + (self.relative_interaction_range * (self.cell_radius + ext_radius) - r).signum())
-            * 0.5;
-
-        // Calculate the strength of the interaction with correct bounds
-        let strength = self.potential_strength
-            * ((1.0 / sigma).powf(2.0) - (1.0 / sigma).powf(4.0))
-                .min(bound)
-                .max(-bound);
-
-        // Calculate only attracting and repelling forces
-        let attracting_force = dir * strength.max(0.0) * spatial_cutoff;
-        let repelling_force = dir * strength.min(0.0) * spatial_cutoff;
-
-        Ok((
-            -repelling_force - attracting_force,
-            repelling_force + attracting_force,
-        ))
+        let strength = if sigma <= 1.0 {
+            self.potential_strength
+        } else {
+            0.0
+        };
+        let force = strength * z.normalize() / sigma.powf(self.exponent);
+        Ok((force, -force))
     }
 
     fn get_interaction_information(&self) -> f32 {
