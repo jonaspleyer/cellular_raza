@@ -591,6 +591,22 @@ impl AuxStorageImplementer {
             let new_stream = wrap_pre_flags(quote!(
                     impl #impl_generics #backend_path UpdateReactionsContact<#rintra, #nsaves>
                     for #struct_name #ty_generics #where_clause {
+                        fn get_current_increment(&self) -> Ri {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::get_current_increment(&self.#field_name)
+                        }
+
+                        fn incr_current_increment(&mut self, increment: Ri) {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::incr_current_increment(&mut self.#field_name, increment)
+
+                        }
+
+                        fn set_current_increment(&mut self, new_increment: Ri) {
+                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                                ::set_current_increment(&mut self.#field_name, new_increment)
+                        }
+
                         fn previous_increments<'a>(
                             &'a self
                         ) -> #backend_path RingBufferIterRef<'a, #rintra, #nsaves> {
