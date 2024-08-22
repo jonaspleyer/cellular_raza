@@ -339,12 +339,12 @@ impl SubDomainImplementer {
                             get_extracellular_at_pos(&self.#field_name, pos)
                     }
 
-                    fn get_neighbor_values(
+                    fn get_neighbor_value(
                         &self,
                         border_info: Self::BorderInfo
                     ) -> Self::NeighborValue {
                         <#field_type as SubDomainReactions<#position, #react_extra, #float>>::
-                            get_neighbor_values(&self.#field_name, border_info)
+                            get_neighbor_value(&self.#field_name, border_info)
                     }
 
                     fn get_border_info(&self) -> Self::BorderInfo {

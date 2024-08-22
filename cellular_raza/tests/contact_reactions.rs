@@ -330,7 +330,9 @@ mod two_component_contact_reaction {
             (n_agents - 1) as f64
                 * production
                 * (upper_limit - 2.0 * y0_first[1]).abs().max(
-                    (upper_limit - 2.0 * exact_solution_derivative(t_max, y0_first, t0_first, 0)[1]).abs()
+                    (upper_limit
+                        - 2.0 * exact_solution_derivative(t_max, y0_first, t0_first, 0)[1])
+                        .abs()
                 )
                 / upper_limit
         ];
