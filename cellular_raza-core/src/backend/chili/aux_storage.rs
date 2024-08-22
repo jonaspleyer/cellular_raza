@@ -788,7 +788,7 @@ pub mod test_derive_aux_storage {
     #[derive(AuxStorage)]
     struct TestStructMechanics<Pos, Vel, For, const N: usize> {
         #[UpdateMechanics(Pos, Vel, For, N)]
-        aux_mechanis: AuxStorageMechanics<Pos, Vel, For, N>,
+        aux_mechanics: AuxStorageMechanics<Pos, Vel, For, N>,
     }
 
     fn add_get_events<A>(aux_storage: &mut A)
@@ -834,7 +834,7 @@ pub mod test_derive_aux_storage {
     #[test]
     fn mechanics() {
         let mut aux_storage = TestStructMechanics::<_, _, _, 4> {
-            aux_mechanis: AuxStorageMechanics::default(),
+            aux_mechanics: AuxStorageMechanics::default(),
         };
         aux_storage.set_last_position(3_f64);
         aux_storage.set_last_velocity(5_f32);
