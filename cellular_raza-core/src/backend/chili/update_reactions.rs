@@ -133,7 +133,7 @@ where
     }
 }
 
-/// TODO
+/// This information will be sent from one cell to another to determine their combined reactions.
 pub struct ReactionsContactInformation<Pos, Ri, RInf> {
     /// Current position
     pub pos: Pos,
@@ -154,7 +154,8 @@ pub struct ReactionsContactInformation<Pos, Ri, RInf> {
     pub index_receiver: VoxelPlainIndex,
 }
 
-/// TODO
+/// This informatino is returned after receiving [ReactionsContactInformation] and delivers the
+/// increment.
 pub struct ReactionsContactReturn<Ri> {
     /// Increment of intracellular
     pub intracellular: Ri,
@@ -436,6 +437,7 @@ where
 }
 
 /// Updates the cells intracellular values from the obtained contact informations
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_update_contact_reactions_step_3<
     C,
     A,
@@ -459,6 +461,7 @@ where
 }
 
 /// TODO
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_reactions_intracellular<
     C,
     A,
@@ -482,6 +485,7 @@ where
 }
 
 /// Ensures that intracellular increments have been cleared before the next update step.
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_reactions_use_increment<
     C,
     A,
@@ -510,6 +514,7 @@ where
 ///
 /// The [SubDomainReactions::update_fluid_dynamics] and [SubDomainReactions::treat_increments] work
 /// together as an abstraction to allow for more complicated solvers.
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_subdomain_update_reactions_extra<S, Ri, Re, Float>(
     subdomain: &mut S,
     dt: Float,
