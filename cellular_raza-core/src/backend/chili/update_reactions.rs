@@ -482,22 +482,26 @@ where
 }
 
 /// Ensures that intracellular increments have been cleared before the next update step.
-pub fn local_reactions_clear_increment<
+pub fn local_reactions_use_increment<
     C,
     A,
     Ri,
     #[cfg(feature = "tracing")] F: core::fmt::Debug,
     #[cfg(not(feature = "tracing"))] F,
 >(
-    _cell: &mut C,
+    cell: &mut C,
     aux_storage: &mut A,
-    _dt: F,
+    dt: F,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
+    C: Intracellular<Ri>,
     A: UpdateReactions<Ri>,
-    Ri: num::Zero,
+    Ri: Xapy<F> + num::Zero,
 {
+    let intra = cell.get_intracellular();
+    let dintra = aux_storage.get_conc();
+    cell.set_intracellular(dintra.xapy(dt, &intra));
     aux_storage.set_conc(Ri::zero());
     Ok(())
 }

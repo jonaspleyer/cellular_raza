@@ -248,11 +248,12 @@ where
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn reactions_intracellular_runge_kutta_4th<C, A, F, Ri>(
     cell: &mut C,
-    _aux_storage: &mut A,
+    aux_storage: &mut A,
     dt: F,
 ) -> Result<(), CalcError>
 where
     C: cellular_raza_concepts::Reactions<Ri>,
+    A: UpdateReactions<Ri>,
     F: num::Float,
     Ri: num::Zero + Xapy<F>,
 {
@@ -276,7 +277,7 @@ where
     );
 
     // Update the internal value of the cell
-    cell.set_intracellular(dintra.xapy(dt, &intra));
+    aux_storage.incr_conc(dintra);
     Ok(())
 }
 

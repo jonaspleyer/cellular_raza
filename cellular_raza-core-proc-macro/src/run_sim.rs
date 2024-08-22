@@ -523,8 +523,11 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             .push(quote!(#core_path::backend::chili::local_update_contact_reactions_step_3));
     }
 
-    if kwargs.aspects.contains(&ReactionsContact) || kwargs.aspects.contains(&ReactionsExtra) {
-        local_func_names.push(quote!(#core_path::backend::chili::local_reactions_clear_increment));
+    if kwargs.aspects.contains(&Reactions)
+        || kwargs.aspects.contains(&ReactionsContact)
+        || kwargs.aspects.contains(&ReactionsExtra)
+    {
+        local_func_names.push(quote!(#core_path::backend::chili::local_reactions_use_increment));
     }
 
     if kwargs.aspects.contains(&ReactionsExtra) {
