@@ -4,7 +4,9 @@ pub use cellular_raza_concepts::{DecomposeError, IndexError};
 use core::any::type_name;
 use core::fmt::{Debug, Display};
 
-use std::error::Error; // TODO in the future use core::error::Error (unstable right now)
+use std::error::Error;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc; // TODO in the future use core::error::Error (unstable right now)
 
 use crossbeam_channel::{RecvError, SendError};
 
@@ -186,33 +188,75 @@ pub enum HandlingStrategy {
     RevertChangeAccuracy,
     /// Throw away current results and stop the simulation entire.
     /// This represents a non-recoverable state.
-    AbortSimulation,
+    Abort,
+    /// Ignores the error and continues with the simulation
+    Ignore,
 }
 
-trait ErrorHandler {
+/// Handle any error which may occur as specified by [SimulationError]
+pub trait ErrorHandler: Sized {
+    /// Creates multiple handlers which are responsible for individual threads.
+    fn spawn_multiple(n_threads: usize) -> impl IntoIterator<Item = Self>;
+
+    /// Accumulates an error event.
     fn handle_event(&mut self, value: Result<(), SimulationError>);
-    fn determine_strategy(&self, _error: SimulationError) -> HandlingStrategy {
-        HandlingStrategy::AbortSimulation
+
+    /// Determines possible [HandlingStrategy] after having accumulated all possible errors.
+    fn determine_strategy(&self, error: SimulationError) -> HandlingStrategy {
+        use HandlingStrategy::*;
+        use SimulationError::*;
+        // TODO make error handling more nuanced to be valuable
+        match error {
+            SendError(_) => Abort,
+            ReceiveError(_) => RevertChangeAccuracy,
+            CalcError(_) => RevertChangeAccuracy,
+            DecomposeError(_) => Abort,
+            TimeError(_) => Abort,
+            ControllerError(_) => Abort,
+            DivisionError(_) => RevertChangeAccuracy,
+            DeathError(_) => RevertChangeAccuracy,
+            BoundaryError(_) => Abort,
+            IndexError(_) => RevertChangeAccuracy,
+            IoError(_) => Ignore,
+            DrawingError(_) => Ignore,
+            StorageError(_) => Ignore,
+            RngError(_) => Abort,
+            OtherThreadError(_) => Abort,
+        }
     }
+
+    /// Determines if the simulation is able to be continued or not.
     fn do_continue(&mut self) -> Result<(), SimulationError>;
 }
 
 /// TODO
 #[allow(unused)]
 pub struct DefaultHandler {
+    thread: usize,
     errors: Vec<SimulationError>,
-    syncer: super::BarrierSync,
+    do_continue: Arc<AtomicBool>,
 }
 
 impl ErrorHandler for DefaultHandler {
-    fn handle_event(&mut self, value: Result<(), SimulationError>) {
-        match value {
+    fn spawn_multiple(n_threads: usize) -> impl IntoIterator<Item = Self> {
+        let do_continue = Arc::new(AtomicBool::new(true));
+        (0..n_threads).map(move |thread| Self {
+            thread,
+            errors: vec![],
+            do_continue: Arc::clone(&do_continue),
+        })
+    }
+    fn handle_event(&mut self, error: Result<(), SimulationError>) {
+        match error {
             Ok(_) => (),
             Err(e) => self.errors.push(e),
         }
     }
 
     fn do_continue(&mut self) -> Result<(), SimulationError> {
+        self.errors
+            .iter()
+            .for_each(|e| println!("thread {:2} detected error: {}", self.thread, e));
         match self.errors.drain(..).next() {
             Some(e) => Err(e),
             None => Ok(()),
