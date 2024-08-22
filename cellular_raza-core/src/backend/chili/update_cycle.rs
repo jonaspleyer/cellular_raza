@@ -8,7 +8,7 @@ use tracing::instrument;
 
 impl<C, A> Voxel<C, A> {
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub(crate) fn update_cell_cycle_3<
+    pub(crate) fn update_cell_cycle_4<
         #[cfg(feature = "tracing")] Float: core::fmt::Debug,
         #[cfg(not(feature = "tracing"))] Float,
     >(
@@ -70,7 +70,7 @@ where
     /// cycle differently since new cells could be generated and thus have consequences for other
     /// update steps as well.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_cell_cycle_3<
+    pub fn update_cell_cycle_4<
         #[cfg(feature = "tracing")] F: core::fmt::Debug,
         #[cfg(not(feature = "tracing"))] F,
     >(
@@ -82,7 +82,7 @@ where
     {
         self.voxels
             .iter_mut()
-            .map(|(_, vox)| vox.update_cell_cycle_3())
+            .map(|(_, vox)| vox.update_cell_cycle_4())
             .collect::<Result<(), SimulationError>>()?;
         Ok(())
     }

@@ -447,7 +447,7 @@ pub fn local_update_contact_reactions_step_3<
 >(
     cell: &mut C,
     aux_storage: &mut A,
-    dt: F,
+    _dt: F,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
@@ -456,7 +456,7 @@ where
     F: num::Float + FromPrimitive,
     Ri: num::Zero + Xapy<F> + Clone,
 {
-    reactions_contact_adams_bashforth_3rd(cell, aux_storage, dt)?;
+    reactions_contact_adams_bashforth_3rd(cell, aux_storage)?;
     Ok(())
 }
 
