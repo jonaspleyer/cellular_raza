@@ -12,7 +12,7 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 // Number of cells to put into simulation in the Beginning
-pub const N_BACTERIA_INITIAL: u32 = 1;
+pub const N_BACTERIA_INITIAL: u32 = 3;
 
 // Mechanical parameters
 pub const BACTERIA_MECHANICS_RADIUS: f32 = 6.0;
@@ -27,10 +27,10 @@ pub const BACTERIA_FOOD_TURNOVER_RATE: f32 = 0.0;
 pub const BACTERIA_FOOD_UPTAKE_RATE: f32 = 0.5;
 
 // Parameters for cell cycle
-pub const BACTERIA_CYCLE_GROWTH_RATE: f32 = 1.2;
+pub const BACTERIA_CYCLE_GROWTH_RATE: f32 = 5.2;
 
 // Parameters for domain
-pub const DOMAIN_SIZE: f32 = 500.0;
+pub const DOMAIN_SIZE: f32 = 5_000.0;
 pub const DOMAIN_MIDDLE: Vector2<f32> = nalgebra::vector![DOMAIN_SIZE / 2.0, DOMAIN_SIZE / 2.0];
 
 // Where will the cells be placed initially
@@ -40,17 +40,17 @@ pub const STARTING_DOMAIN_Y_LOW: f32 = DOMAIN_SIZE / 2.0 - 50.0;
 pub const STARTING_DOMAIN_Y_HIGH: f32 = DOMAIN_SIZE / 2.0 + 50.0;
 
 // Parameters for Voxel Reaction+Diffusion
-pub const FOOD_DIFFUSION_CONSTANT: f32 = 125.0;
+pub const FOOD_DIFFUSION_CONSTANT: f32 = 25.0;
 pub const FOOD_INITIAL_CONCENTRATION: f32 = 10.0;
 
 // Time parameters
-pub const DT: f32 = 0.02;
+pub const DT: f32 = 0.01;
 pub const T_START: f32 = 0.0;
-pub const T_MAX: f32 = 1_000.0;
-pub const SAVE_INTERVAL: usize = 50;
+pub const T_MAX: f32 = 100.0;
+pub const SAVE_INTERVAL: usize = 1_000;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 8;
+pub const N_THREADS: usize = 2;
 
 mod bacteria_properties;
 
@@ -90,9 +90,9 @@ fn main() -> Result<(), chili::SimulationError> {
         domain: CartesianCuboid::from_boundaries_and_interaction_range(
             [0.0; 2],
             [DOMAIN_SIZE, DOMAIN_SIZE],
-            BACTERIA_MECHANICS_RADIUS * BACTERIA_MECHANICS_RELATIVE_INTERACTION_RANGE,
+            DOMAIN_SIZE / 10.0,
         )?,
-        reactions_dx: 50.0,
+        reactions_dx: 10.0,
         diffusion_constant: FOOD_DIFFUSION_CONSTANT,
         initial_value: ReactionVector::from([FOOD_INITIAL_CONCENTRATION]),
     };
