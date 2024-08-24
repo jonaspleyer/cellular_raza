@@ -200,12 +200,14 @@ macro_rules! implement_brownian_mechanics(
     ($struct_name:ident, $d:literal, $float_type:ty) => {
         /// Brownian motion of particles
         ///
-        /// # Parameters
-        /// | Symbol | Parameter | Description |
+        /// # Parameters & Variables
+        /// | Symbol | Struct Field | Description |
         /// | --- | --- | --- |
-        /// | $\vec{x}$ | `pos` | Position of the particle. |
         /// | $D$ | `diffusion_constant` | Damping constant of each particle. |
-        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+        /// | $k_BT$ | `kb_temperature` | Product of temperature $T$ and Boltzmann constant $k_B$. |
+        /// | | | |
+        /// | $\vec{x}$ | `pos` | Position of the particle. |
+        /// | $R(t)$ | (automatically generated) | Gaussian process |
         ///
         /// # Equations
         /// We integrate the standard brownian motion stochastic differential equation.
@@ -361,15 +363,16 @@ macro_rules! define_langevin_nd(
     ($struct_name:ident, $d:literal, $float_type:ident) => {
         /// Langevin dynamics
         ///
-        /// # Parameters
-        /// | Symbol | Parameter/Variable | Description |
-        /// | --- | --- | --- |
-        /// | $\vec{X}$ | `pos` | Position of the particle. |
-        /// | $\dot{\vec{X}}$ | `vel` | Velocity of the particle. |
-        /// | $R(t)$ | | Gaussian process (automatically generated) |
+        /// # Parameters & Variables
+        /// | Symbol | Struct Field | Description |
+        /// |:---:| --- | --- |
         /// | $M$ | `mass` | Mass of the particle. |
         /// | $\gamma$ | `damping` | Damping constant |
-        /// | $k_BT$ | `kb_temperature` | Product of temperature and boltzmann constant $k_B T$. |
+        /// | $k_BT$ | `kb_temperature` | Product of temperature $T$ and Boltzmann constant $k_B$. |
+        /// | | | |
+        /// | $\vec{X}$ | `pos` | Position of the particle. |
+        /// | $\dot{\vec{X}}$ | `vel` | Velocity of the particle. |
+        /// | $R(t)$ | (automatically generated) | Gaussian process |
         ///
         /// # Equations
         ///
