@@ -24,7 +24,7 @@ impl Default for Parameters {
 
             dt: 1e-3,
             n_steps: 100,
-            save_interval: 50,
+            save_interval: 10,
 
             diffusion_constant: 1.0,
             storage_name: "out/brownian".into(),
