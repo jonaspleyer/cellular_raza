@@ -62,10 +62,16 @@ fn define_settings(
     })
 }
 
-fn analyze_positions<const D: usize>(
+fn calculate_mean_std_dev_err<const D: usize>(
     parameters: &Parameters,
     positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<
+    (
+        std::collections::HashMap<u64, f64>,
+        std::collections::HashMap<u64, (f64, f64)>,
+    ),
+    Box<dyn std::error::Error>,
+> {
     let initial_position = SVector::from([parameters.domain_size / 2.0; D]);
     let square_displacements = positions
         .into_iter()
@@ -82,7 +88,7 @@ fn analyze_positions<const D: usize>(
 
     let means = square_displacements
         .iter()
-        .map(|(iteration, displs)| (iteration, displs.iter().sum::<f64>() / displs.len() as f64))
+        .map(|(iteration, displs)| (*iteration, displs.iter().sum::<f64>() / displs.len() as f64))
         .collect::<std::collections::HashMap<_, _>>();
 
     let std_dev_err = square_displacements
@@ -94,17 +100,25 @@ fn analyze_positions<const D: usize>(
                 .sum::<f64>()
                 / displs.len() as f64)
                 .sqrt();
-            (iteration, (sigma, sigma / (displs.len() as f64).sqrt()))
+            (*iteration, (sigma, sigma / (displs.len() as f64).sqrt()))
         })
         .collect::<std::collections::HashMap<_, _>>();
+    Ok((means, std_dev_err))
+}
+
+fn analyze_positions<const D: usize>(
+    parameters: &Parameters,
+    positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (means, std_dev_err) = calculate_mean_std_dev_err(&parameters, positions)?;
 
     // Calculate probability for values to be identical
     let mut sum_relative_diffs = 0.0;
     for &iteration in means.keys() {
         let expected =
-            2.0 * D as f64 * parameters.diffusion_constant * *iteration as f64 * parameters.dt;
-        let (_, std_err) = std_dev_err[iteration];
-        let relative_diff = (expected - means[iteration]).powf(2.0) / std_err;
+            2.0 * D as f64 * parameters.diffusion_constant * iteration as f64 * parameters.dt;
+        let (_, std_err) = std_dev_err[&iteration];
+        let relative_diff = (expected - means[&iteration]).powf(2.0) / std_err;
         sum_relative_diffs += relative_diff;
     }
     sum_relative_diffs /= means.len() as f64;
@@ -145,7 +159,7 @@ macro_rules! test_brownian {
                     iteration,
                     particles
                         .into_iter()
-                        .map(|(_, (p, _))| p.cell.pos)
+                        .map(|(_, (p, _))| cellular_raza::concepts::Position::pos(&p.cell))
                         .collect::<Vec<_>>(),
                 )
             })
