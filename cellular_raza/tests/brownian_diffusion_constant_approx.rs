@@ -46,11 +46,13 @@ fn define_settings(
     )?;
 
     // Use a temporary directory to automatically clean up all files in it
-    use tempdir::TempDir;
-    let dir = TempDir::new("tempdir").unwrap();
-    let location = dir.path().join(&parameters.storage_name);
+    let location = parameters.storage_name.to_owned();
     let storage = cellular_raza_core::storage::StorageBuilder::new()
-        .priority([cellular_raza_core::storage::StorageOption::Memory])
+        .priority([
+            cellular_raza_core::storage::StorageOption::Memory,
+            #[cfg(not(debug_assertions))]
+            cellular_raza_core::storage::StorageOption::SerdeJson,
+        ])
         .location(location)
         .init();
 
