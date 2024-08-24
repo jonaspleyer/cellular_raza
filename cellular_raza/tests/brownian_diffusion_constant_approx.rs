@@ -252,3 +252,223 @@ fn diffusion_constant_brownian_1d_3() -> Result<(), Box<dyn std::error::Error>> 
     test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
     Ok(())
 }
+
+fn analyze_positions_langevin<const D: usize>(
+    parameters: &Parameters,
+    positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
+    damping: f64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (means, std_dev_err) = calculate_mean_std_dev_err(&parameters, positions)?;
+
+    // Calculate probability for values to be identical
+    let mass = 1.0;
+    let mut sum_relative_diffs = 0.0;
+    let kb_temperature = kb_temp(mass, parameters.diffusion_constant, damping);
+    for &iteration in means.keys() {
+        let time = iteration as f64 * parameters.dt;
+        // Here we assume that the initial velocity v(0) = 0
+        // https://en.wikipedia.org/wiki/Langevin_equation#Trajectories_of_free_Brownian_particles
+        let expected = -(D as f64) * kb_temperature / mass
+            / damping.powf(2.0)
+            * (1.0 - (-damping * time).exp())
+            * (3.0 - (-damping * time).exp())
+            + 2.0 * D as f64 * kb_temperature / mass * time / damping;
+        let (_, std_err) = std_dev_err[&iteration];
+        let relative_diff = (expected - means[&iteration]).powf(2.0) / std_err;
+        sum_relative_diffs += relative_diff;
+    }
+    sum_relative_diffs /= means.len() as f64;
+    assert!(sum_relative_diffs < 0.15);
+    Ok(())
+}
+
+fn kb_temp(mass: f64, diffusion_constant: f64, damping: f64) -> f64 {
+    diffusion_constant * damping * mass
+}
+
+macro_rules! test_langevin {
+    (
+        $parameters:ident,
+        $domain_name:ident,
+        $particle_name:ident,
+        $d:literal,
+        $damping:literal
+    ) => {{
+        let domain_size = $parameters.domain_size;
+        assert!(domain_size > 0.0);
+        let domain =
+            $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
+        let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
+        let mass = 1.0;
+        let kb_temperature = $parameters.diffusion_constant * $damping * mass;
+        let particles = (0..$parameters.n_particles)
+            .map(|_| $particle_name ::new(
+                initial_position.into(),
+                [0.0; $d].into(),
+                mass,
+                $damping,
+                kb_temperature,
+            ));
+        let settings = define_settings(&$parameters)?;
+
+        let storage_access = cellular_raza_core::backend::chili::run_simulation!(
+            agents: particles,
+            domain: domain,
+            settings: settings,
+            aspects: [Mechanics],
+        )?;
+
+        let positions = storage_access
+            .cells
+            .load_all_elements()?
+            .into_iter()
+            .map(|(iteration, particles)| {
+                (
+                    iteration,
+                    particles
+                        .into_iter()
+                        .map(|(_, (p, _))| cellular_raza::concepts::Position::pos(&p.cell))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<std::collections::HashMap<u64, _>>();
+
+        analyze_positions_langevin(&$parameters, positions, $damping)?;
+        Result::<(), Box<dyn std::error::Error>>::Ok(())
+    }}
+}
+
+#[test]
+fn diffusion_constant_langevin_3d_1() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_3d_1".into();
+    parameters.diffusion_constant = 1.0;
+    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_3d_2() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_3d_2".into();
+    parameters.diffusion_constant = 0.5;
+    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_3d_3() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_3d_3".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_3d_4() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_3d_4".into();
+    parameters.diffusion_constant = 0.5;
+    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 1.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_3d_5() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_3d_5".into();
+    parameters.diffusion_constant = 0.5;
+    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 0.1)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_2d_1() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_2d_1".into();
+    parameters.diffusion_constant = 1.0;
+    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_2d_2() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_2d_2".into();
+    parameters.diffusion_constant = 0.5;
+    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_2d_3() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_2d_3".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_2d_4() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_2d_4".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 1.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_2d_5() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_2d_5".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 0.1)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_1d_1() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_1d_1".into();
+    parameters.diffusion_constant = 1.0;
+    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_1d_2() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_1d_2".into();
+    parameters.diffusion_constant = 0.5;
+    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_1d_3() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_1d_3".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_1d_4() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_1d_4".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 1.0)?;
+    Ok(())
+}
+
+#[test]
+fn diffusion_constant_langevin_1d_5() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parameters = Parameters::default();
+    parameters.storage_name = "out/langevin_1d_5".into();
+    parameters.diffusion_constant = 0.25;
+    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 0.1)?;
+    Ok(())
+}
