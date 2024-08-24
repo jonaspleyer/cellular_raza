@@ -416,8 +416,10 @@ macro_rules! define_langevin_nd(
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 let dx = self.vel;
                 let dv =
-                    -self.damping / self.mass * self.vel
-                    + 1.0 / self.mass * (self.random_vector + force);
+                    - 1.0 as $float_type / self.mass * force
+                    - self.damping * self.vel
+                    + (2.0 as $float_type * self.damping * self.kb_temperature / self.mass).sqrt()
+                        * self.random_vector;
                 Ok((dx, dv))
             }
         }
