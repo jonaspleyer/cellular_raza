@@ -67,6 +67,9 @@ def get_spheres(iteration: int, path: Path):
 
 def plot_spheres(iteration: int, path: Path, opath = None, transparent_background: bool = False):
     spheres = get_spheres(iteration, path)
+    domain_min, domain_max = get_min_max_from_subdomains(iteration, path)
+    dx = np.max(domain_max - domain_min)
+    middle = 0.5 * (domain_min + domain_max)
 
     plotter = pv.Plotter(off_screen=True)
     plotter.set_background([100, 100, 100])
@@ -79,7 +82,9 @@ def plot_spheres(iteration: int, path: Path, opath = None, transparent_backgroun
     )
     plotter.enable_ssao(radius=12)
     plotter.enable_anti_aliasing()
-    if opath == None:
+    plotter.camera.position = (- 2*dx, - 2*dx, +2*dx)
+    plotter.camera.focal_point = middle
+    if opath is None:
         opath = path / "images/{:010}.png".format(iteration)
         opath.parent.mkdir(parents=True, exist_ok=True)
     img = plotter.screenshot(opath, transparent_background=transparent_background)
@@ -93,6 +98,7 @@ def __plot_spheres_helper(args_kwargs):
 def plot_all_spheres(path: Path, **kwargs: dict):
     iterations = [it[0] for it in get_all_iterations(path)]
     pool = mp.Pool()
+    print("Generating Images")
     list(
         tqdm.tqdm(
             pool.imap_unordered(
