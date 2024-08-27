@@ -506,8 +506,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Mechanics) {
-        local_func_names
-            .push(quote!(#core_path::backend::chili::local_mechanics_set_random_variable));
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
         step_5.extend(quote!(sbox.sort_cells_in_voxels_step_2(#determinism)?;));
     }
