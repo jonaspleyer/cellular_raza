@@ -657,14 +657,6 @@ where
                     .map(|(cell, _)| self.domain.apply_boundary(cell))
                     .collect::<Result<(), BoundaryError>>()?;
 
-                vox.cells
-                    .iter_mut()
-                    .map(|(cell, _)| {
-                        cell.set_random_variable(&mut vox.rng, *dt)?;
-                        Ok(())
-                    })
-                    .collect::<Result<Vec<_>, SimulationError>>()?;
-
                 // Set counted neighbors to zero
                 vox.cells
                     .iter_mut()
@@ -1079,6 +1071,7 @@ where
             for (cell, aux_storage) in vox.cells.iter_mut() {
                 // Calculate the current increment
                 let (dx, dv) = cell.calculate_increment(aux_storage.force.clone())?;
+                let (dx_rand, dv_rand) = cell.get_random_contribution(&mut vox.rng, *dt)?;
 
                 match (
                     aux_storage.inc_pos_back_1.clone(),
@@ -1096,37 +1089,41 @@ where
                         cell.set_pos(
                             &(cell.pos() + dx.clone() * (23.0 / 12.0) * *dt
                                 - inc_pos_back_1 * (16.0 / 12.0) * *dt
-                                + inc_pos_back_2 * (5.0 / 12.0) * *dt),
+                                + inc_pos_back_2 * (5.0 / 12.0) * *dt
+                                + dx_rand.clone()),
                         );
                         cell.set_velocity(
                             &(cell.velocity() + dv.clone() * (23.0 / 12.0) * *dt
                                 - inc_vel_back_1 * (16.0 / 12.0) * *dt
-                                + inc_vel_back_2 * (5.0 / 12.0) * *dt),
+                                + inc_vel_back_2 * (5.0 / 12.0) * *dt
+                                + dv_rand.clone()),
                         );
                     }
                     // Otherwise check and use the 2nd order
                     (Some(inc_pos_back_1), None, Some(inc_vel_back_1), None) => {
                         cell.set_pos(
                             &(cell.pos() + dx.clone() * (3.0 / 2.0) * *dt
-                                - inc_pos_back_1 * (1.0 / 2.0) * *dt),
+                                - inc_pos_back_1 * (1.0 / 2.0) * *dt
+                                + dx_rand.clone()),
                         );
                         cell.set_velocity(
                             &(cell.velocity() + dv.clone() * (3.0 / 2.0) * *dt
-                                - inc_vel_back_1 * (1.0 / 2.0) * *dt),
+                                - inc_vel_back_1 * (1.0 / 2.0) * *dt
+                                + dv_rand.clone()),
                         );
                     }
                     // This case should only exists when the cell was first created
                     // Then use the Euler Method
                     _ => {
-                        cell.set_pos(&(cell.pos() + dx.clone() * *dt));
-                        cell.set_velocity(&(cell.velocity() + dv.clone() * *dt));
+                        cell.set_pos(&(cell.pos() + dx.clone() * *dt + dx_rand.clone()));
+                        cell.set_velocity(&(cell.velocity() + dv.clone() * *dt + dv_rand.clone()));
                     }
                 }
 
                 // Afterwards update values in auxiliary storage
                 aux_storage.force = For::zero();
-                aux_storage.inc_pos_back_1 = Some(dx);
-                aux_storage.inc_vel_back_1 = Some(dv);
+                aux_storage.inc_pos_back_1 = Some(dx + dx_rand);
+                aux_storage.inc_vel_back_1 = Some(dv + dv_rand);
             }
         }
         Ok(())
