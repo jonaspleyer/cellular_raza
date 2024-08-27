@@ -113,7 +113,7 @@ fn calculate_mean_std_dev_err<const D: usize>(
     Ok((means, std_dev_err))
 }
 
-fn analyze_positions<const D: usize>(
+fn analyze_positions_brownian<const D: usize>(
     parameters: &Parameters,
     positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -173,7 +173,7 @@ macro_rules! test_brownian {
             })
             .collect::<std::collections::HashMap<u64, _>>();
 
-        analyze_positions(&$parameters, positions)?;
+        analyze_positions_brownian(&$parameters, positions)?;
         Result::<(), Box<dyn std::error::Error>>::Ok(())
     }}
 }
