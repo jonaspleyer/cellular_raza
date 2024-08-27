@@ -214,7 +214,7 @@ fn diffusion_constant_brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/brownian_2d_1".into();
     parameters.diffusion_constant = 1.0;
     parameters.random_seed = 4;
-    test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
+    test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
     Ok(())
 }
 
