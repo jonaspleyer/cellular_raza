@@ -35,15 +35,15 @@ use super::errors::SimulationError;
 /// let shared_counter_0 = std::sync::Arc::clone(&shared_counter);
 /// let handle_0 = std::thread::spawn(move || {
 ///     for _ in 0..n_iterations {
-///         syncer_0.sync();
+///         syncer_0.sync().unwrap();
 ///         *shared_counter_0.lock().unwrap() += 1;
-///         syncer_0.sync();
+///         syncer_0.sync().unwrap();
 ///     }
 /// });
 ///
 /// for i in 0..n_iterations {
-///     syncer_1.sync();
-///     syncer_1.sync();
+///     syncer_1.sync().unwrap();
+///     syncer_1.sync().unwrap();
 ///     assert_eq!(*shared_counter.lock().unwrap(), i+1);
 /// }
 /// handle_0.join();
@@ -924,9 +924,9 @@ pub mod test_sync {
                 let iteration_counter_thread = Arc::clone(&iteration_counter);
                 std::thread::spawn(move || {
                     for n_iteration in 0..n_iterations {
-                        syncer.sync();
+                        syncer.sync().unwrap();
                         iteration_counter_thread.lock().unwrap()[n_thread] += 1;
-                        syncer.sync();
+                        syncer.sync().unwrap();
                         let current_value = iteration_counter_thread.lock().unwrap().clone();
                         assert_eq!(current_value, vec![n_iteration + 1; n_threads]);
                     }
