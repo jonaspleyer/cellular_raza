@@ -59,12 +59,12 @@ impl<Pos, Vel, For, Float, Mec, Int, Cyc, React, IntExtracellular> Mechanics<Pos
 where
     Mec: Mechanics<Pos, Vel, For, Float>,
 {
-    fn set_random_variable(
-        &mut self,
+    fn get_random_contribution(
+        &self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: Float,
-    ) -> Result<(), RngError> {
-        self.mechanics.set_random_variable(rng, dt)
+    ) -> Result<(Pos, Vel), RngError> {
+        self.mechanics.get_random_contribution(rng, dt)
     }
 
     fn calculate_increment(&self, force: For) -> Result<(Pos, Vel), CalcError> {

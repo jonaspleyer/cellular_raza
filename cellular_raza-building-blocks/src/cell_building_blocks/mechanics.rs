@@ -226,24 +226,20 @@ macro_rules! implement_brownian_mechanics(
             pub diffusion_constant: $float_type,
             /// The product of temperature and boltzmann constant $k_B T$.
             pub kb_temperature: $float_type,
-            random_vector: SVector<$float_type, $d>,
         }
 
         impl $struct_name {
             /// Constructs a new
             #[doc = concat!("[", stringify!($struct_name), "]")]
-            /// mechanics model for the specified dimension.
             pub fn new(
                 pos: [$float_type; $d],
                 diffusion_constant: $float_type,
                 kb_temperature: $float_type,
             ) -> Self {
-                use num::Zero;
                 Self {
                     pos: pos.into(),
                     diffusion_constant,
                     kb_temperature,
-                    random_vector: SVector::<$float_type, $d>::zero(),
                 }
             }
         }
@@ -305,16 +301,18 @@ macro_rules! implement_brownian_mechanics(
             SVector<$float_type, $d>,
             $float_type
         > for $struct_name {
-            fn set_random_variable(
-                &mut self,
+            fn get_random_contribution(
+                &self,
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
-            ) -> Result<(), RngError> {
-                self.random_vector = wiener_process(
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), RngError> {
+                let dpos = (2.0 as $float_type * self.diffusion_constant).sqrt()
+                    * wiener_process(
                     rng,
                     dt
                 )?;
-                Ok(())
+                let dvel = SVector::<$float_type, $d>::zeros();
+                Ok((dpos, dvel))
             }
 
             fn calculate_increment(
@@ -322,10 +320,7 @@ macro_rules! implement_brownian_mechanics(
                 force: SVector<$float_type, $d>,
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 use num::Zero;
-                let dx = self.diffusion_constant / self.kb_temperature * force
-                    + (2.0 as $float_type).sqrt()
-                    * self.diffusion_constant.sqrt()
-                    * self.random_vector;
+                let dx = self.diffusion_constant / self.kb_temperature * force;
                 Ok((dx, SVector::<$float_type, $d>::zero()))
             }
         }
@@ -392,7 +387,6 @@ macro_rules! define_langevin_nd(
             pub damping: $float_type,
             /// Product of Boltzmann constant and temperature
             pub kb_temperature: $float_type,
-            random_vector: SVector<$float_type, $d>,
         }
 
         impl Mechanics<
@@ -401,16 +395,22 @@ macro_rules! define_langevin_nd(
             SVector<$float_type, $d>,
             $float_type
         > for $struct_name {
-            fn set_random_variable(
-                &mut self,
+            fn get_random_contribution(
+                &self,
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
-            ) -> Result<(), RngError> {
-                self.random_vector = wiener_process(
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), RngError> {
+                let dpos = (
+                    2.0 as $float_type
+                    * self.damping
+                    * self.kb_temperature
+                    / self.mass
+                ).sqrt() * wiener_process(
                     rng,
                     dt
                 )?;
-                Ok(())
+                let dvel = SVector::<$float_type, $d>::zeros();
+                Ok((dpos, dvel))
             }
 
             fn calculate_increment(
@@ -418,11 +418,11 @@ macro_rules! define_langevin_nd(
                 force: SVector<$float_type, $d>,
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), CalcError> {
                 let dx = self.vel;
-                let dv =
-                    - 1.0 as $float_type / self.mass * force
-                    - self.damping * self.vel
-                    + (2.0 as $float_type * self.damping * self.kb_temperature / self.mass).sqrt()
-                        * self.random_vector;
+                let dv1 =
+                    - 1.0 as $float_type / self.mass * force;
+                let dv2 =
+                    - self.damping * self.vel;
+                let dv = dv1 + dv2;
                 Ok((dx, dv))
             }
         }
@@ -458,14 +458,12 @@ macro_rules! define_langevin_nd(
                 damping: $float_type,
                 kb_temperature: $float_type,
             ) -> Self {
-                use num::Zero;
                 Self {
                     pos: pos.into(),
                     vel: vel.into(),
                     mass,
                     damping,
                     kb_temperature,
-                    random_vector: SVector::<$float_type, $d>::zero(),
                 }
             }
         }
@@ -492,7 +490,6 @@ macro_rules! define_langevin_nd(
                     mass,
                     damping,
                     kb_temperature,
-                    random_vector: [0.0; $d].into(),
                 }
             }
 
@@ -570,7 +567,6 @@ define_langevin_nd!(Langevin3DF32, 3, f32);
 pub struct VertexMechanics2D<const D: usize> {
     points: nalgebra::SMatrix<f64, D, 2>,
     velocity: nalgebra::SMatrix<f64, D, 2>,
-    random_vector: nalgebra::SMatrix<f64, D, 2>,
     /// Boundary lengths of individual edges
     pub cell_boundary_lengths: nalgebra::SVector<f64, D>,
     /// Spring tensions of individual edges
@@ -661,7 +657,6 @@ impl<const D: usize> VertexMechanics2D<D> {
         VertexMechanics2D {
             points,
             velocity: nalgebra::SMatrix::<f64, D, 2>::zeros(),
-            random_vector: nalgebra::SMatrix::<f64, D, 2>::zeros(),
             cell_boundary_lengths,
             spring_tensions: SVector::<f64, D>::from_element(spring_tensions),
             cell_area,
@@ -822,7 +817,6 @@ impl VertexMechanics2D<6> {
                 generated_models.push(Self {
                     points: pos,
                     velocity: SMatrix::zeros(),
-                    random_vector: SMatrix::zeros(),
                     cell_boundary_lengths: SVector::from_element(segment_length),
                     spring_tensions: SVector::from_element(spring_tensions),
                     cell_area,
@@ -939,7 +933,6 @@ impl VertexMechanics2D<4> {
                 VertexMechanics2D {
                     points,
                     velocity: nalgebra::SMatrix::<f64, 4, 2>::zeros(),
-                    random_vector: nalgebra::SMatrix::<f64, 4, 2>::zeros(),
                     cell_boundary_lengths,
                     spring_tensions: nalgebra::SVector::<f64, 4>::from_element(spring_tensions),
                     cell_area,
@@ -1033,24 +1026,28 @@ impl<const D: usize>
             // Combine forces
             force_2 += force1 + force2 + force3;
         }
-        let dx = self.velocity.clone() + self.diffusion_constant * self.random_vector;
+        let dx = self.velocity.clone();
         let dv = force + internal_force - self.damping_constant * self.velocity.clone();
         Ok((dx, dv))
     }
 
-    fn set_random_variable(
-        &mut self,
+    fn get_random_contribution(
+        &self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
-    ) -> Result<(), RngError> {
+    ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), RngError> {
+        let dvel = nalgebra::SMatrix::<f64, D, 2>::zeros();
         if dt != 0.0 {
             let random_vector: SVector<f64, 2> = wiener_process(rng, dt)?;
-            self.random_vector.row_iter_mut().for_each(|mut r| {
+            let mut dpos = nalgebra::SMatrix::<f64, D, 2>::zeros();
+            dpos.row_iter_mut().for_each(|mut r| {
                 r *= 0.0;
                 r += random_vector.transpose();
             });
+            Ok((dpos, self.diffusion_constant * dvel))
+        } else {
+            Ok((nalgebra::SMatrix::<f64, D, 2>::zeros(), dvel))
         }
-        Ok(())
     }
 }
 
