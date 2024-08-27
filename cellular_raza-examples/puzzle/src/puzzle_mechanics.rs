@@ -471,18 +471,18 @@ where
         ))
     }
 
-    fn set_random_variable(
-        &mut self,
-        rng: &mut rand_chacha::ChaCha8Rng,
-        dt: F,
-    ) -> Result<(), cellular_raza::prelude::RngError> {
+    fn get_random_contribution(
+            &self,
+            rng: &mut rand_chacha::ChaCha8Rng,
+            dt: F,
+        ) -> Result<(Vertices<F>, Vertices<F>), RngError> {
         use cellular_raza::building_blocks::wiener_process;
-        let random_vel = wiener_process::<F, 2>(rng, dt)?;
-        self.random_velocity
-            .0
+        let random_vec = wiener_process::<F, 2>(rng, dt)?;
+        let mut dx = self.random_velocity.xapy(F::zero(), &<Vertices<F> as num::Zero>::zero());
+        dx.0
             .iter_mut()
-            .for_each(|r| *r = self.diffusion_constant * random_vel);
-        Ok(())
+            .for_each(|r| *r = self.diffusion_constant * random_vec);
+        Ok((dx, <Vertices<F> as num::Zero>::zero()))
     }
 }
 
