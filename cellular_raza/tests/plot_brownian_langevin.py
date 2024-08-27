@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from glob import glob
+import scipy as sp
 
 def plot_results(
         storage_name: str,
@@ -75,16 +76,37 @@ def plot_results(
         fig.savefig("{}/heatmap.png".format(last_save_dir))
 
     # Plot the mean squared displacement per iteration
-    msqd = np.mean(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
+    msd = np.mean(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
+    msd_err = np.std(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
     fig, ax = plt.subplots()
-    ax.plot(msqd, color="k", linestyle="-", label="Mean Displacements")
+    x = np.arange(len(msd))
+    ax.plot(x, msd, color="gray", linestyle="-", label="Mean Displacements")
 
     def prediction_brownian(t, dim, diffusion):
         return 2 * dim * diffusion * t
 
-    x = np.arange(len(msqd))
     y = prediction_brownian(dt * x, dimension, diffusion_constant)
-    ax.plot(x, y, label="Prediction $2nDt$")
+    popt, pcov = sp.optimize.curve_fit(
+        lambda t, D: prediction_brownian(t, D, dimension),
+        dt * x,
+        msd,
+        sigma=msd_err,
+    )
+
+    ax.plot(
+        x,
+        y,
+        label="Prediction $2nDt$ with $D={}$".format(diffusion_constant),
+        color="k",
+        linestyle=":",
+    )
+    ax.plot(
+        x,
+        prediction_brownian(dt * x, popt[0], dimension),
+        label="Fit $D={:4.3} \\pm {:4.3}$".format(popt[0], pcov[0][0]**0.5),
+        linestyle="--",
+        color="orange",
+    )
 
     ax.legend()
 
