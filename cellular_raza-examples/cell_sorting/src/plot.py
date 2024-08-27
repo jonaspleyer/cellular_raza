@@ -7,11 +7,14 @@ import multiprocessing as mp
 import itertools
 import tqdm
 
-def get_all_iterations(path: Path):
-    return [(int(iter_dir.split("/")[-1]), iter_dir) for iter_dir in sorted(glob.glob(str(path / "cells/json/*")))]
+def get_all_iterations(path: Path, cells_subdomains: str = "cells"):
+    return [
+        (int(iter_dir.split("/")[-1]), iter_dir)
+        for iter_dir in sorted(glob.glob(str(path / "{}/json/*".format(cells_subdomains))))
+    ]
 
-def __get_iteration_dir(iteration: int, path: Path):
-    iterations = get_all_iterations(path)
+def __get_iteration_dir(iteration: int, path: Path, cells_subdomains: str = "cells"):
+    iterations = get_all_iterations(path, cells_subdomains)
     for iteration_int, iteration_dir in iterations:
         if iteration_int == iteration:
             return Path(iteration_dir)
@@ -30,6 +33,21 @@ def get_cells_at_iteration(iteration: int, path: Path):
             cells_new = d["data"]
             cells.extend(cells_new)
     return cells
+
+def get_subdomains_at_iteration(iteration: int, path: Path) -> list:
+    iter_dir = __get_iteration_dir(iteration, path, "subdomains")
+    subdomains = []
+    for single in glob.glob(str(iter_dir) + "/*"):
+        with open(single) as f:
+            d = json.load(f)
+            subdomains.append(d["element"])
+    return subdomains
+
+def get_min_max_from_subdomains(iteration: int, path: Path) -> tuple[np.ndarray, np.ndarray]:
+    subdomains = get_subdomains_at_iteration(iteration, path)
+    min = np.array(subdomains[0]["domain_min"])
+    max = np.array(subdomains[0]["domain_max"])
+    return (min, max)
 
 def get_spheres(iteration: int, path: Path):
     cells = get_cells_at_iteration(iteration, path)
