@@ -98,6 +98,14 @@ fn derive_velocity() {}
 ///     ) -> Result<(f32, f32), CalcError> {
 ///         unimplemented!()
 ///     }
+///
+///     fn get_random_contribution(
+///         &self,
+///         rng: &mut rand_chacha::ChaCha8Rng,
+///         dt: f32,
+///     ) -> Result<(f32, f32), RngError> {
+///         unimplemented!()
+///     }
 /// }
 /// #[derive(CellAgent)]
 /// struct NewAgent1 {

@@ -33,13 +33,11 @@ pub trait Mechanics<Pos, Vel, For, Float = f64> {
     /// its motion.
     /// By default this function does nothing.
     #[allow(unused)]
-    fn set_random_variable(
-        &mut self,
+    fn get_random_contribution(
+        &self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: Float,
-    ) -> Result<(), RngError> {
-        Ok(())
-    }
+    ) -> Result<(Pos, Vel), RngError>;
 
     /// Calculate the time-derivative of force and velocity given all the forces that act on the
     /// cell.
