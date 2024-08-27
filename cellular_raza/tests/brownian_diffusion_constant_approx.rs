@@ -25,7 +25,10 @@ impl Default for Parameters {
 
             dt: 1e-3,
             n_steps: 100,
+            #[cfg(debug_assertions)]
             save_interval: 10,
+            #[cfg(not(debug_assertions))]
+            save_interval: 1,
 
             diffusion_constant: 1.0,
             storage_name: "out/brownian".into(),
