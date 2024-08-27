@@ -9,8 +9,17 @@ use serde::{Deserialize, Serialize};
 use pyo3::prelude::*;
 
 macro_rules! implement_newton_damped_mechanics(
-    ($struct_name:ident, $d:literal) => {implement_newton_damped_mechanics!($struct_name, $d, f64);};
-    ($struct_name:ident, $d:literal, $float_type:ty) => {
+    (
+        $struct_name:ident,
+        $d:literal
+    ) => {
+        implement_newton_damped_mechanics!($struct_name, $d, f64);
+    };
+    (
+        $struct_name:ident,
+        $d:literal,
+        $float_type:ty
+    ) => {
         /// Newtonian dynamics governed by mass and damping.
         ///
         /// # Parameters
@@ -132,8 +141,21 @@ macro_rules! implement_newton_damped_mechanics(
             }
         }
 
-        impl Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type> for $struct_name
+        impl Mechanics<
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            SVector<$float_type, $d>,
+            $float_type
+        > for $struct_name
         {
+            fn get_random_contribution(
+                &self,
+                _: &mut rand_chacha::ChaCha8Rng,
+                _dt: $float_type,
+            ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), RngError> {
+                Ok((num::Zero::zero(), num::Zero::zero()))
+            }
+
             fn calculate_increment(
                 &self,
                 force: SVector<$float_type, $d>,
@@ -450,7 +472,6 @@ macro_rules! define_langevin_nd(
         impl $struct_name {
             /// Constructs a new
             #[doc = concat!("[", stringify!($struct_name), "]")]
-            /// mechanics model for the specified dimension.
             pub fn new(
                 pos: [$float_type; $d],
                 vel: [$float_type; $d],
