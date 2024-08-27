@@ -33,7 +33,7 @@ serde_test = "1.0.177"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.0.13"
+version = "0.1.0"
 
 [features]
 default = ["gradients"]
