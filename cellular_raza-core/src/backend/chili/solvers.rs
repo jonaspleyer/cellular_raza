@@ -24,7 +24,8 @@ pub fn mechanics_euler<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,
     dt: Float,
-) -> Result<(), CalcError>
+    rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), super::SimulationError>
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 0>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
@@ -32,13 +33,14 @@ where
     C: cellular_raza_concepts::Velocity<Vel>,
     Pos: Xapy<Float> + num::Zero + Clone,
     Vel: Xapy<Float> + num::Zero + Clone,
-    Float: Copy,
+    Float: num::Float + Copy,
 {
     let force = aux_storage.get_current_force();
     let velocity = cell.velocity();
     let position = cell.pos();
 
     let (dx, dv) = cell.calculate_increment(force)?;
+    let (dx_rand, dv_rand) = cell.get_random_contribution(rng, dt)?;
 
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
@@ -46,8 +48,8 @@ where
     aux_storage.clear_forces();
 
     // Calculate new position and velocity of cell
-    let new_position = euler(position, dx, dt)?;
-    let new_velocity = euler(velocity, dv, dt)?;
+    let new_position = euler(position, dx, dt, dx_rand)?;
+    let new_velocity = euler(velocity, dv, dt, dv_rand)?;
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
     Ok(())
@@ -72,7 +74,8 @@ pub fn mechanics_adams_bashforth_3<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,
     dt: Float,
-) -> Result<(), CalcError>
+    rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), super::SimulationError>
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 2>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
@@ -87,6 +90,7 @@ where
     let position = cell.pos();
 
     let (dx, dv) = cell.calculate_increment(force)?;
+    let (dx_rand, dv_rand) = cell.get_random_contribution(rng, dt)?;
 
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
@@ -107,6 +111,7 @@ where
                     old_pos_increments.next().unwrap().clone(),
                 ],
                 dt,
+                dx_rand,
             )?,
             adams_bashforth_3(
                 velocity,
@@ -116,6 +121,7 @@ where
                     old_vel_increments.next().unwrap().clone(),
                 ],
                 dt,
+                dv_rand,
             )?,
         ),
         1 => (
@@ -123,14 +129,19 @@ where
                 position,
                 [dx, old_pos_increments.next().unwrap().clone()],
                 dt,
+                dx_rand,
             )?,
             adams_bashforth_2(
                 velocity,
                 [dv, old_vel_increments.next().unwrap().clone()],
                 dt,
+                dv_rand,
             )?,
         ),
-        _ => (euler(position, dx, dt)?, euler(velocity, dv, dt)?),
+        _ => (
+            euler(position, dx, dt, dx_rand)?,
+            euler(velocity, dv, dt, dv_rand)?,
+        ),
     };
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
@@ -155,7 +166,8 @@ pub fn mechanics_adams_bashforth_2<C, A, Pos, Vel, For, Float>(
     cell: &mut C,
     aux_storage: &mut A,
     dt: Float,
-) -> Result<(), CalcError>
+    rng: &mut rand_chacha::ChaCha8Rng,
+) -> Result<(), super::SimulationError>
 where
     A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 1>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
@@ -170,6 +182,7 @@ where
     let position = cell.pos();
 
     let (dx, dv) = cell.calculate_increment(force)?;
+    let (dx_rand, dv_rand) = cell.get_random_contribution(rng, dt)?;
 
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
@@ -186,14 +199,19 @@ where
                 position,
                 [dx, old_pos_increments.next().unwrap().clone()],
                 dt,
+                dx_rand,
             )?,
             adams_bashforth_2(
                 velocity,
                 [dv, old_vel_increments.next().unwrap().clone()],
                 dt,
+                dv_rand,
             )?,
         ),
-        _ => (euler(position, dx, dt)?, euler(velocity, dv, dt)?),
+        _ => (
+            euler(position, dx, dt, dx_rand)?,
+            euler(velocity, dv, dt, dv_rand)?,
+        ),
     };
     cell.set_pos(&new_position);
     cell.set_velocity(&new_velocity);
@@ -201,17 +219,17 @@ where
 }
 
 #[inline]
-fn euler<X, F>(x: X, dx: X, dt: F) -> Result<X, CalcError>
+fn euler<X, F>(x: X, dx: X, dt: F, dx_rand: X) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
-    F: Copy,
+    F: num::Float + Copy,
 {
-    let x_new = dx.xapy(dt, &x);
+    let x_new = dx.xapy(dt, &x).xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
     Ok(x_new)
 }
 
 #[inline]
-fn adams_bashforth_3<X, F>(x: X, dx: [X; 3], dt: F) -> Result<X, CalcError>
+fn adams_bashforth_3<X, F>(x: X, dx: [X; 3], dt: F, dx_rand: X) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
     F: Copy + FromPrimitive + num::Float,
@@ -224,12 +242,13 @@ where
 
     let x_new = dx0
         .xapy(f0, &dx1.xapy(f1, &dx2.xapy(f2, &X::zero())))
-        .xapy(dt, &x);
+        .xapy(dt, &x)
+        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
     Ok(x_new)
 }
 
 #[inline]
-fn adams_bashforth_2<X, F>(x: X, dx: [X; 2], dt: F) -> Result<X, CalcError>
+fn adams_bashforth_2<X, F>(x: X, dx: [X; 2], dt: F, dx_rand: X) -> Result<X, CalcError>
 where
     X: Xapy<F> + num::Zero,
     F: Copy + FromPrimitive + num::Float,
@@ -239,7 +258,10 @@ where
 
     let [dx0, dx1] = dx;
 
-    let x_new = dx0.xapy(f0, &dx1.xapy(f1, &X::zero())).xapy(dt, &x);
+    let x_new = dx0
+        .xapy(f0, &dx1.xapy(f1, &X::zero()))
+        .xapy(dt, &x)
+        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
     Ok(x_new)
 }
 
@@ -310,6 +332,7 @@ where
                 old_intracellular_increments.next().unwrap().clone(),
             ],
             F::one(),
+            Ri::zero(),
         )?,
         1 => adams_bashforth_2(
             dintra,
@@ -318,8 +341,9 @@ where
                 old_intracellular_increments.next().unwrap().clone(),
             ],
             F::one(),
+            Ri::zero(),
         )?,
-        _ => euler(dintra, dintra_contact, F::one())?,
+        _ => euler(dintra, dintra_contact, F::one(), Ri::zero())?,
     };
     aux_storage.set_conc(dintra_new);
     Ok(())
@@ -426,7 +450,7 @@ mod test_solvers {
         let mut t = 0.0;
         for _ in 0..100 {
             let dy = rhs(y);
-            y = euler(y, dy, dt).unwrap();
+            y = euler(y, dy, dt, 0.0).unwrap();
             t += dt;
             let e = expected_global_truncation_error(t);
             assert!((y - exact_solution(t)).abs() < e);
@@ -514,7 +538,7 @@ mod test_solvers {
             let dy = rhs(y);
             dy_storage[1] = dy_storage[0];
             dy_storage[0] = dy;
-            y = adams_bashforth_2(y, dy_storage, dt).unwrap();
+            y = adams_bashforth_2(y, dy_storage, dt, Vec2(0.0, 0.0)).unwrap();
             t += dt;
             let e = global_truncation_error(t);
             let d1 = (y.0 - exact_solution(t).0).abs();

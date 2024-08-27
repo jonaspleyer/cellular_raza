@@ -528,7 +528,7 @@ pub fn local_mechanics_update_step_3<
     cell: &mut C,
     aux_storage: &mut A,
     dt: Float,
-    _rng: &mut rand_chacha::ChaCha8Rng,
+    rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
     A: UpdateMechanics<Pos, Vel, For, 2>,
@@ -544,24 +544,8 @@ where
         cell,
         aux_storage,
         dt,
+        rng,
     )?;
-    Ok(())
-}
-
-/// Corresponds to the [set_random_variable](cellular_raza_concepts::Mechanics::set_random_variable)
-/// function of the [Mechanics](cellular_raza_concepts::Mechanics) trait.
-pub fn local_mechanics_set_random_variable<C, A, Pos, Vel, For, Float, const N: usize>(
-    cell: &mut C,
-    _aux_storage: &mut A,
-    dt: Float,
-    rng: &mut rand_chacha::ChaCha8Rng,
-) -> Result<(), cellular_raza_concepts::RngError>
-where
-    C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
-    A: UpdateMechanics<Pos, Vel, For, N>,
-    Float: core::ops::Sub<Output = Float> + core::cmp::PartialOrd,
-{
-    cell.set_random_variable(rng, dt)?;
     Ok(())
 }
 
