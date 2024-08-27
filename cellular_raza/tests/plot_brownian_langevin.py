@@ -62,6 +62,7 @@ def plot_results(
         fig.tight_layout()
         fig.savefig("{}/trajectories.png".format(last_save_dir))
 
+        # Plot a heatmap of the total explored space
         heatmap, _, _ = np.histogram2d(
             trajectories[:,:,0].reshape((-1,)),
             trajectories[:,:,1].reshape((-1,)),
