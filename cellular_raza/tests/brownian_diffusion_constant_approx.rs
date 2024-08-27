@@ -120,16 +120,12 @@ fn analyze_positions_brownian<const D: usize>(
     let (means, std_dev_err) = calculate_mean_std_dev_err(&parameters, positions)?;
 
     // Calculate probability for values to be identical
-    let mut sum_relative_diffs = 0.0;
     for &iteration in means.keys() {
         let expected =
             2.0 * D as f64 * parameters.diffusion_constant * iteration as f64 * parameters.dt;
         let (_, std_err) = std_dev_err[&iteration];
-        let relative_diff = (expected - means[&iteration]).powf(2.0) / std_err;
-        sum_relative_diffs += relative_diff;
+        assert!((expected - means[&iteration]).abs() < 3.5 * std_err);
     }
-    sum_relative_diffs /= means.len() as f64;
-    assert!(sum_relative_diffs < 0.15);
     Ok(())
 }
 
@@ -283,8 +279,7 @@ fn analyze_positions_langevin<const D: usize>(
         let time = iteration as f64 * parameters.dt;
         // Here we assume that the initial velocity v(0) = 0
         // https://en.wikipedia.org/wiki/Langevin_equation#Trajectories_of_free_Brownian_particles
-        let expected = -(D as f64) * kb_temperature / mass
-            / damping.powf(2.0)
+        let expected = -(D as f64) * kb_temperature / mass / damping.powf(2.0)
             * (1.0 - (-damping * time).exp())
             * (3.0 - (-damping * time).exp())
             + 2.0 * D as f64 * kb_temperature / mass * time / damping;
