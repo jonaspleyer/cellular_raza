@@ -14,6 +14,7 @@ struct Parameters {
     diffusion_constant: f64,
 
     storage_name: std::path::PathBuf,
+    random_seed: u64,
 }
 
 impl Default for Parameters {
@@ -28,6 +29,7 @@ impl Default for Parameters {
 
             diffusion_constant: 1.0,
             storage_name: "out/brownian".into(),
+            random_seed: 0,
         }
     }
 }
@@ -132,8 +134,9 @@ macro_rules! test_brownian {
     ($parameters:ident, $domain_name:ident, $particle_name:ident, $d:literal) => {{
         let domain_size = $parameters.domain_size;
         assert!(domain_size > 0.0);
-        let domain =
+        let mut domain =
             $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
+        domain.rng_seed = $parameters.random_seed;
 
         let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
         let particles = (0..$parameters.n_particles)
@@ -177,6 +180,7 @@ fn diffusion_constant_brownian_3d_1() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_3d_1".into();
     parameters.diffusion_constant = 1.0;
+    parameters.random_seed = 1;
     test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
     Ok(())
 }
@@ -186,6 +190,7 @@ fn diffusion_constant_brownian_3d_2() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_3d_2".into();
+    parameters.random_seed = 2;
     test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
     Ok(())
 }
@@ -195,6 +200,7 @@ fn diffusion_constant_brownian_3d_3() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_3d_3".into();
+    parameters.random_seed = 3;
     test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
     Ok(())
 }
@@ -204,6 +210,7 @@ fn diffusion_constant_brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_2d_1".into();
     parameters.diffusion_constant = 1.0;
+    parameters.random_seed = 4;
     test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
     Ok(())
 }
@@ -213,6 +220,7 @@ fn diffusion_constant_brownian_2d_2() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_2d_2".into();
+    parameters.random_seed = 5;
     test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
     Ok(())
 }
@@ -222,6 +230,7 @@ fn diffusion_constant_brownian_2d_3() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_2d_3".into();
+    parameters.random_seed = 6;
     test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
     Ok(())
 }
@@ -231,6 +240,7 @@ fn diffusion_constant_brownian_1d_1() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.storage_name = "out/brownian_1d_1".into();
     parameters.diffusion_constant = 1.0;
+    parameters.random_seed = 7;
     test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
     Ok(())
 }
@@ -240,6 +250,7 @@ fn diffusion_constant_brownian_1d_2() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_1d_2".into();
+    parameters.random_seed = 8;
     test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
     Ok(())
 }
@@ -249,6 +260,7 @@ fn diffusion_constant_brownian_1d_3() -> Result<(), Box<dyn std::error::Error>> 
     let mut parameters = Parameters::default();
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_1d_3".into();
+    parameters.random_seed = 9;
     test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
     Ok(())
 }
