@@ -99,21 +99,28 @@ impl<const D1: usize, const D2: usize>
         Ok((self.vel.clone() + self.random_velocity, total_force))
     }
 
-    fn set_random_variable(
-        &mut self,
+    fn get_random_contribution(
+        &self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
-    ) -> Result<(), cellular_raza::prelude::RngError> {
+    ) -> Result<
+        (
+            nalgebra::SMatrix<f64, D1, D2>,
+            nalgebra::SMatrix<f64, D1, D2>,
+        ),
+        cellular_raza::prelude::RngError,
+    > {
         let distr = match rand_distr::Normal::new(0.0, dt.sqrt()) {
             Ok(e) => Ok(e),
             Err(e) => Err(cellular_raza::concepts::RngError(format!("{e}"))),
         }?;
-        self.random_velocity = std::f64::consts::SQRT_2
+        let dpos = std::f64::consts::SQRT_2
             * self.diffusion_constant
             * nalgebra::SMatrix::<f64, D1, D2>::from_distribution(&distr, rng)
             / dt;
+        let dvel = nalgebra::SMatrix::<f64, D1, D2>::zeros();
 
-        Ok(())
+        Ok((dpos, dvel))
     }
 }
 
