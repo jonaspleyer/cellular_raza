@@ -401,12 +401,13 @@ impl AgentImplementer {
                         )
                     }
                     #[inline]
-                    fn set_random_variable(&mut self,
+                    fn get_random_contribution(
+                        &self,
                         rng: &mut rand_chacha::ChaCha8Rng,
                         dt: #float_type,
-                    ) -> Result<(), RngError> {
-                        <#field_type as Mechanics<#tokens>>::set_random_variable(
-                            &mut self.#field_name,
+                    ) -> Result<(#position, #velocity), RngError> {
+                        <#field_type as Mechanics<#tokens>>::get_random_contribution(
+                            &self.#field_name,
                             rng,
                             dt
                         )
