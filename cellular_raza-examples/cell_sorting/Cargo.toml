@@ -3,6 +3,7 @@ name = "cr_cell_sorting"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+default-run = "default"
 
 [dependencies]
 serde = { workspace = true, features=["rc"] }
@@ -11,3 +12,11 @@ rand_chacha = { workspace = true }
 nalgebra = { version="0.33" }
 cellular_raza = { path="../../cellular_raza" }
 num = { workspace = true }
+
+[[bin]]
+name = "default"
+path = "src/main.rs"
+
+[[bin]]
+name = "langevin"
+path = "src/main-langevin.rs"
