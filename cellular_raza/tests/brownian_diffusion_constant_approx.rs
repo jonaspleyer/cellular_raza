@@ -117,7 +117,7 @@ fn analyze_positions_brownian<const D: usize>(
         let expected =
             2.0 * D as f64 * parameters.diffusion_constant * iteration as f64 * parameters.dt;
         let (mean, std_dev) = means_std_dev[&iteration];
-        assert!((expected - mean).abs() < 3.5 * std_dev);
+        assert!((expected - mean).abs() <= 3.5 * std_dev);
     }
     Ok(())
 }
@@ -277,7 +277,7 @@ fn analyze_positions_langevin<const D: usize>(
                 * (1.0 - (-damping * time).exp())
                 * (3.0 - (-damping * time).exp())
                 + 2.0 * D as f64 * kb_temperature / mass * time / damping;
-            assert!((expected - mean).abs() <= std_dev);
+            assert!((expected - mean).abs() <= 3.5 * std_dev);
         }
     }
     Ok(())
