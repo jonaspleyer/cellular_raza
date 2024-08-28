@@ -165,8 +165,7 @@ def plot_langevin(
         dt: float
     ):
     print(storage_name)
-    mass = 1.0
-    kb_temperature = diffusion * damping * mass
+    kb_temperature_div_mass = diffusion * damping
 
     # Get trajectories
     last_save_dir = get_last_save_dir(storage_name)
@@ -179,15 +178,15 @@ def plot_langevin(
     # Plot the mean squared displacement per iteration
     fig, ax, x, msd, msd_err = plot_msd(trajectories, domain_middle)
 
-    def prediction_langevin(t, damping, kb_temperature, mass, dim):
-        return - dim * kb_temperature / mass / damping**2\
+    def prediction_langevin(t, damping, kb_temperature_div_mass, dim):
+        return - dim * kb_temperature_div_mass / damping**2\
             * (1.0 - np.exp(- damping * t))\
             * (3.0 - np.exp(- damping * t))\
-            + 2.0 * dim * kb_temperature / mass * t / damping
+            + 2.0 * dim * kb_temperature_div_mass * t / damping
 
     popt, pcov = sp.optimize.curve_fit(
-        lambda t, damping, kb_temp, mass: prediction_langevin(
-            t, damping, kb_temp, mass, dim
+        lambda t, damping, kb_temp_div_mass: prediction_langevin(
+            t, damping, kb_temp_div_mass, dim
         ),
         dt * x,
         msd,
@@ -195,7 +194,7 @@ def plot_langevin(
         p0=(damping, kb_temperature, mass),
     )
 
-    y = prediction_langevin(dt * x, damping, kb_temperature, mass, dim)
+    y = prediction_langevin(dt * x, damping, kb_temperature_div_mass, dim)
     ax.plot(
         x,
         y,
