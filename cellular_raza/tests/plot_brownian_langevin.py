@@ -219,7 +219,21 @@ def plot_langevin(
 # tests as defined by the cellular_raza test suite.
 # See cellular_raza/tests/brownian_diffusion_constant_approx.rs
 LANGEVIN_VALUES = [
-        {"storage_name":"langevin_2d_1", "damping": 0.02, "diffusion": 0.1, "dim":1, "dt":1e-3},
+    {"storage_name": "langevin_3d_1", "diffusion": 80.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_3d_2", "diffusion": 40.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_3d_3", "diffusion": 20.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_3d_4", "diffusion": 40.0, "dim": 3, "damping":  1.0, "dt": 1e-3},
+    {"storage_name": "langevin_3d_5", "diffusion": 40.0, "dim": 3, "damping":  0.1, "dt": 1e-3},
+    {"storage_name": "langevin_2d_1", "diffusion": 80.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_2d_2", "diffusion": 40.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_2d_3", "diffusion": 20.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_2d_4", "diffusion": 20.0, "dim": 2, "damping":  1.0, "dt": 1e-3},
+    {"storage_name": "langevin_2d_5", "diffusion": 20.0, "dim": 2, "damping":  0.1, "dt": 1e-3},
+    {"storage_name": "langevin_1d_1", "diffusion": 80.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_1d_2", "diffusion": 40.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_1d_3", "diffusion": 20.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
+    {"storage_name": "langevin_1d_4", "diffusion": 20.0, "dim": 1, "damping":  1.0, "dt": 1e-3},
+    {"storage_name": "langevin_1d_5", "diffusion": 20.0, "dim": 1, "damping":  0.1, "dt": 1e-3},
 ]
 
 for kwargs in LANGEVIN_VALUES:
