@@ -151,8 +151,8 @@ BROWNIAN_VALUES = [
     {"storage_name":"brownian_3d_2", "diffusion_constant": 0.5, "dimension":3, "dt":1e-3},
 ]
 
-# for kwargs in BROWNIAN_VALUES:
-#     plot_brownian(**kwargs)
+for kwargs in BROWNIAN_VALUES:
+    plot_brownian(**kwargs)
 
 def plot_langevin(
         storage_name: str,
