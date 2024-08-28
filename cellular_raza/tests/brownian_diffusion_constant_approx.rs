@@ -49,7 +49,7 @@ fn define_settings(
         parameters.save_interval,
     )?;
 
-    // Use a temporary directory to automatically clean up all files in it
+    // Only save results when debug_assertions are not active.
     let location = parameters.storage_name.to_owned();
     let storage = cellular_raza_core::storage::StorageBuilder::new()
         .priority([
