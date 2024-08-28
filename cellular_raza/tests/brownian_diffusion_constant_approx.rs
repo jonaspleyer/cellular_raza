@@ -66,16 +66,10 @@ fn define_settings(
     })
 }
 
-fn calculate_mean_std_dev_err<const D: usize>(
+fn calculate_mean_std_dev<const D: usize>(
     parameters: &Parameters,
     positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
-) -> Result<
-    (
-        std::collections::HashMap<u64, f64>,
-        std::collections::HashMap<u64, (f64, f64)>,
-    ),
-    Box<dyn std::error::Error>,
-> {
+) -> Result<std::collections::HashMap<u64, (f64, f64)>, Box<dyn std::error::Error>> {
     let initial_position = SVector::from([parameters.domain_size / 2.0; D]);
     let square_displacements = positions
         .into_iter()
@@ -95,7 +89,7 @@ fn calculate_mean_std_dev_err<const D: usize>(
         .map(|(iteration, displs)| (*iteration, displs.iter().sum::<f64>() / displs.len() as f64))
         .collect::<std::collections::HashMap<_, _>>();
 
-    let std_dev_err = square_displacements
+    let means_std_dev = square_displacements
         .iter()
         .map(|(iteration, displs)| {
             let sigma = (displs
@@ -104,24 +98,24 @@ fn calculate_mean_std_dev_err<const D: usize>(
                 .sum::<f64>()
                 / displs.len() as f64)
                 .sqrt();
-            (*iteration, (sigma, sigma / (displs.len() as f64).sqrt()))
+            (*iteration, (means[&iteration], sigma))
         })
         .collect::<std::collections::HashMap<_, _>>();
-    Ok((means, std_dev_err))
+    Ok(means_std_dev)
 }
 
 fn analyze_positions_brownian<const D: usize>(
     parameters: &Parameters,
     positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (means, std_dev_err) = calculate_mean_std_dev_err(&parameters, positions)?;
+    let means_std_dev = calculate_mean_std_dev(&parameters, positions)?;
 
     // Calculate probability for values to be identical
-    for &iteration in means.keys() {
+    for &iteration in means_std_dev.keys() {
         let expected =
             2.0 * D as f64 * parameters.diffusion_constant * iteration as f64 * parameters.dt;
-        let (_, std_err) = std_dev_err[&iteration];
-        assert!((expected - means[&iteration]).abs() < 3.5 * std_err);
+        let (mean, std_dev) = means_std_dev[&iteration];
+        assert!((expected - mean).abs() < 3.5 * std_dev);
     }
     Ok(())
 }
