@@ -188,24 +188,29 @@ def plot_langevin(
         lambda t, damping, kb_temp_div_mass: prediction_langevin(
             t, damping, kb_temp_div_mass, dim
         ),
-        dt * x,
-        msd,
-        sigma=msd_err,
-        p0=(damping, kb_temperature, mass),
+        dt * x[1:],
+        msd[1:],
+        # sigma=msd_err[1:],
+        p0=(damping, kb_temperature_div_mass),
     )
 
     y = prediction_langevin(dt * x, damping, kb_temperature_div_mass, dim)
     ax.plot(
         x,
         y,
-        label="Prediciton $a$ with ..",
+        label="Prediciton $\\left<r^2(t)\\right>$",
         color="k",
         linestyle=":",
     )
     ax.plot(
         x,
         prediction_langevin(dt * x, *popt, dim),
-        label="Fit $D$",
+        label="Fit $\\lambda={:4.3} \\pm {:4.3}, D={:4.3}\\pm {:4.3}$".format(
+            popt[0],
+            pcov[0][0]**0.5,
+            popt[1] / popt[0],
+            ((pcov[1][1]/popt[0]**2) + (pcov[0][0]*popt[1]**2/popt[0]**4))**0.5
+        ),
         linestyle="--",
         color="orange",
     )
