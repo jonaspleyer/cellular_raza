@@ -260,28 +260,23 @@ fn analyze_positions_langevin<const D: usize>(
     positions: impl IntoIterator<Item = (u64, Vec<SVector<f64, D>>)>,
     damping: f64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (means, std_dev_err) = calculate_mean_std_dev_err(&parameters, positions)?;
+    let means_std_dev = calculate_mean_std_dev(&parameters, positions)?;
 
     // Calculate probability for values to be identical
     let mass = 1.0;
     let kb_temperature = kb_temp(mass, parameters.diffusion_constant, damping);
-    let mut keys = means.keys().into_iter().collect::<Vec<_>>();
-    keys.sort();
-    for &iteration in keys {
-        let time = iteration as f64 * parameters.dt;
+    for &iteration in means_std_dev.keys() {
         // Here we assume that the initial velocity v(0) = 0
         // https://en.wikipedia.org/wiki/Langevin_equation#Trajectories_of_free_Brownian_particles
-        let expected = -(D as f64) * kb_temperature / mass / damping.powf(2.0)
-            * (1.0 - (-damping * time).exp())
-            * (3.0 - (-damping * time).exp())
-            + 2.0 * D as f64 * kb_temperature / mass * time / damping;
-        let (_, std_err) = std_dev_err[&iteration];
-        println!(
-            "{} {:16.14} {:16.14} {:16.14} {:16.14}",
-            iteration, time, expected, means[&iteration], std_err
-        );
-        // assert!((expected - means[&iteration]).abs() <= 5.0 * std_err);
-        println!("{}", (expected - means[&iteration]).abs() <= 5.0 * std_err);
+        if iteration > 1 {
+            let (mean, std_dev) = means_std_dev[&iteration];
+            let time = iteration as f64 * parameters.dt;
+            let expected = -(D as f64) * kb_temperature / mass / damping.powf(2.0)
+                * (1.0 - (-damping * time).exp())
+                * (3.0 - (-damping * time).exp())
+                + 2.0 * D as f64 * kb_temperature / mass * time / damping;
+            assert!((expected - mean).abs() <= std_dev);
+        }
     }
     Ok(())
 }
