@@ -422,7 +422,7 @@ macro_rules! define_langevin_nd(
                 rng: &mut rand_chacha::ChaCha8Rng,
                 dt: $float_type,
             ) -> Result<(SVector<$float_type, $d>, SVector<$float_type, $d>), RngError> {
-                let dpos = (
+                let dvel = (
                     2.0 as $float_type
                     * self.damping
                     * self.kb_temperature
@@ -431,7 +431,7 @@ macro_rules! define_langevin_nd(
                     rng,
                     dt
                 )?;
-                let dvel = SVector::<$float_type, $d>::zeros();
+                let dpos = SVector::<$float_type, $d>::zeros();
                 Ok((dpos, dvel))
             }
 
