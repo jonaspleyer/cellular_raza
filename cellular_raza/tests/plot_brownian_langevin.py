@@ -54,7 +54,7 @@ def plot_2d_only(trajectories: np.ndarray, domain_middle: np.ndarray, last_save_
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     for traj in trajectories:
-        ax.plot(traj[:,0], traj[:,1], color="gray", linestyle=":")
+        ax.plot(traj[:,0], traj[:,1], color="k", linestyle="-")
     fig.tight_layout()
     fig.savefig("{}/trajectories.png".format(last_save_dir))
 
