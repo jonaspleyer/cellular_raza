@@ -76,11 +76,12 @@ def plot_2d_only(trajectories: np.ndarray, domain_middle: np.ndarray, last_save_
 def plot_msd(trajectories: np.ndarray, domain_middle: np.ndarray):
     # Plot the mean squared displacement per iteration
     msd = np.mean(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
-    msd_err = np.std(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
+    msd_err = np.std(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)\
+        / trajectories.shape[0]**0.5
 
-    x = np.arange(len(msd))
+    x = np.arange(msd.shape[0])
     fig, ax = plt.subplots()
-    ax.plot(x, msd, color="gray", linestyle="-", label="Mean Displacements")
+    ax.errorbar(x, msd, msd_err, color="gray", linestyle="-", label="Mean Displacements")
     return fig, ax, x, msd, msd_err
 
 def plot_brownian(
