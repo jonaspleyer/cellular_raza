@@ -90,6 +90,7 @@ def plot_brownian(
         dimension: int,
         dt: float,
     ):
+    print(storage_name)
 
     # Get trajectories
     last_save_dir = get_last_save_dir(storage_name)
@@ -162,6 +163,7 @@ def plot_langevin(
         dim: int,
         dt: float
     ):
+    print(storage_name)
     mass = 1.0
     kb_temperature = diffusion * damping * mass
 
