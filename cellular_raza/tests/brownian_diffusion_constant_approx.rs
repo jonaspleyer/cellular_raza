@@ -26,7 +26,7 @@ impl Default for Parameters {
             domain_size: 200.0,
 
             dt: 1e-3,
-            n_steps: 100,
+            n_steps: 200,
             save_interval: 1,
 
             diffusion_constant: 1.0,
