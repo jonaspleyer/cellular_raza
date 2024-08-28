@@ -161,8 +161,8 @@ def plot_langevin(
         dim: int,
         dt: float
     ):
-    kb_temperature = 1.0
     mass = 1.0
+    kb_temperature = diffusion * damping * mass
 
     # Get trajectories
     last_save_dir = get_last_save_dir(storage_name)
