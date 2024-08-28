@@ -151,6 +151,7 @@ BROWNIAN_VALUES = [
     {"storage_name":"brownian_2d_3", "diffusion_constant":0.25, "dimension":2, "dt":1e-3},
     {"storage_name":"brownian_3d_1", "diffusion_constant": 1.0, "dimension":3, "dt":1e-3},
     {"storage_name":"brownian_3d_2", "diffusion_constant": 0.5, "dimension":3, "dt":1e-3},
+    {"storage_name":"brownian_3d_3", "diffusion_constant":0.25, "dimension":3, "dt":1e-3},
 ]
 
 for kwargs in BROWNIAN_VALUES:
