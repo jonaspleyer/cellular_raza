@@ -71,6 +71,7 @@ def plot_2d_only(trajectories: np.ndarray, domain_middle: np.ndarray, last_save_
     ax.set_title("Heatmap of explored space")
     fig.tight_layout()
     fig.savefig("{}/heatmap.png".format(last_save_dir))
+    plt.close(fig)
 
 def plot_msd(trajectories: np.ndarray, domain_middle: np.ndarray):
     # Plot the mean squared displacement per iteration
@@ -130,6 +131,7 @@ def plot_brownian(
     ax.set_title("Mean Squared Displacement {}".format(storage_name))
     fig.tight_layout()
     fig.savefig("{}/mean-squared-displacement.png".format(last_save_dir))
+    plt.close(fig)
 
     if trajectories.shape[2] == 2:
         plot_2d_only(trajectories, domain_middle, last_save_dir)
