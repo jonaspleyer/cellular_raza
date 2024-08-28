@@ -177,8 +177,8 @@ def plot_langevin(
 
     def prediction_langevin(t, damping, kb_temperature, mass, dim):
         return - dim * kb_temperature / mass / damping**2\
-            * np.exp(1.0 - (- damping * t))\
-            * np.exp(3.0 - (- damping * t))\
+            * (1.0 - np.exp(- damping * t))\
+            * (3.0 - np.exp(- damping * t))\
             + 2.0 * dim * kb_temperature / mass * t / damping
 
     y = prediction_langevin(dt * x, damping, kb_temperature, mass, dim)
