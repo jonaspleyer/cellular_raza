@@ -136,6 +136,9 @@ def plot_brownian(
     if trajectories.shape[2] == 2:
         plot_2d_only(trajectories, domain_middle, last_save_dir)
 
+# Note that the values here do need to match the values of the
+# tests as defined by the cellular_raza test suite.
+# See cellular_raza/tests/brownian_diffusion_constant_approx.rs
 BROWNIAN_VALUES = [
     {"storage_name":"brownian_1d_1", "diffusion_constant": 1.0, "dimension":1, "dt":1e-3},
     {"storage_name":"brownian_1d_1", "diffusion_constant": 1.0, "dimension":1, "dt":1e-3},
@@ -212,7 +215,9 @@ def plot_langevin(
     if trajectories.shape[2] == 2:
         plot_2d_only(trajectories, domain_middle, last_save_dir)
 
-
+# Note that the values here do need to match the values of the
+# tests as defined by the cellular_raza test suite.
+# See cellular_raza/tests/brownian_diffusion_constant_approx.rs
 LANGEVIN_VALUES = [
         {"storage_name":"langevin_2d_1", "damping": 0.02, "diffusion": 0.1, "dim":1, "dt":1e-3},
 ]
