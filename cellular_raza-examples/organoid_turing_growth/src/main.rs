@@ -1,7 +1,7 @@
-use cellular_raza::building_blocks::cartesian_cuboid_n_old::{
-    CartesianCuboid2, CartesianCuboidVoxel2,
-};
-use cellular_raza::prelude::*;
+use cellular_raza::building_blocks::cartesian_cuboid_n_old::*;
+use cellular_raza::building_blocks::*;
+use cellular_raza::core::backend::cpu_os_threads::*;
+use cellular_raza::core::storage::*;
 
 use nalgebra::Vector2;
 
