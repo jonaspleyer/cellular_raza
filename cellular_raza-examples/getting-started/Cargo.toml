@@ -1,0 +1,12 @@
+[package]
+name = "cr_getting_started"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+
+[dependencies]
+cellular_raza = { path = "../../cellular_raza" }
+num.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+serde.workspace = true

@@ -23,6 +23,7 @@ members = [
     "cellular_raza-examples/sender-receiver",
     "cellular_raza-examples/bacterial_rods",
     "cellular_raza-examples/puzzle",
+    "cellular_raza-examples/getting-started",
 ]
 resolver = "2"
 
