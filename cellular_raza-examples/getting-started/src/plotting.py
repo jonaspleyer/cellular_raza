@@ -22,7 +22,7 @@ def get_cells_at_iteration(iteration: int, opath: Path = get_last_output_path())
         cells.extend([c["element"] for c in json.load(f)["data"]])
     return cells
 
-def get_domain_size(iteration: int, opath: Path = get_last_output_path()):
+def _get_domain_size(iteration: int, opath: Path = get_last_output_path()):
     singles = glob(str(opath) + "/subdomains/json/{:020}/*".format(iteration))
     f = open(singles[0])
     sdm = json.load(f)
@@ -33,7 +33,7 @@ def get_domain_size(iteration: int, opath: Path = get_last_output_path()):
 class Plotter:
     def __init__(self, opath: Path = get_last_output_path(), fig = None):
         iterations = get_all_iterations(opath)
-        self.domain_min, self.domain_max = get_domain_size(iterations[0], opath)
+        self.domain_min, self.domain_max = _get_domain_size(iterations[0], opath)
         s = (self.domain_max[1] - self.domain_min[1]) / (self.domain_max[0] - self.domain_min[0])
         self.fig, self.ax = plt.subplots(figsize=(6, s*6))
         self.ax.set_xlim((self.domain_min[0], self.domain_max[0]))
@@ -46,7 +46,7 @@ class Plotter:
             opath: Path = get_last_output_path(),
         ):
     
-        self.domain_min, self.domain_max = get_domain_size(iteration, opath)
+        self.domain_min, self.domain_max = _get_domain_size(iteration, opath)
         self.ax.set_xlim((self.domain_min[0], self.domain_max[0]))
         self.ax.set_ylim((self.domain_min[1], self.domain_max[1]))
     
