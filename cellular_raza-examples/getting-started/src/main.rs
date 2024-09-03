@@ -83,7 +83,7 @@ fn main() -> Result<(), SimulationError> {
         parameters.time_end,
         parameters.time_save_interval,
     )?;
-    let storage_builder = StorageBuilder::new().location("out/cell_sorting");
+    let storage_builder = StorageBuilder::new().location("out");
 
     let settings = Settings {
         n_threads: parameters.n_threads,
