@@ -4,7 +4,9 @@ from glob import glob
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import tqdm
+from matplotlib.patches import Circle
+from matplotlib.collections import PatchCollection
+import tqdm# For nice progress bar in the terminal (optional)
 
 def get_last_output_path() -> Path:
     return Path(sorted(glob(str("out/*")))[-1])
@@ -51,8 +53,6 @@ class Plotter:
         cells = get_cells_at_iteration(iteration, opath)
         positions = np.array([cell[0]["cell"]["mechanics"]["pos"] for cell in cells])
         radii = np.array([cell[0]["cell"]["interaction"]["radius"] for cell in cells])
-        from matplotlib.patches import Circle
-        from matplotlib.collections import PatchCollection
         patches = PatchCollection(
             [Circle(pos, radius) for (pos, radius) in zip(positions, radii)],
             facecolor="green",
