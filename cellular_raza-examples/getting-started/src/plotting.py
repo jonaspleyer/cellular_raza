@@ -39,18 +39,18 @@ class Plotter:
         self.ax.set_xlim((self.domain_min[0], self.domain_max[0]))
         self.ax.set_ylim((self.domain_min[1], self.domain_max[1]))
         self.fig.tight_layout()
+        self.opath = opath
 
     def plot_iteration(
             self,
             iteration: int,
-            opath: Path = get_last_output_path(),
         ):
     
         self.domain_min, self.domain_max = _get_domain_size(iteration, opath)
         self.ax.set_xlim((self.domain_min[0], self.domain_max[0]))
         self.ax.set_ylim((self.domain_min[1], self.domain_max[1]))
     
-        cells = get_cells_at_iteration(iteration, opath)
+        cells = get_cells_at_iteration(iteration, self.opath)
         positions = np.array([cell[0]["cell"]["mechanics"]["pos"] for cell in cells])
         radii = np.array([cell[0]["cell"]["interaction"]["radius"] for cell in cells])
         patches = PatchCollection(
@@ -63,11 +63,10 @@ class Plotter:
     def save_iteration(
         self,
         iteration: int,
-        opath: Path = get_last_output_path(),
     ):
-        self.plot_iteration(iteration, opath)
-        os.makedirs(str(opath) + "/snapshots/", exist_ok=True)
-        self.fig.savefig(str(opath) + "/snapshots/{:020}.png".format(iteration))
+        self.plot_iteration(iteration)
+        os.makedirs(str(self.opath) + "/snapshots/", exist_ok=True)
+        self.fig.savefig(str(self.opath) + "/snapshots/{:020}.png".format(iteration))
         self.ax.cla()
 
     def save_all_iterations(self):
