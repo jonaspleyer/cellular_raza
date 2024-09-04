@@ -1057,11 +1057,11 @@ impl<const D: usize>
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: f64,
     ) -> Result<(nalgebra::SMatrix<f64, D, 2>, nalgebra::SMatrix<f64, D, 2>), RngError> {
-        let dvel = nalgebra::SMatrix::<f64, D, 2>::zeros();
+        let mut dvel = nalgebra::SMatrix::<f64, D, 2>::zeros();
+        let dpos = nalgebra::SMatrix::<f64, D, 2>::zeros();
         if dt != 0.0 {
             let random_vector: SVector<f64, 2> = wiener_process(rng, dt)?;
-            let mut dpos = nalgebra::SMatrix::<f64, D, 2>::zeros();
-            dpos.row_iter_mut().for_each(|mut r| {
+            dvel.row_iter_mut().for_each(|mut r| {
                 r *= 0.0;
                 r += random_vector.transpose();
             });
