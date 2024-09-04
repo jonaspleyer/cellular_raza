@@ -18,7 +18,6 @@ members = [
     "cellular_raza-examples/semi_vertex",
     "cellular_raza-examples/organoid_turing_growth",
     "cellular_raza-examples/pool_model_pyo3",
-    "cellular_raza-examples/template",
     "cellular_raza-examples/ureter_signalling",
     "cellular_raza-examples/sender-receiver",
     "cellular_raza-examples/bacterial_rods",
