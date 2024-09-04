@@ -46,7 +46,6 @@ class Plotter:
             iteration: int,
         ):
     
-        self.domain_min, self.domain_max = _get_domain_size(iteration, opath)
         self.ax.set_xlim((self.domain_min[0], self.domain_max[0]))
         self.ax.set_ylim((self.domain_min[1], self.domain_max[1]))
     
