@@ -74,7 +74,6 @@ mod errors;
 mod interaction;
 mod mechanics;
 mod plotting;
-mod test_derive_cell_agent;
 
 pub use cell::*;
 pub use cycle::*;
