@@ -69,6 +69,7 @@ class Plotter:
         self.ax.cla()
 
     def save_all_iterations(self):
+        iterations = get_all_iterations()
         for iteration in tqdm.tqdm(iterations, total=len(iterations)):
             self.save_iteration(iteration)
 
@@ -87,7 +88,6 @@ def generate_movie(opath: Path = get_last_output_path(), and_open: bool = False)
         os.system(cmd2)
 
 if __name__ == "__main__":
-    iterations = get_all_iterations()
     plotter = Plotter()
     plotter.save_all_iterations()
     generate_movie(and_open=True)
