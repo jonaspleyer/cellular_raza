@@ -68,10 +68,7 @@ fn test_newton_damped(
             [0f64; 3], [100.0; 3], 20.0,
         )?;
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
-    #[cfg(debug_assertions)]
     let n_agents = 10;
-    #[cfg(not(debug_assertions))]
-    let n_agents = 50;
     let agents = (0..n_agents).map(|_| MyAgent {
         mechanics: NewtonDamped3D {
             pos: [
@@ -96,10 +93,7 @@ fn test_newton_damped(
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
         0.0,
         0.01,
-        #[cfg(debug_assertions)]
         100,
-        #[cfg(not(debug_assertions))]
-        1_000,
         10,
     )?;
     let settings = cellular_raza::core::backend::chili::Settings {
