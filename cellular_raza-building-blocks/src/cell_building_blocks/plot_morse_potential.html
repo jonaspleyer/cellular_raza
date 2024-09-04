@@ -1,45 +1,37 @@
 <!-- TODO Fix color and styling and adapt to theme -->
 <div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
 <script>
-function potential(r, lr, la, Cr, Ca, cutoff) {
-    var exp_r = r/lr;
-    var exp_a = r/la;
+function potential(r, v0, l, R, cutoff) {
     if (r > cutoff) {
         return 0;
     } else {
-        return Cr * Math.exp(-exp_r) - Ca * Math.exp(-exp_a);
+        return v0 * (1 - Math.exp(- l * (r - R)))**2;
     }
 }
-function generate_data(x, lr, la, Cr, Ca, cutoff) {
+function generate_data(xi, v0, l, R, cutoff) {
     var y = [];
     x.forEach((xi, i) => {
-        y[i] = potential(xi, lr, la, Cr, Ca, cutoff);
+        y[i] = potential(xi, v0, l, R, cutoff);
     });
     return y;
 }
-var lr = 1.0;
-var la = 2.0;
-var Cr = 1.5;
-var Ca = 1.0;
-var cutoff = 6.0;
-function calculate_radius(lr, la, Cr, Ca) {
-    return - lr*la/(lr - la) * Math.log(Cr*la/(Ca*lr));
-}
-var radius = calculate_radius(lr, la, Cr, Ca);
+var l = 3.0;
+var R = 1.0;
+var v0 = 1.0;
+var cutoff = 3.0;
 var n_samples = 200;
-var x = [...Array(n_samples).keys()].map((s) => 5*la*s/(n_samples));
-var y = generate_data(x, lr, la, Cr, Ca, cutoff);
-var data_la = [1.5, 1.75, 2.0, 2.25, 2.5];
+var x = [...Array(n_samples+1).keys()].map((s) => 1.1 * cutoff / n_samples * (s+1));
+var y = generate_data(x, v0, l, R, cutoff);
+var data_l = [0.1, 0.3, 0.6];
 var sliderSteps = [];
-for (i=0; i<data_la.length; i++) {
+for (i=0; i<data_l.length; i++) {
     // Calculate new values
-    var la_new = data_la[i];
-    var la_new_name = la_new.toFixed(2);
-    var y_new = generate_data(x, lr, la_new, Cr, Ca, cutoff);
-    var radius_new = calculate_radius(lr, la_new, Cr, Ca);
+    var l_new = data_l[i];
+    var l_new_name = l_new.toFixed(2);
+    var y_new = generate_data(x, v0, l_new, R, cutoff);
     // Append new slider step
     var sliderstep = {
-        label: la_new_name,
+        label: l_new_name,
         method: 'animate',
         args: [
             {
@@ -47,14 +39,14 @@ for (i=0; i<data_la.length; i++) {
                 mode: 'immediate',
                 layout: {
                     xaxis: {
-                        tickvals: [0, radius_new, cutoff],
-                        ticktext: ['0', 'R', 'cutoff'],
+                        tickvals: [R, cutoff],
+                        ticktext: ['R', 'cutoff'],
                     },
                     yaxis: {
                         color: "#FFF",
-                        range: [-0.3*Ca, 1.1*(Cr - Ca)],
-                        tickvals: [potential(radius, lr, la_new, Cr, Ca, cutoff), 0, Cr - Ca],
-                        ticktext: ['V(R)', '0', 'C<sub>r</sub> - C<sub>a</sub>'],
+                        range: [-0.3*v0, 1.1*v0],
+                        tickvals: [0, v0],
+                        ticktext: ['0', 'V<sub>0</sub>'],
                     },
                 },
             },
@@ -63,7 +55,6 @@ for (i=0; i<data_la.length; i++) {
     sliderSteps.push(sliderstep);
 }
 var initial_step = 2;
-console.log(sliderSteps);
 var layout = {
     xaxis: sliderSteps[initial_step]["args"][0]["layout"]["xaxis"],
     yaxis: sliderSteps[initial_step]["args"][0]["layout"]["yaxis"],
