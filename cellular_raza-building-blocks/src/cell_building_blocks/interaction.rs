@@ -132,113 +132,16 @@ macro_rules! implement_bound_lennard_jones(
 implement_bound_lennard_jones!(BoundLennardJones, f64);
 implement_bound_lennard_jones!(BoundLennardJonesF32, f32);
 
-/// Famous [Morse](https://doi.org/10.1103/PhysRev.34.57) potential for diatomic molecules.
-///
-/// \\begin{equation}
-///     V(r) = C_r \exp\left(-\frac{r}{l_r}\right) - C_a
-///     \exp\left(-\frac{r}{l_a}\right)
-/// \\end{equation}
-///
-/// Calculating the interaction resulting from this potential is very cheap computationally but not
-/// intuitive.
-/// Thus we provide additional methods to set, grow and shrink the current radius of the object.
-///
-/// # Deriving convenience methods
-/// To translate the struct fields [`radius`](MorsePotential) and
-/// [`interaction_range`](MorsePotential) to $l_r$ and $l_a$ respectively, we
-/// assume that the forces are exactly balanced when the distance $r=R_1 + R_2=R$ where $R_1$ and
-/// $R_2$ are the radii of the respective objects interacting with reach other.
-///
-/// \\begin{align}
-///     \frac{\partial V}{\partial r}(R) &= 0\\\\
-///     &= \frac{C_r}{l_r}\exp\left(-\frac{R}{l_r}\right)
-///         - \frac{C_a}{l_a}\exp\left(-\frac{R}{l_a}\right)\\\\
-///     &= \frac{C_r}{C_a}\frac{l_a}{l_r}
-///         - \exp\left(-R\left(\frac{1}{l_a} - \frac{1}{l_r}\right)\right)
-/// \\end{align}
-///
-/// Thus the combined radius $R=R_1 + R_2$ is given by
-///
-/// \\begin{equation}
-///     R = - \frac{l_r l_a}{l_r - l_a}\log\left(\frac{C_r}{C_a}\frac{l_a}{l_r}\right)
-/// \\end{equation}
-///
-/// We assume that $l_a=$[`interaction_range`](MorsePotential).
-/// Thus, we can now calculate $l_r$ via
-///
-/// \\begin{equation}
-///     l_r = R \text{W} \left(-\frac{C_a R}{C_r l_a}\exp\left(-\frac{R}{l_a}\right)\right)
-/// \\end{equation}
-///
-/// where $\text{W}(x)$ is the
-/// [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_function).
-///
-/// We can also appreciate again, that the original potential $V(r)$ is completely symmetric when
-/// interchanging attractive and repulsive properties $l_a,C_a$ and $l_r,C_r$.
-///
-#[doc = include_str!("plot_morse_potential.html")]
-///
-/// # References
-/// <textarea id="bibtex_input" style="display:none;">
-/// @article{PhysRev.34.57,
-///   title = {Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels},
-///   author = {Morse, Philip M.},
-///   journal = {Phys. Rev.},
-///   volume = {34},
-///   issue = {1},
-///   pages = {57--64},
-///   numpages = {0},
-///   year = {1929},
-///   month = {Jul},
-///   publisher = {American Physical Society},
-///   doi = {10.1103/PhysRev.34.57},
-///   url = {https://link.aps.org/doi/10.1103/PhysRev.34.57}
-/// }
-/// </textarea>
-/// <div id="bibtex_display"></div>
-///
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
-pub struct MorsePotential {
-    /// Radius of the object
-    pub length_repelling: f64,
-    /// Defines the length for the interaction range
-    pub length_attracting: f64,
-    /// Cutoff after which the interaction is exactly 0
-    pub cutoff: f64,
-    /// Repelling strength between objects
-    pub strength_repelling: f64,
-    /// Attracting strength between objects
-    pub strength_attracting: f64,
-}
-
-/// Same as [MorsePotential] but for `f32` type.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
-pub struct MorsePotentialF32 {
-    /// Radius of the object
-    pub length_repelling: f32,
-    /// Defines the length for the interaction range
-    pub length_attracting: f32,
-    /// Cutoff after which the interaction is exactly 0
-    pub cutoff: f32,
-    /// Repelling strength between objects
-    pub strength_repelling: f32,
-    /// Attracting strength between objects
-    pub strength_attracting: f32,
-}
-
 /// Calculates the interaction strength behind the [MorsePotential] and [MorsePotentialF32]
 /// structs.
 pub fn calculate_morse_interaction<F, const D: usize>(
     own_pos: &nalgebra::SVector<F, D>,
     ext_pos: &nalgebra::SVector<F, D>,
-    ext_length_repelling: &F,
+    own_radius: F,
+    ext_radius: F,
     cutoff: F,
-    length_repelling: F,
-    length_attracting: F,
-    strength_repelling: F,
-    strength_attracting: F,
+    strength: F,
+    potential_width: F,
 ) -> Result<(nalgebra::SVector<F, D>, nalgebra::SVector<F, D>), CalcError>
 where
     F: Copy + nalgebra::RealField,
@@ -254,64 +157,64 @@ where
             nalgebra::SVector::<F, D>::zeros(),
         ));
     }
-    let lr = length_repelling;
-    let la = length_attracting;
-    let cr = strength_repelling;
-    let ca = strength_attracting;
-    let lr_combined = *ext_length_repelling + length_repelling;
-    let force = cr / lr * (-dist / lr_combined).exp() - ca / la * (-dist / la).exp();
-    Ok((dir * force, -dir * force))
-}
-
-fn product_log<F>(x: F, n_steps: usize) -> F
-where
-    F: Copy + nalgebra::RealField,
-{
-    let mut w = F::zero();
-    for _ in 0..n_steps {
-        w = w - (w * w.exp() - x) / (w.exp() + w * w.exp());
-    }
-    w
-}
-
-/// TODO We should find a way to specify cell radii after which interactions are repelling instead
-/// of general length scales with no direct interpretation.
-pub fn calculate_morse_interaction_cell_radii<F, const D: usize>(
-    own_pos: &nalgebra::SVector<F, D>,
-    ext_pos: &nalgebra::SVector<F, D>,
-    ext_cell_radius: &F,
-    cutoff: F,
-    own_cell_radius: F,
-    interaction_range: F,
-    strength_repelling: F,
-    strength_attracting: F,
-) -> Result<(nalgebra::SVector<F, D>, nalgebra::SVector<F, D>), CalcError>
-where
-    F: Copy + nalgebra::RealField,
-{
-    let r_both = own_cell_radius + *ext_cell_radius;
-    let length_repelling = r_both
-        * product_log(
-            -strength_attracting / strength_repelling * r_both / interaction_range
-                * (-r_both / interaction_range).exp(),
-            3,
-        );
-    let ext_length_repelling = length_repelling * *ext_cell_radius / r_both;
-    let own_length_repelling = length_repelling * own_cell_radius / r_both;
-    calculate_morse_interaction(
-        own_pos,
-        ext_pos,
-        &ext_length_repelling,
-        cutoff,
-        own_length_repelling,
-        interaction_range,
-        strength_repelling,
-        strength_attracting,
-    )
+    let r = own_radius + ext_radius;
+    let s = strength;
+    let a = potential_width;
+    let two = F::one() + F::one();
+    let four = two + two;
+    let e = (- a * (dist - r)).exp();
+    let force = four * s * e * (F::one() - e);
+    Ok((dir * force, - dir * force))
 }
 
 macro_rules! implement_morse_potential(
     ($struct_name:ident, $float_type:ident) => {
+        /// Famous [Morse](https://doi.org/10.1103/PhysRev.34.57) potential for diatomic molecules.
+        ///
+        /// \\begin{equation}
+        ///     V(r) = V_0\left(1 - \exp\left(-\lambda(r-R)\right)\right)^2
+        /// \\end{equation}
+        ///
+        /// Calculating the interaction resulting from this potential is very cheap computationally
+        /// but not
+        /// intuitive.
+        /// Thus we provide additional methods to set, grow and shrink the current radius of the
+        /// object.
+        ///
+        #[doc = include_str!("plot_morse_potential.html")]
+        ///
+        /// # References
+        /// <textarea id="bibtex_input" style="display:none;">
+        /// @article{PhysRev.34.57,
+        ///   title = {Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels},
+        ///   author = {Morse, Philip M.},
+        ///   journal = {Phys. Rev.},
+        ///   volume = {34},
+        ///   issue = {1},
+        ///   pages = {57--64},
+        ///   numpages = {0},
+        ///   year = {1929},
+        ///   month = {Jul},
+        ///   publisher = {American Physical Society},
+        ///   doi = {10.1103/PhysRev.34.57},
+        ///   url = {https://link.aps.org/doi/10.1103/PhysRev.34.57}
+        /// }
+        /// </textarea>
+        /// <div id="bibtex_display"></div>
+        ///
+        #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+        #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
+        pub struct $struct_name {
+            /// Radius of the object
+            pub radius: $float_type,
+            /// Defines the length for the interaction range
+            pub potential_width: $float_type,
+            /// Cutoff after which the interaction is exactly 0
+            pub cutoff: $float_type,
+            /// Strength of the interaction
+            pub strength: $float_type,
+        }
+
         impl<const D: usize>
             Interaction<
                 nalgebra::SVector<$float_type, D>,
@@ -321,7 +224,7 @@ macro_rules! implement_morse_potential(
             > for $struct_name
         {
             fn get_interaction_information(&self) -> $float_type {
-                self.length_repelling.clone()
+                self.radius
             }
 
             fn calculate_force_between(
@@ -338,70 +241,14 @@ macro_rules! implement_morse_potential(
                 calculate_morse_interaction(
                     own_pos,
                     ext_pos,
-                    ext_info,
+                    self.radius,
+                    *ext_info,
                     self.cutoff,
-                    self.length_repelling,
-                    self.length_attracting,
-                    self.strength_repelling,
-                    self.strength_attracting,
+                    self.strength,
+                    self.potential_width,
                 )
             }
         }
-
-        // TODO implement these functionalities and clean up unused where needed
-        /* impl $struct_name {
-            /// CURRENTLY UNIMPLEMENTED!
-            // /// ```
-            // /// # use cellular_raza_building_blocks::*;
-            // #[doc = concat!(
-            //     "let morse = ",
-            //     stringify!($struct_name),
-            //     "::new(2.0, 3.0, 0.1, 0.5);"
-            // )]
-            // /// ```
-            #[allow(unused)]
-            pub fn new(
-                radius: $float_type,
-                interaction_range: $float_type,
-                strength_attracting: $float_type,
-                strength_repelling: $float_type,
-            ) -> Self {
-                unimplemented!()
-            }
-
-            /// CURRENTLY UNIMPLEMENTED!
-            ///
-            /// This function as a generic argument which is the dimensionality of the underlying
-            /// simulation.
-            /// Eg. for a 2-dimensional simulation use it as follows:
-            /// ```
-            /// # use cellular_raza_building_blocks::*;
-            #[doc = concat!("let mut my_potential = ", stringify!($struct_name))]
-            /// {
-            ///     length_repelling: 1.0,
-            ///     length_attracting: 2.0,
-            ///     strength_repelling: 2.0,
-            ///     strength_attracting: 1.0,
-            ///     cutoff: 2.0,
-            /// };
-            /// my_potential.grow_radius_with_volume::<2>(3.0);
-            /// ```
-            #[allow(unused)]
-            pub fn grow_radius_with_volume<const D: usize>(&mut self, volume: $float_type) {
-                unimplemented!()
-            }
-
-            /// CURRENTLY UNIMPLEMENTED!
-            #[allow(unused)]
-            pub fn grow_radius_by_length(&mut self, length: $float_type) {
-                unimplemented!()
-            }
-
-            ///
-            pub fn get_radius(&self) -> $float_type {
-                unimplemented!()
-            }
-        }*/
     };
 );
 
