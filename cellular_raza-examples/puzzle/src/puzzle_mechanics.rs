@@ -214,11 +214,17 @@ pub struct Triangulation {
 }
 
 impl Triangulation {
-    fn update_triangulation<F>(&mut self, _vertices: &Vec<SVector<F, 2>>) {
-        // TODO
+    fn update_triangulation<F>(&mut self, vertices: &Vertices<F>)
+    where
+        F: Clone + std::fmt::Debug + PartialEq + 'static,
+        F: nalgebra::Scalar + std::cmp::PartialOrd,
+        F: geo::CoordNum + geo::CoordFloat,
+    {
+        let new_triangulation = Self::new(vertices);
+        *self = new_triangulation;
     }
 
-    fn new<F>(vertices: &Vertices<F>) -> Result<Self, CalcError>
+    fn new<F>(vertices: &Vertices<F>) -> Self
     where
         F: Clone + std::fmt::Debug + PartialEq + 'static,
         F: nalgebra::Scalar + std::cmp::PartialOrd,
@@ -241,10 +247,10 @@ impl Triangulation {
             .into_iter()
             .tuples::<(_, _, _)>()
             .collect();
-        Ok(Triangulation {
+        Triangulation {
             triangles,
             success: true,
-        })
+        }
     }
 
     pub fn get_triangles(
@@ -401,8 +407,9 @@ where
 
 impl<F> Position<Vertices<F>> for Puzzle<F>
 where
-    F: Clone + std::fmt::Debug + PartialEq + 'static + PartialOrd,
-    F: nalgebra::RealField + num::Float,
+    F: Clone + std::fmt::Debug + PartialEq + 'static,
+    F: nalgebra::RealField + nalgebra::Scalar + std::cmp::PartialOrd,
+    F: geo::CoordNum + geo::CoordFloat,
 {
     fn pos(&self) -> Vertices<F> {
         self.vertices.clone()
@@ -410,7 +417,7 @@ where
 
     fn set_pos(&mut self, pos: &Vertices<F>) {
         self.vertices = self.ensure_vertices_are_simple(pos.clone());
-        self.triangulation.update_triangulation(&self.vertices.0);
+        self.triangulation.update_triangulation(&self.vertices);
     }
 }
 
