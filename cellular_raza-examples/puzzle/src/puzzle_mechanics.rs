@@ -13,27 +13,38 @@ use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Vertices<F>(pub Vec<SVector<F, 2>>)
+pub enum Vertices<F>
 where
-    F: Clone + std::fmt::Debug + PartialEq + 'static;
+    F: Clone + std::fmt::Debug + PartialEq + 'static,
+{
+    Value(Vec<SVector<F, 2>>),
+    Zero,
+}
 
 impl<F> Xapy<F> for Vertices<F>
 where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
     SVector<F, 2>: core::ops::Mul<F, Output = SVector<F, 2>>,
     SVector<F, 2>: core::ops::Add<SVector<F, 2>, Output = SVector<F, 2>>,
-    F: Copy,
+    F: Copy + nalgebra::RealField,
 {
     fn xapy(&self, a: F, y: &Self) -> Self {
-        let mut new_values = self.clone();
-        for i in 0..self.0.len().max(y.0.len()) {
-            match (new_values.0.get_mut(i), y.0.get(i)) {
-                (Some(s), Some(yi)) => *s = *s * a + *yi,
-                (Some(s), None) => *s = *s * a,
-                _ => (),
+        match (self, y) {
+            (Vertices::Value(v), Vertices::Value(y)) => {
+                let new_values =
+                    (0..v.len().max(y.len())).filter_map(|i| match (v.get(i), y.get(i)) {
+                        (Some(s), Some(yi)) => Some(*s * a + *yi),
+                        (Some(s), None) => Some(*s * a),
+                        (None, Some(yi)) => Some(*yi),
+                        (None, None) => None,
+                    });
+                Vertices::Value(new_values.collect())
+            }
+            (Vertices::Zero, y) => y.clone(),
+            (Vertices::Value(v), Vertices::Zero) => {
+                Vertices::Value(v.into_iter().map(|vi| vi * a).collect())
             }
         }
-        new_values
     }
 }
 
