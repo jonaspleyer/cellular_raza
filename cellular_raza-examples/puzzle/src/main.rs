@@ -81,6 +81,22 @@ pub struct Agent {
     #[Mechanics]
     #[Interaction]
     mechanics: PuzzleInteraction<f64, InsideInteraction<f64>, OutsideInteraction<f64>, (), ()>,
+    growth_factor: f64,
+}
+
+impl Cycle for Agent {
+    fn update_cycle(
+        _rng: &mut rand_chacha::ChaCha8Rng,
+        dt: &f64,
+        cell: &mut Self,
+    ) -> Option<CycleEvent> {
+        cell.mechanics.puzzle.boundary_length += cell.growth_factor * dt;
+        None
+    }
+
+    fn divide(_: &mut rand_chacha::ChaCha8Rng, _: &mut Self) -> Result<Self, DivisionError> {
+        todo!()
+    }
 }
 
 #[derive(Clone, Domain)]
@@ -214,6 +230,7 @@ fn main() -> Result<(), chili::SimulationError> {
                 phantom_inf_outside: PhantomData,
                 phantom_inf_inside: PhantomData,
             },
+            growth_factor: 0.001,
         });
     let domain = MyDomain {
         cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [3; 2])?,
@@ -228,7 +245,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: agents,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction],
+        aspects: [Mechanics, Interaction, Cycle],
     )?;
     Ok(())
 }
