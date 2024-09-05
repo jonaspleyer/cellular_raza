@@ -227,7 +227,7 @@ impl Triangulation {
         let polygon = geo::Polygon::new(
             geo::LineString::new(
                 vertices
-                    .0
+                    .to_vec()
                     .iter()
                     .map(|p| geo::Coord { x: p.x, y: p.y })
                     .collect::<Vec<_>>(),
@@ -269,7 +269,7 @@ mod test_triangulation {
 
     #[test]
     fn test_square() {
-        let vertices = Vertices(vec![
+        let vertices = Vertices::Value(vec![
             Vector2::from([0.0, 0.0]),
             Vector2::from([1.0, 0.0]),
             Vector2::from([1.0, 1.0]),
@@ -286,7 +286,7 @@ mod test_triangulation {
         //   p1      p4
         //    \      /
         //     p6--p5
-        let vertices = Vertices(vec![
+        let vertices = Vertices::Value(vec![
             Vector2::from([-(2_f64.sqrt()), 0.0]),
             Vector2::from([-1.0, 1.0]),
             Vector2::from([1.0, 1.0]),
@@ -373,13 +373,13 @@ where
                     ])
                 })
                 .collect();
-            let vertices = Vertices(vertices);
+            let vertices = Vertices::Value(vertices);
             use num::Zero;
             Puzzle {
                 vertices: vertices.clone(),
                 velocity: vertices.xapy(F::zero(), &Vertices::zero()),
                 random_velocity: vertices.xapy(F::zero(), &Vertices::zero()),
-                triangulation: Triangulation::new(&vertices).unwrap(),
+                triangulation: Triangulation::new(&vertices),
                 angle_stiffness,
                 surface_tension,
                 boundary_length,
@@ -433,7 +433,8 @@ where
         + nalgebra::RealField
         + num::Float
         + core::ops::Mul<SVector<F, 2>, Output = SVector<F, 2>>
-        + core::iter::Sum,
+        + core::iter::Sum
+        + num::Zero,
     rand_distr::StandardNormal: rand_distr::Distribution<F>,
 {
     fn calculate_increment(
@@ -442,13 +443,12 @@ where
     ) -> Result<(Vertices<F>, Vertices<F>), cellular_raza::prelude::CalcError> {
         use core::ops::AddAssign;
         let one_half = F::one() / (F::one() + F::one());
-        let n_vertices = self.vertices.0.len();
+        let n_vertices = self.vertices.len();
         let mut internal_force = Vertices::from_value(n_vertices, SVector::<F, 2>::zeros());
 
         // Calculate the total boundary length of the cell
         let current_boundary_length = self
             .vertices
-            .0
             .iter()
             .circular_tuple_windows::<(_, _)>()
             .map(|(v1, v2)| (v1 - v2).norm())
@@ -458,8 +458,8 @@ where
         // curvature
         for ((n1, v1), (n2, v2), (n3, v3)) in self
             .vertices
-            .0
-            .iter()
+            .to_vec()
+            .into_iter()
             .enumerate()
             .circular_tuple_windows::<(_, _, _)>()
         {
@@ -475,18 +475,15 @@ where
                 * length_fraction_and_dir;
 
             internal_force
-                .0
                 .get_mut(n1)
                 .unwrap()
                 .add_assign(-one_half * force_curvature);
             // We made sure by using the modulus operator that these indices do not overflow
             internal_force
-                .0
                 .get_mut(n2)
                 .unwrap()
                 .add_assign(force_curvature);
             internal_force
-                .0
                 .get_mut(n3)
                 .unwrap()
                 .add_assign(-one_half * force_curvature);
@@ -496,12 +493,10 @@ where
                 * (F::one()
                     - v21.norm() / self.boundary_length * F::from_usize(n_vertices).unwrap());
             internal_force
-                .0
                 .get_mut(n1)
                 .unwrap()
                 .add_assign(one_half * force_surf_tension * v21);
             internal_force
-                .0
                 .get_mut(n2)
                 .unwrap()
                 .add_assign(-one_half * force_surf_tension * v21);
@@ -514,9 +509,9 @@ where
             .get_triangles()?
             .into_iter()
             .map(|(nv1, nv2, nv3)| {
-                let v1 = self.vertices.0.get(*nv1).unwrap();
-                let v2 = self.vertices.0.get(*nv2).unwrap();
-                let v3 = self.vertices.0.get(*nv3).unwrap();
+                let v1 = self.vertices.get(*nv1).unwrap();
+                let v2 = self.vertices.get(*nv2).unwrap();
+                let v3 = self.vertices.get(*nv3).unwrap();
 
                 let v12 = v2 - v1;
                 let v13 = v3 - v1;
@@ -528,20 +523,18 @@ where
 
         let mut center_force = SVector::<F, 2>::zeros();
         for &(n1, n2, n3) in self.triangulation.get_triangles()?.into_iter() {
-            let v1 = self.vertices.0[n1];
-            let v2 = self.vertices.0[n2];
-            let v3 = self.vertices.0[n3];
+            let v1 = self.vertices[n1];
+            let v2 = self.vertices[n2];
+            let v3 = self.vertices[n3];
             let mut apply_force = |d: SVector<F, 2>, m1: usize, m2: usize| {
                 if d.norm() != F::zero() {
                     let force_dir: SVector<F, 2> = [d.y, -d.x].into();
                     let pressure_force = self.internal_pressure * relative_area_diff * force_dir;
                     internal_force
-                        .0
                         .get_mut(m1)
                         .unwrap()
                         .add_assign(&(one_half * pressure_force));
                     internal_force
-                        .0
                         .get_mut(m2)
                         .unwrap()
                         .add_assign(&(one_half * pressure_force));
@@ -552,7 +545,7 @@ where
             apply_force(v3 - v2, n2, n3);
             apply_force(v1 - v3, n3, n1);
         }
-        internal_force.0.iter_mut().for_each(|f| *f += center_force);
+        internal_force.iter_mut().for_each(|f| *f += center_force);
         Ok((
             self.velocity.clone().xapy(F::one(), &self.random_velocity),
             internal_force.xapy(F::one(), &self.velocity.xapy(-self.damping, &force)),
@@ -608,9 +601,9 @@ where
     where
         F: PartialOrd,
     {
-        let mut min = self.puzzle.vertices.0[0].clone();
-        let mut max = self.puzzle.vertices.0[0].clone();
-        for vert in self.puzzle.vertices.0.iter() {
+        let mut min = self.puzzle.vertices[0].clone();
+        let mut max = self.puzzle.vertices[0].clone();
+        for vert in self.puzzle.vertices.iter() {
             if vert.x < min.x {
                 min.x = vert.x.clone();
             }
@@ -664,8 +657,8 @@ where
         use num::Zero;
         let min_ext = ext_info.0;
         let max_ext = ext_info.1;
-        let mut total_force1 = own_pos.clone().xapy(F::zero(), &Vertices::zero());
-        let mut total_force2 = ext_pos.clone().xapy(F::zero(), &Vertices::zero());
+        let mut total_force1 = Vertices::Value(vec![SVector::<F, 2>::zero(); own_pos.len()]);
+        let mut total_force2 = Vertices::Value(vec![SVector::<F, 2>::zero(); own_pos.len()]);
         // Check if the bounding boxes do intersect. If this is not the case, do only calculation
         // of outside interactions
         let boxes_do_not_intersect = self.bounding_boxes_do_not_intersect(&min_ext, &max_ext);
@@ -673,7 +666,7 @@ where
         // TODO think about using something else than one here
         point_outside_polygon.x -= F::one();
 
-        for (m, point_ext) in ext_pos.0.iter().enumerate() {
+        for (m, point_ext) in ext_pos.iter().enumerate() {
             let ext_point_in_polygon = if !boxes_do_not_intersect {
                 // Check if vertex is inside of other triangle.
                 // If the bounding box was not successful,
@@ -681,7 +674,6 @@ where
                 let n_intersections: usize = self
                     .puzzle
                     .vertices
-                    .0
                     .iter()
                     .circular_tuple_windows::<(_, _)>()
                     .map(|line| {
@@ -704,22 +696,21 @@ where
                 &self
                     .puzzle
                     .vertices
-                    .0
                     .iter()
                     .circular_tuple_windows::<(_, _)>()
                     .map(|(&x, &y)| (x, y))
                     .collect::<Vec<_>>(),
             ) {
                 let n1 = n;
-                let n2 = (n + 1) % self.puzzle.vertices.0.len();
-                let average_vel = own_vel.0[n1] * (F::one() - t) + own_vel.0[n2] * t;
+                let n2 = (n + 1) % self.puzzle.vertices.len();
+                let average_vel = own_vel[n1] * (F::one() - t) + own_vel[n2] * t;
                 let (f1, f2) = if ext_point_in_polygon {
                     // Inside Interaction
                     self.inside_force.calculate_force_between(
                         &point,
                         &average_vel,
                         &point_ext,
-                        &ext_vel.0[n1],
+                        &ext_vel[n1],
                         &ext_info.2,
                     )?
                 } else {
@@ -728,16 +719,16 @@ where
                         &point,
                         &average_vel,
                         &point_ext,
-                        &ext_vel.0[n1],
+                        &ext_vel[n1],
                         &ext_info.3,
                     )?
                 };
-                let n_vertices1 = F::from_usize(total_force1.0.len()).unwrap();
-                let n_vertices2 = F::from_usize(total_force2.0.len()).unwrap();
-                let x1 = total_force1.0.get_mut(n1).unwrap();
+                let n_vertices1 = F::from_usize(total_force1.len()).unwrap();
+                let n_vertices2 = F::from_usize(total_force2.len()).unwrap();
+                let x1 = total_force1.get_mut(n1).unwrap();
                 *x1 += f1 * (F::one() - t) / n_vertices1;
-                let x2 = total_force1.0.get_mut(n2).unwrap();
-                let y1 = total_force2.0.get_mut(m).unwrap();
+                let x2 = total_force1.get_mut(n2).unwrap();
+                let y1 = total_force2.get_mut(m).unwrap();
                 *x2 += f1 * t / n_vertices1;
                 *y1 += f2 / n_vertices2;
             }

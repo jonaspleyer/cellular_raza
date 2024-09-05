@@ -144,9 +144,8 @@ impl SubDomainMechanics<Vertices<f64>, Vertices<f64>> for MySubDomain {
         pos: &mut Vertices<f64>,
         vel: &mut Vertices<f64>,
     ) -> Result<(), BoundaryError> {
-        pos.0
-            .iter_mut()
-            .zip(vel.0.iter_mut())
+        pos.iter_mut()
+            .zip(vel.iter_mut())
             .map(|(mut pos, mut vel)| {
                 <CartesianSubDomain<f64, 2> as SubDomainMechanics<
                     nalgebra::SVector<f64, 2>,
