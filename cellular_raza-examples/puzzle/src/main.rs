@@ -190,9 +190,9 @@ fn generate_initial_points(n_cells: usize, domain_size: f64) -> Vec<nalgebra::Ve
 
 fn main() -> Result<(), chili::SimulationError> {
     let radius = 5.0;
-    let domain_size = 35.0;
+    let domain_size = 40.0;
     let n_vertices = 100;
-    let angle_stiffness = 0.03;
+    let angle_stiffness = 0.005;
     let surface_tension = 0.1;
     let boundary_length = 1.2 * 2.0 * std::f64::consts::PI * radius;
     let cell_area = std::f64::consts::PI * radius.powf(2.0);
@@ -219,11 +219,11 @@ fn main() -> Result<(), chili::SimulationError> {
                 bounding_min: [std::f64::NEG_INFINITY; 2].into(),
                 bounding_max: [std::f64::INFINITY; 2].into(),
                 inside_force: InsideInteraction {
-                    strength: 5e-3,
+                    strength: 1e0,
                     radius,
                 },
                 outside_force: OutsideInteraction {
-                    attraction: 3e-4,
+                    attraction: 1e-3,
                     radius,
                     cutoff: 0.3 * radius,
                 },
@@ -233,11 +233,11 @@ fn main() -> Result<(), chili::SimulationError> {
             growth_factor: 0.001,
         });
     let domain = MyDomain {
-        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [3; 2])?,
+        cuboid: CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [domain_size; 2], [6; 2])?,
     };
     let settings = chili::Settings {
-        n_threads: 4.try_into().unwrap(),
-        time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 4e4, 4e1)?,
+        n_threads: 1.try_into().unwrap(),
+        time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 1e5, 4e1)?,
         storage: StorageBuilder::new().location("out/puzzles"),
         show_progressbar: true,
     };
