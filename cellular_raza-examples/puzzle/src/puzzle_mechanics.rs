@@ -53,7 +53,49 @@ where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
 {
     pub fn from_value(n_vertices: usize, value: SVector<F, 2>) -> Self {
-        Self((0..n_vertices).map(|_| value.clone()).collect())
+        Self::Value((0..n_vertices).map(|_| value.clone()).collect())
+    }
+
+    pub fn to_vec(&self) -> Vec<SVector<F, 2>> {
+        match self {
+            Vertices::Value(v) => v.clone(),
+            Vertices::Zero => vec![],
+        }
+    }
+
+    pub fn iter<'a>(&'a self) -> core::slice::Iter<'a, SVector<F, 2>> {
+        match self {
+            Vertices::Value(v) => v.iter(),
+            Vertices::Zero => core::slice::Iter::default(),
+        }
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> core::slice::IterMut<'a, SVector<F, 2>> {
+        match self {
+            Vertices::Value(v) => v.iter_mut(),
+            Vertices::Zero => core::slice::IterMut::default(),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Vertices::Value(v) => v.len(),
+            Vertices::Zero => 0,
+        }
+    }
+
+    pub fn get(&self, n: usize) -> Option<&SVector<F, 2>> {
+        match self {
+            Vertices::Value(v) => v.get(n),
+            Vertices::Zero => None,
+        }
+    }
+
+    pub fn get_mut(&mut self, n: usize) -> Option<&mut SVector<F, 2>> {
+        match self {
+            Vertices::Value(v) => v.get_mut(n),
+            Vertices::Zero => None,
+        }
     }
 }
 
