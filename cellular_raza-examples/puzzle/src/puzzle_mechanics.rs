@@ -560,15 +560,16 @@ where
     }
 
     fn get_random_contribution(
-            &self,
-            rng: &mut rand_chacha::ChaCha8Rng,
-            dt: F,
-        ) -> Result<(Vertices<F>, Vertices<F>), RngError> {
+        &self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: F,
+    ) -> Result<(Vertices<F>, Vertices<F>), RngError> {
         use cellular_raza::building_blocks::wiener_process;
         let random_vec = wiener_process::<F, 2>(rng, dt)?;
-        let mut dx = self.random_velocity.xapy(F::zero(), &<Vertices<F> as num::Zero>::zero());
-        dx.0
-            .iter_mut()
+        let mut dx = self
+            .random_velocity
+            .xapy(F::zero(), &<Vertices<F> as num::Zero>::zero());
+        dx.iter_mut()
             .for_each(|r| *r = self.diffusion_constant * random_vec);
         Ok((dx, <Vertices<F> as num::Zero>::zero()))
     }
