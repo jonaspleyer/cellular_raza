@@ -104,7 +104,7 @@ where
     F: Clone + std::fmt::Debug + PartialEq + 'static,
 {
     fn default() -> Self {
-        Vertices(Vec::new())
+        Self::Zero
     }
 }
 
@@ -114,11 +114,14 @@ where
     F: nalgebra::RealField,
 {
     fn zero() -> Self {
-        Vertices(Vec::new())
+        Vertices::Zero
     }
 
     fn is_zero(&self) -> bool {
-        self.0.len() == 0 || self.0.iter().all(|xi| xi.is_zero())
+        match self {
+            Vertices::Zero => true,
+            Vertices::Value(v) => v.len() == 0 || v.iter().all(|xi| xi.is_zero()),
+        }
     }
 }
 
@@ -132,7 +135,10 @@ where
         + core::ops::DivAssign,
 {
     pub fn mean(&self) -> nalgebra::SVector<F, 2> {
-        self.0.iter().sum::<SVector<F, 2>>() / F::from_usize(self.0.len()).unwrap()
+        match self {
+            Vertices::Value(v) => v.iter().sum::<SVector<F, 2>>() / F::from_usize(v.len()).unwrap(),
+            Vertices::Zero => SVector::<F, 2>::zeros(),
+        }
     }
 }
 
@@ -144,15 +150,36 @@ where
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let mut new_values = self;
         use core::ops::AddAssign;
-        for i in 0..new_values.0.len() {
-            match (new_values.0.get_mut(i), rhs.0.get(i)) {
-                (Some(s), Some(x)) => s.add_assign(x),
-                _ => (),
+        match (self, rhs) {
+            (Vertices::Value(v), Vertices::Value(rhs)) => {
+                let mut new_values = v;
+                for i in 0..new_values.len() {
+                    match (new_values.get_mut(i), rhs.get(i)) {
+                        (Some(s), Some(x)) => s.add_assign(x),
+                        _ => (),
+                    }
+                }
+                Vertices::Value(new_values)
             }
+            (Vertices::Value(v), Vertices::Zero) => Vertices::Value(v),
+            (Vertices::Zero, Vertices::Value(rhs)) => Vertices::Value(rhs),
+            (Vertices::Zero, Vertices::Zero) => Vertices::Zero,
         }
-        new_values
+    }
+}
+
+impl<F> core::ops::Index<usize> for Vertices<F>
+where
+    F: PartialEq + Clone + core::fmt::Debug,
+{
+    type Output = SVector<F, 2>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match self {
+            Vertices::Value(v) => v.index(index),
+            Vertices::Zero => panic!("cannot index into Vertices of zero length"),
+        }
     }
 }
 
@@ -163,11 +190,19 @@ where
     F: nalgebra::RealField,
 {
     fn add_assign(&mut self, rhs: Self) {
-        for i in 0..self.0.len() {
-            match (self.0.get_mut(i), rhs.0.get(i)) {
-                (Some(s), Some(x)) => s.add_assign(x),
-                _ => (),
+        match (self, rhs) {
+            (Vertices::Value(v), Vertices::Value(rhs)) => {
+                for i in 0..v.len() {
+                    match (v.get_mut(i), rhs.get(i)) {
+                        (Some(s), Some(x)) => s.add_assign(x),
+                        _ => (),
+                    }
+                }
             }
+            (Vertices::Value(_), Vertices::Zero) => (),
+            (Vertices::Zero, Vertices::Zero) => (),
+            // Here we know that self is Vertices::Zero
+            (s, Vertices::Value(rhs)) => *s = Vertices::Value(rhs),
         }
     }
 }
