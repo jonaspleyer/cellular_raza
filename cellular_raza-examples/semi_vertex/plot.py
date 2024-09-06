@@ -146,7 +146,14 @@ class Plotter:
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         cells = self.loader.load_cells(iteration)
         values = np.array(cells["cell.growth_rate"])
-        ax[0].hist(values, bins=int(len(values) / 10))
+        ax[0].hist(
+            values,
+            bins=int(len(values) / 10),
+            linewidth=1,
+            facecolor=(0.75, 0.75, 0.75),
+            edgecolor='k',
+            fill=True,
+        )
         ax[0].set_xlabel("Growth rate [area/simulation step]")
         ax[0].set_title("Distribution of growth-rates")
         sub_iterations = self.loader.iterations[::50]
@@ -157,7 +164,8 @@ class Plotter:
         ax[1].errorbar(
             sub_iterations,
             np.mean(areas, axis=1),
-            np.std(areas, axis=1)
+            np.std(areas, axis=1),
+            color="k",
         )
         ax[1].set_xlabel("Simulation Step")
         ax[1].set_title("Average cell area")
@@ -167,5 +175,4 @@ class Plotter:
 if __name__ == "__main__":
     plotter = Plotter()
     plotter.plot_cells_at_all_iterations(transparent=True)
-
     plotter.plot_growth()
