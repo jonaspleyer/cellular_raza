@@ -10,7 +10,7 @@ pub const CELL_MECHANICS_AREA: f64 = 500.0;
 pub const CELL_MECHANICS_SPRING_TENSION: f64 = 2.0;
 pub const CELL_MECHANICS_CENTRAL_PRESSURE: f64 = 0.5;
 pub const CELL_MECHANICS_INTERACTION_RANGE: f64 = 5.0;
-pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 6.0;
+pub const CELL_MECHANICS_POTENTIAL_STRENGTH: f64 = 10.0;
 pub const CELL_MECHANICS_DAMPING_CONSTANT: f64 = 0.2;
 pub const CELL_MECHANICS_DIFFUSION_CONSTANT: f64 = 0.0;
 
@@ -25,11 +25,10 @@ pub const T_START: f64 = 0.0;
 pub const SAVE_INTERVAL: u64 = 50;
 
 // Meta Parameters to control solving
-pub const N_THREADS: usize = 1;
+pub const N_THREADS: usize = 10;
 
 mod cell_properties;
 mod custom_domain;
-mod plotting;
 
 use cell_properties::*;
 use custom_domain::*;
@@ -62,21 +61,7 @@ fn main() -> Result<(), chili::SimulationError> {
     );
     println!("Generated {} cells", models.len());
 
-    let k1 = 0.6662;
-    let k2 = 0.1767;
-    let k3 = 3.1804;
-    let k4 = 5.3583;
-    let k5 = 1.0;
-    // let contact_range = (CELL_MECHANICS_AREA / std::f64::consts::PI).sqrt() * 1.5;
-    let contact_range = 0.9 * DOMAIN_SIZE_X / (models.len() as f64).sqrt() * 1.5;
-    let f = -((k1 * k4 - 1f64).powf(2.0) - 4.0 * k2 * k4 * k5).sqrt();
-    let v0 = nalgebra::vector![
-        (k1 * k4 - 1.0 + f) / (2.0 * k2 * k4),
-        (k1 * (k1 * k4 - 1.0 - f) - 2.0 * k2 * k5) / (2.0 * k5),
-        (k1 * k4 + 1.0 - f) / (2.0 * k4),
-    ];
-    let mechanics_area_threshold = CELL_MECHANICS_AREA * 2.0;
-    let growth_rate = 0.01;
+    let growth_rate = 0.1;
     let cells = models
         .into_iter()
         .map(|model| MyCell {
@@ -91,19 +76,7 @@ fn main() -> Result<(), chili::SimulationError> {
                     average_radius: CELL_MECHANICS_AREA.sqrt(),
                 },
             ),
-            intracellular: nalgebra::Vector3::from([
-                rng.gen_range(0.9 * v0[0]..1.1 * v0[0]),
-                rng.gen_range(0.9 * v0[1]..1.1 * v0[1]),
-                rng.gen_range(0.9 * v0[2]..1.1 * v0[2]),
-            ]),
-            k1,
-            k2,
-            k3,
-            k4,
-            k5,
-            contact_range,
-            mechanics_area_threshold,
-            growth_rate,
+            growth_rate: rng.gen_range(0.8..1.2) * growth_rate,
         })
         .collect::<Vec<_>>();
 
@@ -122,7 +95,7 @@ fn main() -> Result<(), chili::SimulationError> {
         agents: cells,
         domain: domain,
         settings: settings,
-        aspects: [Mechanics, Interaction, Reactions, ReactionsContact],
+        aspects: [Mechanics, Interaction, Cycle],
     )?;
     Ok(())
 }
