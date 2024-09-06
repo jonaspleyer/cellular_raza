@@ -134,3 +134,40 @@ fn derive_interaction() {
     };
     assert_eq!(newagent.get_interaction_information(), ());
 }
+
+#[test]
+fn derive_interaction_generics() {
+    use cellular_raza_concepts::{CalcError, Interaction};
+    use cellular_raza_concepts_derive::CellAgent;
+
+    struct InteractionModel<const D: usize> {
+        index: [usize; D],
+    }
+
+    impl<const D: usize> Interaction<f32, f32, f32, [usize; D]> for InteractionModel<D> {
+        fn get_interaction_information(&self) -> [usize; D] {
+            self.index.clone()
+        }
+        fn calculate_force_between(
+            &self,
+            _own_pos: &f32,
+            _own_vel: &f32,
+            _ext_pos: &f32,
+            _ext_vel: &f32,
+            _ext_info: &[usize; D],
+        ) -> Result<(f32, f32), cellular_raza_concepts::CalcError> {
+            Ok((0.0, 0.0))
+        }
+    }
+
+    #[derive(CellAgent)]
+    struct NewAgent<const D: usize> {
+        #[Interaction]
+        interaction: InteractionModel<D>,
+    }
+
+    let my_agent = NewAgent {
+        interaction: InteractionModel { index: [1, 2, 3] },
+    };
+    assert_eq!(my_agent.get_interaction_information(), [1, 2, 3]);
+}
