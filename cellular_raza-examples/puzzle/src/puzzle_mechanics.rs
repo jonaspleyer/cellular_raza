@@ -281,7 +281,7 @@ mod test_triangulation {
             Vector2::from([1.0, 1.0]),
             Vector2::from([0.0, 1.0]),
         ]);
-        let triangulation = Triangulation::new(&vertices).unwrap();
+        let triangulation = Triangulation::new(&vertices);
         assert_eq!(triangulation.triangles.len(), 2);
     }
 
@@ -300,7 +300,7 @@ mod test_triangulation {
             Vector2::from([1.0, -1.0]),
             Vector2::from([-1.0, -1.0]),
         ]);
-        let triangulation = Triangulation::new(&vertices).unwrap();
+        let triangulation = Triangulation::new(&vertices);
         assert_eq!(triangulation.triangles.len(), 4);
     }
 }
