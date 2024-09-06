@@ -141,7 +141,26 @@ class Plotter:
         for res in results:
             res.result()
 
+    def plot_growth(self, iteration: int | None = None):
+        iteration = int(self.loader.iterations[0]) if iteration is None else iteration
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        cells = self.loader.load_cells(iteration)
+        values = np.array(cells["cell.growth_rate"])
+        ax[0].hist(values)
+        ax[0].set_title("Distribution of growth-rates")
+        sub_iterations = self.loader.iterations[::50]
+        areas = np.array([
+            self.loader.load_cells(iteration)["cell.mechanics.cell_area"]
+            for iteration in sub_iterations
+        ])
+        ax[1].plot(sub_iterations, np.mean(areas, axis=1))
+        ax[1].set_xlabel("Simulation Step")
+        ax[1].set_title("Average cell area")
+        fig.tight_layout()
+        fig.savefig("{}/growth.png".format(self.loader.opath))
+
 if __name__ == "__main__":
     plotter = Plotter()
     plotter.plot_cells_at_all_iterations(transparent=True)
 
+    plotter.plot_growth()
