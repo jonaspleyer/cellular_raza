@@ -3,7 +3,6 @@ name = "cr_cell_sorting"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
-default-run = "default"
 
 [dependencies]
 serde = { workspace = true, features=["rc"] }
