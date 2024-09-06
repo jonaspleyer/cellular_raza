@@ -61,7 +61,7 @@ fn main() -> Result<(), chili::SimulationError> {
     );
     println!("Generated {} cells", models.len());
 
-    let growth_rate = 0.1;
+    let growth_rate = 5.0;
     let cells = models
         .into_iter()
         .map(|model| MyCell {
@@ -76,7 +76,7 @@ fn main() -> Result<(), chili::SimulationError> {
                     average_radius: CELL_MECHANICS_AREA.sqrt(),
                 },
             ),
-            growth_rate: rng.gen_range(0.8..1.2) * growth_rate,
+            growth_rate: rng.gen_range(0.0..1.0) * growth_rate,
         })
         .collect::<Vec<_>>();
 
