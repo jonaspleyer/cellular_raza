@@ -31,7 +31,7 @@ impl Default for Parameters {
             cell_number: 60,
             cell_mechanics: Langevin2D {
                 pos: [0.0; 2].into(), // µm
-                vel: [0.0; 2].into(), // µm
+                vel: [0.0; 2].into(), // µm / min
                 damping: 2.0,         // 1/min
                 mass: 1.0,            // picogram
                 kb_temperature: 0.3,  // picogram µm^2 / min^2
