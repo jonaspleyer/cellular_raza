@@ -899,7 +899,7 @@ mod test_build_communicator {
 }
 
 #[cfg(test)]
-pub mod test_sync {
+mod test_sync {
     use super::*;
     use std::sync::*;
 
