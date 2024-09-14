@@ -31,5 +31,4 @@ pub mod backend;
 
 pub mod storage;
 
-/// Controls how the simulation time is advanced
 pub mod time;
