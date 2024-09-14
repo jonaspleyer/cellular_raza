@@ -767,7 +767,7 @@ mod test_derive_aux_storage_compile {
 }
 
 #[cfg(test)]
-pub mod test_derive_aux_storage {
+mod test_derive_aux_storage {
     use super::*;
     use cellular_raza_core_proc_macro::AuxStorage;
 
