@@ -282,7 +282,7 @@ where
 }
 
 #[cfg(test)]
-pub mod test_time_stepper {
+mod test_time_stepper {
     use rand::Rng;
     use rand::SeedableRng;
 
