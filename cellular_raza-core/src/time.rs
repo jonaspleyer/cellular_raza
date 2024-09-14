@@ -1,3 +1,5 @@
+//! Controls how the simulation time is advanced
+
 use kdam::BarExt;
 use serde::{Deserialize, Serialize};
 
