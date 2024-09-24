@@ -84,7 +84,7 @@ def generate_movie(opath: Path = get_last_output_path(), and_open: bool = False)
         ".format(opath, opath)
     os.system(cmd)
     if and_open:
-        cmd2 = "firefox {}/movie.mp4".format(opath)
+        cmd2 = "ffplay {}/movie.mp4".format(opath)
         os.system(cmd2)
 
 if __name__ == "__main__":
