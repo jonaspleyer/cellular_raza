@@ -71,7 +71,7 @@ def plot_spheres(iteration: int, path: Path, opath = None, transparent_backgroun
     dx = np.max(domain_max - domain_min)
     middle = 0.5 * (domain_min + domain_max)
 
-    plotter = pv.Plotter(off_screen=True)
+    plotter = pv.Plotter(off_screen=True, window_size=[1024, 1024])
     plotter.set_background([100, 100, 100])
     plotter.add_mesh(
         spheres,
