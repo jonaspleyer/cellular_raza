@@ -104,73 +104,82 @@ class Plotter:
         for iteration in iterations:
             self.plot_cells_at_iter(iteration, save_path, overwrite, transparent)
 
-    def plot_cells_at_all_iterations(
-        self,
-        save_path: Path | None = None,
-        overwrite: bool = False,
-        transparent: bool = False,
-        n_threads: int | None = None,
-    ):
-        plt.close('all')
-        matplotlib.use('svg')
-        p = ThreadPoolExecutor(n_threads)
-        if n_threads is None:
-            n_threads = os.cpu_count()
-        chunksize = int(len(self.loader.iterations) / n_threads)
-        left_over = len(self.loader.iterations) % n_threads
-        results = []
-        for i in range(0, n_threads):
-            lower = i * chunksize
-            upper = lower + chunksize
-            if left_over > 0:
-                upper += 1
-                left_over -= 1
-            iterations = self.loader.iterations[lower:upper]
-            # run_plotter_iterations(new_plotter, iterations, save_path=save_path, overwrite=overwrite, transparent=transparent)
-            res = p.submit(
-                run_plotter_iterations,
-                i, self.loader.opath, iterations,
-                save_path=save_path,
-                overwrite=overwrite,
-                transparent=transparent,
-            )
-            results.append(res)
-
-        for res in results:
-            res.result()
-
-    def plot_growth(self, iteration: int | None = None):
-        iteration = int(self.loader.iterations[0]) if iteration is None else iteration
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-        cells = self.loader.load_cells(iteration)
-        values = np.array(cells["cell.growth_rate"])
-        ax[0].hist(
-            values,
-            bins=int(len(values) / 10),
-            linewidth=1,
-            facecolor=(0.75, 0.75, 0.75),
-            edgecolor='k',
-            fill=True,
+def plot_cells_at_all_iterations(
+    opath: Path = get_last_output_path(),
+    save_path: Path | None = None,
+    overwrite: bool = False,
+    transparent: bool = False,
+    n_threads: int | None = None,
+):
+    plt.close('all')
+    matplotlib.use('svg')
+    if n_threads is None:
+        n_threads = os.cpu_count()
+    results = []
+    for i in range(0, n_threads):
+        loader = Loader(opath)
+        chunksize = int(len(loader.iterations) / n_threads)
+        left_over = len(loader.iterations) % n_threads
+        lower = i * chunksize
+        upper = lower + chunksize
+        if left_over > 0:
+            upper += 1
+            left_over -= 1
+        iterations = loader.iterations[lower:upper]
+        t = Thread(
+            target=run_plotter_iterations,
+            args=[i, loader.opath, iterations],
+            kwargs={
+                "save_path":save_path,
+                "overwrite":overwrite,
+                "transparent":transparent
+            },
         )
-        ax[0].set_xlabel("Growth rate [area/simulation step]")
-        ax[0].set_title("Distribution of growth-rates")
-        sub_iterations = self.loader.iterations[::50]
-        areas = np.array([
-            self.loader.load_cells(iteration)["cell.mechanics.cell_area"]
-            for iteration in sub_iterations
-        ])
-        ax[1].errorbar(
-            sub_iterations,
-            np.mean(areas, axis=1),
-            np.std(areas, axis=1),
-            color="k",
-        )
-        ax[1].set_xlabel("Simulation Step")
-        ax[1].set_title("Average cell area")
-        fig.tight_layout()
-        fig.savefig("{}/growth.png".format(self.loader.opath))
+        results.append(t)
+
+    for t in results:
+        t.start()
+
+def plot_growth(opath: Path = get_last_output_path(), iteration: int | None = None):
+    loader = Loader(opath)
+    iteration = int(loader.iterations[0]) if iteration is None else iteration
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    cells = loader.load_cells(iteration)
+    values = np.array(cells["cell.growth_rate"])
+    _, bins, patches = ax[0].hist(
+        values,
+        bins=int(len(values) / 10),
+        linewidth=1,
+        facecolor=(0.75, 0.75, 0.75),
+        edgecolor='k',
+        fill=True,
+    )
+    bin_centers = 0.5 * (bins[:-1] + bins[1:])
+
+    col = bin_centers - min(bin_centers)
+    col /= max(col)
+
+    cm = matplotlib.colormaps.get_cmap("YlGn")
+    for c, p in zip(col, patches):
+        plt.setp(p, "facecolor", cm(0.5 + 0.5*c))
+    ax[0].set_xlabel("Growth rate [area/simulation step]")
+    ax[0].set_title("Distribution of growth-rates")
+    sub_iterations = loader.iterations[::50]
+    areas = np.array([
+        loader.load_cells(iteration)["cell.mechanics.cell_area"]
+        for iteration in sub_iterations
+    ])
+    ax[1].errorbar(
+        sub_iterations,
+        np.mean(areas, axis=1),
+        np.std(areas, axis=1),
+        color="k",
+    )
+    ax[1].set_xlabel("Simulation Step")
+    ax[1].set_title("Average cell area")
+    fig.tight_layout()
+    fig.savefig("{}/growth.png".format(loader.opath))
 
 if __name__ == "__main__":
-    plotter = Plotter()
-    plotter.plot_cells_at_all_iterations(transparent=True)
-    plotter.plot_growth()
+    plot_cells_at_all_iterations(transparent=True, n_threads=1)
+    plot_growth()
