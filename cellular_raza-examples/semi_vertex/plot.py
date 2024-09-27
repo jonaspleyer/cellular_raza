@@ -88,7 +88,7 @@ class Plotter:
         self.ax.set_axis_off()
         self.plot_cells(cells)
         self.fig.tight_layout()
-        self.fig.savefig(save_path, transparent=transparent)
+        self.fig.savefig(save_path, transparent=transparent, dpi=100)
         self.pc.remove()
         return save_path
 
