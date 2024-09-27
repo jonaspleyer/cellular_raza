@@ -53,15 +53,17 @@ class Plotter:
     def __init__(self, opath: Path = get_last_output_path()):
         self.fig, self.ax = plt.subplots(figsize=(12, 12))
         self.loader = Loader(opath)
-
-    def duplicate(self):
-        return Plotter(self.loader.opath)
+        self.cm = matplotlib.colormaps.get_cmap("YlGn")
 
     def plot_cells(self, df_cells):
         polys = [Polygon(pos) for pos in df_cells["cell.mechanics.points"]]
+        growth_rates = df_cells["cell.growth_rate"]
+        rate_max = np.max(growth_rates)
+        t = [(0.5 + 0.5 * rate / rate_max) for rate in growth_rates]
+        facecolors = [self.cm(ti) for ti in t]
         pc = PatchCollection(
             polys,
-            facecolors="green",
+            facecolors=facecolors,
             edgecolors='white'
         )
         self.pc = self.ax.add_collection(pc)
