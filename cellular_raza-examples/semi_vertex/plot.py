@@ -17,18 +17,17 @@ def get_last_output_path() -> Path:
 class Loader:
     def __init__(self, opath: Path = get_last_output_path()):
         self.opath = opath
-        self.cells = None
-        self.__iterations = None
-
-    def __get_all_iterations(self) -> np.ndarray:
         folders = glob(str(self.opath / "cells/json/*"))
-        return np.sort(np.array([int(Path(f).name) for f in folders]))
-
+        self.__iterations = np.sort(np.array([int(Path(f).name) for f in folders]))
+        self.__all_files = {
+            iteration: list(glob(str(self.opath / "cells/json/{:020}/*.json".format(iteration))))
+            for iteration in self.__iterations
+        }
 
     def load_cells(self, iteration: int) -> pd.DataFrame:
         # Load all json files
         results = []
-        for file in glob(str(self.opath / "cells/json/{:020}/*.json".format(iteration))):
+        for file in self.__all_files[iteration]:
             f = open(file)
             batch = json.load(f)
             results.extend([b["element"][0] for b in batch["data"]])
@@ -41,9 +40,7 @@ class Loader:
 
     @property
     def iterations(self) -> np.ndarray:
-        if self.__iterations is None:
-            self.__iterations = self.__get_all_iterations()
-        return self.__iterations
+        return np.copy(self.__iterations)
 
 def run_plotter_iterations(instance: int, opath: Path, iterations, **kwargs):
     plotter = Plotter(opath)
