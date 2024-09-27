@@ -1,15 +1,14 @@
-import math
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection, RegularPolyCollection
+from matplotlib.collections import PatchCollection
 import numpy as np
 import json
 import pandas as pd
 from pathlib import Path
 from glob import glob
 import tqdm
-from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 import os
 
 def get_last_output_path() -> Path:
