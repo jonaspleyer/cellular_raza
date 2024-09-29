@@ -18,18 +18,6 @@ pub const SECOND: f64 = 1.0;
 pub const MINUTE: f64 = 60.0 * SECOND;
 pub const HOUR: f64 = 24.0 * MINUTE;
 
-/// # Mechanics
-/// The cell consists of two 2D points which are coupled via a spring.
-/// We represent this by a matrix
-/// ```
-/// # use nalgebra::Matrix5x2;
-/// let cell_pos = Matrix5x2::new(
-///     1.0, -2.0,
-///     -2.0, 1.0
-/// );
-/// let cell_pos_point_0 = cell_pos.row(0);
-/// let cell_pos_point_1 = cell_pos.row(1);
-/// ```
 #[derive(CellAgent, Clone, Deserialize, Serialize)]
 pub struct Agent<const D1: usize, const D2: usize> {
     // Mechanics
