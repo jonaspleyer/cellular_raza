@@ -89,7 +89,7 @@ def plot_spheres(
     cell_meshes = cell_meshes if cell_meshes is not None else []
 
     # General Settings
-    plotter = pv.Plotter(off_screen=True)
+    plotter = pv.Plotter(off_screen=True, window_size=[1280, 1280])
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
@@ -110,7 +110,7 @@ def plot_spheres(
 
     # Define camera
     # TODO MAGIC NUMBERS
-    plotter.camera.position = (100e-6, -250e-6, -250e-6)
+    plotter.camera.position = (100e-6, -300e-6, -300e-6)
     plotter.camera.focal_point = (100e-6, 25e-6, 22.5e-6)
 
     plotter.enable_ssao(radius=12)
@@ -180,7 +180,7 @@ if __name__ == "_main__":
 if __name__ == "__main__":
     print("Plotting Individual Snapshots")
     output_path = get_last_output_path()
-    plot_all_spheres(output_path, transparent_background=True)
+    plot_all_spheres(output_path, transparent_background=True, overwrite=True)
     print("Generating Movie")
     bashcmd = f"ffmpeg\
         -v quiet\
