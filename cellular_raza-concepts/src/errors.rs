@@ -37,7 +37,12 @@ pub enum DecomposeError {
 
 impl Display for DecomposeError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self)
+        let message = match self {
+            DecomposeError::Generic(m) => m,
+            DecomposeError::BoundaryError(b) => &format!("{b}"),
+            DecomposeError::IndexError(i) => &format!("{i}"),
+        };
+        write!(f, "{}", message)
     }
 }
 
