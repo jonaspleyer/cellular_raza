@@ -75,7 +75,9 @@ where
     #[cfg(feature = "tracing")]
     tracing::info!("Validating Map");
     if !validate_map(&decomposed_domain.neighbor_map) {
-        panic!("Map not valid!");
+        return Err(SimulationError::IndexError(IndexError(format!(
+            "Neighbor Map is invalid"
+        ))));
     }
 
     #[cfg(feature = "tracing")]
