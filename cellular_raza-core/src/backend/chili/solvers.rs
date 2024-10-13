@@ -224,7 +224,9 @@ where
     X: Xapy<F> + num::Zero,
     F: num::Float + Copy,
 {
-    let x_new = dx.xapy(dt, &x).xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
+    let x_new = dx
+        .xapy(dt, &x)
+        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
     Ok(x_new)
 }
 
