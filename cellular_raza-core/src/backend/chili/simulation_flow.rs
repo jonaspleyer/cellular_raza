@@ -7,6 +7,9 @@ use std::{
     sync::atomic::AtomicBool,
 };
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 use super::errors::SimulationError;
 
 ///
@@ -73,6 +76,7 @@ pub struct BarrierSync {
 /// let is_valid = validate_map(&new_map);
 /// assert_eq!(is_valid, true);
 /// ```
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn validate_map<I>(map: &std::collections::BTreeMap<I, BTreeSet<I>>) -> bool
 where
     I: Eq + core::hash::Hash + Clone + Ord,

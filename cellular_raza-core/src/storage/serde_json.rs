@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use core::marker::PhantomData;
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 /// Save elements as json files with [serde_json].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct JsonStorageInterface<Id, Element> {
@@ -42,6 +45,7 @@ impl<Id, Element> FileBasedStorage<Id, Element> for JsonStorageInterface<Id, Ele
 }
 
 impl<Id, Element> StorageInterfaceOpen for JsonStorageInterface<Id, Element> {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,

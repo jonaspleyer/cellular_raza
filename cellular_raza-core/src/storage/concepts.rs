@@ -4,6 +4,9 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 use super::memory_storage::MemoryStorageInterface;
 use super::quick_xml::XmlStorageInterface;
 use super::ron::RonStorageInterface;
@@ -121,6 +124,7 @@ impl Error for StorageError {}
 ///
 /// We currently support saving results in a [sled] database, as xml files
 /// via [quick_xml] or as a json file by using [serde_json].
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum StorageOption {
     /// Save results as [sled] database.
@@ -365,6 +369,7 @@ impl StorageBuilder<false> {
     /// use cellular_raza_core::storage::StorageBuilder;
     /// let storage_builder = StorageBuilder::new();
     /// ```
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn new() -> Self {
         Self {
             location: "./out".into(),
@@ -378,6 +383,7 @@ impl StorageBuilder<false> {
     }
 
     /// Initializes the [StorageBuilder] thus filling information about time.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn init(self) -> StorageBuilder<true> {
         #[cfg(feature = "timestamp")]
         let date: std::path::PathBuf = if self.add_date {
@@ -389,6 +395,7 @@ impl StorageBuilder<false> {
     }
 
     /// Specify the time at which the results should be saved
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn init_with_date(self, date: &std::path::Path) -> StorageBuilder<true> {
         StorageBuilder::<true> {
             location: self.location,
@@ -427,6 +434,7 @@ impl StorageBuilder<false> {
 impl StorageBuilder<true> {
     /// Get the fully constructed path after the Builder has been initialized with the
     /// [StorageBuilder::init] function.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn get_full_path(&self) -> std::path::PathBuf {
         let mut full_path = self.location.clone();
         #[cfg(feature = "timestamp")]
@@ -469,6 +477,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     /// let manager = StorageManager::<usize, f64>::open_or_create(builder, 0)?;
     /// # Ok::<(), StorageError>(())
     /// ```
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn open_or_create(
         storage_builder: StorageBuilder<true>,
         instance: u64,
@@ -552,6 +561,7 @@ impl<Id, Element> StorageManager<Id, Element> {
     }
 
     /// Extracts all information given by the [StorageBuilder] when constructing
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn extract_builder(&self) -> StorageBuilder<true> {
         self.builder.clone()
     }

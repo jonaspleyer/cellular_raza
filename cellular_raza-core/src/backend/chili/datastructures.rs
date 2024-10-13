@@ -48,6 +48,7 @@ pub struct Voxel<C, A> {
 
 /// Construct a new [SimulationRunner] from a given auxiliary storage and communicator object
 #[allow(unused)]
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn construct_simulation_runner<D, S, C, A, Com, Sy, Ci>(
     domain: D,
     agents: Ci,
@@ -67,10 +68,18 @@ where
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
+    #[cfg(feature = "tracing")]
+    tracing::info!("Decomposing");
     let decomposed_domain = domain.decompose(n_subdomains, agents)?;
+
+    #[cfg(feature = "tracing")]
+    tracing::info!("Validating Map");
     if !validate_map(&decomposed_domain.neighbor_map) {
         panic!("Map not valid!");
     }
+
+    #[cfg(feature = "tracing")]
+    tracing::info!("Constructing Neighbor Map");
     let subdomain_index_to_subdomain_plain_index = decomposed_domain
         .index_subdomain_cells
         .iter()
@@ -96,6 +105,9 @@ where
             )
         })
         .collect::<BTreeMap<_, _>>();
+
+    #[cfg(feature = "tracing")]
+    tracing::info!("Constructing Syncers and communicators");
     let mut syncers = Sy::from_map(&neighbor_map)?;
     let mut communicators = Com::from_map(&neighbor_map)?;
     let voxel_index_to_plain_index = decomposed_domain
@@ -125,6 +137,8 @@ where
         })
         .collect();
 
+    #[cfg(feature = "tracing")]
+    tracing::info!("Creating Subdomain Boxes");
     let subdomain_boxes = decomposed_domain
         .index_subdomain_cells
         .into_iter()
