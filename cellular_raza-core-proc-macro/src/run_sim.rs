@@ -54,8 +54,7 @@ impl Parallelizer {
                 Result::<_, #core_path::backend::chili::SimulationError>::Ok(storage_access)
             }),
             Self::Rayon => quote::quote!({
-                // extern crate rayon;
-                use rayon::prelude::*;
+                use #core_path::rayon::prelude::*;
                 let mut storage_accesses = runner.subdomain_boxes
                     .into_par_iter()
                     .map(|(key, mut sbox)| -> Result<
