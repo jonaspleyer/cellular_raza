@@ -32,3 +32,10 @@ pub mod backend;
 pub mod storage;
 
 pub mod time;
+
+#[doc(hidden)]
+pub use rayon;
+
+#[cfg(feature = "tracing")]
+#[doc(hidden)]
+pub use tracing;

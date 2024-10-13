@@ -3,6 +3,9 @@
 use kdam::BarExt;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "tracing")]
+use tracing::instrument;
+
 use cellular_raza_concepts::TimeError;
 
 /// A [TimeEvent] describes that a certain action is to be executed after the next iteration step.
@@ -83,6 +86,7 @@ where
 {
     /// Construct the stepper from initial time, increment,
     /// number of steps and save interval
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn from_partial_save_steps(
         t0: F,
         dt: F,
@@ -104,6 +108,7 @@ where
 
     /// Similar to [Self::from_partial_save_points] but specify the time step between every save
     /// point together with the integration step.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn from_partial_save_interval(
         t0: F,
         dt: F,
@@ -122,6 +127,7 @@ where
     /// Similar to [Self::from_partial_save_interval] but specify a multiple of the time increment
     /// instead of a floating point value.
     /// This method is preferred over the one previously mentioned.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn from_partial_save_freq(
         t0: F,
         dt: F,
@@ -159,6 +165,7 @@ where
     /// Simple function to construct the stepper from an initial time point, the time increment and
     /// the time points at which the simulation should be saved. Notice that these saves do not
     /// cover [FullSaves](TimeEvent::FullSave) but only [PartialSaves](TimeEvent::PartialSave).
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn from_partial_save_points(
         t0: F,
         dt: F,
@@ -227,6 +234,7 @@ impl<F> TimeStepper<F> for FixedStepsize<F>
 where
     F: num::Float + num::FromPrimitive,
 {
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, TimeError> {
         self.current_iteration += 1;
         self.current_time = F::from_usize(self.current_iteration).ok_or(TimeError(
@@ -253,6 +261,7 @@ where
         }
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn get_last_full_save(&self) -> Option<(F, usize)> {
         self.past_events
             .clone()
@@ -262,6 +271,7 @@ where
             .and_then(|x| Some((x.0, x.1)))
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn initialize_bar(&self) -> Result<kdam::Bar, TimeError> {
         let bar_format = "\
         {desc}{percentage:3.0}%|{animation}| \
@@ -275,6 +285,7 @@ where
             .build()?)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn update_bar(&self, bar: &mut kdam::Bar) -> Result<(), std::io::Error> {
         let _ = bar.update(1)?;
         Ok(())
