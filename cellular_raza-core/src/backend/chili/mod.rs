@@ -28,6 +28,14 @@ pub struct SubDomainPlainIndex(usize);
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
 
+#[cfg(feature = "pyo3")]
+#[pyo3::pymethods]
+impl CellIdentifier {
+    fn __repr__(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
 /// Contains structs to store aspects of the simulation and macros to construct them.
 mod aux_storage;
 #[doc(hidden)]
