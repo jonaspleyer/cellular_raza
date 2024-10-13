@@ -162,9 +162,9 @@ where
     let a = potential_width;
     let two = F::one() + F::one();
     let four = two + two;
-    let e = (- a * (dist - r)).exp();
+    let e = (-a * (dist - r)).exp();
     let force = four * s * e * (F::one() - e);
-    Ok((dir * force, - dir * force))
+    Ok((dir * force, -dir * force))
 }
 
 macro_rules! implement_morse_potential(
