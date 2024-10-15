@@ -31,6 +31,18 @@ where
 
 /// Lennard-Jones interaction potential with numerical upper and lower limit.
 ///
+/// # Parameters & Variables
+/// | Symbol | Struct Field | Description |
+/// |:---:| --- | --- |
+/// | $\sigma$ | `sigma` | Measure for the size of the particle. |
+/// | $\epsilon$ | `epsilon` | Interaction Strength |
+/// | $\beta$ | `bound` | Upper bound on the interaction strength. |
+/// | $\xi$ | `cutoff` | Cutoff after which the interaction strength is identically 0 |
+/// | | | |
+/// | $r$ | | Distance between interacting particles |
+///
+/// # Equations
+///
 /// The pure Lennard-Jones potential has many numerical downsides as it is very unstable to use
 /// and thus typically only recommended with extremely small integration steps.
 /// Here, we artificially limit the repelling part of the potential thus increasing numerical
