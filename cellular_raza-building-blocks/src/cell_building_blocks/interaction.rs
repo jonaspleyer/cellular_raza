@@ -141,29 +141,29 @@ pub fn calculate_morse_interaction<F, const D: usize>(
     ext_radius: F,
     cutoff: F,
     strength: F,
-    potential_width: F,
+    potential_stiffness: F,
 ) -> Result<(nalgebra::SVector<F, D>, nalgebra::SVector<F, D>), CalcError>
 where
     F: Copy + nalgebra::RealField,
 {
-    let dir = own_pos - ext_pos;
-    let dist = dir.norm();
+    let z = own_pos - ext_pos;
+    let dist = z.norm();
 
     // If the distance between the two objects is greater than the cutoff, we
     // immediately return zero.
-    if dist > cutoff {
+    if dist > cutoff || dist.is_zero() {
         return Ok((
             nalgebra::SVector::<F, D>::zeros(),
             nalgebra::SVector::<F, D>::zeros(),
         ));
     }
+    let dir = z / dist;
     let r = own_radius + ext_radius;
     let s = strength;
-    let a = potential_width;
+    let a = potential_stiffness;
     let two = F::one() + F::one();
-    let four = two + two;
     let e = (-a * (dist - r)).exp();
-    let force = four * s * e * (F::one() - e);
+    let force = two * s * a * e * (F::one() - e);
     Ok((dir * force, -dir * force))
 }
 
@@ -208,7 +208,7 @@ macro_rules! implement_morse_potential(
             /// Radius of the object
             pub radius: $float_type,
             /// Defines the length for the interaction range
-            pub potential_width: $float_type,
+            pub potential_stiffness: $float_type,
             /// Cutoff after which the interaction is exactly 0
             pub cutoff: $float_type,
             /// Strength of the interaction
@@ -245,7 +245,7 @@ macro_rules! implement_morse_potential(
                     *ext_info,
                     self.cutoff,
                     self.strength,
-                    self.potential_width,
+                    self.potential_stiffness,
                 )
             }
         }
