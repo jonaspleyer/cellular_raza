@@ -67,24 +67,14 @@ where
 /// The interaction is artificially bound from above by a value $\beta$ in
 /// order to obtain better numerical stability.
 ///
-#[doc = include_str!("plot_bound_lennard_jones.html")]
-///
 /// # References
-/// <textarea id="bibtex_input" style="display:none;">
-/// @article{doi:10.1098/rspa.1924.0081,
-/// author = {Jones, J. E.  and Chapman, Sydney },
-/// title = {On the determination of molecular fields.—I. From the variation of the viscosity of a gas with temperature},
-/// journal = {Proceedings of the Royal Society of London. Series A, Containing Papers of a Mathematical and Physical Character},
-/// volume = {106},
-/// number = {738},
-/// pages = {441-462},
-/// year = {1924},
-/// doi = {10.1098/rspa.1924.0081},
-/// URL = {https://royalsocietypublishing.org/doi/abs/10.1098/rspa.1924.0081},
-/// eprint = {https://royalsocietypublishing.org/doi/pdf/10.1098/rspa.1924.0081},
-/// }
-/// </textarea>
-/// <div id="bibtex_display"></div>
+/// [1]
+/// “On the determination of molecular fields.—I. From the variation of the viscosity of a gas with
+/// temperature,”
+/// Proceedings of the Royal Society of London.
+/// Series A, Containing Papers of a Mathematical and Physical Character, vol. 106, no. 738.
+/// The Royal Society, pp. 441–462, Oct. 1924. doi:
+/// [10.1098/rspa.1924.0081](https://doi.org/10.1098/rspa.1924.0081).
 ///
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
@@ -183,36 +173,30 @@ macro_rules! implement_morse_potential(
     ($struct_name:ident, $float_type:ident) => {
         /// Famous [Morse](https://doi.org/10.1103/PhysRev.34.57) potential for diatomic molecules.
         ///
+        /// # Parameters & Variables
+        /// | Symbol | Struct Field | Description |
+        /// |:---:| --- | --- |
+        /// | $R$ | `radius` | Radius of the particle |
+        /// | $\lambda$ | `potential_stiffness` | Can be interpreted as the inverse width of the potential |
+        /// | | `cutoff` | Cutoff after which the interaction strength is identically 0 |
+        /// | $V_0$ | `strength` | Interaction strength |
+        /// | | | |
+        /// | $r$ | | Distance between interacting particles |
+        ///
         /// \\begin{equation}
         ///     V(r) = V_0\left(1 - \exp\left(-\lambda(r-R)\right)\right)^2
         /// \\end{equation}
         ///
-        /// Calculating the interaction resulting from this potential is very cheap computationally
-        /// but not
-        /// intuitive.
-        /// Thus we provide additional methods to set, grow and shrink the current radius of the
-        /// object.
-        ///
-        #[doc = include_str!("plot_morse_potential.html")]
+        // TODO remove this entirely or make it somehow work
+        // #[doc = include_str!("plot_morse_potential.html")]
         ///
         /// # References
-        /// <textarea id="bibtex_input" style="display:none;">
-        /// @article{PhysRev.34.57,
-        ///   title = {Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels},
-        ///   author = {Morse, Philip M.},
-        ///   journal = {Phys. Rev.},
-        ///   volume = {34},
-        ///   issue = {1},
-        ///   pages = {57--64},
-        ///   numpages = {0},
-        ///   year = {1929},
-        ///   month = {Jul},
-        ///   publisher = {American Physical Society},
-        ///   doi = {10.1103/PhysRev.34.57},
-        ///   url = {https://link.aps.org/doi/10.1103/PhysRev.34.57}
-        /// }
-        /// </textarea>
-        /// <div id="bibtex_display"></div>
+        /// [1]
+        /// P. M. Morse,
+        /// “Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels,”
+        /// Physical Review, vol. 34, no. 1. American Physical Society (APS),
+        /// pp. 57–64, Jul. 01, 1929.
+        /// doi: [10.1103/physrev.34.57](https://doi.org/10.1103/PhysRev.34.57).
         ///
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
@@ -285,23 +269,10 @@ implement_morse_potential!(MorsePotentialF32, f32);
 // | [MiePotentialF32] | COMING |
 //
 /// # References
-/// <textarea id="bibtex_input" style="display:none;">
-/// @article{Mie1903,
-///   title = {Zur kinetischen Theorie der einatomigen K\"{o}rper},
-///   volume = {316},
-///   ISSN = {1521-3889},
-///   url = {http://dx.doi.org/10.1002/andp.19033160802},
-///   DOI = {10.1002/andp.19033160802},
-///   number = {8},
-///   journal = {Annalen der Physik},
-///   publisher = {Wiley},
-///   author = {Mie,  Gustav},
-///   year = {1903},
-///   month = jan,
-///   pages = {657–697}
-/// }
-/// </textarea>
-/// <div id="bibtex_display"></div>
+/// [1]
+/// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
+/// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
+/// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct MiePotential<const N: usize, const M: usize, F = f64> {
     /// Interaction strength $\epsilon$ of the potential.
