@@ -37,10 +37,10 @@ impl Default for Parameters {
                 kb_temperature: 0.3,  // picogram µm^2 / min^2
             },
             cell_interaction: MorsePotential {
-                radius: 2.0,          // µm
-                potential_width: 1.0, // 1/µm
-                cutoff: 6.0,          // µm
-                strength: 0.01,       // picogram * µm / min^2
+                radius: 2.0,              // µm
+                potential_stiffness: 1.0, // 1/µm
+                cutoff: 6.0,              // µm
+                strength: 0.02,           // picogram * µm / min^2
             },
             time_dt: 0.01,           // min
             time_save_interval: 1.0, // min
