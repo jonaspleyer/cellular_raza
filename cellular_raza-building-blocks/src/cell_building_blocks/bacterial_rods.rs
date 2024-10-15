@@ -173,21 +173,21 @@ where
                     &(p2_n0.transpose(), p2_n1.transpose()),
                 );
 
-                let (f_own, f_ext) = self.calculate_force_between(
-                    &p1.into(),
-                    &own_vel.row(i).into(),
-                    &nearest_point.transpose().into(),
-                    &ext_vel.row(j).into(),
+                let (f_own, f_ext) = self.0.calculate_force_between(
+                    &p1.transpose().into(),
+                    &own_vel.row(i).transpose().into(),
+                    &nearest_point.into(),
+                    &ext_vel.row(j).transpose().into(),
                     ext_inf,
                 )?;
 
-                force_own.row_mut(i).add_assign(f_own);
+                force_own.row_mut(i).add_assign(f_own.transpose());
                 force_ext
                     .row_mut(j)
-                    .add_assign(f_ext * (F::one() - rel_length));
+                    .add_assign(f_ext.transpose() * (F::one() - rel_length));
                 force_ext
                     .row_mut((j + 1) % D1)
-                    .add_assign(f_ext * rel_length);
+                    .add_assign(f_ext.transpose() * rel_length);
             }
         }
         Ok((-force_own, force_ext))
