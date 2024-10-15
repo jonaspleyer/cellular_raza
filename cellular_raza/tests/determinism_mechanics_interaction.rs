@@ -84,7 +84,7 @@ fn test_newton_damped(
         interaction: MorsePotential {
             strength: 0.01,
             radius: 3.0,
-            potential_width: 0.5,
+            potential_stiffness: 0.5,
             cutoff: 4.0,
         },
     });
