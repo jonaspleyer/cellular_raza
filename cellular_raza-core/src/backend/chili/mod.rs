@@ -34,6 +34,17 @@ impl CellIdentifier {
     fn __repr__(&self) -> String {
         format!("{:?}", self)
     }
+
+    fn __eq__(&self, other: &Self) -> bool {
+        self.eq(other)
+    }
+
+    fn __hash__(&self) -> u64 {
+        use core::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
