@@ -165,7 +165,7 @@ where
     let a = potential_stiffness;
     let two = F::one() + F::one();
     let e = (-a * (dist - r)).exp();
-    let force = two * s * a * e * (F::one() - e);
+    let force = - two * s * a * e * (F::one() - e);
     Ok((dir * force, -dir * force))
 }
 
