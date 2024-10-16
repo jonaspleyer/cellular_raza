@@ -1,6 +1,7 @@
 use crate::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza_concepts::*;
 
+use num::FromPrimitive;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 /// A mechanical model for Bacterial Rods
@@ -457,5 +458,102 @@ where
         let r = __RodMechanicsSerde::deserialize(deserializer)?;
         let rodmechanics = r.into();
         Ok(rodmechanics)
+    }
+}
+
+impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
+    /// Divides a [RodMechanics] struct into two thus separating their positions
+    ///
+    /// ```
+    /// # use cellular_raza_building_blocks::*;
+    /// let mut m1 = RodMechanics {
+    ///     pos: nalgebra::SMatrix::<f32, 7, 2>::from_fn(|r, c| if c == 0 {0.5 * r as f32} else {0.0}),
+    ///     vel: nalgebra::SMatrix::<f32, 7, 2>::zeros(),
+    ///     diffusion_constant: 0.0,
+    ///     spring_tension: 0.1,
+    ///     angle_stiffness: 0.05,
+    ///     spring_length: 0.5,
+    ///     damping: 0.0,
+    /// };
+    /// let radius = 0.25;
+    /// let m2 = m1.divide(radius)?;
+    ///
+    /// let last_pos_m1 = m1.pos.row(6);
+    /// let first_pos_m2 = m2.pos.row(0);
+    /// println!("{} {}", m1.pos, m2.pos);
+    /// println!("{} {}", (last_pos_m1 - first_pos_m2).norm(), 2.0 * radius);
+    /// assert!(((last_pos_m1 - first_pos_m2).norm() - 2.0 * radius).abs() < 1e-3);
+    /// # Result::<(), cellular_raza_concepts::DivisionError>::Ok(())
+    /// ```
+    pub fn divide(
+        &mut self,
+        radius: F,
+    ) -> Result<RodMechanics<F, D1, D2>, cellular_raza_concepts::DivisionError>
+    where
+        F: num::Float + nalgebra::RealField + FromPrimitive + std::iter::Sum,
+    {
+        use itertools::Itertools;
+        let pos = self.pos();
+        let c1 = self;
+        let mut c2 = c1.clone();
+
+        let n_rows = c1.pos.nrows();
+        // Calculate the fraction of how much we need to scale down the individual spring lengths
+        // in order for the distances to still work.
+        let two = F::one() + F::one();
+        let one_half = F::one() / two;
+        let div_factor = one_half - radius / (F::from_usize(n_rows).unwrap() * c1.spring_length);
+
+        // Shrink spring length
+        c1.spring_length = div_factor * c1.spring_length;
+        c2.spring_length = div_factor * c1.spring_length;
+
+        // Set starting point
+        c1.pos.set_row(0, &pos.row(0));
+        c2.pos.set_row(D1 - 1, &pos.row(D1 - 1));
+
+        let segments: Vec<_> = pos
+            .row_iter()
+            .tuple_windows::<(_, _)>()
+            .map(|(x, y)| (x - y).norm())
+            .collect();
+        let segment_length = (segments.iter().map(|&x| x).sum::<F>() - two * radius)
+            / F::from_usize(D1 - 1).unwrap()
+            / two;
+
+        for n_vertex in 0..D1 {
+            // Get smallest index k such that the beginning of the new segment is "farther" than the
+            // original vertex at this index k.
+            let k = (0..D1)
+                .filter(|n| {
+                    segments.iter().map(|&x| x).take(*n).sum::<F>()
+                        <= F::from_usize(n_vertex).unwrap() * segment_length
+                })
+                .max()
+                .unwrap();
+            let q = (F::from_usize(n_vertex).unwrap() * segment_length
+                - segments.iter().map(|&x| x).take(k).sum::<F>())
+                / segments[k];
+            c1.pos.set_row(
+                n_vertex,
+                &(pos.row(k) * (F::one() - q) + pos.row(k + 1) * q),
+            );
+
+            let m = (0..D1)
+                .filter(|n| {
+                    segments.iter().rev().map(|&x| x).take(*n).sum::<F>()
+                        <= F::from_usize(n_vertex).unwrap() * segment_length
+                })
+                .max()
+                .unwrap();
+            let p = (F::from_usize(n_vertex).unwrap() * segment_length
+                - segments.iter().rev().map(|&x| x).take(m).sum::<F>())
+                / segments[D1 - m - 2];
+            c2.pos.set_row(
+                D1 - n_vertex - 1,
+                &(pos.row(D1 - m - 1) * (F::one() - p) + pos.row(D1 - m - 2) * p),
+            );
+        }
+        Ok(c2)
     }
 }
