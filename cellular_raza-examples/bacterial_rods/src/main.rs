@@ -23,7 +23,6 @@ pub struct Agent<const D1: usize, const D2: usize> {
     // Mechanics
     pos: nalgebra::SMatrix<f64, D1, D2>,
     vel: nalgebra::SMatrix<f64, D1, D2>,
-    random_velocity: nalgebra::SMatrix<f64, D1, D2>,
     diffusion_constant: f64,
     spring_tension: f64,
     angle_stiffness: f64,
@@ -84,7 +83,7 @@ impl<const D1: usize, const D2: usize>
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-0.5 * force);
             });
-        Ok((self.vel.clone() + self.random_velocity, total_force))
+        Ok((self.vel.clone(), total_force))
     }
 
     fn get_random_contribution(
@@ -289,7 +288,6 @@ fn main() -> Result<(), chili::SimulationError> {
     let agent = Agent {
         pos: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         vel: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
-        random_velocity: nalgebra::SMatrix::<f64, D1, D2>::zeros(),
         diffusion_constant: 0.1 * MICRO_METRE.powf(2.0) / SECOND,
         spring_tension: 20.0 / SECOND.powf(2.0),
         angle_stiffness: 2.0 * MICRO_METRE / SECOND.powf(2.0),
