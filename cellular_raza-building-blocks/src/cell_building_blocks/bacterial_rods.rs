@@ -190,7 +190,7 @@ where
                     .add_assign(f_ext.transpose() * rel_length);
             }
         }
-        Ok((-force_own, force_ext))
+        Ok((force_own, force_ext))
     }
 }
 
