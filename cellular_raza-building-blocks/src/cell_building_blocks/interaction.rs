@@ -409,7 +409,7 @@ use nalgebra::Vector2;
 /// let external_point = Vector2::from([0f64; 2]);
 /// let line_segment = (
 ///     Vector2::from([1.0, 0.0]),
-///     Vector2::from([0.0, 1.0]),
+///     Vector2::from([-1.0, 2.0]),
 /// );
 /// let (dist, point, rel_length) = nearest_point_from_point_to_line(
 ///     &external_point,
@@ -417,7 +417,7 @@ use nalgebra::Vector2;
 /// );
 ///
 /// assert!((dist - 1.0/2f64.sqrt()).abs() < 1e-10);
-/// assert!((rel_length - 0.5).abs() < 1e-10);
+/// assert!((rel_length - 0.25).abs() < 1e-10);
 /// assert!((point.x - 0.5).abs() < 1e-10);
 /// assert!((point.y - 0.5).abs() < 1e-10);
 /// ```
