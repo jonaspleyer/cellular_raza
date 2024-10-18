@@ -29,6 +29,9 @@ impl<C, A> Voxel<C, A> {
                     match event {
                         CycleEvent::Division => {
                             let new_cell = C::divide(&mut self.rng, &mut cbox.cell)?;
+                            self.id_counter += 1;
+                            cbox.identifier.1 = self.id_counter;
+                            cbox.identifier.0 = self.plain_index;
                             self.new_cells.push((new_cell, Some(cbox.get_id())));
                         }
                         CycleEvent::Remove => remaining_events.push(event),
