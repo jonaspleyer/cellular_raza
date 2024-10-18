@@ -46,11 +46,11 @@ circ_buffer = { version = "0.1.7", features = ["serde"] }
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.1.0"
+version = "0.1.1"
 
 [dependencies.cellular_raza-core-proc-macro]
 path = "../cellular_raza-core-proc-macro"
-version = "0.1.0"
+version = "0.1.1"
 
 [dev-dependencies]
 tempdir.workspace = true
