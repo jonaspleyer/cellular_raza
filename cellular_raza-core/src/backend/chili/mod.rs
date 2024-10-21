@@ -45,6 +45,16 @@ impl CellIdentifier {
         self.hash(&mut hasher);
         hasher.finish()
     }
+
+    fn __getstate__(&self) -> pyo3::PyResult<(usize, u64)> {
+        Ok((self.0.0, self.1))
+    }
+
+    fn __setstate(&mut self, state: (usize, u64)) -> pyo3::PyResult<()> {
+        self.0 = VoxelPlainIndex(state.0);
+        self.1 = state.1;
+        Ok(())
+    }
 }
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
