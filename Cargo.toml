@@ -54,4 +54,4 @@ rand_chacha = { version="0.3.1", features=["serde1"] }
 serde = "1.0"
 tempdir = "0.3"
 nalgebra = { version="0.33", features=["serde-serialize", "rand"]}
-pyo3 = { version = "0.22", features = [ "serde" ]}
+pyo3 = { version = "0.22", features = ["serde", "py-clone"]}
