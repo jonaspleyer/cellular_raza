@@ -18,7 +18,6 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::Cycle<C, Float>,
         A: UpdateCycle + Default,
     {
-        use cellular_raza_concepts::Id;
         // Update the cell individual cells
         self.cells
             .iter_mut()
@@ -29,11 +28,11 @@ impl<C, A> Voxel<C, A> {
                     match event {
                         CycleEvent::Division => {
                             let new_cell = C::divide(&mut self.rng, &mut cbox.cell)?;
-                            let old_ident = cbox.identifier;
+                            let parent_ident = cbox.identifier;
                             self.id_counter += 1;
                             cbox.identifier = CellIdentifier(self.plain_index, self.id_counter);
-                            cbox.parent = Some(old_ident);
-                            self.new_cells.push((new_cell, Some(cbox.get_id())));
+                            cbox.parent = Some(parent_ident);
+                            self.new_cells.push((new_cell, Some(parent_ident)));
                         }
                         CycleEvent::Remove => remaining_events.push(event),
                         CycleEvent::PhasedDeath => {
