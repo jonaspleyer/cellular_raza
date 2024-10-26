@@ -1,4 +1,4 @@
-use super::{CellBox, SimulationError, SubDomainBox, UpdateCycle, Voxel};
+use super::{CellBox, CellIdentifier, SimulationError, SubDomainBox, UpdateCycle, Voxel};
 use cellular_raza_concepts::SubDomain;
 
 pub use cellular_raza_concepts::CycleEvent;
@@ -29,9 +29,10 @@ impl<C, A> Voxel<C, A> {
                     match event {
                         CycleEvent::Division => {
                             let new_cell = C::divide(&mut self.rng, &mut cbox.cell)?;
+                            let old_ident = cbox.identifier;
                             self.id_counter += 1;
-                            cbox.identifier.1 = self.id_counter;
-                            cbox.identifier.0 = self.plain_index;
+                            cbox.identifier = CellIdentifier(self.plain_index, self.id_counter);
+                            cbox.parent = Some(old_ident);
                             self.new_cells.push((new_cell, Some(cbox.get_id())));
                         }
                         CycleEvent::Remove => remaining_events.push(event),
