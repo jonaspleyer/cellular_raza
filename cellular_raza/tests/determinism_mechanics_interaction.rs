@@ -89,12 +89,8 @@ fn test_newton_damped(
         },
     });
     let storage = StorageBuilder::new().priority([StorageOption::Memory]);
-    let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
-        0.0,
-        0.01,
-        100,
-        10,
-    )?;
+    let time =
+        cellular_raza::core::time::FixedStepsize::from_partial_save_steps(0.0, 0.01, 100, 10)?;
     let settings = cellular_raza::core::backend::chili::Settings {
         n_threads: 1.try_into().unwrap(),
         show_progressbar: false,
