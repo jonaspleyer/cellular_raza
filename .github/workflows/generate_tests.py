@@ -20,13 +20,13 @@ jobs:
         with open(filename, "w") as f:
             f.write(contents)
 
-print("| " + " | ".join(toolchains) + " |")
-print("|---" * len(toolchains) + "|")
+print("| | " + " | ".join(toolchains) + " |")
+print("|---" * (len(toolchains)+1) + "|")
 for os in oss:
-    line = "| "
+    line = f"| `{os}` | "
     for toolchain in toolchains:
         badge_md = f"![{toolchain}-{os}](https://img.shields.io/github/\
 actions/workflow/status/jonaspleyer/cellular_raza/\
-test_{toolchain}-{os}.yml?style=flat-square&label=CI)"
+test_{toolchain}_{os}.yml?style=flat-square&label=CI)"
         line += badge_md + " |"
     print(line)
