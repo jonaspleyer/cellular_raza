@@ -1,5 +1,5 @@
 oss = ["ubuntu-latest", "macos-12", "macos-14", "windows-latest"]
-toolchains = ["nightly", "beta", "stable"]
+toolchains = ["stable", "beta", "nightly"]
 
 
 for toolchain in toolchains:
