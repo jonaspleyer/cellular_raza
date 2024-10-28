@@ -19,3 +19,14 @@ jobs:
 '''
         with open(filename, "w") as f:
             f.write(contents)
+
+print("| " + " | ".join(toolchains) + " |")
+print("|---" * len(toolchains) + "|")
+for os in oss:
+    line = "| "
+    for toolchain in toolchains:
+        badge_md = f"![{toolchain}-{os}](https://img.shields.io/github/\
+actions/workflow/status/jonaspleyer/cellular_raza/\
+test_{toolchain}-{os}.yml?style=flat-square&label=CI)"
+        line += badge_md + " |"
+    print(line)
