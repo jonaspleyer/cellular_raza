@@ -1,0 +1,34 @@
+on:
+  workflow_call:
+    inputs:
+      toolchain:
+        required: true
+        type: string
+      os:
+        required: true
+        type: string
+
+jobs:
+  reusable_workflow_job:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          submodule: 'true'
+          lfs: 'false'
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain }}
+
+      - name: Check
+        run: cargo check
+
+      - name: DocTest
+        run: cargo test --doc
+
+      - name: Test
+        run: cargo test
