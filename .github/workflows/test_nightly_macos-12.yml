@@ -1,0 +1,10 @@
+on: [push, pull_request]
+
+name: Test-Suite nightly macos-12
+
+jobs:
+  CI-nightly-macos-12:
+    uses: ./.github/workflows/reuse.yml
+    with:
+      toolchain: nightly
+      os: macos-12
