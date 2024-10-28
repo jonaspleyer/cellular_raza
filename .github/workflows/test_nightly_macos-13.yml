@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Test-Suite nightly macos-14
+name: Test-Suite nightly macos-13
 
 jobs:
-  CI-nightly-macos-14:
+  CI-nightly-macos-13:
     uses: ./.github/workflows/reuse.yml
     with:
       toolchain: nightly
-      os: macos-14
+      os: macos-13
