@@ -1,0 +1,10 @@
+on: [push, pull_request]
+
+name: Test Beta
+
+jobs:
+  CI-beta-ubuntu-latest:
+    uses: ./.github/workflows/reuse.yml
+    with:
+      toolchain: beta
+      os: ubuntu-latest
