@@ -77,7 +77,7 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
-        For: Xapy<Float> + num::Zero,
+        For: Xapy<Float>,
         Float: num::Float,
     {
         let one_half: Float = Float::one() / (Float::one() + Float::one());
@@ -97,12 +97,12 @@ impl<C, A> Voxel<C, A> {
                 let i2 = c2.get_interaction_information();
 
                 let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
-                aux1.add_force(force1.xapy(one_half, &For::zero()));
-                aux2.add_force(force2.xapy(one_half, &For::zero()));
+                aux1.add_force(force1.xa(one_half));
+                aux2.add_force(force2.xa(one_half));
 
                 let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.add_force(force1.xapy(one_half, &For::zero()));
-                aux2.add_force(force2.xapy(one_half, &For::zero()));
+                aux1.add_force(force1.xa(one_half));
+                aux2.add_force(force2.xa(one_half));
 
                 // Also check for neighbors
                 if c1.is_neighbor(&p1, &p2, &i2)? {
@@ -129,7 +129,7 @@ impl<C, A> Voxel<C, A> {
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_inf: &Inf,
-    ) -> Result<For, CalcError>
+    ) -> Result<Option<For>, CalcError>
     where
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Position<Pos>
@@ -137,10 +137,11 @@ impl<C, A> Voxel<C, A> {
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
         Float: num::Float,
-        For: Xapy<Float> + num::Zero + core::ops::AddAssign,
+        For: Xapy<Float> + core::ops::AddAssign,
     {
+        use core::borrow::BorrowMut;
         let one_half = Float::one() / (Float::one() + Float::one());
-        let mut force = For::zero();
+        let mut force = None;
         for (cell, aux_storage) in self.cells.iter_mut() {
             let (f1, f2) = cell.calculate_force_between(
                 &cell.pos(),
@@ -149,8 +150,12 @@ impl<C, A> Voxel<C, A> {
                 &ext_vel,
                 &ext_inf,
             )?;
-            aux_storage.add_force(f1.xapy(one_half, &For::zero()));
-            force = f2.xapy(one_half, &force);
+            aux_storage.add_force(f1.xa(one_half));
+            if let Some(f) = force.borrow_mut() {
+                *f = f2.xapy(one_half, &*f);
+            } else {
+                force = Some(f2.xa(one_half));
+            }
 
             // Check for neighbors
             if cell.is_neighbor(&cell.pos(), &ext_pos, &ext_inf)? {
@@ -186,7 +191,7 @@ where
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
-        For: Xapy<Float> + num::Zero + core::ops::AddAssign,
+        For: Xapy<Float> + core::ops::AddAssign,
         Float: num::Float + core::ops::AddAssign,
         <S as SubDomain>::VoxelIndex: Ord,
         S: SubDomainMechanics<Pos, Vel>,
@@ -212,17 +217,25 @@ where
                 let cell_inf = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
                     .get_interaction_information();
-                let mut force = For::zero();
+                let mut force = None;
+                // let mut force = self.voxels[&voxel_index].cells[cell_index_in_vector]
+                //     .1
+                //     .get_current_force()
+                //     .xa(Float::zero());
                 let neighbors = self.voxels[&voxel_index].neighbors.clone();
                 for neighbor_index in neighbors {
                     match self.voxels.get_mut(&neighbor_index) {
-                        Some(vox) => Ok::<(), CalcError>(
-                            force = vox
-                                .calculate_force_between_cells_external(
-                                    &cell_pos, &cell_vel, &cell_inf,
-                                )?
-                                .xapy(Float::one(), &force),
-                        ),
+                        Some(vox) => {
+                            if let Some(f) = vox.calculate_force_between_cells_external(
+                                &cell_pos, &cell_vel, &cell_inf,
+                            )? {
+                                match &mut force {
+                                    Some(f2) => *f2 = f.xapy(Float::one(), &f2),
+                                    f2 @ None => *f2 = Some(f),
+                                }
+                            }
+                            Ok::<(), CalcError>(())
+                        }
                         None => Ok(self.communicator.send(
                             &self.plain_index_to_subdomain[&neighbor_index],
                             PosInformation {
@@ -236,9 +249,11 @@ where
                         )?),
                     }?;
                 }
-                self.voxels.get_mut(&voxel_index).unwrap().cells[cell_index_in_vector]
-                    .1
-                    .add_force(force);
+                if let Some(f) = force {
+                    self.voxels.get_mut(&voxel_index).unwrap().cells[cell_index_in_vector]
+                        .1
+                        .add_force(f);
+                }
             }
         }
 
@@ -318,22 +333,22 @@ where
                 )),
             )?;
             // Calculate force from cells in voxel
-            let force = vox.calculate_force_between_cells_external(
+            if let Some(force) = vox.calculate_force_between_cells_external(
                 &pos_info.pos,
                 &pos_info.vel,
                 &pos_info.info,
-            )?;
-
-            // Send back force information
-            // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
-            self.communicator.send(
-                &self.plain_index_to_subdomain[&pos_info.index_sender],
-                ForceInformation {
-                    force,
-                    cell_index_in_vector: pos_info.cell_index_in_vector,
-                    index_sender: pos_info.index_sender,
-                },
-            )?;
+            )? {
+                // Send back force information
+                // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
+                self.communicator.send(
+                    &self.plain_index_to_subdomain[&pos_info.index_sender],
+                    ForceInformation {
+                        force,
+                        cell_index_in_vector: pos_info.cell_index_in_vector,
+                        index_sender: pos_info.index_sender,
+                    },
+                )?;
+            }
         }
         Ok(())
     }
@@ -536,8 +551,8 @@ where
     C: cellular_raza_concepts::Position<Pos>,
     C: cellular_raza_concepts::Velocity<Vel>,
     Float: num::Float + Copy + num::FromPrimitive,
-    Pos: Xapy<Float> + num::Zero + Clone,
-    Vel: Xapy<Float> + num::Zero + Clone,
+    Pos: Xapy<Float> + Clone,
+    Vel: Xapy<Float> + Clone,
     Vel: Clone,
 {
     super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(

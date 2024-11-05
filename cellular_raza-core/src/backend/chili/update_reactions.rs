@@ -184,7 +184,6 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::Intracellular<Ri>,
         C: Position<Pos>,
         Ri: cellular_raza_concepts::Xapy<Float>,
-        Ri: num::Zero,
         A: UpdateReactionsContact<Ri, N>,
         A: UpdateReactions<Ri>,
         Float: num::Float,
@@ -209,8 +208,8 @@ impl<C, A> Voxel<C, A> {
                 let (dintra22, dintra21) =
                     c2.calculate_contact_increment(&intra2, &intra1, &p2, &p1, &rinf1)?;
 
-                aux1.incr_conc(dintra11.xapy(one_half, &dintra21.xapy(one_half, &Ri::zero())));
-                aux2.incr_conc(dintra22.xapy(one_half, &dintra12.xapy(one_half, &Ri::zero())));
+                aux1.incr_conc(dintra11.xapy(one_half, &dintra21.xa(one_half)));
+                aux2.incr_conc(dintra22.xapy(one_half, &dintra12.xa(one_half)));
             }
         }
         Ok(())
@@ -233,14 +232,13 @@ impl<C, A> Voxel<C, A> {
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf>,
         C: cellular_raza_concepts::Intracellular<Ri>,
         C: Position<Pos>,
-        Ri: num::Zero,
         Ri: Xapy<Float>,
         A: UpdateReactions<Ri>,
         A: UpdateReactionsContact<Ri, N>,
         Float: num::Float,
     {
         let one_half = Float::one() / (Float::one() + Float::one());
-        let mut dextra_total = Ri::zero();
+        let mut dextra_total = ext_intra.xa(Float::zero());
         for (cell, aux_storage) in self.cells.iter_mut() {
             let own_intra = cell.get_intracellular();
             let own_pos = cell.pos();
@@ -248,7 +246,7 @@ impl<C, A> Voxel<C, A> {
             let (dintra, dextra) = cell.calculate_contact_increment(
                 &own_intra, &ext_intra, &own_pos, &ext_pos, &ext_rinf,
             )?;
-            aux_storage.incr_conc(dintra.xapy(one_half, &Ri::zero()));
+            aux_storage.incr_conc(dintra.xa(one_half));
             dextra_total = dextra.xapy(one_half, &dextra_total);
         }
         Ok(dextra_total)
@@ -271,7 +269,7 @@ where
         C: cellular_raza_concepts::Position<Pos>,
         A: UpdateReactions<Ri>,
         A: UpdateReactionsContact<Ri, N>,
-        Ri: num::Zero + Xapy<Float> + Clone,
+        Ri: Xapy<Float> + Clone,
         RInf: Clone,
         Float: num::Float,
         // <S as SubDomain>::VoxelIndex: Ord,
@@ -296,7 +294,7 @@ where
                 let cell_contact_inf = self.voxels[&voxel_index].cells[cell_index_in_vector]
                     .0
                     .get_contact_information();
-                let mut incr = Ri::zero();
+                let mut incr = cell_intra.xa(Float::zero());
                 // TODO can we do this without cloning at all?
                 let neighbors = self.voxels[&voxel_index].neighbors.clone();
                 for neighbor_index in neighbors {
@@ -343,7 +341,7 @@ where
         C: cellular_raza_concepts::ReactionsContact<Ri, Pos, Float, RInf> + Position<Pos>,
         C: cellular_raza_concepts::Intracellular<Ri>,
         A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, N>,
-        Ri: Xapy<Float> + num::Zero,
+        Ri: Xapy<Float>,
         Float: num::Float,
         Pos: Clone,
         Com: Communicator<SubDomainPlainIndex, ReactionsContactInformation<Pos, Ri, RInf>>,
@@ -448,7 +446,7 @@ where
     A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, 3>,
     C: cellular_raza_concepts::Intracellular<Ri>,
     F: num::Float + FromPrimitive,
-    Ri: num::Zero + Xapy<F> + Clone,
+    Ri: Xapy<F> + Clone,
 {
     reactions_contact_adams_bashforth_3rd(cell, aux_storage)?;
     Ok(())
@@ -472,7 +470,7 @@ where
     A: UpdateReactions<Ri>,
     C: cellular_raza_concepts::Reactions<Ri>,
     F: num::Float,
-    Ri: num::Zero + Xapy<F>,
+    Ri: Xapy<F>,
 {
     reactions_intracellular_runge_kutta_4th(cell, aux_storage, dt)?;
     Ok(())
@@ -495,12 +493,13 @@ pub fn local_reactions_use_increment<
 where
     C: Intracellular<Ri>,
     A: UpdateReactions<Ri>,
-    Ri: Xapy<F> + num::Zero,
+    Ri: Xapy<F>,
+    F: num::Zero,
 {
     let intra = cell.get_intracellular();
     let dintra = aux_storage.get_conc();
     cell.set_intracellular(dintra.xapy(dt, &intra));
-    aux_storage.set_conc(Ri::zero());
+    aux_storage.set_conc(aux_storage.get_conc().xa(F::zero()));
     Ok(())
 }
 

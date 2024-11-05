@@ -31,8 +31,8 @@ where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     C: cellular_raza_concepts::Position<Pos>,
     C: cellular_raza_concepts::Velocity<Vel>,
-    Pos: Xapy<Float> + num::Zero + Clone,
-    Vel: Xapy<Float> + num::Zero + Clone,
+    Pos: Xapy<Float> + Clone,
+    Vel: Xapy<Float> + Clone,
     Float: num::Float + Copy,
 {
     let force = aux_storage.get_current_force_and_reset();
@@ -80,8 +80,8 @@ where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     C: cellular_raza_concepts::Position<Pos>,
     C: cellular_raza_concepts::Velocity<Vel>,
-    Pos: Xapy<Float> + num::Zero + Clone,
-    Vel: Xapy<Float> + num::Zero + Clone,
+    Pos: Xapy<Float> + Clone,
+    Vel: Xapy<Float> + Clone,
     Float: num::Float + FromPrimitive,
 {
     let force = aux_storage.get_current_force_and_reset();
@@ -171,8 +171,8 @@ where
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
     C: cellular_raza_concepts::Position<Pos>,
     C: cellular_raza_concepts::Velocity<Vel>,
-    Pos: Xapy<Float> + num::Zero + Clone,
-    Vel: Xapy<Float> + num::Zero + Clone,
+    Pos: Xapy<Float> + Clone,
+    Vel: Xapy<Float> + Clone,
     Float: num::Float + FromPrimitive,
 {
     let force = aux_storage.get_current_force_and_reset();
@@ -218,19 +218,17 @@ where
 #[inline]
 fn euler<X, F>(x: X, dx: X, dt: F, dx_rand: X) -> Result<X, CalcError>
 where
-    X: Xapy<F> + num::Zero,
+    X: Xapy<F>,
     F: num::Float + Copy,
 {
-    let x_new = dx
-        .xapy(dt, &x)
-        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
+    let x_new = dx.xapy(dt, &x).xapy(F::one(), &dx_rand.xa(dt));
     Ok(x_new)
 }
 
 #[inline]
 fn adams_bashforth_3<X, F>(x: X, dx: [X; 3], dt: F, dx_rand: X) -> Result<X, CalcError>
 where
-    X: Xapy<F> + num::Zero,
+    X: Xapy<F>,
     F: Copy + FromPrimitive + num::Float,
 {
     let f0 = F::from_isize(23).unwrap() / F::from_isize(12).unwrap();
@@ -240,16 +238,16 @@ where
     let [dx0, dx1, dx2] = dx;
 
     let x_new = dx0
-        .xapy(f0, &dx1.xapy(f1, &dx2.xapy(f2, &X::zero())))
+        .xapy(f0, &dx1.xapy(f1, &dx2.xa(f2)))
         .xapy(dt, &x)
-        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
+        .xapy(F::one(), &dx_rand.xa(dt));
     Ok(x_new)
 }
 
 #[inline]
 fn adams_bashforth_2<X, F>(x: X, dx: [X; 2], dt: F, dx_rand: X) -> Result<X, CalcError>
 where
-    X: Xapy<F> + num::Zero,
+    X: Xapy<F>,
     F: Copy + FromPrimitive + num::Float,
 {
     let f0 = F::from_isize(3).unwrap() / F::from_isize(2).unwrap();
@@ -258,9 +256,9 @@ where
     let [dx0, dx1] = dx;
 
     let x_new = dx0
-        .xapy(f0, &dx1.xapy(f1, &X::zero()))
+        .xapy(f0, &dx1.xa(f1))
         .xapy(dt, &x)
-        .xapy(F::one(), &dx_rand.xapy(dt, &X::zero()));
+        .xapy(F::one(), &dx_rand.xa(dt));
     Ok(x_new)
 }
 
@@ -276,7 +274,7 @@ where
     C: cellular_raza_concepts::Reactions<Ri>,
     A: UpdateReactions<Ri>,
     F: num::Float,
-    Ri: num::Zero + Xapy<F>,
+    Ri: Xapy<F>,
 {
     // Constants
     let two = F::one() + F::one();
@@ -293,7 +291,7 @@ where
         F::one() / six,
         &dintra2.xapy(
             two / six,
-            &dintra3.xapy(two / six, &dintra4.xapy(F::one() / six, &Ri::zero())),
+            &dintra3.xapy(two / six, &dintra4.xa(F::one() / six)),
         ),
     );
 
@@ -313,11 +311,12 @@ pub fn reactions_contact_adams_bashforth_3rd<C, A, F, Ri>(
 where
     A: UpdateReactions<Ri>,
     A: UpdateReactionsContact<Ri, 3>,
-    Ri: Xapy<F> + num::Zero + Clone,
+    Ri: Xapy<F> + Clone,
     F: FromPrimitive + num::Float,
 {
     // let dintra0 = aux_storage
     let dintra = aux_storage.get_conc();
+    let conc_zero = dintra.xa(F::zero());
     let dintra_contact = <A as UpdateReactionsContact<Ri, 3>>::get_current_increment(&aux_storage);
     aux_storage.set_last_increment(dintra_contact.clone());
     let n_previous_values = aux_storage.n_previous_values();
@@ -331,7 +330,7 @@ where
                 old_intracellular_increments.next().unwrap().clone(),
             ],
             F::one(),
-            Ri::zero(),
+            conc_zero,
         )?,
         1 => adams_bashforth_2(
             dintra,
@@ -340,9 +339,9 @@ where
                 old_intracellular_increments.next().unwrap().clone(),
             ],
             F::one(),
-            Ri::zero(),
+            conc_zero,
         )?,
-        _ => euler(dintra, dintra_contact, F::one(), Ri::zero())?,
+        _ => euler(dintra, dintra_contact, F::one(), conc_zero)?,
     };
     aux_storage.set_conc(dintra_new);
     Ok(())
