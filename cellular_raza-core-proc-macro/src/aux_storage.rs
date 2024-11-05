@@ -414,14 +414,9 @@ impl AuxStorageImplementer {
                             ::add_force(&mut self.#field_name, force);
                     }
                     #[inline]
-                    fn get_current_force(&self) -> #force {
+                    fn get_current_force_and_reset(&mut self) -> #force {
                         <#field_type as #backend_path UpdateMechanics<#field_generics>>
-                            ::get_current_force(&self.#field_name)
-                    }
-                    #[inline]
-                    fn clear_forces(&mut self) {
-                        <#field_type as #backend_path UpdateMechanics<#field_generics>>
-                            ::clear_forces(&mut self.#field_name)
+                            ::get_current_force_and_reset(&mut self.#field_name)
                     }
                 }
             ));

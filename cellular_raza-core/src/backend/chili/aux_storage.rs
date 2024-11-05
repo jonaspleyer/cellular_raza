@@ -96,10 +96,7 @@ pub trait UpdateMechanics<Pos, Vel, For, const N: usize> {
     fn add_force(&mut self, force: For);
 
     /// Obtain current force on cell
-    fn get_current_force(&self) -> For;
-
-    /// Removes all stored forces
-    fn clear_forces(&mut self);
+    fn get_current_force_and_reset(&mut self) -> For;
 }
 
 /// Stores intermediate information about the mechanics of a cell.
@@ -108,22 +105,19 @@ pub struct AuxStorageMechanics<Pos, Vel, For, const N: usize> {
     positions: RingBuffer<Pos, N>,
     velocities: RingBuffer<Vel, N>,
     current_force: For,
+    force_is_zero: bool,
 }
 
 // It is necessary to implement this trait by hand since with the current version of the Mechanics
 // concept, we need to specify next_random_mechanics_update: Some(0.0) in order for any updates to
 // be done at all.
-impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N>
-where
-    Pos: Default,
-    Vel: Default,
-    For: Default,
-{
+impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N> {
     fn default() -> Self {
         Self {
             positions: RingBuffer::<Pos, N>::default(),
             velocities: RingBuffer::<Vel, N>::default(),
-            current_force: For::default(),
+            current_force: unsafe { core::mem::zeroed() },
+            force_is_zero: true,
         }
     }
 }
@@ -131,7 +125,7 @@ where
 impl<Pos, Vel, For, const N: usize> UpdateMechanics<Pos, Vel, For, N>
     for AuxStorageMechanics<Pos, Vel, For, N>
 where
-    For: Clone + core::ops::AddAssign<For> + num::Zero,
+    For: Clone + core::ops::AddAssign<For>,
 {
     #[inline]
     fn previous_positions<'a>(&'a self) -> RingBufferIterRef<'a, Pos, N> {
@@ -160,18 +154,20 @@ where
 
     #[inline]
     fn add_force(&mut self, force: For) {
-        self.current_force += force;
+        if self.force_is_zero {
+            self.current_force = force;
+            self.force_is_zero = false;
+        } else {
+            self.current_force += force;
+        }
     }
 
     #[inline]
-    fn get_current_force(&self) -> For {
+    fn get_current_force_and_reset(&mut self) -> For {
+        self.force_is_zero = true;
         self.current_force.clone()
     }
 
-    #[inline]
-    fn clear_forces(&mut self) {
-        self.current_force = For::zero();
-    }
 }
 
 // ----------------------------------- UPDATE-CYCLE ----------------------------------
@@ -421,12 +417,12 @@ mod test_derive_aux_storage_compile {
     ///     }
     /// }
     /// fn use_impl<T, Pos, Vel, For, const N: usize>(
-    ///     aux_storage: T
+    ///     mut aux_storage: T
     /// ) -> For
     /// where
     ///     T: cellular_raza_core::backend::chili::UpdateMechanics<Pos, Vel, For, N>,
     /// {
-    ///     aux_storage.get_current_force()
+    ///     aux_storage.get_current_force_and_reset()
     /// }
     /// ```
     fn mechanics_visibility_3() {}
@@ -898,7 +894,7 @@ mod test_build_aux_storage {
             ///             let last_velocities = last_velocities.map(|f| *f).collect::<Vec<f32>>();
             ///             assert_eq!(last_velocities, vec![10_f32]);
             ///             aux_storage.add_force(22_f32);
-            ///             assert_eq!(aux_storage.get_current_force(), 22_f32);
+            ///             assert_eq!(aux_storage.get_current_force_and_reset(), 22_f32);
             ///         }
             ///     };
             ///     (Interaction) => {

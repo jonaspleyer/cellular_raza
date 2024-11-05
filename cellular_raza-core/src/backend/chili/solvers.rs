@@ -35,7 +35,7 @@ where
     Vel: Xapy<Float> + num::Zero + Clone,
     Float: num::Float + Copy,
 {
-    let force = aux_storage.get_current_force();
+    let force = aux_storage.get_current_force_and_reset();
     let velocity = cell.velocity();
     let position = cell.pos();
 
@@ -45,7 +45,6 @@ where
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
     aux_storage.set_last_velocity(dv.clone());
-    aux_storage.clear_forces();
 
     // Calculate new position and velocity of cell
     let new_position = euler(position, dx, dt, dx_rand)?;
@@ -85,7 +84,7 @@ where
     Vel: Xapy<Float> + num::Zero + Clone,
     Float: num::Float + FromPrimitive,
 {
-    let force = aux_storage.get_current_force();
+    let force = aux_storage.get_current_force_and_reset();
     let velocity = cell.velocity();
     let position = cell.pos();
 
@@ -95,7 +94,6 @@ where
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
     aux_storage.set_last_velocity(dv.clone());
-    aux_storage.clear_forces();
 
     // Calculate new position and velocity of cell
     let n_previous_values = aux_storage.n_previous_values();
@@ -177,7 +175,7 @@ where
     Vel: Xapy<Float> + num::Zero + Clone,
     Float: num::Float + FromPrimitive,
 {
-    let force = aux_storage.get_current_force();
+    let force = aux_storage.get_current_force_and_reset();
     let velocity = cell.velocity();
     let position = cell.pos();
 
@@ -187,7 +185,6 @@ where
     // Update values in the aux_storage
     aux_storage.set_last_position(dx.clone());
     aux_storage.set_last_velocity(dv.clone());
-    aux_storage.clear_forces();
 
     // Calculate new position and velocity of cell
     let n_previous_values = aux_storage.n_previous_values();
