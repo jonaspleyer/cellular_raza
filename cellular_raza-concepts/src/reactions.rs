@@ -73,6 +73,9 @@ pub trait ReactionsContact<Ri, Pos, Float = f64, RInf = ()> {
 pub trait Xapy<F> {
     /// Abstraction over the common `a*x + y` mathematical function.
     fn xapy(&self, a: F, y: &Self) -> Self;
+
+    /// Abstraction over scalar multiplication `a*x`.
+    fn xa(&self, a: F) -> Self;
 }
 
 impl<F, X> Xapy<F> for X
@@ -82,6 +85,10 @@ where
 {
     fn xapy(&self, a: F, y: &Self) -> Self {
         self * a + y
+    }
+
+    fn xa(&self, a: F) -> Self {
+        self * a
     }
 }
 
