@@ -320,6 +320,11 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let core_path = &kwargs.core_path;
     let aux_storage_name = &kwargs.aux_storage_name;
     let communicator_name = &kwargs.communicator_name;
+    let aux_storage_placeholders = crate::aux_storage::generics_placeholders(
+        kwargs.clone(),
+        kwargs.mechanics_solver_order,
+        kwargs.reactions_solver_order,
+    );
 
     let update_func = run_main_update(kwargs.clone());
     let parallelized_update_func =
@@ -329,8 +334,6 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
-        let _aux_storage = #aux_storage_name ::default();
-
         let __run_sim = || -> Result<
                 #core_path::backend::chili::StorageAccess<_, _>,
                 #core_path::backend::chili::SimulationError
@@ -339,7 +342,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 _,
                 _,
                 _,
-                _,
+                #aux_storage_name<#(#aux_storage_placeholders),*>,
                 #core_path::backend::chili::communicator_generics_placeholders!(
                     name: #communicator_name,
                     aspects: [#(#asp),*]
@@ -350,7 +353,6 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 #domain,
                 #agents,
                 #settings.n_threads,
-                &_aux_storage,
             )?;
 
             let res = #parallelized_update_func?;

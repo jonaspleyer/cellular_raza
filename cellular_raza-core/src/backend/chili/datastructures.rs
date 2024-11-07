@@ -53,7 +53,6 @@ pub fn construct_simulation_runner<D, S, C, A, Com, Sy, Ci>(
     domain: D,
     agents: Ci,
     n_subdomains: NonZeroUsize,
-    aux_storage: &A,
 ) -> Result<
     SimulationRunner<D::SubDomainIndex, SubDomainBox<D::SubDomainIndex, S, C, A, Com, Sy>>,
     SimulationError,
