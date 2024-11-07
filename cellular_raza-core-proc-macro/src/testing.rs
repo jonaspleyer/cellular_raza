@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use quote::quote;
 
 use super::simulation_aspects::{SimulationAspect, SimulationAspects};
@@ -22,6 +23,25 @@ impl syn::parse::Parse for MinCombinations {
 }
 
 #[allow(unused)]
+struct Sorted {
+    comma: syn::Token![,],
+    sorted_kw: syn::Ident,
+    colon: syn::Token![:],
+    sorted: bool,
+}
+
+impl syn::parse::Parse for Sorted {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            comma: input.parse()?,
+            sorted_kw: input.parse()?,
+            colon: input.parse()?,
+            sorted: input.parse::<syn::LitBool>()?.value,
+        })
+    }
+}
+
+#[allow(unused)]
 struct MacroParser {
     test_token: syn::Ident,
     colon: syn::Token![:],
@@ -29,6 +49,7 @@ struct MacroParser {
     comma: syn::Token![,],
     aspects: SimulationAspects,
     min_combinations: Option<MinCombinations>,
+    sorted: Option<Sorted>,
 }
 
 impl syn::parse::Parse for MacroParser {
@@ -46,6 +67,7 @@ impl syn::parse::Parse for MacroParser {
             let keyword: syn::Ident = input.parse()?;
             match keyword.to_string().as_ref() {
                 "min_combinations" => res.min_combinations = Some(input.parse()?),
+                "sorted" => res.sorted = Some(input.parse()?),
                 _ => (),
             }
         }
@@ -65,7 +87,7 @@ impl MacroParser {
 
         let mut stream = quote!();
         for n in min_order..aspects.len() {
-            let combinations = get_combinations(n, aspects.clone());
+            let combinations = get_combinations(n, aspects.clone(), sorted);
 
             for (name, list) in combinations {
                 let list_aspects = list.into_iter().map(|aspect| aspect.to_token_stream());
@@ -103,6 +125,7 @@ fn idents_overlap(id1: &proc_macro2::TokenStream, id2: &proc_macro2::TokenStream
 fn get_combinations(
     n: usize,
     idents: Vec<SimulationAspect>,
+    sorted: bool,
 ) -> Vec<(proc_macro2::TokenStream, Vec<SimulationAspect>)> {
     let idents: Vec<(proc_macro2::TokenStream, Vec<SimulationAspect>)> = idents
         .into_iter()
@@ -129,6 +152,30 @@ fn get_combinations(
         list.extend(list2);
         let list = list.into_iter().map(|s| s.into()).collect();
         Some((name, list))
+    }
+
+    if sorted {
+        return idents
+            .iter()
+            .combinations(n)
+            .into_iter()
+            .map(|ids| {
+                ids.into_iter()
+                    .fold((quote::quote!(), vec![]), |mut acc, x| {
+                        if acc.1.is_empty() {
+                            acc = x.clone();
+                            return acc;
+                        }
+                        match combine_idents(&acc, x) {
+                            Some(res) => {
+                                acc = res;
+                                acc
+                            }
+                            None => acc,
+                        }
+                    })
+            })
+            .collect();
     }
 
     let combinations: Vec<_> = (1..n).fold(
