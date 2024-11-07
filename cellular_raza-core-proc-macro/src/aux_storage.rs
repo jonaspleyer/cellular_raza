@@ -700,7 +700,32 @@ impl AuxStorageImplementer {
     }
 }
 
-// ##################################### DERIVE ######################################
+pub fn generics_placeholders(
+    kwargs: impl Into<KwargsAuxStorage>,
+    mechanics_solver_order: usize,
+    reactions_solver_order: usize,
+) -> Vec<proc_macro2::TokenStream> {
+    let kwargs: KwargsAuxStorage = kwargs.into();
+    let builder = Builder::from(kwargs);
+    let (generics, _) = builder.get_generics_and_fields();
+    generics
+        .into_iter()
+        .map(|x| match x {
+            syn::GenericParam::Const(c) => {
+                if &c.ident == "NMec" {
+                    quote::quote!(#mechanics_solver_order)
+                } else if &c.ident == "NReact" {
+                    quote::quote!(#reactions_solver_order)
+                } else {
+                    quote::quote!(_)
+                }
+            }
+            _ => quote::quote!(_),
+        })
+        .collect()
+}
+
+// #################################### CONSTRUCT ####################################
 pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let aux_storage_parsed = syn::parse_macro_input!(input as AuxStorageParser);
