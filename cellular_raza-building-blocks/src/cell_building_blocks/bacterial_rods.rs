@@ -490,8 +490,8 @@ impl<F, const D: usize> RodMechanics<F, D> {
     /// ```
     /// # use cellular_raza_building_blocks::*;
     /// let mut m1 = RodMechanics {
-    ///     pos: nalgebra::Matrix::<f32, _, _, _>::from_rows(7),
-    ///     vel: nalgebra::Matrix::<f32, nalgebra::Dyn, nalgebra::U2, _>::zeros(7),
+    ///     pos: nalgebra::MatrixXx2::<f32>::zeros(7),
+    ///     vel: nalgebra::MatrixXx2::<f32>::zeros(7),
     ///     diffusion_constant: 0.0,
     ///     spring_tension: 0.1,
     ///     angle_stiffness: 0.05,
