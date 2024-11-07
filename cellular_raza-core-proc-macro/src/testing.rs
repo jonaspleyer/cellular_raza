@@ -2,6 +2,22 @@ use quote::quote;
 
 use super::simulation_aspects::{SimulationAspect, SimulationAspects};
 
+struct MinOrder {
+    min_order_kw: syn::Ident,
+    colon: syn::Token![:],
+    min_order: core::num::NonZeroUsize,
+}
+
+impl syn::parse::Parse for MinOrder {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            min_order_kw: input.parse()?,
+            colon: input.parse()?,
+            min_order: input.parse::<syn::LitInt>()?.base10_parse()?,
+        })
+    }
+}
+
 #[allow(unused)]
 struct MacroParser {
     test_token: syn::Ident,
@@ -9,6 +25,8 @@ struct MacroParser {
     macro_name: syn::Ident,
     comma: syn::Token![,],
     aspects: SimulationAspects,
+    comma2: Option<syn::Token![,]>,
+    min_order: Option<MinOrder>,
 }
 
 impl syn::parse::Parse for MacroParser {
@@ -19,6 +37,8 @@ impl syn::parse::Parse for MacroParser {
             macro_name: input.parse()?,
             comma: input.parse()?,
             aspects: input.parse()?,
+            comma2: input.parse()?,
+            min_order: if input.is_empty() {None} else {Some(input.parse()?)},
         })
     }
 }
@@ -27,8 +47,9 @@ impl MacroParser {
     fn spawn_tests(self) -> proc_macro2::TokenStream {
         let macro_name = &self.macro_name;
         let aspects: Vec<_> = self.aspects.to_aspect_list();
+        let min_order = self.min_order.map(|x| x.min_order.get()).unwrap_or(1);
         let mut stream = quote!();
-        for n in 0..aspects.len() {
+        for n in min_order..aspects.len() {
             let combinations = get_combinations(n, aspects.clone());
 
             for (name, list) in combinations {
