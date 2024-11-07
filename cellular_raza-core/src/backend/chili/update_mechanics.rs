@@ -302,7 +302,7 @@ where
         determinism: bool,
     ) -> Result<(), SimulationError>
     where
-        For: Xapy<Float> + num::Zero,
+        For: Xapy<Float>,
         A: UpdateMechanics<Pos, Vel, For, N>,
         A: UpdateInteraction,
         Float: num::Float,
