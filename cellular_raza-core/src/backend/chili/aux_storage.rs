@@ -105,19 +105,22 @@ pub struct AuxStorageMechanics<Pos, Vel, For, const N: usize> {
     positions: RingBuffer<Pos, N>,
     velocities: RingBuffer<Vel, N>,
     current_force: For,
-    force_is_zero: bool,
+    zero_force: For,
 }
 
 // It is necessary to implement this trait by hand since with the current version of the Mechanics
 // concept, we need to specify next_random_mechanics_update: Some(0.0) in order for any updates to
 // be done at all.
-impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N> {
+impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N>
+where
+    For: Default,
+{
     fn default() -> Self {
         Self {
             positions: RingBuffer::<Pos, N>::default(),
             velocities: RingBuffer::<Vel, N>::default(),
-            current_force: unsafe { core::mem::zeroed() },
-            force_is_zero: true,
+            current_force: Default::default(), // unsafe { core::mem::zeroed() },
+            zero_force: Default::default(),
         }
     }
 }
@@ -154,20 +157,15 @@ where
 
     #[inline]
     fn add_force(&mut self, force: For) {
-        if self.force_is_zero {
-            self.current_force = force;
-            self.force_is_zero = false;
-        } else {
-            self.current_force += force;
-        }
+        self.current_force += force;
     }
 
     #[inline]
     fn get_current_force_and_reset(&mut self) -> For {
-        self.force_is_zero = true;
-        self.current_force.clone()
+        let f = self.current_force.clone();
+        self.current_force = self.zero_force.clone();
+        f
     }
-
 }
 
 // ----------------------------------- UPDATE-CYCLE ----------------------------------
