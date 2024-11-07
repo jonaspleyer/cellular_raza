@@ -75,6 +75,14 @@ impl Parallelizer {
     }
 }
 
+// IMPORTANT NOTICE: Just as done in the Kwargs enum,
+// this value is actually the solver order minus one.
+// This is due to the fact that the AuxStorage only
+// needs to store one less value than the solver order
+// and we need to specify the generic argument there
+// with this variable.
+pub const DEFAULT_MECHANICS_SOLVER_ORDER: usize = 2;
+pub const DEFAULT_REACTIONS_SOLVER_ORDER: usize = 2;
 
 define_kwargs!(
     KwargsSim,
@@ -89,6 +97,8 @@ define_kwargs!(
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
+    mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
+    reactions_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER,
 );
 
 define_kwargs!(
@@ -132,6 +142,8 @@ define_kwargs!(
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
+    mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
+    reactions_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER,
     @from
     KwargsSim
 );

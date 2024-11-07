@@ -85,6 +85,20 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         communicator_name: syn::Ident,
     },
+    mechanics_solver_order {
+        #[allow(unused)]
+        mechanics_solver_order_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        mechanics_solver_order: usize,
+    },
+    reactions_solver_order {
+        #[allow(unused)]
+        reactions_solver_order_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        reactions_solver_order: usize,
+    },
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -134,6 +148,26 @@ impl syn::parse::Parse for Kwarg {
                 communicator_name_kw: keyword,
                 double_colon: input.parse()?,
                 communicator_name: input.parse()?,
+            }),
+            "mechanics_solver_order" => Ok(Kwarg::mechanics_solver_order {
+                mechanics_solver_order_kw: keyword,
+                double_colon: input.parse()?,
+                // This is important. We need this since the AuxStorage
+                // struct contains one entry less than the actual solver
+                // order. Do not remove the -1 in the end.
+                mechanics_solver_order: input
+                    .parse::<syn::LitInt>()?
+                    .base10_parse::<NonZeroUsize>()?
+                    .get()
+                    - 1,
+            }),
+            "reactions_solver_order" => Ok(Kwarg::reactions_solver_order {
+                reactions_solver_order_kw: keyword,
+                double_colon: input.parse()?,
+                reactions_solver_order: input
+                    .parse::<syn::LitInt>()?
+                    .base10_parse::<NonZeroUsize>()?
+                    .get(),
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
