@@ -87,6 +87,7 @@ define_kwargs!(
     core_path: syn::Path | convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
+    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
 );
 
 define_kwargs!(
@@ -98,6 +99,7 @@ define_kwargs!(
     aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | convert_core_path(None),
+    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     @from
     KwargsSim
 );
@@ -108,6 +110,7 @@ define_kwargs!(
     aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | convert_core_path(None),
+    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     @from
     KwargsSim,
     KwargsCompatibility
@@ -124,6 +127,7 @@ define_kwargs!(
     core_path: syn::Path | convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
+    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     @from
     KwargsSim
 );
@@ -298,6 +302,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let agents = &kwargs.agents;
     let settings = &kwargs.settings;
     let core_path = &kwargs.core_path;
+    let aux_storage_name = &kwargs.aux_storage_name;
 
     let update_func = run_main_update(kwargs.clone());
     let parallelized_update_func =
@@ -307,7 +312,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
-        let _aux_storage = _CrAuxStorage::default();
+        let _aux_storage = #aux_storage_name ::default();
 
         let __run_sim = || -> Result<
                 #core_path::backend::chili::StorageAccess<_, _>,
@@ -338,15 +343,13 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     })
 }
 
-pub fn prepare_types(kwargs_parsed: KwargsPrepareTypes) -> proc_macro2::TokenStream {
+pub fn prepare_types(kwargs: KwargsPrepareTypes) -> proc_macro2::TokenStream {
     // Build AuxStorage
-    let kwargs: KwargsPrepareTypes = kwargs_parsed.into();
     let aux_storage_builder = super::aux_storage::Builder {
-        struct_name: syn::Ident::new("_CrAuxStorage", proc_macro2::Span::call_site()),
+        struct_name: kwargs.aux_storage_name.clone(),
         core_path: kwargs.core_path.clone(),
         aspects: kwargs.aspects.clone(),
     };
-
     let mut output = aux_storage_builder.build_aux_storage();
 
     // Build Communicator
