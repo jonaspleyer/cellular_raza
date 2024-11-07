@@ -364,12 +364,12 @@ impl AuxStorageImplementer {
                     quote!(
                         where
                         #(#pred,)*
-                        #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                        #force: Clone + core::ops::AddAssign<#force>,
                     )
                 }
                 None => quote!(
                     where
-                    #force: Clone + core::ops::AddAssign<#force> + num::Zero,
+                    #force: Clone + core::ops::AddAssign<#force>,
                 ),
             };
 
