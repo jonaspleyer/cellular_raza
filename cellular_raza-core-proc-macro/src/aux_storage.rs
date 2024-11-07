@@ -5,6 +5,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
 
+use super::run_sim::*;
 use super::simulation_aspects::*;
 
 // ##################################### PARSING #####################################
@@ -716,25 +717,21 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
 }
 
 // #################################### CONSTRUCT ####################################
-pub struct Arguments {
-    pub name_def: NameDefinition,
-    _comma: syn::Token![,],
-    pub simulation_aspects: SimulationAspects,
-    _comma_2: syn::Token![,],
-    pub core_path: CorePath,
+pub fn default_aux_storage_name() -> syn::Ident {
+    syn::Ident::new("_CrAuxStorage", proc_macro2::Span::call_site())
 }
 
-impl syn::parse::Parse for Arguments {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            name_def: input.parse()?,
-            _comma: input.parse()?,
-            simulation_aspects: input.parse()?,
-            _comma_2: input.parse()?,
-            core_path: input.parse()?,
-        })
-    }
-}
+define_kwargs!(
+    KwargsAuxStorage,
+    KwargsAuxStorageParsed,
+    aspects: SimulationAspects,
+    @optionals
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
+    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    @from
+    KwargsSim,
+    KwargsMain
+);
 
 pub struct Builder {
     pub struct_name: syn::Ident,
@@ -742,21 +739,22 @@ pub struct Builder {
     pub aspects: SimulationAspects,
 }
 
-impl From<Arguments> for Builder {
-    fn from(arguments: Arguments) -> Self {
+impl From<KwargsAuxStorage> for Builder {
+    fn from(kwargs: KwargsAuxStorage) -> Self {
         Self {
-            struct_name: arguments.name_def.struct_name,
-            core_path: arguments.core_path.path,
-            aspects: arguments.simulation_aspects,
+            struct_name: kwargs.aux_storage_name,
+            core_path: kwargs.core_path,
+            aspects: kwargs.aspects,
         }
     }
 }
 
 impl Builder {
-    pub fn build_aux_storage(self) -> proc_macro2::TokenStream {
-        let struct_name = self.struct_name;
-        let p = self.core_path;
-        let (core_path, backend_path) = (quote!(#p), quote!(#p ::backend::chili::));
+    pub fn get_generics_and_fields(
+        &self,
+    ) -> (Vec<syn::GenericParam>, Vec<proc_macro2::TokenStream>) {
+        let core_path = &self.core_path;
+        let backend_path = quote!(#core_path ::backend::chili::);
         let mut generics = vec![];
         let mut fields = vec![];
 
@@ -768,13 +766,37 @@ impl Builder {
             ));
         }
 
+        macro_rules! g(
+            (const $n:tt : $t:ty) => {
+                syn::GenericParam::Const(syn::ConstParam {
+                    attrs: Vec::new(),
+                    const_token: syn::token::Const {
+                        span: proc_macro2::Span::call_site(),
+                    },
+                    ident: syn::Ident::new(stringify!($n), proc_macro2::Span::call_site()),
+                    colon_token: syn::token::Colon {
+                        spans: [proc_macro2::Span::call_site()],
+                    },
+                    ty: syn::Type::Path(syn::TypePath {
+                        qself: None,
+                        path: syn::Path::from(syn::PathSegment {
+                            ident: syn::Ident::new(stringify!($t), proc_macro2::Span::call_site()),
+                            arguments: syn::PathArguments::None,
+                        }),
+                    }),
+                    eq_token: None,
+                    default: None,
+                })
+            };
+            ($n:tt) => {
+                syn::GenericParam::Type(
+                    syn::Ident::new(stringify!($n), proc_macro2::Span::call_site()).into()
+                )
+            };
+        );
+
         if self.aspects.contains(&Mechanics) {
-            generics.extend(vec![
-                quote!(Pos),
-                quote!(Vel),
-                quote!(For),
-                quote!(const NMec: usize),
-            ]);
+            generics.extend(vec![g!(Pos), g!(Vel), g!(For), g!(const NMec: usize)]);
             fields.push(quote!(
                 #[UpdateMechanics(Pos, Vel, For, NMec)]
                 mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, NMec>,
@@ -785,14 +807,14 @@ impl Builder {
             .aspects
             .contains_any([&Reactions, &ReactionsContact, &ReactionsExtra])
         {
-            generics.push(quote!(Ri));
+            generics.push(g!(Ri));
             fields.push(quote!(
                 #[UpdateReactions(Ri)]
                 reactions: #backend_path AuxStorageReactions<Ri>,
             ));
         }
         if self.aspects.contains(&ReactionsContact) {
-            generics.push(quote!(const NReact: usize));
+            generics.push(g!(const NReact: usize));
             fields.push(quote!(
                 #[UpdateReactionsContact(Ri, NReact)]
                 reactions_contact: #backend_path AuxStorageReactionsContact<Ri, NReact>,
@@ -805,6 +827,14 @@ impl Builder {
                 interaction: #backend_path AuxStorageInteraction,
             ));
         }
+        (generics, fields)
+    }
+
+    pub fn build_aux_storage(self) -> proc_macro2::TokenStream {
+        let struct_name = &self.struct_name;
+        let core_path = &self.core_path;
+
+        let (generics, fields) = self.get_generics_and_fields();
 
         let stream = quote!(
             #[allow(non_camel_case_types)]
@@ -821,7 +851,7 @@ impl Builder {
 }
 
 /// Define a AuxStorage struct that
-pub fn construct_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let builder: Builder = syn::parse_macro_input!(input as Arguments).into();
+pub fn construct_aux_storage(kwargs: KwargsAuxStorage) -> proc_macro::TokenStream {
+    let builder: Builder = kwargs.into();
     proc_macro::TokenStream::from(builder.build_aux_storage())
 }

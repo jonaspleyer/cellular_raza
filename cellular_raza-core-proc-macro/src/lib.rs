@@ -37,7 +37,9 @@ pub fn _aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[allow(missing_docs)]
 #[proc_macro]
 pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    aux_storage::construct_aux_storage(input)
+    let kwargs = syn::parse_macro_input!(input as aux_storage::KwargsAuxStorageParsed);
+    let kwargs = aux_storage::KwargsAuxStorage::from(kwargs);
+    aux_storage::construct_aux_storage(kwargs)
 }
 
 #[allow(missing_docs)]

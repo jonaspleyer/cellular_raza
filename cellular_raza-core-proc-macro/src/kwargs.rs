@@ -71,6 +71,13 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         determinism: bool,
     },
+    aux_storage_name {
+        #[allow(unused)]
+        aux_storage_name_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        aux_storage_name: syn::Ident,
+    },
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -110,6 +117,11 @@ impl syn::parse::Parse for Kwarg {
                 determinism_kw: keyword,
                 double_colon: input.parse()?,
                 determinism: input.parse::<syn::LitBool>()?.value,
+            }),
+            "aux_storage_name" => Ok(Kwarg::aux_storage_name {
+                aux_storage_name_kw: keyword,
+                double_colon: input.parse()?,
+                aux_storage_name: input.parse()?,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
