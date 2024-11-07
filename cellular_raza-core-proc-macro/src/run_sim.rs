@@ -452,12 +452,11 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
 }
 
 pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
-    let types = prepare_types(KwargsPrepareTypes {
-        aspects: kwargs.aspects.clone(),
-        core_path: kwargs.core_path.clone(),
-    });
+    let types = prepare_types(KwargsPrepareTypes::from(kwargs.clone()));
+
     let kwargs_compat = KwargsCompatibility::from(kwargs.clone());
     let test_compat = test_compatibility(kwargs_compat);
+
     let kwargs_main = KwargsMain::from(kwargs.clone());
     let run_main = run_main(kwargs_main);
     quote::quote!({
