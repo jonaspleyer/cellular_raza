@@ -82,7 +82,8 @@ impl Parallelizer {
 // and we need to specify the generic argument there
 // with this variable.
 pub const DEFAULT_MECHANICS_SOLVER_ORDER: usize = 2;
-pub const DEFAULT_REACTIONS_SOLVER_ORDER: usize = 2;
+pub const DEFAULT_REACTIONS_SOLVER_ORDER_INTRA: usize = 4;
+pub const DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT: usize = 2;
 
 define_kwargs!(
     KwargsSim,
@@ -98,7 +99,8 @@ define_kwargs!(
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
-    reactions_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER,
+    reactions_intra_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_INTRA,
+    reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
 );
 
 define_kwargs!(
@@ -143,7 +145,8 @@ define_kwargs!(
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
-    reactions_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER,
+    reactions_intra_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_INTRA,
+    reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
     @from
     KwargsSim
 );
@@ -165,7 +168,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let determinism = &kwargs.determinism;
 
     let mechanics_solver_order = kwargs.mechanics_solver_order;
-    let reactions_solver_order = kwargs.reactions_solver_order;
+    let reactions_intra_solver_order = kwargs.reactions_intra_solver_order;
 
     if kwargs
         .aspects
@@ -216,7 +219,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             _,
             _,
             _,
-            #reactions_solver_order,
+            #reactions_intra_solver_order,
         >),
         );
     }
@@ -343,7 +346,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let aux_storage_placeholders = crate::aux_storage::generics_placeholders(
         kwargs.clone(),
         kwargs.mechanics_solver_order,
-        kwargs.reactions_solver_order,
+        kwargs.reactions_contact_solver_order,
     );
 
     let update_func = run_main_update(kwargs.clone());

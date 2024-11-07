@@ -92,12 +92,19 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         mechanics_solver_order: usize,
     },
-    reactions_solver_order {
+    reactions_intra_solver_order {
         #[allow(unused)]
-        reactions_solver_order_kw: syn::Ident,
+        reactions_intra_solver_order_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
-        reactions_solver_order: usize,
+        reactions_intra_solver_order: usize,
+    },
+    reactions_contact_solver_order {
+        #[allow(unused)]
+        reactions_contact_solver_order_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        reactions_contact_solver_order: usize,
     },
 }
 
@@ -161,13 +168,22 @@ impl syn::parse::Parse for Kwarg {
                     .get()
                     - 1,
             }),
-            "reactions_solver_order" => Ok(Kwarg::reactions_solver_order {
-                reactions_solver_order_kw: keyword,
+            "reactions_intra_solver_order" => Ok(Kwarg::reactions_intra_solver_order {
+                reactions_intra_solver_order_kw: keyword,
                 double_colon: input.parse()?,
-                reactions_solver_order: input
+                reactions_intra_solver_order: input
                     .parse::<syn::LitInt>()?
                     .base10_parse::<NonZeroUsize>()?
                     .get(),
+            }),
+            "reactions_contact_solver_order" => Ok(Kwarg::reactions_contact_solver_order {
+                reactions_contact_solver_order_kw: keyword,
+                double_colon: input.parse()?,
+                reactions_contact_solver_order: input
+                    .parse::<syn::LitInt>()?
+                    .base10_parse::<NonZeroUsize>()?
+                    .get()
+                    - 1,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),

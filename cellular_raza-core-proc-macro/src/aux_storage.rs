@@ -703,7 +703,7 @@ impl AuxStorageImplementer {
 pub fn generics_placeholders(
     kwargs: impl Into<KwargsAuxStorage>,
     mechanics_solver_order: usize,
-    reactions_solver_order: usize,
+    reactions_contact_solver_order: usize,
 ) -> Vec<proc_macro2::TokenStream> {
     let kwargs: KwargsAuxStorage = kwargs.into();
     let builder = Builder::from(kwargs);
@@ -715,7 +715,7 @@ pub fn generics_placeholders(
                 if &c.ident == "NMec" {
                     quote::quote!(#mechanics_solver_order)
                 } else if &c.ident == "NReact" {
-                    quote::quote!(#reactions_solver_order)
+                    quote::quote!(#reactions_contact_solver_order)
                 } else {
                     quote::quote!(_)
                 }
