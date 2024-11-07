@@ -8,6 +8,9 @@
 //! All macros are documented in the core crate unless their functionality can be
 //! displayed without any additional dependencies.
 
+#[macro_use]
+mod kwargs;
+
 mod aux_storage;
 mod communicator;
 mod from_map;
