@@ -84,7 +84,7 @@ define_kwargs!(
     settings: syn::Ident,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None),
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
@@ -99,7 +99,7 @@ define_kwargs!(
     settings: syn::Ident,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None),
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
@@ -111,7 +111,7 @@ define_kwargs!(
     KwargsPrepareTypesParsed,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None),
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
@@ -127,7 +127,7 @@ define_kwargs!(
     settings: syn::Ident,
     aspects: SimulationAspects,
     @optionals
-    core_path: syn::Path | convert_core_path(None),
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
