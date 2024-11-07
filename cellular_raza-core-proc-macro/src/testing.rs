@@ -4,27 +4,7 @@ use quote::quote;
 use super::simulation_aspects::{SimulationAspect, SimulationAspects};
 
 #[allow(unused)]
-struct MinCombinations {
-    comma: syn::Token![,],
-    min_combinations_kw: syn::Ident,
-    colon: syn::Token![:],
-    min_combinations: core::num::NonZeroUsize,
-}
-
-impl syn::parse::Parse for MinCombinations {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            comma: input.parse()?,
-            min_combinations_kw: input.parse()?,
-            colon: input.parse()?,
-            min_combinations: input.parse::<syn::LitInt>()?.base10_parse()?,
-        })
-    }
-}
-
-#[allow(unused)]
 struct Sorted {
-    comma: syn::Token![,],
     sorted_kw: syn::Ident,
     colon: syn::Token![:],
     sorted: bool,
@@ -33,7 +13,6 @@ struct Sorted {
 impl syn::parse::Parse for Sorted {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            comma: input.parse()?,
             sorted_kw: input.parse()?,
             colon: input.parse()?,
             sorted: input.parse::<syn::LitBool>()?.value,
@@ -48,8 +27,8 @@ struct MacroParser {
     macro_name: syn::Ident,
     comma: syn::Token![,],
     aspects: SimulationAspects,
-    min_combinations: Option<MinCombinations>,
-    sorted: Option<Sorted>,
+    min_combinations: Option<core::num::NonZeroUsize>,
+    sorted: Option<bool>,
 }
 
 impl syn::parse::Parse for MacroParser {
@@ -63,12 +42,18 @@ impl syn::parse::Parse for MacroParser {
             min_combinations: None,
             sorted: None,
         };
-        if !input.is_empty() {
-            let keyword: syn::Ident = input.parse()?;
-            match keyword.to_string().as_ref() {
-                "min_combinations" => res.min_combinations = Some(input.parse()?),
-                "sorted" => res.sorted = Some(input.parse()?),
-                _ => (),
+        while !input.is_empty() {
+            let _: syn::Token![,] = input.parse()?;
+            if !input.is_empty() {
+                let keyword: syn::Ident = input.parse()?;
+                let _: syn::Token![:] = input.parse()?;
+                match keyword.to_string().as_ref() {
+                    "min_combinations" => {
+                        res.min_combinations = Some(input.parse::<syn::LitInt>()?.base10_parse()?)
+                    }
+                    "sorted" => res.sorted = Some(input.parse::<syn::LitBool>()?.value),
+                    _ => (),
+                }
             }
         }
         Ok(res)
@@ -79,11 +64,8 @@ impl MacroParser {
     fn spawn_tests(self) -> proc_macro2::TokenStream {
         let macro_name = &self.macro_name;
         let aspects: Vec<_> = self.aspects.to_aspect_list();
-        let min_order = self
-            .min_combinations
-            .map(|x| x.min_combinations.get())
-            .unwrap_or(1);
-        let sorted = self.sorted.map(|x| x.sorted).unwrap_or(true);
+        let min_order = self.min_combinations.map(|x| x.get()).unwrap_or(1);
+        let sorted = self.sorted.map(|x| x).unwrap_or(true);
 
         let mut stream = quote!();
         for n in min_order..aspects.len() {
