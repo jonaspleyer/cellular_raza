@@ -328,6 +328,10 @@ fn generics_and_fields(
     (generics, fields)
 }
 
+pub fn default_communicator_name() -> syn::Ident {
+    syn::Ident::new("_CrCommunicator", proc_macro2::Span::call_site())
+}
+
 pub struct CommunicatorBuilder {
     pub struct_name: syn::Ident,
     pub core_path: syn::Path,

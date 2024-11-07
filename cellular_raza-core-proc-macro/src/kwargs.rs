@@ -78,6 +78,13 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         aux_storage_name: syn::Ident,
     },
+    communicator_name {
+        #[allow(unused)]
+        communicator_name_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        communicator_name: syn::Ident,
+    },
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -122,6 +129,11 @@ impl syn::parse::Parse for Kwarg {
                 aux_storage_name_kw: keyword,
                 double_colon: input.parse()?,
                 aux_storage_name: input.parse()?,
+            }),
+            "communicator_name" => Ok(Kwarg::communicator_name {
+                communicator_name_kw: keyword,
+                double_colon: input.parse()?,
+                communicator_name: input.parse()?,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),

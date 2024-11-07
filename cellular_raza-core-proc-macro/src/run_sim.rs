@@ -88,6 +88,7 @@ define_kwargs!(
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
 );
 
 define_kwargs!(
@@ -100,6 +101,7 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim
 );
@@ -111,6 +113,7 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim,
     KwargsCompatibility
@@ -128,6 +131,7 @@ define_kwargs!(
     parallelizer: Parallelizer | Parallelizer::OsThreads,
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim
 );
@@ -303,6 +307,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let settings = &kwargs.settings;
     let core_path = &kwargs.core_path;
     let aux_storage_name = &kwargs.aux_storage_name;
+    let communicator_name = &kwargs.communicator_name;
 
     let update_func = run_main_update(kwargs.clone());
     let parallelized_update_func =
@@ -324,7 +329,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 _,
                 _,
                 #core_path::backend::chili::communicator_generics_placeholders!(
-                    name: _CrCommunicator,
+                    name: #communicator_name,
                     aspects: [#(#asp),*]
                 ),
                 _Syncer,
@@ -354,7 +359,7 @@ pub fn prepare_types(kwargs: KwargsPrepareTypes) -> proc_macro2::TokenStream {
 
     // Build Communicator
     let communicator_builder = super::communicator::CommunicatorBuilder {
-        struct_name: syn::Ident::new("_CrCommunicator", proc_macro2::Span::call_site()),
+        struct_name: kwargs.communicator_name.clone(),
         core_path: kwargs.core_path.clone(),
         aspects: kwargs.aspects.clone(),
     };
