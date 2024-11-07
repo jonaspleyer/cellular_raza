@@ -4,16 +4,28 @@ use cellular_raza_concepts::*;
 use num::FromPrimitive;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
+use nalgebra::{Const, Dyn, Matrix, VecStorage};
+
 /// A mechanical model for Bacterial Rods
 ///
 /// See the [Bacterial Rods](https://cellular-raza.com/showcase/bacterial-rods) example for more
 /// detailed information.
 #[derive(Clone, Debug, PartialEq)]
-pub struct RodMechanics<F, const D1: usize, const D2: usize> {
+pub struct RodMechanics<F, const D: usize> {
     /// The current position
-    pub pos: nalgebra::SMatrix<F, D1, D2>,
+    pub pos: Matrix<
+        F,
+        nalgebra::Dyn,
+        nalgebra::Const<D>,
+        nalgebra::VecStorage<F, nalgebra::Dyn, nalgebra::Const<D>>,
+    >,
     /// The current velocity
-    pub vel: nalgebra::SMatrix<F, D1, D2>,
+    pub vel: Matrix<
+        F,
+        nalgebra::Dyn,
+        nalgebra::Const<D>,
+        nalgebra::VecStorage<F, nalgebra::Dyn, nalgebra::Const<D>>,
+    >,
     /// Controls magnitude of stochastic motion
     pub diffusion_constant: F,
     /// Spring tension between individual vertices
@@ -26,21 +38,27 @@ pub struct RodMechanics<F, const D1: usize, const D2: usize> {
     pub damping: F,
 }
 
-impl<F, const D1: usize, const D2: usize>
+impl<F, const D: usize>
     Mechanics<
-        nalgebra::SMatrix<F, D1, D2>,
-        nalgebra::SMatrix<F, D1, D2>,
-        nalgebra::SMatrix<F, D1, D2>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
         F,
-    > for RodMechanics<F, D1, D2>
+    > for RodMechanics<F, D>
 where
     F: nalgebra::RealField + Clone + num::Float,
     rand_distr::StandardNormal: rand_distr::Distribution<F>,
 {
     fn calculate_increment(
         &self,
-        force: nalgebra::SMatrix<F, D1, D2>,
-    ) -> Result<(nalgebra::SMatrix<F, D1, D2>, nalgebra::SMatrix<F, D1, D2>), CalcError> {
+        force: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+    ) -> Result<
+        (
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ),
+        CalcError,
+    > {
         use core::ops::AddAssign;
         let one_half = F::one() / (F::one() + F::one());
 
@@ -83,7 +101,7 @@ where
             });
 
         // Calculate damping force
-        total_force -= self.vel * self.damping;
+        total_force -= &self.vel * self.damping;
         Ok((self.vel.clone(), total_force))
     }
 
@@ -91,41 +109,50 @@ where
         &self,
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: F,
-    ) -> Result<(nalgebra::SMatrix<F, D1, D2>, nalgebra::SMatrix<F, D1, D2>), RngError> {
+    ) -> Result<
+        (
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ),
+        RngError,
+    > {
         let distr = match rand_distr::Normal::new(F::zero(), <F as num::Float>::sqrt(dt)) {
             Ok(e) => Ok(e),
             Err(e) => Err(cellular_raza_concepts::RngError(format!("{e}"))),
         }?;
-        let dpos = nalgebra::SMatrix::<F, D1, D2>::from_distribution(&distr, rng)
-            * <F as num::Float>::powi(F::one() + F::one(), -2)
+        let dpos = nalgebra::Matrix::<F, Dyn, Const<D>, _>::from_distribution(
+            self.pos.nrows(),
+            &distr,
+            rng,
+        ) * <F as num::Float>::powi(F::one() + F::one(), -2)
             * self.diffusion_constant
             / dt;
-        let dvel = nalgebra::SMatrix::<F, D1, D2>::zeros();
+        let dvel = nalgebra::Matrix::<F, Dyn, Const<D>, _>::zeros(self.pos.nrows());
 
         Ok((dpos, dvel))
     }
 }
 
-impl<F: Clone, const D1: usize, const D2: usize> Position<nalgebra::SMatrix<F, D1, D2>>
-    for RodMechanics<F, D1, D2>
+impl<F: Clone, const D: usize> Position<Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>>
+    for RodMechanics<F, D>
 {
-    fn pos(&self) -> nalgebra::SMatrix<F, D1, D2> {
+    fn pos(&self) -> Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>> {
         self.pos.clone()
     }
 
-    fn set_pos(&mut self, position: &nalgebra::SMatrix<F, D1, D2>) {
+    fn set_pos(&mut self, position: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>) {
         self.pos = position.clone();
     }
 }
 
-impl<F: Clone, const D1: usize, const D2: usize> Velocity<nalgebra::SMatrix<F, D1, D2>>
-    for RodMechanics<F, D1, D2>
+impl<F: Clone, const D: usize> Velocity<Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>>
+    for RodMechanics<F, D>
 {
-    fn velocity(&self) -> nalgebra::SMatrix<F, D1, D2> {
+    fn velocity(&self) -> Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>> {
         self.vel.clone()
     }
 
-    fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<F, D1, D2>) {
+    fn set_velocity(&mut self, velocity: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>) {
         self.vel = velocity.clone();
     }
 }
@@ -134,20 +161,15 @@ impl<F: Clone, const D1: usize, const D2: usize> Velocity<nalgebra::SMatrix<F, D
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct RodInteraction<I>(pub I);
 
-impl<I, F, Inf, const D1: usize, const D2: usize>
+impl<I, F, Inf, const D: usize>
     Interaction<
-        nalgebra::SMatrix<F, D1, D2>,
-        nalgebra::SMatrix<F, D1, D2>,
-        nalgebra::SMatrix<F, D1, D2>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
         Inf,
     > for RodInteraction<I>
 where
-    I: Interaction<
-        nalgebra::SVector<F, D2>,
-        nalgebra::SVector<F, D2>,
-        nalgebra::SVector<F, D2>,
-        Inf,
-    >,
+    I: Interaction<nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, Inf>,
     F: 'static + nalgebra::RealField + Copy + core::fmt::Debug + num::Zero,
 {
     fn get_interaction_information(&self) -> Inf {
@@ -156,16 +178,22 @@ where
 
     fn calculate_force_between(
         &self,
-        own_pos: &nalgebra::SMatrix<F, D1, D2>,
-        own_vel: &nalgebra::SMatrix<F, D1, D2>,
-        ext_pos: &nalgebra::SMatrix<F, D1, D2>,
-        ext_vel: &nalgebra::SMatrix<F, D1, D2>,
+        own_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        own_vel: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_vel: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
         ext_inf: &Inf,
-    ) -> Result<(nalgebra::SMatrix<F, D1, D2>, nalgebra::SMatrix<F, D1, D2>), CalcError> {
+    ) -> Result<
+        (
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+            Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ),
+        CalcError,
+    > {
         use core::ops::AddAssign;
         use itertools::Itertools;
-        let mut force_own = nalgebra::SMatrix::<F, D1, D2>::zeros();
-        let mut force_ext = nalgebra::SMatrix::<F, D1, D2>::zeros();
+        let mut force_own = nalgebra::Matrix::<F, Dyn, Const<D>, _>::zeros(own_vel.nrows());
+        let mut force_ext = nalgebra::Matrix::<F, Dyn, Const<D>, _>::zeros(own_vel.nrows());
         for (i, p1) in own_pos.row_iter().enumerate() {
             for (j, (p2_n0, p2_n1)) in ext_pos.row_iter().tuple_windows::<(_, _)>().enumerate() {
                 // Calculate the closest point of the external position
@@ -187,7 +215,7 @@ where
                     .row_mut(j)
                     .add_assign(f_ext.transpose() * (F::one() - rel_length));
                 force_ext
-                    .row_mut((j + 1) % D1)
+                    .row_mut((j + 1) % own_pos.nrows())
                     .add_assign(f_ext.transpose() * rel_length);
             }
         }
@@ -197,15 +225,15 @@ where
 
 /// Cells are represented by rods
 #[derive(Domain)]
-pub struct CartesianCuboidRods<F, const D1: usize, const D2: usize> {
+pub struct CartesianCuboidRods<F, const D: usize> {
     /// The base-cuboid which is being repurposed
     #[DomainRngSeed]
-    pub domain: CartesianCuboid<F, D2>,
+    pub domain: CartesianCuboid<F, D>,
 }
 
-impl<C, F, const D1: usize, const D2: usize> SortCells<C> for CartesianCuboidRods<F, D1, D2>
+impl<C, F, const D: usize> SortCells<C> for CartesianCuboidRods<F, D>
 where
-    C: Position<nalgebra::SMatrix<F, D1, D2>>,
+    C: Position<Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>>,
     F: 'static
         + nalgebra::Field
         + Clone
@@ -215,22 +243,22 @@ where
         + num::Float
         + Copy,
 {
-    type VoxelIndex = [usize; D2];
+    type VoxelIndex = [usize; D];
 
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos().row_sum().transpose() / F::from_usize(D1).unwrap();
+        let pos = cell.pos().row_sum().transpose() / F::from_usize(cell.pos().nrows()).unwrap();
         let index = self.domain.get_voxel_index_of_raw(&pos)?;
         Ok(index)
     }
 }
 
-impl<F, const D1: usize, const D2: usize> DomainCreateSubDomains<CartesianSubDomainRods<F, D1, D2>>
-    for CartesianCuboidRods<F, D1, D2>
+impl<F, const D: usize> DomainCreateSubDomains<CartesianSubDomainRods<F, D>>
+    for CartesianCuboidRods<F, D>
 where
     F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
 {
     type SubDomainIndex = usize;
-    type VoxelIndex = [usize; D2];
+    type VoxelIndex = [usize; D];
 
     fn create_subdomains(
         &self,
@@ -239,7 +267,7 @@ where
         impl IntoIterator<
             Item = (
                 Self::SubDomainIndex,
-                CartesianSubDomainRods<F, D1, D2>,
+                CartesianSubDomainRods<F, D>,
                 Vec<Self::VoxelIndex>,
             ),
         >,
@@ -251,7 +279,7 @@ where
             .map(move |(subdomain_index, subdomain, voxels)| {
                 (
                     subdomain_index,
-                    CartesianSubDomainRods::<F, D1, D2> { subdomain },
+                    CartesianSubDomainRods::<F, D> { subdomain },
                     voxels,
                 )
             }))
@@ -260,22 +288,24 @@ where
 
 /// The corresponding SubDomain of the [CartesianCuboidRods] domain.
 #[derive(Clone, SubDomain)]
-pub struct CartesianSubDomainRods<F, const D1: usize, const D2: usize> {
+pub struct CartesianSubDomainRods<F, const D: usize> {
     /// Base subdomain as created by the [CartesianCuboid] domain.
     #[Base]
-    pub subdomain: CartesianSubDomain<F, D2>,
+    pub subdomain: CartesianSubDomain<F, D>,
 }
 
-impl<F, const D1: usize, const D2: usize>
-    SubDomainMechanics<nalgebra::SMatrix<F, D1, D2>, nalgebra::SMatrix<F, D1, D2>>
-    for CartesianSubDomainRods<F, D1, D2>
+impl<F, const D: usize>
+    SubDomainMechanics<
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+    > for CartesianSubDomainRods<F, D>
 where
     F: nalgebra::RealField + num::Float,
 {
     fn apply_boundary(
         &self,
-        pos: &mut nalgebra::SMatrix<F, D1, D2>,
-        vel: &mut nalgebra::SMatrix<F, D1, D2>,
+        pos: &mut Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        vel: &mut Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
     ) -> Result<(), BoundaryError> {
         // TODO refactor this with matrix multiplication!!!
         // This will probably be much more efficient and less error-prone!
@@ -324,7 +354,7 @@ where
     serialize = "CartesianSubDomainRods",
     deserialize = "CartesianSubDomainRods",
 ))]
-struct __CartesianSubDomainRodsSerde<F, const D1: usize, const D2: usize>
+struct __CartesianSubDomainRodsSerde<F, const D2: usize>
 where
     F: 'static + Clone + core::fmt::Debug + PartialEq + nalgebra::Scalar,
     CartesianSubDomain<F, D2>: for<'a> Deserialize<'a>,
@@ -332,19 +362,18 @@ where
     subdomain: CartesianSubDomain<F, D2>,
 }
 
-impl<F, const D1: usize, const D2: usize> From<__CartesianSubDomainRodsSerde<F, D1, D2>>
-    for CartesianSubDomainRods<F, D1, D2>
+impl<F, const D: usize> From<__CartesianSubDomainRodsSerde<F, D>> for CartesianSubDomainRods<F, D>
 where
     F: 'static + Clone + core::fmt::Debug + PartialEq + for<'a> Deserialize<'a>,
 {
-    fn from(s: __CartesianSubDomainRodsSerde<F, D1, D2>) -> Self {
+    fn from(s: __CartesianSubDomainRodsSerde<F, D>) -> Self {
         CartesianSubDomainRods {
             subdomain: s.subdomain,
         }
     }
 }
 
-impl<F, const D1: usize, const D2: usize> Serialize for CartesianSubDomainRods<F, D1, D2>
+impl<F, const D: usize> Serialize for CartesianSubDomainRods<F, D>
 where
     F: nalgebra::Scalar + Serialize,
 {
@@ -356,8 +385,7 @@ where
     }
 }
 
-impl<'de, F, const D1: usize, const D2: usize> Deserialize<'de>
-    for CartesianSubDomainRods<F, D1, D2>
+impl<'de, F, const D: usize> Deserialize<'de> for CartesianSubDomainRods<F, D>
 where
     F: nalgebra::Scalar + for<'a> Deserialize<'a>,
 {
@@ -371,9 +399,9 @@ where
     }
 }
 
-impl<C, F, const D1: usize, const D2: usize> SortCells<C> for CartesianSubDomainRods<F, D1, D2>
+impl<C, F, const D: usize> SortCells<C> for CartesianSubDomainRods<F, D>
 where
-    C: Position<nalgebra::SMatrix<F, D1, D2>>,
+    C: Position<Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>>,
     F: 'static
         + nalgebra::Field
         + Clone
@@ -383,10 +411,10 @@ where
         + num::Float
         + Copy,
 {
-    type VoxelIndex = [usize; D2];
+    type VoxelIndex = [usize; D];
 
     fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-        let pos = cell.pos().row_sum().transpose() / F::from_usize(D1).unwrap();
+        let pos = cell.pos().row_sum().transpose() / F::from_usize(cell.pos().nrows()).unwrap();
         let index = self.subdomain.get_index_of(pos)?;
         Ok(index)
     }
@@ -394,13 +422,9 @@ where
 
 #[derive(Deserialize)]
 #[serde(rename(serialize = "RodMechanics", deserialize = "RodMechanics",))]
-struct __RodMechanicsSerde<
-    F: 'static + Clone + core::fmt::Debug + PartialEq,
-    const D1: usize,
-    const D2: usize,
-> {
-    pos: nalgebra::SMatrix<F, D1, D2>,
-    vel: nalgebra::SMatrix<F, D1, D2>,
+struct __RodMechanicsSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize> {
+    pos: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+    vel: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
     diffusion_constant: F,
     spring_tension: F,
     angle_stiffness: F,
@@ -408,12 +432,11 @@ struct __RodMechanicsSerde<
     damping: F,
 }
 
-impl<F, const D1: usize, const D2: usize> From<__RodMechanicsSerde<F, D1, D2>>
-    for RodMechanics<F, D1, D2>
+impl<F, const D: usize> From<__RodMechanicsSerde<F, D>> for RodMechanics<F, D>
 where
     F: 'static + Clone + core::fmt::Debug + PartialEq,
 {
-    fn from(value: __RodMechanicsSerde<F, D1, D2>) -> Self {
+    fn from(value: __RodMechanicsSerde<F, D>) -> Self {
         RodMechanics {
             pos: value.pos,
             vel: value.vel,
@@ -426,7 +449,7 @@ where
     }
 }
 
-impl<F, const D1: usize, const D2: usize> Serialize for RodMechanics<F, D1, D2>
+impl<F, const D: usize> Serialize for RodMechanics<F, D>
 where
     F: nalgebra::Scalar + Serialize,
 {
@@ -447,13 +470,13 @@ where
     }
 }
 
-impl<'de, F, const D1: usize, const D2: usize> Deserialize<'de> for RodMechanics<F, D1, D2>
+impl<'de, F, const D: usize> Deserialize<'de> for RodMechanics<F, D>
 where
     F: nalgebra::Scalar + for<'a> Deserialize<'a>,
 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<De>(deserializer: De) -> Result<Self, De::Error>
     where
-        D: serde::Deserializer<'de>,
+        De: serde::Deserializer<'de>,
     {
         let r = __RodMechanicsSerde::deserialize(deserializer)?;
         let rodmechanics = r.into();
@@ -461,34 +484,36 @@ where
     }
 }
 
-impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
+impl<F, const D: usize> RodMechanics<F, D> {
     /// Divides a [RodMechanics] struct into two thus separating their positions
     ///
     /// ```
     /// # use cellular_raza_building_blocks::*;
     /// let mut m1 = RodMechanics {
-    ///     pos: nalgebra::SMatrix::<f32, 7, 2>::from_fn(|r, c| if c == 0 {0.5 * r as f32} else {0.0}),
-    ///     vel: nalgebra::SMatrix::<f32, 7, 2>::zeros(),
+    ///     pos: nalgebra::Matrix::<f32, _, _, _>::from_rows(7),
+    ///     vel: nalgebra::Matrix::<f32, nalgebra::Dyn, nalgebra::U2, _>::zeros(7),
     ///     diffusion_constant: 0.0,
     ///     spring_tension: 0.1,
     ///     angle_stiffness: 0.05,
     ///     spring_length: 0.5,
     ///     damping: 0.0,
     /// };
+    /// m1.pos
+    ///     .row_iter_mut()
+    ///     .enumerate()
+    ///     .for_each(|(n_row, mut r)| r[0] += n_row as f32 * 0.5);
     /// let radius = 0.25;
     /// let m2 = m1.divide(radius)?;
     ///
     /// let last_pos_m1 = m1.pos.row(6);
     /// let first_pos_m2 = m2.pos.row(0);
-    /// println!("{} {}", m1.pos, m2.pos);
-    /// println!("{} {}", (last_pos_m1 - first_pos_m2).norm(), 2.0 * radius);
     /// assert!(((last_pos_m1 - first_pos_m2).norm() - 2.0 * radius).abs() < 1e-3);
     /// # Result::<(), cellular_raza_concepts::DivisionError>::Ok(())
     /// ```
     pub fn divide(
         &mut self,
         radius: F,
-    ) -> Result<RodMechanics<F, D1, D2>, cellular_raza_concepts::DivisionError>
+    ) -> Result<RodMechanics<F, D>, cellular_raza_concepts::DivisionError>
     where
         F: num::Float + nalgebra::RealField + FromPrimitive + std::iter::Sum,
     {
@@ -510,7 +535,8 @@ impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
 
         // Set starting point
         c1.pos.set_row(0, &pos.row(0));
-        c2.pos.set_row(D1 - 1, &pos.row(D1 - 1));
+        c2.pos
+            .set_row(c2.pos.nrows() - 1, &pos.row(c2.pos.nrows() - 1));
 
         let segments: Vec<_> = pos
             .row_iter()
@@ -518,13 +544,13 @@ impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
             .map(|(x, y)| (x - y).norm())
             .collect();
         let segment_length = (segments.iter().map(|&x| x).sum::<F>() - two * radius)
-            / F::from_usize(D1 - 1).unwrap()
+            / F::from_usize(c2.pos.nrows() - 1).unwrap()
             / two;
 
-        for n_vertex in 0..D1 {
+        for n_vertex in 0..c2.pos.nrows() {
             // Get smallest index k such that the beginning of the new segment is "farther" than the
             // original vertex at this index k.
-            let k = (0..D1)
+            let k = (0..segments.len())
                 .filter(|n| {
                     segments.iter().map(|&x| x).take(*n).sum::<F>()
                         <= F::from_usize(n_vertex).unwrap() * segment_length
@@ -539,7 +565,7 @@ impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
                 &(pos.row(k) * (F::one() - q) + pos.row(k + 1) * q),
             );
 
-            let m = (0..D1)
+            let m = (0..c2.pos.nrows())
                 .filter(|n| {
                     segments.iter().rev().map(|&x| x).take(*n).sum::<F>()
                         <= F::from_usize(n_vertex).unwrap() * segment_length
@@ -548,10 +574,11 @@ impl<F, const D1: usize, const D2: usize> RodMechanics<F, D1, D2> {
                 .unwrap();
             let p = (F::from_usize(n_vertex).unwrap() * segment_length
                 - segments.iter().rev().map(|&x| x).take(m).sum::<F>())
-                / segments[D1 - m - 2];
+                / segments[c2.pos.nrows() - m - 2];
             c2.pos.set_row(
-                D1 - n_vertex - 1,
-                &(pos.row(D1 - m - 1) * (F::one() - p) + pos.row(D1 - m - 2) * p),
+                c2.pos.nrows() - n_vertex - 1,
+                &(pos.row(c2.pos.nrows() - m - 1) * (F::one() - p)
+                    + pos.row(c2.pos.nrows() - m - 2) * p),
             );
         }
         Ok(c2)
