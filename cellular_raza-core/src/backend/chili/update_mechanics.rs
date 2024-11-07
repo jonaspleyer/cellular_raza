@@ -2,8 +2,8 @@
 use tracing::instrument;
 
 use super::{
-    CellBox, Communicator, SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateInteraction,
-    UpdateMechanics, Voxel, VoxelPlainIndex,
+    AdamsBashforth, CellBox, Communicator, MechanicsAdamsBashforthSolver, SimulationError,
+    SubDomainBox, SubDomainPlainIndex, UpdateInteraction, UpdateMechanics, Voxel, VoxelPlainIndex,
 };
 use cellular_raza_concepts::*;
 
@@ -355,12 +355,12 @@ where
 
     /// Receive all calculated forces and include them for later update steps.
     #[cfg_attr(feature = "tracing", instrument(skip(self)))]
-    pub fn update_mechanics_interaction_step_3<Pos, Vel, For>(
+    pub fn update_mechanics_interaction_step_3<Pos, Vel, For, const N: usize>(
         &mut self,
         determinism: bool,
     ) -> Result<(), SimulationError>
     where
-        A: UpdateMechanics<Pos, Vel, For, 2>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
         Com: Communicator<SubDomainPlainIndex, ForceInformation<For>>,
     {
         // Update position and velocity of all cells with new information
@@ -531,6 +531,7 @@ where
 ///
 /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
 /// solver.
+#[allow(private_bounds)]
 pub fn local_mechanics_update_step_3<
     C,
     A,
@@ -539,6 +540,7 @@ pub fn local_mechanics_update_step_3<
     For,
     #[cfg(feature = "tracing")] Float: core::fmt::Debug,
     #[cfg(not(feature = "tracing"))] Float,
+    const N: usize,
 >(
     cell: &mut C,
     aux_storage: &mut A,
@@ -546,7 +548,7 @@ pub fn local_mechanics_update_step_3<
     rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
-    A: UpdateMechanics<Pos, Vel, For, 2>,
+    A: UpdateMechanics<Pos, Vel, For, N>,
     C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float> + Clone,
     C: cellular_raza_concepts::Position<Pos>,
     C: cellular_raza_concepts::Velocity<Vel>,
@@ -554,13 +556,10 @@ where
     Pos: Xapy<Float> + Clone,
     Vel: Xapy<Float> + Clone,
     Vel: Clone,
+    MechanicsAdamsBashforthSolver<N>: AdamsBashforth<N>,
 {
-    super::solvers::mechanics_adams_bashforth_3::<C, A, Pos, Vel, For, Float>(
-        cell,
-        aux_storage,
-        dt,
-        rng,
-    )?;
+    use super::solvers::{AdamsBashforth, MechanicsAdamsBashforthSolver};
+    <MechanicsAdamsBashforthSolver<N> as AdamsBashforth<N>>::update(cell, aux_storage, dt, rng)?;
     Ok(())
 }
 

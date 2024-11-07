@@ -54,6 +54,90 @@ where
     Ok(())
 }
 
+/// Note that the const generic for this struct is the order of the solver minus one.
+/// This is due to the fact that the AuxStorage only stores one less step than the order of the
+/// solver.
+pub(crate) struct MechanicsAdamsBashforthSolver<const N: usize>;
+
+pub(crate) trait AdamsBashforth<const N: usize> {
+    #[allow(unused)]
+    fn update<C, A, Pos, Vel, For, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+        rng: &mut rand_chacha::ChaCha8Rng,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: super::aux_storage::UpdateMechanics<Pos, Vel, For, N>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
+        Pos: Xapy<Float> + Clone,
+        Vel: Xapy<Float> + Clone,
+        Float: num::Float + FromPrimitive;
+}
+
+impl AdamsBashforth<2> for MechanicsAdamsBashforthSolver<2> {
+    #[allow(unused)]
+    fn update<C, A, Pos, Vel, For, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+        rng: &mut rand_chacha::ChaCha8Rng,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 2>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
+        Pos: Xapy<Float> + Clone,
+        Vel: Xapy<Float> + Clone,
+        Float: num::Float + FromPrimitive,
+    {
+        mechanics_adams_bashforth_3(cell, aux_storage, dt, rng)
+    }
+}
+
+impl AdamsBashforth<1> for MechanicsAdamsBashforthSolver<1> {
+    fn update<C, A, Pos, Vel, For, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+        rng: &mut rand_chacha::ChaCha8Rng,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 1>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
+        Pos: Xapy<Float> + Clone,
+        Vel: Xapy<Float> + Clone,
+        Float: num::Float + FromPrimitive,
+    {
+        mechanics_adams_bashforth_2(cell, aux_storage, dt, rng)
+    }
+}
+
+impl AdamsBashforth<0> for MechanicsAdamsBashforthSolver<0> {
+    fn update<C, A, Pos, Vel, For, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+        rng: &mut rand_chacha::ChaCha8Rng,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: super::aux_storage::UpdateMechanics<Pos, Vel, For, 0>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
+        Pos: Xapy<Float> + Clone,
+        Vel: Xapy<Float> + Clone,
+        Float: num::Float + FromPrimitive,
+    {
+        mechanics_euler(cell, aux_storage, dt, rng)
+    }
+}
+
 /// Three-step Adams-Bashforth method.
 ///
 /// See also the [Wikipedia](https://en.wikipedia.org/wiki/Linear_multistep_method) article.
