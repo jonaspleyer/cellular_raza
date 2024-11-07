@@ -471,14 +471,14 @@ pub fn reactions_contact_adams_bashforth_3rd<C, A, F, Ri>(
 ) -> Result<(), CalcError>
 where
     A: UpdateReactions<Ri>,
-    A: UpdateReactionsContact<Ri, 3>,
+    A: UpdateReactionsContact<Ri, 2>,
     Ri: Xapy<F> + Clone,
     F: FromPrimitive + num::Float,
 {
     // let dintra0 = aux_storage
     let dintra = aux_storage.get_conc();
     let conc_zero = dintra.xa(F::zero());
-    let dintra_contact = <A as UpdateReactionsContact<Ri, 3>>::get_current_increment(&aux_storage);
+    let dintra_contact = <A as UpdateReactionsContact<Ri, 2>>::get_current_increment(&aux_storage);
     aux_storage.set_last_increment(dintra_contact.clone());
     let n_previous_values = aux_storage.n_previous_values();
     let mut old_intracellular_increments = aux_storage.previous_increments();

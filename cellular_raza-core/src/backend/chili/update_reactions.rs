@@ -443,7 +443,7 @@ pub fn local_update_contact_reactions_step_3<
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), SimulationError>
 where
-    A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, 3>,
+    A: UpdateReactions<Ri> + UpdateReactionsContact<Ri, 2>,
     C: cellular_raza_concepts::Intracellular<Ri>,
     F: num::Float + FromPrimitive,
     Ri: Xapy<F> + Clone,
