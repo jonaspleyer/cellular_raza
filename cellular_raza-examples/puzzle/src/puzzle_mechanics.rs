@@ -46,6 +46,10 @@ where
             }
         }
     }
+
+    fn xa(&self, a: F) -> Self {
+        self.xapy(a, &<Self as num::Zero>::zero())
+    }
 }
 
 impl<F> Vertices<F>
