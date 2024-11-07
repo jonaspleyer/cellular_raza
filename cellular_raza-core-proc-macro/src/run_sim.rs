@@ -164,6 +164,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let settings = &kwargs.settings;
     let determinism = &kwargs.determinism;
 
+    let mechanics_solver_order = kwargs.mechanics_solver_order;
+    let reactions_solver_order = kwargs.reactions_solver_order;
+
     if kwargs
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
@@ -174,7 +177,16 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Mechanics) {
-        local_func_names.push(quote!(#core_path::backend::chili::local_mechanics_update_step_3));
+        local_func_names.push(quote!(
+            #core_path::backend::chili::local_mechanics_update_step_3::<
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+                #mechanics_solver_order
+            >));
         step_4.extend(quote!(sbox.apply_boundary()?;));
     }
 
@@ -198,7 +210,15 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Reactions) {
-        local_func_names.push(quote!(#core_path::backend::chili::local_reactions_intracellular));
+        local_func_names.push(
+            quote!(#core_path::backend::chili::local_reactions_intracellular::<
+            _,
+            _,
+            _,
+            _,
+            #reactions_solver_order,
+        >),
+        );
     }
 
     if kwargs.aspects.contains(&ReactionsContact) {
