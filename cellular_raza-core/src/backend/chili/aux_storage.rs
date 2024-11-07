@@ -872,8 +872,8 @@ mod test_build_aux_storage {
             /// use serde::{Deserialize, Serialize};
             /// use cellular_raza_core::backend::chili::{build_aux_storage, AuxStorage};
             /// build_aux_storage!(
-            ///     name: __cr_AuxStorage,
             #[doc = concat!("aspects: [", $(stringify!($asp,),)* "],")]
+            ///     aux_storage_name: __cr_AuxStorage,
             ///     core_path: cellular_raza_core
             /// );
             /// let mut aux_storage = __cr_AuxStorage::default();
