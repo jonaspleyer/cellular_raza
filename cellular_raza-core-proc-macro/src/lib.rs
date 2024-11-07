@@ -154,6 +154,66 @@ pub fn from_map(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 ///     aspects: [Interaction, Mechanics]
 /// );
 /// ```
+///
+/// # Minimum Combinations
+/// It is possible to specify a minimum number of combinations to test.
+/// This means if we specify N aspects but only want to test combinations of M (where M<N)
+/// different aspects, we can set the `min_combinations` variable of this macro.
+///
+/// ```
+/// # macro_rules! some_test(
+/// #     (
+/// #         name:$test_name:ident,
+/// #         aspects:[$($asp:ident),*]
+/// #     ) => {
+/// #         // Any code can be run here.
+/// #         // For example, we can create a docstring test by using
+/// #
+/// #         /// ```
+/// #         /// assert_eq!(0_usize, 10_usize - 10_usize);
+/// #         $(#[doc = concat!("println!(\"", stringify!($asp), "\")")])*
+/// #         /// ```
+/// #         fn $test_name () {}
+/// #     }
+/// # );
+/// # use cellular_raza_core_proc_macro::run_test_for_aspects;
+/// run_test_for_aspects!(
+///     test: some_test,
+///     aspects: [Mechanics, Interaction, Cycle, Reactions],
+///     min_combinations: 3,
+/// );
+/// ```
+///
+/// # Unsorted Combinations
+/// By default all generated combinations of simulation aspects are sorted and will thus not
+/// produce different tests when being reordered.
+/// This means we assume that `aspects: [Mechanics, Interaction]` is identical to `aspects:
+/// [Interaction, Mechanics]`.
+/// In the case where we also want to test the unsorted cases, we can specify the `sorted` keyword.
+///
+/// ```
+/// # macro_rules! some_test(
+/// #     (
+/// #         name:$test_name:ident,
+/// #         aspects:[$($asp:ident),*]
+/// #     ) => {
+/// #         // Any code can be run here.
+/// #         // For example, we can create a docstring test by using
+/// #
+/// #         /// ```
+/// #         /// assert_eq!(0_usize, 10_usize - 10_usize);
+/// #         $(#[doc = concat!("println!(\"", stringify!($asp), "\")")])*
+/// #         /// ```
+/// #         fn $test_name () {}
+/// #     }
+/// # );
+/// # use cellular_raza_core_proc_macro::run_test_for_aspects;
+/// run_test_for_aspects!(
+///     test: some_test,
+///     aspects: [Mechanics, Interaction],
+///     sorted: false,
+/// );
+/// ```
 pub fn run_test_for_aspects(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     testing::run_test_for_aspects(input)
 }
