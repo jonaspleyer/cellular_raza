@@ -845,11 +845,6 @@ mod test_build_communicator {
             ///             format!("AuxStorage")
             ///         ));
             ///     };
-            ///     (iInteraction) => {
-            #[doc = concat!($(
-                concat!("test_aspect!(", stringify!($asp), ", Interaction);"),
-            )*)]
-            ///     };
             ///     (Interaction) => {
             ///         communicator.send(&1, PosInformation {
             ///             pos: 1u8,
@@ -865,9 +860,6 @@ mod test_build_communicator {
             ///             index_sender: VoxelPlainIndex::new(0),
             ///         });
             ///     };
-            ///     ($asp:ident, Interaction) => {};
-            ///     (Cycle) => {};
-            ///     (Reactions) => {};
             ///     (ReactionsContact) => {
             ///         communicator.send(&1, ReactionsContactInformation {
             ///             pos: 1u8,
@@ -890,7 +882,7 @@ mod test_build_communicator {
 
     cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: test_build_communicator,
-        aspects: [Mechanics, Interaction, Cycle, Reactions, ReactionsContact]
+        aspects: [Mechanics, Interaction, ReactionsContact]
     );
 
     /// ```compile_fail
