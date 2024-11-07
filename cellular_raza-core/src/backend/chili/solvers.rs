@@ -346,42 +346,119 @@ where
     Ok(x_new)
 }
 
-/// TODO
-#[inline]
-#[cfg_attr(feature = "tracing", instrument(skip_all))]
-pub fn reactions_intracellular_runge_kutta_4th<C, A, F, Ri>(
-    cell: &mut C,
-    aux_storage: &mut A,
-    dt: F,
-) -> Result<(), CalcError>
-where
-    C: cellular_raza_concepts::Reactions<Ri>,
-    A: UpdateReactions<Ri>,
-    F: num::Float,
-    Ri: Xapy<F>,
-{
-    // Constants
-    let two = F::one() + F::one();
-    let six = two + two + two;
+/// Note that the const generic for this struct is the order of the solver minus one.
+/// This is due to the fact that the AuxStorage only stores one less step than the order of the
+/// solver.
+pub(crate) struct ReactionsRungeKuttaSolver<const N: usize>;
 
-    let intra = cell.get_intracellular();
+pub(crate) trait RungeKutta<const N: usize> {
+    #[allow(unused)]
+    fn update<C, A, Ri, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: UpdateReactions<Ri>,
+        C: cellular_raza_concepts::Reactions<Ri>,
+        Float: num::Float,
+        Ri: Xapy<Float>;
+}
 
-    // Calculate the intermediate steps
-    let dintra1 = cell.calculate_intracellular_increment(&intra)?;
-    let dintra2 = cell.calculate_intracellular_increment(&dintra1.xapy(dt / two, &intra))?;
-    let dintra3 = cell.calculate_intracellular_increment(&dintra2.xapy(dt / two, &intra))?;
-    let dintra4 = cell.calculate_intracellular_increment(&dintra3.xapy(dt, &intra))?;
-    let dintra = dintra1.xapy(
-        F::one() / six,
-        &dintra2.xapy(
-            two / six,
-            &dintra3.xapy(two / six, &dintra4.xa(F::one() / six)),
-        ),
-    );
+impl RungeKutta<1> for ReactionsRungeKuttaSolver<1> {
+    #[allow(unused)]
+    #[inline]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    fn update<C, A, Ri, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: UpdateReactions<Ri>,
+        C: cellular_raza_concepts::Reactions<Ri>,
+        Float: num::Float,
+        Ri: Xapy<Float>,
+    {
+        // Constants
+        let intra = cell.get_intracellular();
 
-    // Update the internal value of the cell
-    aux_storage.incr_conc(dintra);
-    Ok(())
+        // Calculate the intermediate steps
+        let dintra = cell.calculate_intracellular_increment(&intra)?;
+
+        // Update the internal value of the cell
+        aux_storage.incr_conc(dintra);
+        Ok(())
+    }
+}
+
+impl RungeKutta<2> for ReactionsRungeKuttaSolver<2> {
+    #[allow(unused)]
+    #[inline]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    fn update<C, A, Ri, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: UpdateReactions<Ri>,
+        C: cellular_raza_concepts::Reactions<Ri>,
+        Float: num::Float,
+        Ri: Xapy<Float>,
+    {
+        // Constants
+        let two = Float::one() + Float::one();
+        let intra = cell.get_intracellular();
+
+        // Calculate the intermediate steps
+        let dintra1 = cell.calculate_intracellular_increment(&intra)?;
+        let dintra = cell.calculate_intracellular_increment(&dintra1.xapy(dt / two, &intra))?;
+
+        // Update the internal value of the cell
+        aux_storage.incr_conc(dintra);
+        Ok(())
+    }
+}
+
+impl RungeKutta<4> for ReactionsRungeKuttaSolver<4> {
+    #[allow(unused)]
+    #[inline]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    fn update<C, A, Ri, Float>(
+        cell: &mut C,
+        aux_storage: &mut A,
+        dt: Float,
+    ) -> Result<(), super::SimulationError>
+    where
+        A: UpdateReactions<Ri>,
+        C: cellular_raza_concepts::Reactions<Ri>,
+        Float: num::Float,
+        Ri: Xapy<Float>,
+    {
+        // Constants
+        let two = Float::one() + Float::one();
+        let six = two + two + two;
+
+        let intra = cell.get_intracellular();
+
+        // Calculate the intermediate steps
+        let dintra1 = cell.calculate_intracellular_increment(&intra)?;
+        let dintra2 = cell.calculate_intracellular_increment(&dintra1.xapy(dt / two, &intra))?;
+        let dintra3 = cell.calculate_intracellular_increment(&dintra2.xapy(dt / two, &intra))?;
+        let dintra4 = cell.calculate_intracellular_increment(&dintra3.xapy(dt, &intra))?;
+        let dintra = dintra1.xapy(
+            Float::one() / six,
+            &dintra2.xapy(
+                two / six,
+                &dintra3.xapy(two / six, &dintra4.xa(Float::one() / six)),
+            ),
+        );
+
+        // Update the internal value of the cell
+        aux_storage.incr_conc(dintra);
+        Ok(())
+    }
 }
 
 /// TODO IMPORTANT This function sets the intracellular concentration but this is wrong. Find out
@@ -489,7 +566,7 @@ mod test_solvers_reactions {
         let mut results_cr = vec![(0.0, cell.get_intracellular())];
         let mut t = 0.0;
         for _ in 0..100 {
-            reactions_intracellular_runge_kutta_4th(&mut cell, &mut aux_storage, dt)?;
+            ReactionsRungeKuttaSolver::<4>::update(&mut cell, &mut aux_storage, dt)?;
             // This rng is just a placeholder and will not be used.
             let mut _rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
             local_reactions_use_increment(&mut cell, &mut aux_storage, dt, &mut _rng)?;

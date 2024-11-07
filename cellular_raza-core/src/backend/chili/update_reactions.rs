@@ -1,5 +1,5 @@
 use super::{
-    reactions_contact_adams_bashforth_3rd, reactions_intracellular_runge_kutta_4th, Communicator,
+    reactions_contact_adams_bashforth_3rd, Communicator, ReactionsRungeKuttaSolver, RungeKutta,
     SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact,
     Voxel, VoxelPlainIndex,
 };
@@ -453,6 +453,7 @@ where
 }
 
 /// TODO
+#[allow(private_bounds)]
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_reactions_intracellular<
     C,
@@ -460,6 +461,7 @@ pub fn local_reactions_intracellular<
     Ri,
     #[cfg(feature = "tracing")] F: core::fmt::Debug,
     #[cfg(not(feature = "tracing"))] F,
+    const N: usize,
 >(
     cell: &mut C,
     aux_storage: &mut A,
@@ -471,8 +473,9 @@ where
     C: cellular_raza_concepts::Reactions<Ri>,
     F: num::Float,
     Ri: Xapy<F>,
+    ReactionsRungeKuttaSolver<N>: RungeKutta<N>,
 {
-    reactions_intracellular_runge_kutta_4th(cell, aux_storage, dt)?;
+    ReactionsRungeKuttaSolver::<N>::update(cell, aux_storage, dt)?;
     Ok(())
 }
 
