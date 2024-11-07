@@ -1,7 +1,7 @@
 use crate::simulation_aspects::{SimulationAspect, SimulationAspects};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum Parallelizer {
+pub enum Parallelizer {
     OsThreads,
     Rayon,
 }
