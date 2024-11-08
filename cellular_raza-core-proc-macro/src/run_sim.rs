@@ -352,6 +352,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         kwargs.mechanics_solver_order,
         kwargs.reactions_contact_solver_order,
     );
+    let aux_storage_constructor = crate::aux_storage::default_aux_storage_initializer(&kwargs);
 
     let update_func = run_main_update(kwargs.clone());
     let parallelized_update_func =
@@ -380,6 +381,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 #domain,
                 #agents,
                 #settings.n_threads,
+                #aux_storage_constructor,
             )?;
 
             let res = #parallelized_update_func?;

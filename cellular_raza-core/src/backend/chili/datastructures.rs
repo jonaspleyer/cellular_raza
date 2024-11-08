@@ -53,6 +53,7 @@ pub fn construct_simulation_runner<D, S, C, A, Com, Sy, Ci>(
     domain: D,
     agents: Ci,
     n_subdomains: NonZeroUsize,
+    init_aux_storage: impl Fn(&C) -> A,
 ) -> Result<
     SimulationRunner<D::SubDomainIndex, SubDomainBox<D::SubDomainIndex, S, C, A, Com, Sy>>,
     SimulationError,
@@ -63,7 +64,6 @@ where
     D::SubDomainIndex: Eq + PartialEq + core::hash::Hash + Clone + Ord,
     <S as SubDomain>::VoxelIndex: Eq + Hash + Ord + Clone,
     S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex> + SubDomain,
-    A: Default,
     Sy: super::simulation_flow::FromMap<SubDomainPlainIndex>,
     Com: super::simulation_flow::FromMap<SubDomainPlainIndex>,
 {
@@ -209,7 +209,7 @@ where
                 communicator,
                 syncer,
             };
-            subdomain_box.insert_cells(&mut cells)?;
+            subdomain_box.insert_cells(&mut cells, &init_aux_storage)?;
             Ok((index, subdomain_box))
         })
         .collect::<Result<BTreeMap<_, _>, SimulationError>>()?;
@@ -267,10 +267,10 @@ where
     pub fn insert_cells(
         &mut self,
         new_cells: &mut Vec<(C, Option<A>)>,
+        init_aux_storage: impl Fn(&C) -> A,
     ) -> Result<(), cellular_raza_concepts::BoundaryError>
     where
         <S as SubDomain>::VoxelIndex: Eq + Hash + Ord,
-        A: Default,
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
         for (cell, aux_storage) in new_cells.drain(..) {
@@ -279,9 +279,10 @@ where
             let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
                 "Could not find correct voxel for cell".to_owned(),
             ))?;
+            let aux_storage = aux_storage.map_or(init_aux_storage(&cell), |x| x);
             voxel.cells.push((
                 CellBox::new(voxel.plain_index, voxel.id_counter, cell, None),
-                aux_storage.map_or(A::default(), |x| x),
+                aux_storage,
             ));
             voxel.id_counter += 1;
         }

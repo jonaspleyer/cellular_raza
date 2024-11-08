@@ -946,3 +946,48 @@ mod test {
     }
 }
 
+pub fn default_aux_storage_initializer(
+    kwargs: &(impl Into<KwargsAuxStorage> + Clone),
+) -> syn::ExprClosure {
+    let kwargs: KwargsAuxStorage = (*kwargs).clone().into();
+    let builder: Builder = kwargs.clone().into();
+    use SimulationAspect::*;
+    let core_path = &builder.core_path;
+    let struct_name = &builder.struct_name;
+    let fields = builder.get_field_information().into_iter().map(
+        #[allow(unused)]
+        |FieldInfo {
+             aspects,
+             field_name,
+             field_type,
+             generics,
+             fully_formatted_field,
+         }| {
+            if aspects == vec![Mechanics] {
+                let zero_force_default = &kwargs.zero_force_default;
+                quote::quote!(
+                    #field_name: #core_path ::backend::chili::DefaultFrom::default_from(
+                        &(#zero_force_default)(&c)
+                    ),
+                )
+            } else if aspects
+                .iter()
+                .any(|x| vec![Reactions, ReactionsContact, ReactionsExtra].contains(&x))
+            {
+                let zero_reactions_default = &kwargs.zero_reactions_default;
+                quote::quote!(
+                    #field_name: #core_path ::backend::chili::DefaultFrom::default_from(
+                        &(#zero_reactions_default)(&c)
+                    ),
+                )
+            } else {
+                quote::quote!(#field_name: Default::default(),)
+            }
+        },
+    );
+    syn::parse_quote!(|c| {
+        #struct_name {
+            #(#fields)*
+        }
+    })
+}
