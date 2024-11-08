@@ -754,6 +754,8 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | crate::kwargs::convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    zero_force_default: syn::ExprClosure | crate::aux_storage::zero_force_default(),
+    zero_reactions_default: syn::ExprClosure | crate::aux_storage::zero_reactions_default(),
     @from
     KwargsSim,
     KwargsMain
@@ -916,3 +918,31 @@ pub fn construct_aux_storage(kwargs: KwargsAuxStorage) -> proc_macro::TokenStrea
     let builder: Builder = kwargs.into();
     proc_macro::TokenStream::from(builder.build_aux_storage())
 }
+
+pub fn zero_force_default() -> syn::ExprClosure {
+    syn::parse_quote!(|_c| { num::Zero::zero() })
+}
+
+pub fn zero_reactions_default() -> syn::ExprClosure {
+    syn::parse_quote!(|_c| { num::Zero::zero() })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_zero_reactions_default_parses() {
+        let default = zero_reactions_default();
+        assert_eq!(default.inputs.len(), 1);
+        assert!(format!("{}", quote::quote!(#(default.body))).len() > 0);
+    }
+
+    #[test]
+    fn test_zero_force_default_parses() {
+        let default = zero_force_default();
+        assert_eq!(default.inputs.len(), 1);
+        assert!(format!("{}", quote::quote!(#(default.body))).len() > 0);
+    }
+}
+

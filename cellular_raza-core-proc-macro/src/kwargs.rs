@@ -106,6 +106,20 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         reactions_contact_solver_order: usize,
     },
+    zero_force_default {
+        #[allow(unused)]
+        zero_force_default_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        zero_force_default: syn::ExprClosure,
+    },
+    zero_reactions_default {
+        #[allow(unused)]
+        zero_reactions_default_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        zero_reactions_default: syn::ExprClosure,
+    },
 }
 
 impl syn::parse::Parse for Kwarg {
@@ -184,6 +198,20 @@ impl syn::parse::Parse for Kwarg {
                     .base10_parse::<NonZeroUsize>()?
                     .get()
                     - 1,
+            }),
+            "zero_force_default" => Ok(Kwarg::zero_force_default {
+                #[allow(unused)]
+                zero_force_default_kw: keyword,
+                #[allow(unused)]
+                double_colon: input.parse()?,
+                zero_force_default: input.parse()?,
+            }),
+            "zero_reactions_default" => Ok(Kwarg::zero_reactions_default {
+                #[allow(unused)]
+                zero_reactions_default_kw: keyword,
+                #[allow(unused)]
+                double_colon: input.parse()?,
+                zero_reactions_default: input.parse()?,
             }),
             _ => Err(syn::Error::new(
                 keyword.span(),
