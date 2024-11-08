@@ -1,6 +1,7 @@
 //! The main two macros are [derive_aux_storage] and [construct_aux_storage] which allow to
 //! derive individual aspects of the the update traits in `cellular_raza_core`
 
+use itertools::Itertools;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
@@ -774,85 +775,110 @@ impl From<KwargsAuxStorage> for Builder {
     }
 }
 
+pub struct FieldInfo {
+    aspects: Vec<SimulationAspect>,
+    field_name: syn::Ident,
+    field_type: syn::Type,
+    generics: syn::Generics,
+    fully_formatted_field: proc_macro2::TokenStream,
+}
+
 impl Builder {
-    pub fn get_generics_and_fields(
-        &self,
-    ) -> (Vec<syn::GenericParam>, Vec<proc_macro2::TokenStream>) {
+    pub fn get_field_information(&self) -> Vec<FieldInfo> {
+        use SimulationAspect::*;
         let core_path = &self.core_path;
         let backend_path = quote!(#core_path ::backend::chili::);
-        let mut generics = vec![];
+        // let mut all_generics = vec![];
         let mut fields = vec![];
 
-        use SimulationAspect::*;
         if self.aspects.contains(&Cycle) {
-            fields.push(quote!(
+            let field_name = syn::parse_quote!(cycle);
+            let field_type = syn::parse_quote!(#backend_path AuxStorageCycle);
+            let generics = syn::parse_quote!();
+            let fully_formatted_field = quote!(
                 #[UpdateCycle]
                 cycle: #backend_path AuxStorageCycle,
-            ));
+            );
+            fields.push(FieldInfo {
+                aspects: vec![Cycle],
+                field_name,
+                field_type,
+                generics,
+                fully_formatted_field,
+            });
         }
 
-        macro_rules! g(
-            (const $n:tt : $t:ty) => {
-                syn::GenericParam::Const(syn::ConstParam {
-                    attrs: Vec::new(),
-                    const_token: syn::token::Const {
-                        span: proc_macro2::Span::call_site(),
-                    },
-                    ident: syn::Ident::new(stringify!($n), proc_macro2::Span::call_site()),
-                    colon_token: syn::token::Colon {
-                        spans: [proc_macro2::Span::call_site()],
-                    },
-                    ty: syn::Type::Path(syn::TypePath {
-                        qself: None,
-                        path: syn::Path::from(syn::PathSegment {
-                            ident: syn::Ident::new(stringify!($t), proc_macro2::Span::call_site()),
-                            arguments: syn::PathArguments::None,
-                        }),
-                    }),
-                    eq_token: None,
-                    default: None,
-                })
-            };
-            ($n:tt) => {
-                syn::GenericParam::Type(
-                    syn::Ident::new(stringify!($n), proc_macro2::Span::call_site()).into()
-                )
-            };
-        );
-
         if self.aspects.contains(&Mechanics) {
-            generics.extend(vec![g!(Pos), g!(Vel), g!(For), g!(const NMec: usize)]);
-            fields.push(quote!(
+            let field_name = syn::parse_quote!(mechanics);
+            let field_type = syn::parse_quote!(#backend_path AuxStorageMechanics);
+            let generics = syn::parse_quote!(<Pos, Vel, For, const NMec: usize>);
+            let fully_formatted_field = quote!(
                 #[UpdateMechanics(Pos, Vel, For, NMec)]
-                mechanics: #backend_path AuxStorageMechanics<Pos, Vel, For, NMec>,
-            ));
+                #field_name: #backend_path AuxStorageMechanics<Pos, Vel, For, NMec>,
+            );
+            fields.push(FieldInfo {
+                aspects: vec![Mechanics],
+                field_name,
+                field_type,
+                generics,
+                fully_formatted_field,
+            });
         }
 
         if self
             .aspects
             .contains_any([&Reactions, &ReactionsContact, &ReactionsExtra])
         {
-            generics.push(g!(Ri));
-            fields.push(quote!(
+            let field_name = syn::parse_quote!(reactions);
+            let generics = syn::parse_quote!(<Ri>);
+            let field_type = syn::parse_quote!(#backend_path AuxStorageReactions);
+            let fully_formatted_field = quote!(
                 #[UpdateReactions(Ri)]
-                reactions: #backend_path AuxStorageReactions<Ri>,
-            ));
+                #field_name: #backend_path AuxStorageReactions<Ri>,
+            );
+            fields.push(FieldInfo {
+                aspects: vec![Reactions, ReactionsContact, ReactionsExtra],
+                field_name,
+                field_type,
+                generics,
+                fully_formatted_field,
+            });
         }
+
         if self.aspects.contains(&ReactionsContact) {
-            generics.push(g!(const NReact: usize));
-            fields.push(quote!(
+            let field_name = syn::parse_quote!(reactions_extra);
+            let field_type = syn::parse_quote!(#backend_path AuxStorageReactionsContact);
+            let generics = syn::parse_quote!(<Ri, const NReact: usize>);
+            let fully_formatted_field = quote!(
                 #[UpdateReactionsContact(Ri, NReact)]
-                reactions_contact: #backend_path AuxStorageReactionsContact<Ri, NReact>,
-            ));
+                #field_name: #backend_path AuxStorageReactionsContact<Ri, NReact>,
+            );
+            fields.push(FieldInfo {
+                aspects: vec![ReactionsContact],
+                field_name,
+                field_type,
+                generics,
+                fully_formatted_field,
+            });
         }
 
         if self.aspects.contains(&Interaction) {
-            fields.push(quote!(
+            let field_name = syn::parse_quote!(interaction);
+            let field_type = syn::parse_quote!(AuxStorageInteraction);
+            let generics = syn::parse_quote!();
+            let fully_formatted_field = quote!(
                 #[UpdateInteraction]
                 interaction: #backend_path AuxStorageInteraction,
-            ));
+            );
+            fields.push(FieldInfo {
+                aspects: vec![Interaction],
+                field_name,
+                field_type,
+                generics,
+                fully_formatted_field,
+            });
         }
-        (generics, fields)
+        fields
     }
 
     pub fn build_aux_storage(self) -> proc_macro2::TokenStream {
