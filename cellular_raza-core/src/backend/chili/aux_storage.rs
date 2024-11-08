@@ -125,6 +125,30 @@ where
     }
 }
 
+/// Used to construct initial (empty) AuxStorage variants.
+pub trait DefaultFrom<T> {
+    /// Constructs the Type in question from a given value. This is typically a zero value.
+    /// If it can be constructed from the [num::Zero] trait, this method is not required and
+    /// `cellular_raza` will determine the initial zero-value correctly.
+    /// For other types (ie. dynamically-sized ones) additional entries may be necessary.
+    fn default_from(value: &T) -> Self;
+}
+
+impl<Pos, Vel, For, const N: usize> DefaultFrom<For> for AuxStorageMechanics<Pos, Vel, For, N>
+where
+    For: Clone,
+{
+    fn default_from(value: &For) -> Self {
+        let force: For = value.clone().into();
+        Self {
+            positions: RingBuffer::default(),
+            velocities: RingBuffer::default(),
+            current_force: force.clone(),
+            zero_force: force.clone(),
+        }
+    }
+}
+
 impl<Pos, Vel, For, const N: usize> UpdateMechanics<Pos, Vel, For, N>
     for AuxStorageMechanics<Pos, Vel, For, N>
 where
@@ -251,6 +275,17 @@ pub struct AuxStorageReactions<Ri> {
     concentration: Ri,
 }
 
+impl<Ri> DefaultFrom<Ri> for AuxStorageReactions<Ri>
+where
+    Ri: Clone,
+{
+    fn default_from(value: &Ri) -> Self {
+        AuxStorageReactions {
+            concentration: value.clone(),
+        }
+    }
+}
+
 impl<R> UpdateReactions<R> for AuxStorageReactions<R>
 where
     R: Clone + core::ops::Add<R, Output = R>,
@@ -292,6 +327,18 @@ pub trait UpdateReactionsContact<Ri, const N: usize> {
 pub struct AuxStorageReactionsContact<Ri, const N: usize> {
     current_increment: Ri,
     increments: RingBuffer<Ri, N>,
+}
+
+impl<Ri, const N: usize> DefaultFrom<Ri> for AuxStorageReactionsContact<Ri, N>
+where
+    Ri: Clone,
+{
+    fn default_from(value: &Ri) -> Self {
+        AuxStorageReactionsContact {
+            current_increment: value.clone(),
+            increments: Default::default(),
+        }
+    }
 }
 
 impl<Ri, const N: usize> UpdateReactionsContact<Ri, N> for AuxStorageReactionsContact<Ri, N>
