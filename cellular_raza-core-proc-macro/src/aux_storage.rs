@@ -708,7 +708,7 @@ pub fn generics_placeholders(
 ) -> Vec<proc_macro2::TokenStream> {
     let kwargs: KwargsAuxStorage = kwargs.into();
     let builder = Builder::from(kwargs);
-    let (generics, _) = builder.get_generics_and_fields();
+    let generics = builder.get_generics();
     generics
         .into_iter()
         .map(|x| match x {
@@ -881,11 +881,21 @@ impl Builder {
         fields
     }
 
+    pub fn get_generics(&self) -> impl IntoIterator<Item = syn::GenericParam> {
+        self.get_field_information()
+            .into_iter()
+            .flat_map(|field| field.generics.params)
+            .unique()
+    }
+
     pub fn build_aux_storage(self) -> proc_macro2::TokenStream {
         let struct_name = &self.struct_name;
         let core_path = &self.core_path;
-
-        let (generics, fields) = self.get_generics_and_fields();
+        let generics = self.get_generics().into_iter();
+        let fields = self
+            .get_field_information()
+            .into_iter()
+            .map(|x| x.fully_formatted_field);
 
         let stream = quote!(
             #[allow(non_camel_case_types)]
