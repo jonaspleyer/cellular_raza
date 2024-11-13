@@ -533,8 +533,9 @@ impl<F, const D: usize> RodMechanics<F, D> {
         let div_factor = one_half - radius / (F::from_usize(n_rows).unwrap() * c1.spring_length);
 
         // Shrink spring length
-        c1.spring_length = div_factor * c1.spring_length;
-        c2.spring_length = div_factor * c1.spring_length;
+        let new_spring_length = div_factor * c1.spring_length;
+        c1.spring_length = new_spring_length;
+        c2.spring_length = new_spring_length;
 
         // Set starting point
         c1.pos.set_row(0, &pos.row(0));
