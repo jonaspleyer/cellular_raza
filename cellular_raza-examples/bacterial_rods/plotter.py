@@ -63,8 +63,6 @@ def get_cell_meshes(iteration: int, path: Path):
             direction = pos2 - center
             radius = radii[i]
             height = float(np.linalg.norm(pos1 - pos2))
-            # sphere = pv.Sphere(center=pos, radius=radii[i])
-            # meshes.append(sphere)
             cylinder = pv.Cylinder(center, direction, radius, height)
             meshes.append(cylinder)
         combined = pv.MultiBlock(meshes).combine()
