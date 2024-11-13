@@ -91,7 +91,7 @@ def plot_spheres(
     cell_meshes = cell_meshes if cell_meshes is not None else []
 
     # General Settings
-    plotter = pv.Plotter(off_screen=True, window_size=[1280, 800])
+    plotter = pv.Plotter(off_screen=True, window_size=[1280, 1280])
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
