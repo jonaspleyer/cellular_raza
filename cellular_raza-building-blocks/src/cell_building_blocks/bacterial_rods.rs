@@ -31,7 +31,7 @@ pub struct RodMechanics<F, const D: usize> {
     /// Spring tension between individual vertices
     pub spring_tension: F,
     /// Stiffness at each joint connecting two edges
-    pub angle_stiffness: F,
+    pub rigidity: F,
     /// Target spring length
     pub spring_length: F,
     /// Daming constant
@@ -427,7 +427,7 @@ struct __RodMechanicsSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, co
     vel: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
     diffusion_constant: F,
     spring_tension: F,
-    angle_stiffness: F,
+    rigidity: F,
     spring_length: F,
     damping: F,
 }
@@ -442,7 +442,7 @@ where
             vel: value.vel,
             diffusion_constant: value.diffusion_constant,
             spring_tension: value.spring_tension,
-            angle_stiffness: value.angle_stiffness,
+            rigidity: value.rigidity,
             spring_length: value.spring_length,
             damping: value.damping,
         }
@@ -463,7 +463,7 @@ where
         state.serialize_field("vel", &self.vel)?;
         state.serialize_field("diffusion_constant", &self.diffusion_constant)?;
         state.serialize_field("spring_tension", &self.spring_tension)?;
-        state.serialize_field("angle_stiffness", &self.angle_stiffness)?;
+        state.serialize_field("rigidity", &self.rigidity)?;
         state.serialize_field("spring_length", &self.spring_length)?;
         state.serialize_field("damping", &self.damping)?;
         state.end()
@@ -494,7 +494,7 @@ impl<F, const D: usize> RodMechanics<F, D> {
     ///     vel: nalgebra::MatrixXx2::<f32>::zeros(7),
     ///     diffusion_constant: 0.0,
     ///     spring_tension: 0.1,
-    ///     angle_stiffness: 0.05,
+    ///     rigidity: 0.05,
     ///     spring_length: 0.5,
     ///     damping: 0.0,
     /// };
