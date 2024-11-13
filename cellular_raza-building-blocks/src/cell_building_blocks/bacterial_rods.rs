@@ -94,7 +94,7 @@ where
                 } else {
                     force_d
                 };
-                let force = force_dir * self.angle_stiffness * (F::pi() - angle);
+                let force = force_dir * self.rigidity * <F as num::Float>::tan(one_half * angle);
                 total_force.row_mut(i).add_assign(-force * one_half);
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-force * one_half);
