@@ -173,6 +173,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     let mechanics_solver_order = kwargs.mechanics_solver_order;
     let reactions_intra_solver_order = kwargs.reactions_intra_solver_order;
+    let aux_storage_constructor = crate::aux_storage::default_aux_storage_initializer(&kwargs);
 
     if kwargs
         .aspects
@@ -208,7 +209,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&Cycle) {
         local_func_names.push(quote!(#core_path::backend::chili::local_cycle_update));
-        step_4.extend(quote!(sbox.update_cell_cycle_4()?;));
+        step_4.extend(quote!(sbox.update_cell_cycle_4(&#aux_storage_constructor)?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
