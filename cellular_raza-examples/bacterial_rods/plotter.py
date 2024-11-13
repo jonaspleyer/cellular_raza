@@ -91,7 +91,7 @@ def plot_spheres(
     cell_meshes = cell_meshes if cell_meshes is not None else []
 
     # General Settings
-    plotter = pv.Plotter(off_screen=True, window_size=[1280, 1280])
+    plotter = pv.Plotter(off_screen=True, window_size=[1280, 800])
     plotter.set_background([100, 100, 100])
 
     # Draw box around everything
@@ -108,6 +108,8 @@ def plot_spheres(
             cell,
             show_edges=False,
             color=(int(color[0]), int(color[1]), int(color[2])),
+            diffuse=0.5,
+            ambient=0.5,
         )
 
     # Define camera
