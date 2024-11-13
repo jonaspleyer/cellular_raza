@@ -171,7 +171,7 @@ fn main() -> Result<(), SimulationError> {
     let t0 = 0.0 * MINUTE;
     let dt = 0.1 * MINUTE;
     let save_interval = 2.5 * MINUTE;
-    let t_max = 30.0 * HOUR;
+    let t_max = 25.0 * HOUR;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
         dt,
