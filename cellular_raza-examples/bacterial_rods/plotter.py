@@ -33,15 +33,19 @@ def load_cells_from_iteration(output_path: Path, iteration: int):
     if len(df) > 0:
         # Format individual entries for easier use later on
         df["identifier"] = df["identifier"].apply(lambda x: tuple(x))
-        df["cell.pos"] = df["cell.pos"].apply(lambda x: np.array(x, dtype=float).reshape(3, -1))
-        df["cell.vel"] = df["cell.vel"].apply(lambda x: np.array(x, dtype=float))
+        df["cell.mechanics.pos"] = df["cell.mechanics.pos"].apply(
+            lambda x: np.array(x[0], dtype=float).reshape(3, -1)
+        )
+        df["cell.mechanics.vel"] = df["cell.mechanics.vel"].apply(
+            lambda x: np.array(x[0], dtype=float)
+        )
 
     return df
 
 def get_cell_meshes(iteration: int, path: Path):
     cells = load_cells_from_iteration(path, iteration)
-    positions = np.array([x for x in cells["cell.pos"]], dtype=float)
-    radii = np.array([x for x in cells["cell.radius"]], dtype=float)
+    positions = np.array([x for x in cells["cell.mechanics.pos"]], dtype=float)
+    radii = np.array([x for x in cells["cell.interaction.radius"]], dtype=float)
     growth_rate = np.array([x for x in cells["cell.growth_rate"]], dtype=float)
     cell_surfaces = []
     for i, p in enumerate(positions):
@@ -100,7 +104,7 @@ def plot_spheres(
     color_max = np.array([82, 191, 106])
     for (cell, growth_rate) in cell_meshes:
         # TODO MAGIC NUMBERS
-        q = growth_rate / (3e-6 / 60)
+        q = growth_rate / 1e-7
         color = (1-q) * color_min + q * color_max
         plotter.add_mesh(
             cell,
