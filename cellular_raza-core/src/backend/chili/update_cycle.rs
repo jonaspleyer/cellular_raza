@@ -7,16 +7,19 @@ pub use cellular_raza_concepts::CycleEvent;
 use tracing::instrument;
 
 impl<C, A> Voxel<C, A> {
-    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(skip(self, default_from)))]
     pub(crate) fn update_cell_cycle_4<
         #[cfg(feature = "tracing")] Float: core::fmt::Debug,
         #[cfg(not(feature = "tracing"))] Float,
+        Func,
     >(
         &mut self,
+        default_from: &Func,
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, Float>,
-        A: UpdateCycle + Default,
+        A: UpdateCycle,
+        Func: Fn(&C) -> A,
     {
         // Update the cell individual cells
         self.cells
@@ -53,10 +56,11 @@ impl<C, A> Voxel<C, A> {
         // Include new cells
         self.cells
             .extend(self.new_cells.drain(..).map(|(cell, parent_id)| {
+                let aux_storage = default_from(&cell);
                 self.id_counter += 1;
                 (
                     CellBox::new(self.plain_index, self.id_counter, cell, parent_id),
-                    A::default(),
+                    aux_storage,
                 )
             }));
         Ok(())
@@ -72,20 +76,23 @@ where
     /// Instead of running one big update function for all local rules, we have to treat this cell
     /// cycle differently since new cells could be generated and thus have consequences for other
     /// update steps as well.
-    #[cfg_attr(feature = "tracing", instrument(skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(skip(self, default_from)))]
     pub fn update_cell_cycle_4<
         #[cfg(feature = "tracing")] F: core::fmt::Debug,
         #[cfg(not(feature = "tracing"))] F,
+        Func,
     >(
         &mut self,
+        default_from: &Func,
     ) -> Result<(), SimulationError>
     where
         C: cellular_raza_concepts::Cycle<C, F>,
-        A: UpdateCycle + Default,
+        A: UpdateCycle,
+        Func: Fn(&C) -> A,
     {
         self.voxels
             .iter_mut()
-            .map(|(_, vox)| vox.update_cell_cycle_4())
+            .map(|(_, vox)| vox.update_cell_cycle_4(default_from))
             .collect::<Result<(), SimulationError>>()?;
         Ok(())
     }
