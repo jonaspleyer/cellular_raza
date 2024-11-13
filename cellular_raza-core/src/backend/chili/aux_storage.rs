@@ -113,14 +113,14 @@ pub struct AuxStorageMechanics<Pos, Vel, For, const N: usize> {
 // be done at all.
 impl<Pos, Vel, For, const N: usize> Default for AuxStorageMechanics<Pos, Vel, For, N>
 where
-    For: Default,
+    For: num::Zero,
 {
     fn default() -> Self {
         Self {
             positions: RingBuffer::<Pos, N>::default(),
             velocities: RingBuffer::<Vel, N>::default(),
-            current_force: Default::default(), // unsafe { core::mem::zeroed() },
-            zero_force: Default::default(),
+            current_force: num::Zero::zero(),
+            zero_force: num::Zero::zero(),
         }
     }
 }
