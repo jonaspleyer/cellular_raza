@@ -2,9 +2,6 @@ use cellular_raza::prelude::*;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-mod custom_domain;
-use custom_domain::*;
-
 pub const METRE: f64 = 1.0;
 pub const MILI_METRE: f64 = 1e-3;
 pub const MICRO_METRE: f64 = 1e-6;
