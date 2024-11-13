@@ -489,19 +489,22 @@ impl<F, const D: usize> RodMechanics<F, D> {
     ///
     /// ```
     /// # use cellular_raza_building_blocks::*;
+    /// use nalgebra::MatrixXx2;
+    /// let n_vertices = 7;
+    /// let mut pos = MatrixXx2::zeros(n_vertices);
+    /// pos
+    ///     .row_iter_mut()
+    ///     .enumerate()
+    ///     .for_each(|(n_row, mut r)| r[0] += n_row as f32 * 0.5);
     /// let mut m1 = RodMechanics {
-    ///     pos: nalgebra::MatrixXx2::<f32>::zeros(7),
-    ///     vel: nalgebra::MatrixXx2::<f32>::zeros(7),
+    ///     pos,
+    ///     vel: MatrixXx2::zeros(n_vertices),
     ///     diffusion_constant: 0.0,
     ///     spring_tension: 0.1,
     ///     rigidity: 0.05,
     ///     spring_length: 0.5,
     ///     damping: 0.0,
     /// };
-    /// m1.pos
-    ///     .row_iter_mut()
-    ///     .enumerate()
-    ///     .for_each(|(n_row, mut r)| r[0] += n_row as f32 * 0.5);
     /// let radius = 0.25;
     /// let m2 = m1.divide(radius)?;
     ///
