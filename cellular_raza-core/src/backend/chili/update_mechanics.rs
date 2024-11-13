@@ -218,10 +218,6 @@ where
                     .0
                     .get_interaction_information();
                 let mut force = None;
-                // let mut force = self.voxels[&voxel_index].cells[cell_index_in_vector]
-                //     .1
-                //     .get_current_force()
-                //     .xa(Float::zero());
                 let neighbors = self.voxels[&voxel_index].neighbors.clone();
                 for neighbor_index in neighbors {
                     match self.voxels.get_mut(&neighbor_index) {

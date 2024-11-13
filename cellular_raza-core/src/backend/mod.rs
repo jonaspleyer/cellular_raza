@@ -39,7 +39,13 @@ pub mod cpu_os_threads;
 /// 🌶️ A modular, reusable, general purpose backend
 ///
 /// # Overview
-/// TODO formulate in short words how this backend works
+/// The [chili](crate::backend::chili) backend uses procedural macros to generate code which
+/// results in a fully working simulation.
+/// The methods, functions and objects used in this way are formualted with generics.
+/// This enables us to write general-purpose solvers for a wide range of problems.
+///
+/// Since [cellular_raza](https://cellular-raza.com) is based on simulation
+/// [aspects](https://cellular-raza.com/aspects/concepts)
 ///
 /// # Simulation Flow
 /// The [run_simulation](crate::backend::chili::run_simulation) macro (which calls the

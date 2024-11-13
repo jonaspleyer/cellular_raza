@@ -108,6 +108,7 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::run_simulation;
 
+/// Prepare simulation types before executing the simulation via the [run_main] macro.
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::prepare_types;
 
