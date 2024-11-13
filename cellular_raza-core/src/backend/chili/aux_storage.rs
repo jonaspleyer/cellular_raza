@@ -915,7 +915,7 @@ mod test_build_aux_storage {
         aspects:[$($asp:ident),*]) => {
             /// ```
             /// use serde::{Deserialize, Serialize};
-            /// use cellular_raza_core::backend::chili::{build_aux_storage, AuxStorage};
+            /// use cellular_raza_core::backend::chili::*;
             /// build_aux_storage!(
             #[doc = concat!("aspects: [", $(stringify!($asp,),)* "],")]
             ///     aux_storage_name: __cr_AuxStorage,
@@ -972,9 +972,11 @@ mod test_build_aux_storage {
             ///             use cellular_raza_core::backend::chili::UpdateReactionsContact;
             ///             aux_storage.set_last_increment(0f32);
             ///             aux_storage.set_last_increment(3f32);
-            ///             assert_eq!(aux_storage.n_previous_values(), 2);
-            ///             let last_increments: cellular_raza_core::backend::chili::RingBufferIterRef<_, 10>
-            ///                 = aux_storage.previous_increments();
+            ///             assert_eq!(UpdateReactionsContact::n_previous_values(&aux_storage), 2);
+            ///             let last_increments =
+            ///                 UpdateReactionsContact::<f32, 10>::previous_increments(
+            ///                 &aux_storage
+            ///             );
             ///             let last_increments = last_increments.map(|f| *f).collect::<Vec<_>>();
             ///             assert_eq!(last_increments, vec![0.0, 3.0]);
             ///         }
