@@ -66,8 +66,8 @@ where
         let mut total_force = force;
 
         // Calculate force exerted by spring action between individual vertices
-        let dist_internal =
-            self.pos.rows(0, self.pos.nrows() - 1) - self.pos.rows(1, self.pos.nrows() - 1);
+        let n_rows = self.pos.nrows();
+        let dist_internal = self.pos.rows(0, n_rows - 1) - self.pos.rows(1, n_rows - 1);
         dist_internal.row_iter().enumerate().for_each(|(i, dist)| {
             if !dist.norm().is_zero() {
                 let dir = dist.normalize();
@@ -80,21 +80,21 @@ where
             }
         });
 
-        // Calculate force exerted by angle-contributions
+        // Calculate force exerted by curvature-contributions
         use itertools::Itertools;
         dist_internal
             .row_iter()
             .tuple_windows::<(_, _)>()
             .enumerate()
             .for_each(|(i, (conn1, conn2))| {
-                let angle = conn1.angle(&-conn2);
+                let angle = conn1.angle(&conn2);
                 let force_d = conn1.normalize() - conn2.normalize();
-                let force_direction = if !force_d.norm().is_zero() {
+                let force_dir = if !force_d.norm().is_zero() {
                     force_d.normalize()
                 } else {
                     force_d
                 };
-                let force = force_direction * self.angle_stiffness * (F::pi() - angle);
+                let force = force_dir * self.angle_stiffness * (F::pi() - angle);
                 total_force.row_mut(i).add_assign(-force * one_half);
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-force * one_half);
