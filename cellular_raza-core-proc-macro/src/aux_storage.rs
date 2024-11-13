@@ -902,7 +902,7 @@ impl Builder {
         let stream = quote!(
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
-            #[derive(Clone, Default, Deserialize, Serialize)]
+            #[derive(Clone, Deserialize, Serialize)]
             #[derive(#core_path ::backend::chili::AuxStorage)]
             #[AuxStorageCorePath(#core_path)]
             pub struct #struct_name<#(#generics),*> {
