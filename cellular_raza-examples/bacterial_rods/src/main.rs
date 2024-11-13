@@ -1,9 +1,4 @@
-use std::ops::Div;
-
-use cellular_raza::building_blocks::{nearest_point_from_point_to_line, CartesianCuboid};
-use cellular_raza::concepts::{CalcError, CellAgent, Cycle, CycleEvent, Position, Velocity};
-use cellular_raza::core::backend::chili;
-
+use cellular_raza::prelude::*;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
