@@ -16,6 +16,7 @@ impl VoxelPlainIndex {
 
 /// Identifier or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
 pub struct SubDomainPlainIndex(usize);
 
 /// Unique identifier which is given to every cell in the simulation
