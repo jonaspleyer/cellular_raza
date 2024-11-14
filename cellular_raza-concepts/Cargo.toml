@@ -24,7 +24,7 @@ plotters = { workspace = true }
 
 [dependencies.cellular_raza-concepts-derive]
 path = "../cellular_raza-concepts-derive"
-version = "0.1.4"
+version = "0.1.5"
 
 [dev-dependencies]
 rand = { workspace = true }
