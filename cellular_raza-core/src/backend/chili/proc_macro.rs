@@ -24,6 +24,27 @@ pub use cellular_raza_core_proc_macro::build_aux_storage;
 /// ```
 pub use cellular_raza_core_proc_macro::FromMap;
 
+/// Returns code which can be used to initialize a new empty AuxStorage.
+///
+/// The code produced by this macro is a closure.
+/// Thus the most common usecase will be
+/// ```
+/// # use cellular_raza_core::backend::chili::*;
+/// # use serde::{Serialize, Deserialize};
+/// // This macro could also be executed by others such as run_simulation! or prepare_types!
+/// build_aux_storage!(
+///     aspects: [Cycle],
+///     core_path: cellular_raza_core,
+/// );
+///
+/// // This will create a new instance of the previously defined AuxStorage.
+/// let aux_storage = (aux_storage_constructor!(
+///     aspects: [Cycle],// and any other aspects desired
+///     core_path: cellular_raza_core,
+/// ))(()/* here should be the cell for which we construct the aux storage*/);
+/// ```
+pub use cellular_raza_core_proc_macro::aux_storage_constructor;
+
 /// Derives the [UpdateCycle](crate::backend::chili::UpdateCycle) and
 /// [UpdateMechanics](crate::backend::chili::UpdateMechanics)
 /// trait automatically for the containing struct.
