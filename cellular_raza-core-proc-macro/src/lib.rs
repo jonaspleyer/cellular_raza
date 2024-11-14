@@ -43,6 +43,15 @@ pub fn build_aux_storage(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 }
 
 #[allow(missing_docs)]
+#[proc_macro]
+pub fn aux_storage_constructor(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let kwargs = syn::parse_macro_input!(input as aux_storage::KwargsAuxStorageParsed);
+    let kwargs = aux_storage::KwargsAuxStorage::from(kwargs);
+    let res = aux_storage::default_aux_storage_initializer(&kwargs);
+    quote::quote!(#res).into()
+}
+
+#[allow(missing_docs)]
 #[proc_macro_derive(Communicator, attributes(CommunicatorCorePath, Comm))]
 pub fn _communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     communicator::derive_communicator(input)
