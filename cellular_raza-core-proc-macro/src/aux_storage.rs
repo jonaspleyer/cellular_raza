@@ -848,7 +848,7 @@ impl Builder {
         }
 
         if self.aspects.contains(&ReactionsContact) {
-            let field_name = syn::parse_quote!(reactions_extra);
+            let field_name = syn::parse_quote!(reactions_contact);
             let field_type = syn::parse_quote!(#backend_path AuxStorageReactionsContact);
             let generics = syn::parse_quote!(<Ri, const NReact: usize>);
             let fully_formatted_field = quote!(
