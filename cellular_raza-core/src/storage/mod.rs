@@ -22,11 +22,6 @@
 //! elements and store them as plain `.json` files.
 //! See [JsonStorageInterface].
 //!
-//! ## Xml
-//! Uses the [quick_xml](https://docs.rs/quick-xml/latest/quick_xml/) crate to store results as
-//! `.xml` files.
-//! See [XmlStorageInterface]
-//!
 //! ## Sled
 //! Builds an embedded database at the specified location. This database is a key-value storage and
 //! can be accessed via the [sled](https://docs.rs/sled/latest/sled/) crate.
@@ -40,7 +35,6 @@
 
 mod concepts;
 mod memory_storage;
-mod quick_xml;
 mod ron;
 mod serde_json;
 mod sled_database;
@@ -49,7 +43,6 @@ mod test;
 
 pub use concepts::*;
 pub use memory_storage::*;
-pub use quick_xml::*;
 pub use ron::*;
 pub use serde_json::*;
 pub use sled_database::*;

@@ -9,7 +9,6 @@ use uniquevec::UniqueVec;
 use tracing::instrument;
 
 use super::memory_storage::MemoryStorageInterface;
-use super::quick_xml::XmlStorageInterface;
 use super::ron::RonStorageInterface;
 use super::serde_json::JsonStorageInterface;
 use super::sled_database::SledStorageInterface;
@@ -21,10 +20,6 @@ pub enum StorageError {
     IoError(std::io::Error),
     /// Occurs during parsing of json structs.
     SerdeJsonError(serde_json::Error),
-    /// Occurs during parsing of Xml structs.
-    QuickXmlError(quick_xml::Error),
-    /// Occurs during parsing of Xml structs.
-    FastXmlDeserializeError(quick_xml::DeError),
     /// Generic error related to serialization in the [ron] crate.
     RonError(ron::Error),
     /// Generic error related to deserialization in the [ron] crate.
@@ -44,18 +39,6 @@ pub enum StorageError {
 impl From<serde_json::Error> for StorageError {
     fn from(err: serde_json::Error) -> Self {
         StorageError::SerdeJsonError(err)
-    }
-}
-
-impl From<quick_xml::Error> for StorageError {
-    fn from(err: quick_xml::Error) -> Self {
-        StorageError::QuickXmlError(err)
-    }
-}
-
-impl From<quick_xml::DeError> for StorageError {
-    fn from(err: quick_xml::DeError) -> Self {
-        StorageError::FastXmlDeserializeError(err)
     }
 }
 
@@ -105,8 +88,6 @@ impl Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             StorageError::SerdeJsonError(message) => write!(f, "{}", message),
-            StorageError::QuickXmlError(message) => write!(f, "{}", message),
-            StorageError::FastXmlDeserializeError(message) => write!(f, "{}", message),
             StorageError::RonError(message) => write!(f, "{}", message),
             StorageError::RonSpannedError(message) => write!(f, "{}", message),
             StorageError::SledError(message) => write!(f, "{}", message),
@@ -123,8 +104,8 @@ impl Error for StorageError {}
 
 /// Define how to store results of the simulation.
 ///
-/// We currently support saving results in a [sled] database, as xml files
-/// via [quick_xml] or as a json file by using [serde_json].
+/// We currently support saving results in a [sled] database, or as a json file by using
+/// [serde_json].
 #[cfg_attr(feature = "pyo3", pyo3::pyclass)]
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum StorageOption {
@@ -134,12 +115,6 @@ pub enum StorageOption {
     SledTemp,
     /// Save results as [json](https://www.json.org/json-en.html) file.
     SerdeJson,
-    /// Save results as [xml](https://www.xml.org/) file.
-    /// # WARNING!
-    /// This option does not allow to deserializee at the moment due to a bug (probably) in
-    /// quick-xml.
-    #[deprecated]
-    SerdeXml,
     /// Store results in the [ron] file format specifically designed for Rust structs.
     /// This format guarantees round-trips `Rust -> Ron -> Rust` and is thus preferred together
     /// with the well-established [StorageOption::SerdeJson] format.
@@ -187,7 +162,6 @@ pub struct StorageManager<Id, Element> {
     sled_temp_storage: Option<SledStorageInterface<Id, Element, true>>,
     json_storage: Option<StorageWrapper<JsonStorageInterface<Id, Element>>>,
     ron_storage: Option<StorageWrapper<RonStorageInterface<Id, Element>>>,
-    xml_storage: Option<StorageWrapper<XmlStorageInterface<Id, Element>>>,
     memory_storage: Option<MemoryStorageInterface<Id, Element>>,
 }
 
@@ -381,7 +355,6 @@ impl<Id, Element> StorageManager<Id, Element> {
         let mut sled_temp_storage = None;
         let mut json_storage = None;
         let mut ron_storage = None;
-        let mut xml_storage = None;
         let mut memory_storage = None;
         for storage_variant in storage_builder.priority.iter() {
             match storage_variant {
@@ -419,16 +392,6 @@ impl<Id, Element> StorageManager<Id, Element> {
                         )?,
                     ));
                 }
-                StorageOption::SerdeXml => {
-                    xml_storage = Some(StorageWrapper(
-                        XmlStorageInterface::<Id, Element>::open_or_create(
-                            &location
-                                .to_path_buf()
-                                .join(XmlStorageInterface::<Id, Element>::EXTENSION),
-                            instance,
-                        )?,
-                    ));
-                }
                 StorageOption::Memory => {
                     memory_storage = Some(MemoryStorageInterface::<Id, Element>::open_or_create(
                         &location.to_path_buf(),
@@ -446,7 +409,6 @@ impl<Id, Element> StorageManager<Id, Element> {
             sled_temp_storage,
             json_storage,
             ron_storage,
-            xml_storage,
             memory_storage,
         };
 
@@ -490,7 +452,6 @@ macro_rules! exec_for_all_storage_options(
         exec_for_all_storage_options!(mut $self, sled_temp_storage, $function, $($args)*);
         exec_for_all_storage_options!(mut $self, json_storage, $function, $($args)*);
         exec_for_all_storage_options!(mut $self, ron_storage, $function, $($args)*);
-        exec_for_all_storage_options!(mut $self, xml_storage, $function, $($args)*);
         exec_for_all_storage_options!(mut $self, memory_storage, $function, $($args)*);
     };
     ($self:ident, $priority:ident, $function:ident, $($args:tt)*) => {
@@ -506,9 +467,6 @@ macro_rules! exec_for_all_storage_options(
             ),
             StorageOption::Ron => exec_for_all_storage_options!(
                 @internal $self, Ron, ron_storage, $function, $($args)*
-            ),
-            StorageOption::SerdeXml => exec_for_all_storage_options!(
-                @internal $self, SerdeXml, xml_storage, $function, $($args)*
             ),
             StorageOption::Memory => exec_for_all_storage_options!(
                 @internal $self, Memory, memory_storage, $function, $($args)*
@@ -800,7 +758,7 @@ pub trait StorageInterfaceOpen {
     /// Initializes the current storage device.
     ///
     /// In the case of databases, this may already result in an IO operation
-    /// while when saving as files such as json or xml folders might be created.
+    /// while when saving as files such as json folders might be created.
     fn open_or_create(
         location: &std::path::Path,
         storage_instance: u64,
