@@ -910,6 +910,7 @@ mod test_derive_aux_storage {
 #[allow(unused)]
 #[doc(hidden)]
 mod test_build_aux_storage {
+    use crate::backend::chili::proc_macro::aux_storage_constructor;
     macro_rules! construct (
         (name:$test_name:ident,
         aspects:[$($asp:ident),*]) => {
@@ -921,7 +922,17 @@ mod test_build_aux_storage {
             ///     aux_storage_name: __cr_AuxStorage,
             ///     core_path: cellular_raza_core
             /// );
-            /// let mut aux_storage = __cr_AuxStorage::default();
+            // #[doc = concat!("let mut aux_storage = __cr_AuxStorage {", init!($($asp),*) "};")]
+            // #[doc = init!{@start $($asp),* end}]
+            #[doc = concat!(
+                "let mut aux_storage = (",
+                stringify!(aux_storage_constructor!(
+                    aux_storage_name: __cr_AuxStorage,
+                    core_path: cellular_raza_core,
+                    aspects: [$($asp),*],
+                )),
+                ")(());",
+            )]
             /// macro_rules! test_aspect (
             ///     (Mechanics) => {
             ///         {
