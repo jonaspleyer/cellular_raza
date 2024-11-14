@@ -47,13 +47,13 @@ use nalgebra::{Const, Dyn, Matrix, VecStorage};
 ///     \kappa\_i = 2\tan\left(\frac{\alpha\_i}{2}\right).
 /// \\end{equation}
 ///
-/// The resulting force acts along the angle bisector which can be calculated from the normalized
-/// edge vectors $\vec{d}\_i$.
+/// The resulting force acts along the angle bisector which can be calculated from the edge
+/// vectors.
 /// The forces acting on vertices $\vec{v}\_i,\vec{v}\_{i-1},\vec{v}\_{i+1}$ are given by
 ///
 /// \\begin{align}
 ///     \vec{F}\_{i,\text{curvature}} &= \eta\kappa_i
-///         \frac{\vec{d}\_i - \vec{d}\_{i+1}}{|\vec{d}\_i-\vec{d}\_{i+1}|}\\\\
+///         \frac{\vec{c}\_i - \vec{c}\_{i+1}}{|\vec{c}\_i-\vec{c}\_{i+1}|}\\\\
 ///     \vec{F}\_{i-1,\text{curvature}} &= -\frac{1}{2}\vec{F}\_{i,\text{curvature}}\\\\
 ///     \vec{F}\_{i+1,\text{curvature}} &= -\frac{1}{2}\vec{F}\_{i,\text{curvature}}
 /// \\end{align}
@@ -119,6 +119,7 @@ where
     > {
         use core::ops::AddAssign;
         let one_half = F::one() / (F::one() + F::one());
+        let two = F::one() + F::one();
 
         // Calculate internal force between the two points of the Agent
         let mut total_force = force;
@@ -146,13 +147,14 @@ where
             .enumerate()
             .for_each(|(i, (conn1, conn2))| {
                 let angle = conn1.angle(&conn2);
-                let force_d = conn1.normalize() - conn2.normalize();
+                let force_d = conn1 - conn2;
                 let force_dir = if !force_d.norm().is_zero() {
                     force_d.normalize()
                 } else {
                     force_d
                 };
-                let force = force_dir * self.rigidity * <F as num::Float>::tan(one_half * angle);
+                let force =
+                    force_dir * two * self.rigidity * <F as num::Float>::tan(one_half * angle);
                 total_force.row_mut(i).add_assign(-force * one_half);
                 total_force.row_mut(i + 1).add_assign(force);
                 total_force.row_mut(i + 2).add_assign(-force * one_half);
