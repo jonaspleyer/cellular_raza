@@ -114,7 +114,7 @@ fn main() -> Result<(), SimulationError> {
             vel: nalgebra::MatrixXx3::zeros(nrows),
             diffusion_constant: 0.0 * MICRO_METRE.powf(2.0) / MINUTE,
             spring_tension: 10.0 / MINUTE.powf(2.0),
-            rigidity: 2.0 * MICRO_METRE / MINUTE.powf(2.0),
+            rigidity: 1.0 * MICRO_METRE / MINUTE.powf(2.0),
             damping: 1.5 / MINUTE,
             spring_length: 3.0 * MICRO_METRE,
         },
