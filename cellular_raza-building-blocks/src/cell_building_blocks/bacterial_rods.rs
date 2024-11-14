@@ -8,8 +8,66 @@ use nalgebra::{Const, Dyn, Matrix, VecStorage};
 
 /// A mechanical model for Bacterial Rods
 ///
-/// See the [Bacterial Rods](https://cellular-raza.com/showcase/bacterial-rods) example for more
-/// detailed information.
+/// See the [Bacterial Rods](https://cellular-raza.com/showcase/bacterial-rods) example for a
+/// detailed example.
+///
+/// # Parameters & Variables
+///
+/// | Symbol | Struct Field | Description |
+/// | --- | --- | --- |
+/// | $\gamma$ | `spring_tension` | Tension of the springs connecting the vertices. |
+/// | $D$ | `diffusion_constant` | Diffusion constant corresponding to brownian motion. |
+/// | $\lambda$ | `damping` | Damping constant. |
+/// | $l$ | `spring_length` | Length of an individual segment between two vertices. |
+/// | $\eta$ | `rigidity` | Rigidity with respect to bending the rod. |
+///
+/// # Equations
+///
+/// The vertices which are being modeled are stored in the `pos` struct field and their
+/// corresponding velocities in the `vel` field.
+///
+/// \\begin{equation}
+///     \vec{v}_i= \text{\texttt{rod\\_mechanics\.pos\.row(i)}}
+/// \\end{equation}
+///
+/// We define the edge $\vec{c}\_i:=\vec{v}\_i-\vec{v}\_{i-1}$.
+/// The first force acts between the vertices $v\_i$ of the model and aims to maintain an equal
+/// distance between all vertices via
+///
+/// \\begin{equation}
+///     \vec{F}\_{i,\text{springs}} = -\gamma\left(1-\frac{l}{||\vec{c}\_i||}\right)\vec{c}\_i
+///         +\gamma\left(1-\frac{l}{||\vec{c}\_{i+1}||}\right)\vec{c}\_{i+1}.
+/// \\end{equation}
+///
+/// We assume the properties of a simple elastic rod.
+/// With the angle $\alpha_i$ between adjacent edges $\vec{c}\_{i-1},\vec{c}\_i$ we can formulate
+/// the bending force which is proportional to the curvature $\kappa\_i$ at vertex $i$
+///
+/// \\begin{equation}
+///     \kappa\_i = 2\tan\left(\frac{\alpha\_i}{2}\right).
+/// \\end{equation}
+///
+/// The resulting force acts along the angle bisector which can be calculated from the normalized
+/// edge vectors $\vec{d}\_i$.
+/// The forces acting on vertices $\vec{v}\_i,\vec{v}\_{i-1},\vec{v}\_{i+1}$ are given by
+///
+/// \\begin{align}
+///     \vec{F}\_{i,\text{curvature}} &= \eta\kappa_i
+///         \frac{\vec{d}\_i - \vec{d}\_{i+1}}{|\vec{d}\_i-\vec{d}\_{i+1}|}\\\\
+///     \vec{F}\_{i-1,\text{curvature}} &= -\frac{1}{2}\vec{F}\_{i,\text{curvature}}\\\\
+///     \vec{F}\_{i+1,\text{curvature}} &= -\frac{1}{2}\vec{F}\_{i,\text{curvature}}
+/// \\end{align}
+///
+/// where $\eta\_i$ is the angle curvature at vertex $\vec{v}\_i$.
+/// The total force $\vec{F}_{i,\text{total}}$ at vertex $i$ consists of multiple contributions.
+///
+/// \\begin{equation}
+///     \vec{F}\_{i,\text{total}} = \vec{F}\_{i,\text{springs}} + \vec{F}\_{i,\text{curvature}}
+///         + \vec{F}\_{i,\text{external}}
+/// \\end{equation}
+///
+/// # References
+///
 #[derive(Clone, Debug, PartialEq)]
 pub struct RodMechanics<F, const D: usize> {
     /// The current position
