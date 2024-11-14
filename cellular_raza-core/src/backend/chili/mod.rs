@@ -32,15 +32,39 @@ pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
 #[cfg(feature = "pyo3")]
 #[pyo3::pymethods]
 impl CellIdentifier {
-    fn __repr__(&self) -> String {
+    /// Constructs a new CellIdentifier
+    #[new]
+    pub fn new(voxel_plain_index: VoxelPlainIndex, counter: u64) -> Self {
+        Self(voxel_plain_index, counter)
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn __deepcopy__(&self, _memo: pyo3::Bound<pyo3::types::PyDict>) -> Self {
+        self.clone()
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn copy(&self) -> Self {
+        self.clone()
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn __copy__(&self) -> Self {
+        self.clone()
+    }
+
+    /// Formats the CellIdentifier
+    pub fn __repr__(&self) -> String {
         format!("{:?}", self)
     }
 
-    fn __eq__(&self, other: &Self) -> bool {
+    /// Performs the `==` operation.
+    pub fn __eq__(&self, other: &Self) -> bool {
         self.eq(other)
     }
 
-    fn __hash__(&self) -> u64 {
+    /// Calculates a hash value of type `u64`
+    pub fn __hash__(&self) -> u64 {
         use core::hash::{Hash, Hasher};
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         self.hash(&mut hasher);
