@@ -71,14 +71,19 @@ impl CellIdentifier {
         hasher.finish()
     }
 
-    fn __getstate__(&self) -> pyo3::PyResult<(usize, u64)> {
-        Ok((self.0.0, self.1))
-    }
-
-    fn __setstate(&mut self, state: (usize, u64)) -> pyo3::PyResult<()> {
-        self.0 = VoxelPlainIndex(state.0);
-        self.1 = state.1;
-        Ok(())
+    /// Used to pickle the object
+    #[deprecated(note = "This method exists as part of experimentation and may change behaviour or\
+        be removed in the future")]
+    pub fn __reduce__<'a>(&'a self, py: pyo3::Python<'a>) -> pyo3::Bound<pyo3::types::PyTuple> {
+        use pyo3::prelude::*;
+        use pyo3::PyTypeInfo;
+        pyo3::types::PyTuple::new_bound(
+            py,
+            [
+                Self::type_object_bound(py).to_object(py),
+                pyo3::types::PyTuple::new_bound(py, [self.0.0 as u64, self.1]).to_object(py),
+            ],
+        )
     }
 }
 
