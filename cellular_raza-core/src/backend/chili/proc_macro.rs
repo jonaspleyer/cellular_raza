@@ -129,21 +129,11 @@ pub use cellular_raza_core_proc_macro::Communicator;
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 
-#[doc(inline)]
-pub use cellular_raza_core_proc_macro::run_simulation;
-
-/// Prepare simulation types before executing the simulation via the [run_main] macro.
-#[doc(inline)]
-pub use cellular_raza_core_proc_macro::prepare_types;
-
-#[doc(inline)]
-pub use cellular_raza_core_proc_macro::test_compatibility;
-
-/// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types!].
+/// Performs a complete numerical simulation.
 ///
 /// ```ignore
-/// run_main!(
-///     // Mandatory Arguments
+/// run_simulation!(
+///     // Required Arguments
 ///     domain: $domain:ident,
 ///     agents: $agents:ident,
 ///     settings: $settings:ident,
@@ -209,4 +199,15 @@ pub use cellular_raza_core_proc_macro::test_compatibility;
 /// This feature is currently not supported.
 /// In the future, we plan on supporting additional parallelization strategies such as
 /// [rayon](https://docs.rs/rayon/latest/rayon/).
+#[doc(inline)]
+pub use cellular_raza_core_proc_macro::run_simulation;
+
+/// Prepare simulation types before executing the simulation via the [run_main] macro.
+#[doc(inline)]
+pub use cellular_raza_core_proc_macro::prepare_types;
+
+#[doc(inline)]
+pub use cellular_raza_core_proc_macro::test_compatibility;
+
+/// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types!].
 pub use cellular_raza_core_proc_macro::run_main;
