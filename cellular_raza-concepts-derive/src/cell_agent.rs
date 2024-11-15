@@ -639,7 +639,8 @@ impl AgentImplementer {
             let full_struct_ty = quote::quote!(#struct_name #struct_ty_generics);
 
             let where_clause = append_where_clause!(struct_where_clause
-                @clause field_type, Reactions, tokens
+                @clause field_type, Reactions, tokens,
+                @clause full_struct_ty, Intracellular, tokens
             );
 
             let mut generics = self.generics.clone();
