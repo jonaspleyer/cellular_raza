@@ -497,7 +497,34 @@ fn derive_reactions() {}
 #[allow(unused)]
 fn derive_intracellular() {}
 
-/// TODO add description
+/// ```
+/// use cellular_raza_concepts::{CellAgent, Intracellular, Reactions, CalcError};
+/// struct MyReactions;
+/// impl Reactions<i16> for MyReactions {
+///     fn calculate_intracellular_increment(&self, intracellular: &i16) -> Result<i16,
+///     CalcError> {
+///         Ok(-1)
+///     }
+/// }
+/// impl Intracellular<i16> for MyReactions {
+///     fn get_intracellular(&self) -> i16 {42}
+///     fn set_intracellular(&mut self, _intracellular: i16) {}
+/// }
+/// #[derive(CellAgent)]
+/// struct MyCell {
+///     #[ReactionsRaw]
+///     reactions: MyReactions,
+/// }
+/// impl Intracellular<i16> for MyCell {
+///     fn get_intracellular(&self) -> i16 {12}
+///     fn set_intracellular(&mut self, _: i16) {}
+/// }
+/// let mycell = MyCell {
+///     reactions: MyReactions,
+/// };
+/// assert_eq!(mycell.get_intracellular(), 12);
+/// assert_eq!(mycell.calculate_intracellular_increment(&7).unwrap(), -1);
+/// ```
 #[allow(unused)]
 fn derive_reactions_raw() {}
 
