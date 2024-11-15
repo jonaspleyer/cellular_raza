@@ -432,7 +432,7 @@ where
 
 /// Updates the cells intracellular values from the obtained contact informations
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
-pub fn local_update_contact_reactions_step_3<
+pub fn local_update_contact_reactions<
     C,
     A,
     Ri,
