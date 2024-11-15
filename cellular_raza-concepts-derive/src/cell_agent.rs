@@ -255,7 +255,6 @@ impl From<AgentParser> for AgentImplementer {
                         }
                         CellAspect::ReactionsContact => {
                             intracellular = Some(field_info.clone());
-                            reactions_raw = Some(field_info.clone());
                             reactions_contact = Some(field_info);
                         }
                         CellAspect::ExtracellularGradient => {
@@ -721,20 +720,27 @@ impl AgentImplementer {
         if let Some(field_info) = &self.reactions_contact {
             let field_name = &field_info.field_name;
             let field_type = &field_info.field_type;
-            new_ident!(pos, "__cr_private_Pos");
             new_ident!(rintra, "__cr_private_Ri");
-            new_ident!(rinf, "__cr_private_Ri");
-            let tokens = quote!(#pos, #rintra, #rinf);
+            new_ident!(pos, "__cr_private_Pos");
+            new_ident!(float, "__cr_private_Float");
+            new_ident!(rinf, "__cr_private_Rinf");
+            let tokens = quote!(#rintra, #pos, #float, #rinf);
 
-            let where_clause = append_where_clause!(struct_where_clause @clause field_type, ReactionsContact, tokens);
+            let where_clause = append_where_clause!(
+                struct_where_clause
+                @clause field_type, ReactionsContact, tokens
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
+            push_ident!(generics, pos);
+            push_ident!(generics, float);
+            push_ident!(generics, rinf);
             let impl_generics = generics.split_for_impl().0;
 
             let res = quote! {
                 #[automatically_derived]
-                impl #impl_generics Reactions<#tokens>
+                impl #impl_generics ReactionsContact<#tokens>
                 for #struct_name #struct_ty_generics #where_clause {
                     #[inline]
                     fn get_contact_information(&self) -> #rinf {

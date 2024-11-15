@@ -32,6 +32,7 @@ mod domain;
         Velocity,
         Interaction,
         Reactions,
+        ReactionsContact,
         ReactionsRaw,
         ReactionsExtra,
         ReactionsExtraRaw,
