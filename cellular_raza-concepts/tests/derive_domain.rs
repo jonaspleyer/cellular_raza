@@ -41,10 +41,7 @@ impl Domain<Agent, MySubDomain> for MyDomain {
     ) -> Result<
         DecomposedDomain<Self::SubDomainIndex, MySubDomain, Agent>,
         cellular_raza_concepts::DecomposeError,
-    >
-    where
-        MySubDomain: SubDomain,
-    {
+    > {
         Ok(DecomposedDomain {
             n_subdomains: 1.try_into().unwrap(),
             index_subdomain_cells: vec![(
