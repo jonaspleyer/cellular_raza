@@ -559,7 +559,7 @@ where
     Ok(())
 }
 
-/// TODO
+/// Perform the [Interaction::react_to_neighbors] function and clear current neighbors.
 pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
     cell: &mut C,
     aux_storage: &mut A,

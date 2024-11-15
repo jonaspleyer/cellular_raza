@@ -12,14 +12,14 @@ use tracing::instrument;
 /// Carries information about the border given by the [ReactionsExtra] trait between subdomains.
 pub struct ReactionsExtraBorderInfo<Binfo>(pub SubDomainPlainIndex, pub Binfo);
 
-/// Return information of border value after having obtained the [ReactionsExtra::BorderInfo]
+/// Return information of border value after having obtained the [SubDomainReactions::BorderInfo]
 pub struct ReactionsExtraBorderReturn<Bvalue>(pub SubDomainPlainIndex, pub Bvalue);
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
-    /// TODO
+    /// Send [ReactionsExtraBorderInfo] to neighboring subdomains
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_reactions_extra_step_1<Pos, Ri, Re, Float>(
         &mut self,
@@ -42,7 +42,8 @@ where
         Ok(())
     }
 
-    /// TODO
+    /// Receive [ReactionsExtraBorderInfo] of neighboring subdomains and return
+    /// [ReactionsExtraBorderReturn]
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_reactions_extra_step_2<Pos, Ri, Re, Float>(
         &mut self,
@@ -78,7 +79,7 @@ where
         Ok(())
     }
 
-    /// TODO
+    /// Receive [ReactionsExtraBorderReturn] and update values.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_reactions_extra_step_3<Pos, Ri, Re, Float>(
         &mut self,
@@ -257,7 +258,7 @@ impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
 where
     S: SubDomain,
 {
-    /// TODO
+    /// Send [ReactionsContactInformation] to neighboring subdomains.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_contact_reactions_step_1<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,
@@ -331,7 +332,8 @@ where
         Ok(())
     }
 
-    /// TODO
+    /// Receive [ReactionsContactInformation], perform calculations of increments of
+    /// [ReactionsContact] and return [ReactionsContactReturn]
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_contact_reactions_step_2<Ri, Pos, RInf, Float, const N: usize>(
         &mut self,
@@ -452,7 +454,7 @@ where
     Ok(())
 }
 
-/// TODO
+/// Calculates the increment from the [Reactions](cellular_raza_concepts::Reactions) trait.
 #[allow(private_bounds)]
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn local_reactions_intracellular<
