@@ -213,7 +213,7 @@ impl SubDomainImplementer {
             let tokens = quote::quote!(#cell);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SortCells, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, SortCells, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
@@ -252,8 +252,7 @@ impl SubDomainImplementer {
             new_ident!(velocity, "__cr_private_Vel");
             let tokens = quote::quote!(#position, #velocity);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SubDomainMechanics, tokens);
+            let where_clause = append_where_clause!(struct_where_clause @clause field_type, SubDomainMechanics, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
@@ -294,8 +293,7 @@ impl SubDomainImplementer {
             new_ident!(float, "__cr__private_Float");
             let tokens = quote::quote!(#position, #react_extra, #float);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SubDomainReactions, tokens);
+            let where_clause = append_where_clause!(struct_where_clause @clause field_type, SubDomainReactions, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
@@ -379,8 +377,7 @@ impl SubDomainImplementer {
             new_ident!(force, "__cr_private_For");
             let tokens = quote::quote!(#position, #velocity, #force);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SubDomainForce, tokens);
+            let where_clause = append_where_clause!(struct_where_clause @clause field_type, SubDomainForce, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);

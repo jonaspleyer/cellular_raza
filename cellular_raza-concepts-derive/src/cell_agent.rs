@@ -318,7 +318,8 @@ impl AgentImplementer {
 
             let tokens = quote!(#struct_name #struct_ty_generics, #float_type);
 
-            let where_clause = append_where_clause!(struct_where_clause, field_type, Cycle, tokens);
+            let where_clause =
+                append_where_clause!(struct_where_clause @clause field_type, Cycle, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, float_type);
@@ -378,7 +379,7 @@ impl AgentImplementer {
             let field_name = &field_info.field_name;
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Mechanics, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Mechanics, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
@@ -430,7 +431,7 @@ impl AgentImplementer {
             let field_name = &field_info.field_name;
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Position, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Position, tokens);
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
             let impl_generics = generics.split_for_impl().0;
@@ -467,7 +468,7 @@ impl AgentImplementer {
             let field_name = &field_info.field_name;
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Velocity, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Velocity, tokens);
             let mut generics = self.generics.clone();
             push_ident!(generics, velocity);
             let impl_generics = generics.split_for_impl().0;
@@ -507,7 +508,7 @@ impl AgentImplementer {
             let tokens = quote!(#position, #velocity, #force, #information);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Interaction, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Interaction, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
@@ -590,7 +591,7 @@ impl AgentImplementer {
             let tokens = quote!(#rintra);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Intracellular, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Intracellular, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
@@ -635,9 +636,11 @@ impl AgentImplementer {
             let field_type = &field_info.field_type;
             new_ident!(rintra, "__cr_private_Ri");
             let tokens = quote!(#rintra);
+            let full_struct_ty = quote::quote!(#struct_name #struct_ty_generics);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Reactions, tokens);
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, Reactions, tokens
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
@@ -677,8 +680,7 @@ impl AgentImplementer {
             new_ident!(rextra, "__cr_private_Re");
             let tokens = quote!(#rintra, #rextra);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, ReactionsExtra, tokens);
+            let where_clause = append_where_clause!(struct_where_clause @clause field_type, ReactionsExtra, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
@@ -723,8 +725,7 @@ impl AgentImplementer {
             new_ident!(rinf, "__cr_private_Ri");
             let tokens = quote!(#pos, #rintra, #rinf);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause, field_type, ReactionsContact, tokens);
+            let where_clause = append_where_clause!(struct_where_clause @clause field_type, ReactionsContact, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
@@ -776,7 +777,8 @@ impl AgentImplementer {
             let tokens = quote!(#struct_name #struct_ty_generics, #extra_gradient);
 
             let where_clause = append_where_clause!(
-                struct_where_clause,
+                struct_where_clause
+                @clause
                 field_type,
                 InteractionExtracellularGradient,
                 tokens
@@ -815,7 +817,7 @@ impl AgentImplementer {
             new_ident!(float_type, "__cr_private_Float");
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Volume, float_type);
+                append_where_clause!(struct_where_clause @clause field_type, Volume, float_type);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, float_type);

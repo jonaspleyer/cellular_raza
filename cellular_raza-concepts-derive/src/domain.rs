@@ -89,7 +89,7 @@ impl DomainImplementer {
             let tokens = quote::quote!(#cell, #subdomain, #cell_iterator);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, Domain, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, Domain, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
@@ -137,7 +137,7 @@ impl DomainImplementer {
             let tokens = quote::quote!(#cell);
 
             let where_clause =
-                append_where_clause!(struct_where_clause, field_type, SortCells, tokens);
+                append_where_clause!(struct_where_clause @clause field_type, SortCells, tokens);
 
             let mut generics = self.generics.clone();
             push_ident!(generics, cell);
@@ -200,7 +200,8 @@ impl DomainImplementer {
             let tokens = quote::quote!(#subdomain);
 
             let where_clause = append_where_clause!(
-                struct_where_clause,
+                struct_where_clause
+                @clause
                 field_type,
                 DomainCreateSubDomains,
                 tokens
