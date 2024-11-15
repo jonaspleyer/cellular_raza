@@ -528,7 +528,7 @@ where
 /// Currently, we employ the [mechanics_adams_bashforth_3](super::mechanics_adams_bashforth_3)
 /// solver.
 #[allow(private_bounds)]
-pub fn local_mechanics_update_step_3<
+pub fn local_mechanics_update<
     C,
     A,
     Pos,

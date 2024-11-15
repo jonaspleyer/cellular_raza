@@ -186,7 +186,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
     if kwargs.aspects.contains(&Mechanics) {
         local_func_names.push(quote!(
-            #core_path::backend::chili::local_mechanics_update_step_3::<
+            #core_path::backend::chili::local_mechanics_update::<
                 _,
                 _,
                 _,
