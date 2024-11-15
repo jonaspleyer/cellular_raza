@@ -1,5 +1,164 @@
 //! 🌶️ A modular, reusable, general-purpose backend
 //!
+//! # Usage
+//!
+//! In the following example, we provide an extremely short basic usage of the [run_simulation]
+//! macro.
+//! It performs the numerical integration of a well-defined problem.
+//! We assume that the `MyAgent` struct and `MyDomain` have already been defined and implement the
+//! [Mechanics](cellular_raza_concepts::Mechanics) concept.
+//! More details about how to use pre-existing building blocks or derive their functionality is
+//! provided by the
+//! [cellular_raza_building_blocks](https://cellular-raza.com/docs/cellular_raza_building_blocks)
+//! crate.
+//! We will then solve our system for the
+//! [`Mechanics`](https://cellular-raza.com/internals/concepts/cell/mechanics) aspect.
+//!
+//! ```
+//! # use cellular_raza_core::backend::chili::*;
+//! # use cellular_raza_core::{storage::*, time::*};
+//! # use cellular_raza_concepts::*;
+//! # use rand_chacha::ChaCha8Rng;
+//! # use serde::{Deserialize, Serialize};
+//! # use std::collections::{BTreeMap, BTreeSet};
+//! # // Define agents and domain
+//! # #[derive(Clone, Debug, Deserialize, Serialize)]
+//! # struct MyAgent {
+//! #     pos: f64,
+//! #     vel: f64
+//! # }
+//! # impl Position<f64> for MyAgent {
+//! #     fn pos(&self) -> f64 {
+//! #         self.pos
+//! #     }
+//! #     fn set_pos(&mut self, pos: &f64) {
+//! #         self.pos = *pos
+//! #     }
+//! # }
+//! # impl Velocity<f64> for MyAgent {
+//! #     fn velocity(&self) -> f64 {
+//! #         self.vel
+//! #     }
+//! #     fn set_velocity(&mut self, vel: &f64) {
+//! #         self.vel = *vel
+//! #     }
+//! # }
+//! # impl Mechanics<f64, f64, f64> for MyAgent {
+//! #     fn get_random_contribution(
+//! #         &self,
+//! #         _rng: &mut ChaCha8Rng,
+//! #         _dt: f64,
+//! #     ) -> Result<(f64, f64), RngError> {
+//! #         Ok((0.0, 0.0))
+//! #     }
+//! #     fn calculate_increment(&self, force: f64) -> Result<(f64, f64), CalcError> {
+//! #         Ok((self.vel, force))
+//! #     }
+//! # }
+//! # #[derive(Clone, Debug, Deserialize, Serialize)]
+//! # struct MyDomain {};
+//! # impl<Ci> Domain<MyAgent, MyDomain, Ci> for MyDomain
+//! # where
+//! #     Ci: IntoIterator<Item = MyAgent>
+//! # {
+//! #     type VoxelIndex = usize;
+//! #     type SubDomainIndex = usize;
+//! #     fn decompose(
+//! #         self,
+//! #         _: core::num::NonZeroUsize,
+//! #         cells: Ci,
+//! #     ) -> Result<
+//! #         DecomposedDomain<Self::SubDomainIndex, MyDomain, MyAgent>,
+//! #         cellular_raza_concepts::DecomposeError,
+//! #     > {
+//! #         Ok(DecomposedDomain {
+//! #             n_subdomains: 1.try_into().unwrap(),
+//! #             index_subdomain_cells: vec![(1, MyDomain {}, cells.into_iter().collect())],
+//! #             neighbor_map: BTreeMap::from([(1, BTreeSet::new())]),
+//! #             rng_seed: 1,
+//! #         })
+//! #     }
+//! # }
+//! # impl SubDomain for MyDomain {
+//! #     type VoxelIndex = usize;
+//! #     fn get_neighbor_voxel_indices(&self, _: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
+//! #         Vec::new()
+//! #     }
+//! #     fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
+//! #         vec![1]
+//! #     }
+//! # }
+//! # impl SortCells<MyAgent> for MyDomain {
+//! #     type VoxelIndex = usize;
+//! #     fn get_voxel_index_of(
+//! #         &self,
+//! #         _: &MyAgent,
+//! #     ) -> Result<Self::VoxelIndex, cellular_raza_concepts::BoundaryError> {
+//! #         Ok(1)
+//! #     }
+//! # }
+//! # impl SubDomainMechanics<f64, f64> for MyDomain {
+//! #     fn apply_boundary(
+//! #         &self,
+//! #         _: &mut f64,
+//! #         _: &mut f64,
+//! #     ) -> Result<(), cellular_raza_concepts::BoundaryError> {
+//! #         Ok(())
+//! #     }
+//! # }
+//! # let t0 = 0.0;
+//! # let dt = 0.1;
+//! # let tmax = 20.0;
+//! # let save_interval = 2.0;
+//! # let initial_vel = 0.1;
+//! # let n_threads = 1.try_into().unwrap();
+//! // Initialize agents, domain, solving time and how to store results
+//! let agents = (0..10).map(|n| MyAgent {
+//!         /* Define the agent's properties */
+//! #       pos: n as f64,
+//! #       vel: initial_vel,
+//!     });
+//! let domain = MyDomain {/* Define the domain*/};
+//! let time = FixedStepsize::from_partial_save_interval(t0, dt, tmax, save_interval)?;
+//! let storage = StorageBuilder::new().priority([StorageOption::Memory]);
+//!
+//! // Group them together
+//! let settings = Settings {
+//!     n_threads,
+//!     time,
+//!     storage,
+//!     show_progressbar: false,
+//! };
+//!
+//! // This will perform the numerical simulation
+//! let storage_access = run_simulation!(
+//!     agents: agents,
+//!     domain: domain,
+//!     settings: settings,
+//!     aspects: [Mechanics],
+//!     core_path: cellular_raza_core,
+//! )?;
+//!
+//! // Use calculated results
+//! let history = storage_access.cells.load_all_elements()?;
+//! for (iteration, cells) in history {
+//!     // ...
+//! #     assert!(iteration > 0);
+//! #     assert_eq!(cells.len(), 10);
+//! #     for (_, (cbox, _)) in cells {
+//! #         let calculated = cbox.get_id().1 as f64 + iteration as f64 * 0.1 * initial_vel;
+//! #         let cr = cbox.cell.0;
+//! #         assert!((calculated - cr).abs() < 1e-5);
+//! #     }
+//! }
+//! # Ok::<(), SimulationError>(())
+//! ```
+//!
+//! This example cannot contain all the functionality which the [chili](self) backend provides.
+//! We encourage the user to look at the
+//! [cellular-raza.com/guides](https://cellular-raza.com/guides) and
+//! [cellular-raza.com/showcase](https://cellular-raza.com/showcase) sections to get started.
+//!
 //! # Internals
 //! The [chili](self) backend uses procedural macros to generate code which
 //! results in a fully working simulation.
