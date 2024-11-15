@@ -42,5 +42,7 @@ pub mod cpu_os_threads;
 
 pub mod chili;
 
-/// 🐯 GPU-centered backend using [OpenCL](https://www.khronos.org/opencl/)
+/// 🐯 (Placeholder) GPU-centered backend using [OpenCL](https://www.khronos.org/opencl/)
+///
+/// This backend is currently not developed and only here to serve as a placeholder.
 pub mod cara {}
