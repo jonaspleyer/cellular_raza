@@ -518,7 +518,48 @@ fn derive_intracellular() {}
 #[allow(unused)]
 fn derive_reactions_raw() {}
 
-/// TODO add description
+/// ```
+/// use cellular_raza_concepts::{CellAgent, Intracellular, ReactionsContact, CalcError};
+/// struct MyReactions;
+/// impl Intracellular<i16> for MyReactions {
+///     fn get_intracellular(&self) -> i16 {
+///         42
+///     }
+///     fn set_intracellular(&mut self, _intracellular: i16) {}
+/// }
+/// impl ReactionsContact<f32, (f64, f64), f32, (usize, String)> for MyReactions {
+///     fn get_contact_information(&self) -> (usize, String) {
+///         (1, "This is nice".to_owned())
+///     }
+///
+///     fn calculate_contact_increment(
+///         &self,
+///         own_intracellular: &f32,
+///         ext_intracellular: &f32,
+///         own_pos: &(f64, f64),
+///         ext_pos: &(f64, f64),
+///         rinf: &(usize, String),
+///     ) -> Result<(f32, f32), CalcError> {
+///         Ok((1.2, 3.1))
+///     }
+/// }
+/// #[derive(CellAgent)]
+/// struct MyCell {
+///     #[ReactionsContact]
+///     reactions: MyReactions,
+/// }
+/// let mycell = MyCell {
+///     reactions: MyReactions,
+/// };
+/// assert_eq!(mycell.get_contact_information(), (1, "This is nice".to_owned()));
+/// assert_eq!(mycell.calculate_contact_increment(
+///     &0.0,
+///     &0.0,
+///     &(0.0, 0.0),
+///     &(1.0, 1.0),
+///     &(33, "jo".to_owned())
+/// ).unwrap(), (1.2, 3.1));
+/// ```
 #[allow(unused)]
 fn derive_reactions_contact() {}
 
