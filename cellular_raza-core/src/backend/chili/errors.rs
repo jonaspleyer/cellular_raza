@@ -229,7 +229,7 @@ pub trait ErrorHandler: Sized {
     fn do_continue(&mut self) -> Result<(), SimulationError>;
 }
 
-/// TODO
+/// Handles any error which is encountered and caught (i.e. no panics) during runtime.
 #[allow(unused)]
 pub struct DefaultHandler {
     thread: usize,

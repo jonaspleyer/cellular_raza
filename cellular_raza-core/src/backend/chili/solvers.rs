@@ -461,8 +461,8 @@ impl RungeKutta<4> for ReactionsRungeKuttaSolver<4> {
     }
 }
 
-/// TODO IMPORTANT This function sets the intracellular concentration but this is wrong. Find out
-/// how to properly combine this with the new use_increment function.
+/// Calculates the increment introduced by the
+/// [ReactionsContact](cellular_raza_concepts::ReactionsContact) aspect.
 #[inline]
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
 pub fn reactions_contact_adams_bashforth_3rd<C, A, F, Ri>(

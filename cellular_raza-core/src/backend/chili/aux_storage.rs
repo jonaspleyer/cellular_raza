@@ -269,7 +269,7 @@ pub trait UpdateReactions<Ri> {
 }
 
 /// Helper storage for values regarding intracellular concentrations for the
-/// [CellularReactions](cellular_raza_concepts::CellularReactions) trait.
+/// [Reactions](cellular_raza_concepts::Reactions) trait.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct AuxStorageReactions<Ri> {
     concentration: Ri,
@@ -306,7 +306,8 @@ where
     }
 }
 
-/// Used to update properties of the cell related to the [ReactionsContact] trait.
+/// Used to update properties of the cell related to the
+/// [ReactionsContact](cellular_raza_concepts::ReactionsContact) trait.
 pub trait UpdateReactionsContact<Ri, const N: usize> {
     /// Sets the current contact reactions increment
     fn set_current_increment(&mut self, new_increment: Ri);

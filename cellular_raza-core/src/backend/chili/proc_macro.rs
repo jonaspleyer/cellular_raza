@@ -45,9 +45,12 @@ pub use cellular_raza_core_proc_macro::FromMap;
 /// ```
 pub use cellular_raza_core_proc_macro::aux_storage_constructor;
 
-/// Derives the [UpdateCycle](crate::backend::chili::UpdateCycle) and
-/// [UpdateMechanics](crate::backend::chili::UpdateMechanics)
-/// trait automatically for the containing struct.
+/// Derives the update traits
+/// [UpdateCycle](crate::backend::chili::UpdateCycle),
+/// [UpdateMechanics](crate::backend::chili::UpdateMechanics),
+/// [UpdateInteraction](crate::backend::chili::UpdateInteraction),
+/// [UpdateReactions](crate::backend::chili::UpdateReactions) and
+/// [UpdateReactionsContact](crate::backend::chili::UpdateReactionsContact)
 pub use cellular_raza_core_proc_macro::AuxStorage;
 
 /// Automatically build communicator struct depending on simulation aspects.
@@ -167,7 +170,7 @@ pub use cellular_raza_core_proc_macro::test_compatibility;
 /// | `Mechanics` | [`Mechanics`](cellular_raza_concepts::Mechanics),[`SubDomainMechanics`](cellular_raza_concepts::SubDomainMechanics)|
 /// | `Interaction` | [`Interaction`](cellular_raza_concepts::Interaction) |
 /// | `Cycle` | [`Cycle`](cellular_raza_concepts::Cycle) |
-/// | `Reactions`¹ | [`CellularReactions`](cellular_raza_concepts::CellularReactions) |
+/// | `Reactions`¹ | [`Reactions`](cellular_raza_concepts::Reactions) |
 /// | `DomainForce` | [`SubDomainForce`](cellular_raza_concepts::SubDomainForce) |
 /// ¹Currently not working
 ///
