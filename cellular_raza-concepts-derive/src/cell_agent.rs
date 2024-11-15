@@ -18,7 +18,7 @@ macro_rules! push_ident(
 );
 
 macro_rules! append_where_clause(
-    ($struct_where_clause:ident, $field_type:ident, $trait_name:ident, $tokens:ident) => {
+    ($struct_where_clause:ident $(@clause $field_type:ident, $trait_name:ident, $tokens:ident),*) => {
         match $struct_where_clause {
             Some(clause) => {
                 let punct = if clause.predicates.trailing_punct() {
@@ -28,10 +28,10 @@ macro_rules! append_where_clause(
                 };
                 quote::quote!(
                     #clause #punct
-                    #$field_type: $trait_name<#$tokens>,
+                    $(#$field_type: $trait_name<#$tokens>),*
                 )
             },
-            None => quote::quote!(where #$field_type: $trait_name<#$tokens>),
+            None => quote::quote!(where $(#$field_type: $trait_name<#$tokens>),*),
         }
     }
 );
