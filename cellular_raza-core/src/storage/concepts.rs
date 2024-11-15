@@ -610,7 +610,7 @@ pub trait FileBasedStorage<Id, Element> {
         V: Serialize,
         W: std::io::Write;
 
-    /// Deserializes the given value type [V] from a reader.
+    /// Deserializes the given value type from a reader.
     fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
     where
         V: for<'a> Deserialize<'a>,

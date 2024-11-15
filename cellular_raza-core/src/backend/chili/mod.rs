@@ -397,8 +397,10 @@ impl CellIdentifier {
     }
 
     /// Used to pickle the object
-    #[deprecated(note = "This method exists as part of experimentation and may change behaviour or\
-        be removed in the future")]
+    #[deprecated(
+        note = "This method exists as part of experimentation and may change behaviour or\
+        be removed in the future"
+    )]
     pub fn __reduce__<'a>(&'a self, py: pyo3::Python<'a>) -> pyo3::Bound<pyo3::types::PyTuple> {
         use pyo3::prelude::*;
         use pyo3::PyTypeInfo;
@@ -406,7 +408,7 @@ impl CellIdentifier {
             py,
             [
                 Self::type_object_bound(py).to_object(py),
-                pyo3::types::PyTuple::new_bound(py, [self.0.0 as u64, self.1]).to_object(py),
+                pyo3::types::PyTuple::new_bound(py, [self.0 .0 as u64, self.1]).to_object(py),
             ],
         )
     }
