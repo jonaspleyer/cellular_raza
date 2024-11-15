@@ -147,7 +147,7 @@
 //! #     assert_eq!(cells.len(), 10);
 //! #     for (_, (cbox, _)) in cells {
 //! #         let calculated = cbox.get_id().1 as f64 + iteration as f64 * 0.1 * initial_vel;
-//! #         let cr = cbox.cell.0;
+//! #         let cr = cbox.cell.pos;
 //! #         assert!((calculated - cr).abs() < 1e-5);
 //! #     }
 //! }
