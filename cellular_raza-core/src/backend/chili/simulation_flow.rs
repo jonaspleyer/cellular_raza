@@ -825,11 +825,11 @@ mod test_build_communicator {
             /// ```
             /// use cellular_raza_core::backend::chili::build_communicator;
             /// build_communicator!(
-            ///     name: __MyComm,
             ///     aspects: [
             #[doc = stringify!($($asp),*)]
             ///     ],
-            ///     core_path: cellular_raza_core
+            ///     core_path: cellular_raza_core,
+            ///     communicator_name: __MyComm,
             /// );
             /// let mut map = std::collections::BTreeMap::new();
             /// map.insert(0, std::collections::BTreeSet::from([1]));
@@ -887,8 +887,8 @@ mod test_build_communicator {
 
     /// ```compile_fail
     /// build_communicator!(
-    ///     name: __MyComm,
     ///     aspects: [Mechanics, Cycle],
+    ///     communicator_name: __MyComm,
     /// );
     /// ```
     fn without_path() {}

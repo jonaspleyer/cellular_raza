@@ -66,15 +66,15 @@ pub use cellular_raza_core_proc_macro::AuxStorage;
 /// use cellular_raza_core::backend::chili::build_communicator;
 ///
 /// build_communicator!(
-///     // Define the name of the generated struct
-///     name: MyCommunicator,
-///
 ///     // Which simulation aspects and informatino exchange should be satisfied.
 ///     aspects: [Cycle],
 ///
 ///      // Path to the core library. Use `cellular_raza::core` when
 ///     // import from the `cellular_raza` crate.
-///     core_path: cellular_raza_core
+///     core_path: cellular_raza_core,
+///
+///     // Define the name of the generated struct
+///     communicator_name: MyCommunicator,
 /// );
 ///
 /// // Use the new struct in the following.
