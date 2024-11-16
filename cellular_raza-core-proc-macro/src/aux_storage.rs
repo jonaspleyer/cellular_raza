@@ -758,7 +758,8 @@ define_kwargs!(
     zero_reactions_default: syn::ExprClosure | crate::aux_storage::zero_reactions_default(),
     @from
     KwargsSim,
-    KwargsMain
+    KwargsMain,
+    KwargsPrepareTypes
 );
 
 pub struct Builder {
