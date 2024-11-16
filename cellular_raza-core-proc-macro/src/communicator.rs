@@ -1,6 +1,9 @@
 use quote::quote;
 use syn::spanned::Spanned;
 
+use crate::run_sim::KwargsPrepareTypes;
+use crate::run_sim::{KwargsSim, KwargsMain};
+
 use super::simulation_aspects::*;
 
 // ##################################### DERIVE ######################################
@@ -179,25 +182,18 @@ pub fn derive_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 }
 
 // ################################### CONSTRUCTING ##################################
-struct ConstructInput {
-    name_def: NameDefinition,
-    _comma_1: syn::Token![,],
+define_kwargs!(
+    KwargsCommunicator,
+    KwargsCommunicatorParsed,
     aspects: SimulationAspects,
-    _comma_2: syn::Token![,],
-    core_path: CorePath,
-}
-
-impl syn::parse::Parse for ConstructInput {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            name_def: input.parse()?,
-            _comma_1: input.parse()?,
-            aspects: input.parse()?,
-            _comma_2: input.parse()?,
-            core_path: input.parse::<CorePath>()?,
-        })
-    }
-}
+    @optionals
+    core_path: syn::Path | crate::kwargs::convert_core_path(None),
+    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
+    @from
+    KwargsSim,
+    KwargsMain,
+    KwargsPrepareTypes
+);
 
 fn index_type() -> syn::Type {
     syn::parse2(quote!(I)).unwrap()
@@ -361,18 +357,19 @@ impl CommunicatorBuilder {
     }
 }
 
-impl From<ConstructInput> for CommunicatorBuilder {
-    fn from(input: ConstructInput) -> Self {
+impl From<KwargsCommunicator> for CommunicatorBuilder {
+    fn from(input: KwargsCommunicator) -> Self {
         Self {
-            struct_name: input.name_def.struct_name,
-            core_path: input.core_path.path,
+            struct_name: input.communicator_name,
+            core_path: input.core_path,
             aspects: input.aspects,
         }
     }
 }
 
 pub fn construct_communicator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let constr = syn::parse_macro_input!(input as ConstructInput);
+    let constr = syn::parse_macro_input!(input as KwargsCommunicatorParsed);
+    let constr: KwargsCommunicator = constr.into();
     let builder = CommunicatorBuilder::from(constr);
     let stream = builder.build_communicator();
     proc_macro::TokenStream::from(stream)
