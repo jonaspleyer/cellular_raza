@@ -133,26 +133,43 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 ///
 /// ```ignore
 /// run_simulation!(
-///     // Required Arguments
+///     // Arguments
 ///     domain: $domain:ident,
 ///     agents: $agents:ident,
 ///     settings: $settings:ident,
 ///     aspects: [$($asp:ident),*],
+///
 ///     // Optional Arguments
 ///     $(core_path: $path:path,)?
 ///     $(parallelizer: $parallelizer:ident,)?
-/// )
+///     $(determinism: $determinism:bool,)?
+///     $(aux_storage_name: $aux_storage_name:ident,)?
+///     $(zero_force_default: $zero_force_default:closure,)?
+///     $(zero_force_reactions_default: $zero_force_reactions_default:closure,)?
+///     $(communicator_name: $communicator_name:ident,)?
+///     $(mechanics_solver_order: $mechanics_solver_order:NonZeroUsize,)?
+///     $(reactions_intra_solver_order: $reactions_intra_solver_order:NonZeroUsize,)?
+///     $(reactions_contact_solver_order: $reactions_contact_solver_order:NonZeroUsize,)?
+/// ) -> Result<StorageAccess<_, _>, SimulationError>;
 /// ```
 ///
 /// # Arguments
 /// | Keyword | Description | Default |
 /// | --- | --- | --- |
 /// | `domain` | An object implementing the [Domain](cellular_raza_concepts::Domain) trait. | - |
-/// | `agents` | Iterable of cell-agents compatible with [Domain](cellular_raza_concepts::Domain) | - |
-/// | `settings` | [Settings](crate::backend::chili::Settings) | - |
+/// | `agents` | Iterable of cell-agents | - |
+/// | `settings` | See [Settings](crate::backend::chili::Settings) | - |
 /// | `aspects` | List of simulation aspects such as `[Mechanics, Interaction, ...]` See below. | - |
 /// | `core_path` | Path that points to the core module of `cellular_raza` | `cellular_raza::core` |
-/// | `parallelizer` | Method to parallelize the simulation (see below) | `OsThreads` |
+/// | `parallelizer` | Method to parallelize the simulation. Choose between `OsThreads` and `Rayon`. | `OsThreads` |
+/// | `determinism` | Enforces sorting of values received from [step 2](super) | `false` |
+/// | `aux_storage_name` | Name of helper struct to store cellular information. | `_CrAuxStorage` |
+/// | `zero_force_default` | A closure returning the zero value of the force. | <code>&#124;c&#124; {num::Zero::zero()}</code> |
+/// | `zero_force_reactions_default` | A closure returning the zero value of the reactions type. | <code>&#124;c&#124; {num::Zero::zero()}</code> |
+/// | `communicator_name` | Name of the struct responsible for communication between threads. | `_CrCommunicator` |
+/// | `mechanics_solver_order` | Order of the mechanics solver from `0` to `2` | `2` |
+/// | `reactions_intra_solver_order` | Order of the intracellular reactions solver from `1` to `4` | `4` |
+/// | `reactions_contact_solver_order` | Order of the contact reactions solver from `0` to `2` | `2` |
 ///
 /// # Simulation Aspects
 /// | Aspect | Trait(s) |
