@@ -177,7 +177,9 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `Mechanics` | [`Mechanics`](cellular_raza_concepts::Mechanics),[`SubDomainMechanics`](cellular_raza_concepts::SubDomainMechanics)|
 /// | `Interaction` | [`Interaction`](cellular_raza_concepts::Interaction) |
 /// | `Cycle` | [`Cycle`](cellular_raza_concepts::Cycle) |
-/// | `Reactions`¹ | [`Reactions`](cellular_raza_concepts::Reactions) |
+/// | `Reactions` | [`Reactions`](cellular_raza_concepts::Reactions) |
+/// | `ReactionsExtra` | [`ReactionsExtra`](cellular_raza_concepts::ReactionsExtra) |
+/// | `ReactionsContact` | [`ReactionsContact`](cellular_raza_concepts::ReactionsContact) |
 /// | `DomainForce` | [`SubDomainForce`](cellular_raza_concepts::SubDomainForce) |
 /// ¹Currently not working
 ///
