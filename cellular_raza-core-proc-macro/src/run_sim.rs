@@ -125,6 +125,8 @@ define_kwargs!(
     @optionals
     core_path: syn::Path | crate::kwargs::convert_core_path(None),
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
+    zero_force_default: syn::ExprClosure | crate::aux_storage::zero_force_default(),
+    zero_reactions_default: syn::ExprClosure | crate::aux_storage::zero_reactions_default(),
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim,
