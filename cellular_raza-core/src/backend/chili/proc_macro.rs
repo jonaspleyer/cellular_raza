@@ -226,4 +226,6 @@ pub use cellular_raza_core_proc_macro::prepare_types;
 pub use cellular_raza_core_proc_macro::test_compatibility;
 
 /// Runs a with user-defined concepts. Assumes that types have been prepared with [prepare_types!].
+///
+/// See the documentation of the [run_simulation] macro.
 pub use cellular_raza_core_proc_macro::run_main;
