@@ -114,8 +114,6 @@ define_kwargs!(
     aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | crate::kwargs::convert_core_path(None),
-    aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
-    communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim
 );
@@ -130,7 +128,6 @@ define_kwargs!(
     communicator_name: syn::Ident | crate::communicator::default_communicator_name(),
     @from
     KwargsSim,
-    KwargsCompatibility
 );
 
 define_kwargs!(
