@@ -182,41 +182,6 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `ReactionsContact` | [ReactionsContact](cellular_raza_concepts::ReactionsContact) |
 /// | `DomainForce` | [SubDomainForce](cellular_raza_concepts::SubDomainForce), [SubDomainMechanics](cellular_raza_concepts::SubDomainMechanics) |
 ///
-/// ## Parallelization
-/// ### OsThreads
-/// This approach uses the provided threads from the standard library to parallelize execution of
-/// the simulation.
-/// We spawn multiple threads and store every storage instance when they have finished.
-/// ```
-/// # let n_threads = 3;
-/// # type SimulationError = std::io::Error;
-/// # fn main_code() -> Result<(), SimulationError> {Ok(())}
-/// let mut handles = Vec::new();
-///
-/// for key in 0..n_threads {
-///     let handle = std::thread::Builder::new()
-///         .name(format!("cellular_raza-worker_thread-{:03.0}", key))
-///         .spawn(move ||
-///     -> Result<_, SimulationError> {main_code()})?;
-///     handles.push(handle);
-/// }
-///
-/// // Join them when the simulation has finished
-/// let mut storage_accesses = vec![];
-/// for handle in handles {
-///     let result = handle
-///         .join()
-///         .expect("Could not join threads after simulation has finished")?;
-///     storage_accesses.push(result);
-/// }
-/// # Ok::<(),Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ### Rayon
-// TODO
-/// This feature is currently not supported.
-/// In the future, we plan on supporting additional parallelization strategies such as
-/// [rayon](https://docs.rs/rayon/latest/rayon/).
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::run_simulation;
 
