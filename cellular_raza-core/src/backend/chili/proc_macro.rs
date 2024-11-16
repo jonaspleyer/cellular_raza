@@ -182,6 +182,39 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `ReactionsContact` | [ReactionsContact](cellular_raza_concepts::ReactionsContact) |
 /// | `DomainForce` | [SubDomainForce](cellular_raza_concepts::SubDomainForce), [SubDomainMechanics](cellular_raza_concepts::SubDomainMechanics) |
 ///
+/// # Returns
+/// Returns a [StorageAccess](super::StorageAccess) to interoperate with calculted results.
+///
+/// # Comparison of Macro Keywords
+///
+/// This list shows which keyword can be provided in which macro.
+///
+/// <style>
+///     .mytable th a {
+///         writing-mode: vertical-lr;
+///     }
+/// </style>
+/// <div class="mytable">
+///
+/// | Keyword | [run_simulation] | [run_main] | [test_compatibility] | [prepare_types] | [build_aux_storage] | [build_communicator] |
+/// |:--------------------------------- | -- | -- | -- | -- | -- | -- |
+//                                        rs   rm   tc   pt   ba   bc
+/// | `domain`                          | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+/// | `agents`                          | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+/// | `settings`                        | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+/// | `aspects`                         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+/// | `core_path`                       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+/// | `parallelizer`                    | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+/// | `determinism`                     | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+/// | `aux_storage_name`                | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+/// | `zero_force_default`              | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+/// | `zero_force_reactions_default`    | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+/// | `communicator_name`               | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+/// | `mechanics_solver_order`          | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+/// | `reactions_intra_solver_order`    | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+/// | `reactions_contact_solver_order`  | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+///
+/// </div>
 #[doc(inline)]
 pub use cellular_raza_core_proc_macro::run_simulation;
 
