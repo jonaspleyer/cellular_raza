@@ -29,14 +29,14 @@ pub enum Kwarg {
         #[allow(unused)]
         domain_kw: syn::Ident,
         #[allow(unused)]
-        double_colon: syn::Token![:],
+        double_colon: Option<syn::Token![:]>,
         domain: syn::Ident,
     },
     agents {
         #[allow(unused)]
         agents_kw: syn::Ident,
         #[allow(unused)]
-        double_colon: syn::Token![:],
+        double_colon: Option<syn::Token![:]>,
         #[allow(unused)]
         agents: syn::Ident,
     },
@@ -44,7 +44,7 @@ pub enum Kwarg {
         #[allow(unused)]
         settings_kw: syn::Ident,
         #[allow(unused)]
-        double_colon: syn::Token![:],
+        double_colon: Option<syn::Token![:]>,
         settings: syn::Ident,
     },
     aspects {
@@ -122,26 +122,37 @@ pub enum Kwarg {
     },
 }
 
+macro_rules! parse_optional_kw(
+    (
+        $kwarg_variant:ident,
+        $keyword:ident,
+        $keyword_instance:ident,
+        $value:ident,
+        $input:ident
+    ) => {{
+        let keyword: syn::Ident = $keyword_instance;
+        let (double_colon, value) = if $input.peek(syn::Token![,]) {
+            (None, keyword.clone())
+        } else {
+            (Some($input.parse()?), $input.parse()?)
+        };
+
+        Ok(Kwarg:: $kwarg_variant {
+            $keyword: keyword,
+            double_colon,
+            $value: value,
+        })
+    }};
+);
+
 impl syn::parse::Parse for Kwarg {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let keyword: syn::Ident = input.parse()?;
         let keyword_string = keyword.clone().to_string();
         match keyword_string.as_str() {
-            "domain" => Ok(Kwarg::domain {
-                domain_kw: keyword,
-                double_colon: input.parse()?,
-                domain: input.parse()?,
-            }),
-            "agents" => Ok(Kwarg::agents {
-                agents_kw: keyword,
-                double_colon: input.parse()?,
-                agents: input.parse()?,
-            }),
-            "settings" => Ok(Kwarg::settings {
-                settings_kw: keyword,
-                double_colon: input.parse()?,
-                settings: input.parse()?,
-            }),
+            "domain" => parse_optional_kw!(domain, domain_kw, keyword, domain, input),
+            "agents" => parse_optional_kw!(agents, agents_kw, keyword, agents, input),
+            "settings" => parse_optional_kw!(settings, settings_kw, keyword, settings, input),
             "aspects" => Ok(Kwarg::aspects {
                 aspects: SimulationAspects::parse_give_initial_token(keyword, input)?,
             }),
