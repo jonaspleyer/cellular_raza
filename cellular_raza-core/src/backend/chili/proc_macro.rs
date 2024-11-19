@@ -171,6 +171,9 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `reactions_intra_solver_order` | Order of the intracellular reactions solver from `1` to `4` | `4` |
 /// | `reactions_contact_solver_order` | Order of the contact reactions solver from `0` to `2` | `2` |
 ///
+/// The `domain`,`agents` and `settings` arguments allor for
+/// [shorthand notation](https://doc.rust-lang.org/book/ch05-01-defining-structs.html#using-the-field-init-shorthand).
+///
 /// # Simulation Aspects
 /// | Aspect | Trait(s) |
 /// | --- | --- |
