@@ -161,9 +161,9 @@ fn main() -> Result<(), SimulationError> {
     };
 
     run_simulation!(
-        domain: domain,
+        domain,
         agents: cells,
-        settings: settings,
+        settings,
         aspects: [Mechanics, Interaction]
     )?;
     Ok(())
