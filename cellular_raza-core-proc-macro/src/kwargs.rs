@@ -211,16 +211,12 @@ impl syn::parse::Parse for Kwarg {
                     - 1,
             }),
             "zero_force_default" => Ok(Kwarg::zero_force_default {
-                #[allow(unused)]
                 zero_force_default_kw: keyword,
-                #[allow(unused)]
                 double_colon: input.parse()?,
                 zero_force_default: input.parse()?,
             }),
             "zero_reactions_default" => Ok(Kwarg::zero_reactions_default {
-                #[allow(unused)]
                 zero_reactions_default_kw: keyword,
-                #[allow(unused)]
                 double_colon: input.parse()?,
                 zero_reactions_default: input.parse()?,
             }),

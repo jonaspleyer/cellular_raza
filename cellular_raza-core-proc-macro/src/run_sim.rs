@@ -232,8 +232,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_1.extend(quote!(sbox.update_contact_reactions_step_1()?;));
         step_2.extend(quote!(sbox.update_contact_reactions_step_2(#determinism)?;));
         step_3.extend(quote!(sbox.update_contact_reactions_step_3(#determinism)?;));
-        local_func_names
-            .push(quote!(#core_path::backend::chili::local_update_contact_reactions));
+        local_func_names.push(quote!(#core_path::backend::chili::local_update_contact_reactions));
     }
 
     if kwargs
