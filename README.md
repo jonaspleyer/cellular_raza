@@ -23,12 +23,17 @@ A cellular Agent-Based modeling tool.
 | `windows-latest` | ![stable-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_windows-latest.yml?style=flat-square&label=CI) |![beta-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_windows-latest.yml?style=flat-square&label=CI) |![nightly-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_windows-latest.yml?style=flat-square&label=CI) |
 
 ## Documentation
-Read the documentation at [cellular-raza.com](https://cellular-raza.com/).
-Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of the package.
-Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentation of the code.
+The documentation at [cellular-raza.com](https://cellular-raza.com/) provides an introduction,
+examples, the most recent technical documentation, submission guidelines and much more.
+Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of
+the package.
+Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentations for specific
+versions as published to crates.io.
 
 ## Contributing
 Please use [github](https://www.github.com/jonaspleyer/cellular_raza) to write a pull-request.
+Also have a look at the
+[coding guidelines](https://cellular-raza.com/internals/code-structure/coding-guidelines).
 
 ## License
 Download the [GNU GENERAL PUBLIC LICENSE Version 2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt).
