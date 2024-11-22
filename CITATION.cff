@@ -18,5 +18,5 @@ repository-code: 'https://github.com/jonaspleyer/cellular_raza'
 url: 'https://cellular_raza.com'
 license: GPL-2.0
 commit: 0.0.5
-version: 0.1.5
+version: 0.1.6
 date-released: '2024-11-14'
