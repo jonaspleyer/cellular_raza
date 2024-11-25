@@ -36,7 +36,6 @@ numerical backend to a python package.
 
 Agent-based models have become popular in cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
-<!-- and many tools have been developed so far to asses specific questions in specialized fields -->
 While these tools have proven to be effective for targeted research questions,
 they often lack the ability to be applied for multiple distinct use-cases in a more generic context.
 Nevertheless, core functionalities such as numerical solvers, storage solutions, domain
