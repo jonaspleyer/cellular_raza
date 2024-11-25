@@ -37,11 +37,10 @@ numerical backend to a python package.
 Agent-based models have become popular in cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
 While these tools have proven to be effective for targeted research questions,
-they often lack the ability to be applied ~~for multiple distinct use-cases in a more generic
-context.~~ more generically.
+they often lack the ability to be applied more generically.
 Nevertheless, core functionalities such as numerical solvers, storage solutions or domain
-decomposition methods ~~and functions to construct these simulations~~ could be shared between models
-~~if written generically~~.
+decomposition methods could be shared between models
+.
 In order to address this issue and construct models from first principles without any assumptions
 regarding the underlying complexity or abstraction level, we developed `cellular_raza`.
 
@@ -51,47 +50,42 @@ General-purpose agent-based toolkits are often designed without specific applica
 [@Abar2017; @Datseris2022; @Wilensky:1999].
 They are often able to define agents bottom-up and can be a good choice if they allow for the
 desired cellular representation.
-However, they lack the explicit forethough to be applied in cellular systems~~.
-Since they are required to solve a wider range of problems they are not able to make assumptions on
-the type of agent or the nature of their interactions and thus miss out on possible
-performance optimizations and advanced numerical solvers.~~
+However, they lack the explicit forethough to be applied in cellular systems
 and may not be able to describe every cellular aspect.
 
 ## Cellular Agent-Based Frameworks
 
 In our previous efforts [@Pleyer2023], we assessed the overall state of modelling toolkits for
 individual-based cellular simulations.
-These frameworks ~~reviewed~~ are ~~all~~ designed for specific us~~e~~ages ~~cases~~ and often 
-require ~~a large number of~~ many
-parameters which are ~~often~~ unknown or ~~in practice and~~ difficult to determine experimentally.
-This poses an inherent problem for their applicability ~~of the software~~ and the ability to
+These frameworks are designed for specific usages and often 
+require many
+parameters which are unknown or difficult to determine experimentally.
+This poses an inherent problem for their applicability and the ability to
 properly interpret results.
 Few modelling frameworks exist that provide a significant degree of flexibility and customization in
 the definition of cell agents.
-Chaste [@Cooper2020] allows reuse of individual components ~~of its simulation code~~, such as ODE
+Chaste [@Cooper2020] allows reuse of individual components , such as ODE
 and PDE solvers, but is only partially cell-based.
-Biocellion [@Kang2014] ~~has~~ supports ~~for~~ different cell shapes such as spheres and cylinders,
+Biocellion [@Kang2014] supports different cell shapes such as spheres and cylinders,
 but admits that their current approach lacks flexibility in the subcellular description.
 BioDynaMo [@breitwieser_biodynamo_2022] offers some modularity in the choice of components for
-cellular agents, but cannot ~~freely~~ deeply customize the cellular representation.
+cellular agents, but cannot deeply customize the cellular representation.
 
 # cellular_raza
 
-We distinguish between different simulation aspects, i.e.,  mechanics, interaction, or cell cycle.
+We distinguish between different simulation aspects, i.e., mechanics, interaction, or cell cycle.
 These aspects are directly related to the properties of the cells, domain, or other external
 interactions.
 The user selects a cellular representation, which can be built from pre-existing building blocks or
-~~a~~ fully customized bottom-up ~~approach~~, if desired.
-'cellular_raza' utilizes macros to generate code contingent on the simulation aspects ~~being solved
-numerically~~.
+ fully customized bottom-up , if desired.
+'cellular_raza' utilizes macros to generate code contingent on the simulation aspects .
 It makes extensive use of generics and provides abstract numerical solvers.
-'cellular_raza' ~~hides~~ encapsulates the inherent complexity of the code generation process, yet
+'cellular_raza' encapsulates the inherent complexity of the code generation process, yet
 enables users to modify the specifics of the simulation through the use of additional keyword
-arguments ~~within the macros~~.
+arguments .
 Consequently, users are able to fully and deeply customize the representation and behaviour of the
 agents.
-Each simulation aspect is abstractly formulated as a trait in Rust's type system~~, which provides the necessary
-abstractions~~.
+Each simulation aspect is abstractly formulated as a trait in Rust's type system.
 The getting-started guide provides a good entry point and explains every step from building, running
 to visualizing.
 
@@ -103,9 +97,6 @@ In the following, we present four different examples how to use `cellular_raza` 
 ## Cell Sorting
 
 Cell sorting is a naturally occurring phenomenon [@Steinberg1963; @Graner1992].
-~~While the underlying biological reality can be quite complex, it is rather simple to describe such
-a system in its most basic form.
-Fundamentally,~~
 We assume that the cellular `Interaction` is specific to their species.
 and consider two distinct species represented by soft spheres.
 They physically attract each other at close proximity if their species is identical.
@@ -124,7 +115,7 @@ In the final snapshot, we can clearly see the phase-separation between the diffe
 ## Bacterial Rods
 
 Bacteria come in various forms [@Zapun2008; @Young2006] such as elongated shapes [@Billaudeau2017]
-which grow~~s~~ asymmetrically in the direction of elongation.
+which grow asymmetrically in the direction of elongation.
 Our model describes the physical mechanics of one cell as a collection of multiple vertices
 $\vec{v}\_i$ which are connected by springs.
 Their relative angle $\alpha$ at each connecting vertex introduces a curvature force which is
@@ -135,8 +126,6 @@ other cells edges.
 In addition, the cell cycle introduces growth of the bacteria until it
 divides in the middle into two new cells.
 This growth is downregulated by an increasing number of neighboring cells.
-~~which is a phenomenological but effective choice for the transition into the stationary
-phase of the bacterial colony.~~
 Cells are placed inside the left-hand side of an elongated box with reflective boundary conditions.
 Their colors range from green for fast growth to blue for dormant cells.
 
@@ -158,12 +147,10 @@ numerous years [@kawasakiModelingSpatioTemporalPatterns1997; @matsushitaInterfac
 Cells are modeled by soft spheres which interact with the domain by taking up nutrients.
 By consuming intracellular nutrients, the cell grows continuously and divides upon reaching a
 threshold.
-~~The initial placement of the c~~Cells are initially placed ~~is~~ inside ~~of~~ a centered square
-~~From there, cells~~
-after which they start consuming nutrients and grow~~ing~~ outwards towards the nutrient-rich area.
-Cells are colored bright purple while they are actively growing ~~and dividing while~~ and dark 
-~~cells are~~when not subject to growth anymore.
-~~The outer domain is colored by the intensity of present nutrients.~~
+Cells are initially placed inside a centered square
+after which they start consuming nutrients and grow outwards towards the nutrient-rich area.
+Cells are colored bright purple while they are actively growing and dark when not subject to growth
+anymore.
 A lighter color in the outer domain indicates that more nutrients are available while a dark color
 signifies a lack thereof.
 
@@ -179,15 +166,11 @@ signifies a lack thereof.
 
 ## Semi-Vertex Model for Epithelial and Plant Cells
 
-Vertex models are ~~a very popular choice in describing multicellular systems.
-They are~~ actively being used ~~in great variety such as~~ to describe mechanical properties of
+Vertex models are actively being used to describe mechanical properties of
 plant cells [@Merks2011] or organoid structures of epithelial cells [@Fletcher2014; @Barton2017].
-
 We represent cells by a polygonal collection of vertices connected by springs.
-An inside pressure pushes vertices ~~in an~~ outwards, ~~direction.
-These two mechanisms by themselves~~ creat~~e~~ing perfect hexagonal cells.
-Cells are attracting each other but ~~in the case where~~ whenever two polygons overlap, a
-repulsive force acts ~~between them~~.
+An inside pressure pushes vertices outwards, creating perfect hexagonal cells.
+Cells are attracting each other but whenever two polygons overlap, a repulsive force acts.
 Cells are placed in a perfect hexagonal grid such that edges and vertices align.
 Their growth rates are chosen from a uniform distribution.
 
