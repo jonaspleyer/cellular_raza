@@ -39,8 +39,7 @@ Agent-based models have become popular in cellular biology
 While these tools have proven to be effective for targeted research questions,
 they often lack the ability to be applied more generically.
 Nevertheless, core functionalities such as numerical solvers, storage solutions or domain
-decomposition methods could be shared between models
-.
+decomposition methods could be shared between models.
 In order to address this issue and construct models from first principles without any assumptions
 regarding the underlying complexity or abstraction level, we developed `cellular_raza`.
 
@@ -57,17 +56,16 @@ and may not be able to describe every cellular aspect.
 
 In our previous efforts [@Pleyer2023], we assessed the overall state of modelling toolkits for
 individual-based cellular simulations.
-These frameworks are designed for specific usages and often 
-require many
-parameters which are unknown or difficult to determine experimentally.
-This poses an inherent problem for their applicability and the ability to
-properly interpret results.
+These frameworks are designed for specific usages and often  require many parameters which are
+unknown or difficult to determine experimentally.
+This poses an inherent problem for their applicability and the ability to properly interpret
+results.
 Few modelling frameworks exist that provide a significant degree of flexibility and customization in
 the definition of cell agents.
-Chaste [@Cooper2020] allows reuse of individual components , such as ODE
-and PDE solvers, but is only partially cell-based.
-Biocellion [@Kang2014] supports different cell shapes such as spheres and cylinders,
-but admits that their current approach lacks flexibility in the subcellular description.
+Chaste [@Cooper2020] allows reuse of individual components , such as ODE and PDE solvers, but is
+only partially cell-based.
+Biocellion [@Kang2014] supports different cell shapes such as spheres and cylinders, but admits that
+their current approach lacks flexibility in the subcellular description.
 BioDynaMo [@breitwieser_biodynamo_2022] offers some modularity in the choice of components for
 cellular agents, but cannot deeply customize the cellular representation.
 
@@ -80,9 +78,8 @@ The user selects a cellular representation, which can be built from pre-existing
  fully customized bottom-up , if desired.
 'cellular_raza' utilizes macros to generate code contingent on the simulation aspects .
 It makes extensive use of generics and provides abstract numerical solvers.
-'cellular_raza' encapsulates the inherent complexity of the code generation process, yet
-enables users to modify the specifics of the simulation through the use of additional keyword
-arguments .
+'cellular_raza' encapsulates the inherent complexity of the code generation process, yet enables
+users to modify the specifics of the simulation through the use of additional keyword arguments .
 Consequently, users are able to fully and deeply customize the representation and behaviour of the
 agents.
 Each simulation aspect is abstractly formulated as a trait in Rust's type system.
@@ -97,8 +94,8 @@ In the following, we present four different examples how to use `cellular_raza` 
 ## Cell Sorting
 
 Cell sorting is a naturally occurring phenomenon [@Steinberg1963; @Graner1992].
-We assume that the cellular `Interaction` is specific to their species.
-and consider two distinct species represented by soft spheres.
+The cellular `Interaction` is specific to their species.
+We consider two distinct types represented by soft spheres.
 They physically attract each other at close proximity if their species is identical.
 Cells are placed randomly inside a cube with reflective boundary conditions.
 In the final snapshot, we can clearly see the phase-separation between the different species.
@@ -117,7 +114,7 @@ In the final snapshot, we can clearly see the phase-separation between the diffe
 Bacteria come in various forms [@Zapun2008; @Young2006] such as elongated shapes [@Billaudeau2017]
 which grow asymmetrically in the direction of elongation.
 Our model describes the physical mechanics of one cell as a collection of multiple vertices
-$\vec{v}\_i$ which are connected by springs.
+$\vec{v}_i$ which are connected by springs.
 Their relative angle $\alpha$ at each connecting vertex introduces a curvature force which is
 proportional to $2\tan(\alpha/2)$.
 Cells interact via a soft-sphere force potential with short-ranged attraction.
@@ -144,12 +141,12 @@ Their colors range from green for fast growth to blue for dormant cells.
 
 Spatio-temporal patterns of bacterial growth such as in _Bacillus Subtilis_ have been studied for
 numerous years [@kawasakiModelingSpatioTemporalPatterns1997; @matsushitaInterfaceGrowthPattern1998].
-Cells are modeled by soft spheres which interact with the domain by taking up nutrients.
+Cells are modeled as soft spheres which take up nutrients from the domain.
 By consuming intracellular nutrients, the cell grows continuously and divides upon reaching a
 threshold.
-Cells are initially placed inside a centered square
-after which they start consuming nutrients and grow outwards towards the nutrient-rich area.
-Cells are colored bright purple while they are actively growing and dark when not subject to growth
+Cells are initially placed inside a centered square after which they grow outwards into the
+nutrient-rich area.
+They are colored bright purple while they are actively growing and dark when not subject to growth
 anymore.
 A lighter color in the outer domain indicates that more nutrients are available while a dark color
 signifies a lack thereof.
@@ -171,8 +168,8 @@ plant cells [@Merks2011] or organoid structures of epithelial cells [@Fletcher20
 We represent cells by a polygonal collection of vertices connected by springs.
 An inside pressure pushes vertices outwards, creating perfect hexagonal cells.
 Cells are attracting each other but whenever two polygons overlap, a repulsive force acts.
-Cells are placed in a perfect hexagonal grid such that edges and vertices align.
-Their growth rates are chosen from a uniform distribution.
+They are placed in a perfect hexagonal grid such that edges and vertices align and assigned growth
+rates from a uniform distribution.
 
 \begin{figure}[!h]
     \includegraphics[width=0.5\textwidth]{figures/snapshot-00000000000000000050.png}
