@@ -469,26 +469,6 @@ macro_rules! define_langevin_nd(
             }
         }
 
-        impl $struct_name {
-            /// Constructs a new
-            #[doc = concat!("[", stringify!($struct_name), "]")]
-            pub fn new(
-                pos: [$float_type; $d],
-                vel: [$float_type; $d],
-                mass: $float_type,
-                damping: $float_type,
-                kb_temperature: $float_type,
-            ) -> Self {
-                Self {
-                    pos: pos.into(),
-                    vel: vel.into(),
-                    mass,
-                    damping,
-                    kb_temperature,
-                }
-            }
-        }
-
         #[cfg(feature = "pyo3")]
         #[pymethods]
         #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
