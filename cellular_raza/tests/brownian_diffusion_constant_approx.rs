@@ -304,13 +304,13 @@ macro_rules! test_langevin {
         let mass = 1.0;
         let kb_temperature = $parameters.diffusion_constant * $damping * mass;
         let particles = (0..$parameters.n_particles)
-            .map(|_| $particle_name ::new(
-                initial_position.into(),
-                [0.0; $d].into(),
+            .map(|_| $particle_name {
+                pos: initial_position.into(),
+                vel: [0.0; $d].into(),
                 mass,
-                $damping,
+                damping: $damping,
                 kb_temperature,
-            ));
+            });
         let settings = define_settings(&$parameters)?;
 
         let storage_access = cellular_raza_core::backend::chili::run_simulation!(

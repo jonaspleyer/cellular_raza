@@ -13,17 +13,17 @@ fn main_sim(
 ) -> Result<BTreeMap<u64, BTreeMap<CellIdentifier, Langevin3D>>, SimulationError> {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
     let agents = (0..10).map(|_| {
-        Langevin3D::new(
-            [
+        Langevin3D {
+            pos: [
                 rng.gen_range(-1e3..-5e2),
                 rng.gen_range(-1e3..-5e2),
                 rng.gen_range(-1e3..-5e2),
-            ],
-            [0.0; 3],
-            1.0,
-            0.001,
-            1e-10,
-        )
+            ].into(),
+            vel: [0.0; 3].into(),
+            mass: 1.0,
+            damping: 0.001,
+            kb_temperature: 1e-10,
+        }
     });
     let domain = CartesianCuboid::from_boundaries_and_n_voxels([-1e3; 3], [-5e2; 3], [3; 3])?;
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(0.0, 0.1, 100, 1)?;
