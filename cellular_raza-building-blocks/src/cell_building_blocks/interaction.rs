@@ -251,114 +251,98 @@ macro_rules! implement_morse_potential(
 implement_morse_potential!(MorsePotential, f64);
 implement_morse_potential!(MorsePotentialF32, f32);
 
-/// Generalizeation of the [BoundLennardJones] potential for arbitrary floating point types.
-///
-/// \\begin{align}
-///     U(r) &= C\epsilon\left[ \left(\frac{\sigma}{r}\right)^n -
-///         \left(\frac{\sigma}{r}\right)^m\right]\\\\
-///     C &= \frac{n}{n-m}\left(\frac{n}{m}\right)^{\frac{n}{n-m}}\\\\
-///     V(r) &= \min(U(r), \beta)\theta(r-\zeta)
-/// \\end{align}
-///
-// This struct itself does not provide python bindings.
-// We provide specialized types for different floating-point types.
-//
-// | Name | Float Type |
-// | --- | --- |
-// | [MiePotentialF64] | COMING |
-// | [MiePotentialF32] | COMING |
-//
-/// # References
-/// [1]
-/// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
-/// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
-/// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct MiePotential<const N: usize, const M: usize, F = f64> {
-    /// Interaction strength $\epsilon$ of the potential.
-    pub radius: F,
-    /// Overall size $\sigma$ of the object of the potential.
-    pub potential_strength: F,
-    /// Numerical bound $\beta$ of the interaction strength.
-    pub bound: F,
-    /// Defines a cutoff $\zeta$ after which the potential will be fixed to exactly zero.
-    pub cutoff: F,
-    /// Exponent $n$ of the potential
-    en: F,
-    /// Exponent $m$ of the potential
-    em: F,
-}
-
-impl<F, const D: usize, const N: usize, const M: usize>
-    Interaction<SVector<F, D>, SVector<F, D>, SVector<F, D>, F> for MiePotential<N, M, F>
-where
-    F: nalgebra::RealField + Copy,
-{
-    fn calculate_force_between(
-        &self,
-        own_pos: &SVector<F, D>,
-        _own_vel: &SVector<F, D>,
-        ext_pos: &SVector<F, D>,
-        _ext_vel: &SVector<F, D>,
-        ext_radius: &F,
-    ) -> Result<(SVector<F, D>, SVector<F, D>), CalcError> {
-        let z = own_pos - ext_pos;
-        let r = z.norm();
-        if r == F::zero() {
-            return Err(CalcError(format!(
-                "identical position for two objects. Cannot Calculate force in Mie potential"
-            )));
+macro_rules! implement_mie_potential(
+    ($name:ident, $float_type:ty) => {
+        /// Generalizeation of the [BoundLennardJones] potential.
+        ///
+        /// \\begin{align}
+        ///     U(r) &= C\epsilon\left[ \left(\frac{\sigma}{r}\right)^n -
+        ///         \left(\frac{\sigma}{r}\right)^m\right]\\\\
+        ///     C &= \frac{n}{n-m}\left(\frac{n}{m}\right)^{\frac{n}{n-m}}\\\\
+        ///     V(r) &= \min(U(r), \beta)\theta(r-\zeta)
+        /// \\end{align}
+        ///
+        /// This struct comes in a 64bit version [MiePotential] and a 32bit variant
+        /// [MiePotentialF32].
+        ///
+        /// # References
+        /// [1]
+        /// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
+        /// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
+        /// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+        pub struct $name {
+            /// Interaction strength $\epsilon$ of the potential.
+            pub radius: $float_type,
+            /// Overall size $\sigma$ of the object of the potential.
+            pub strength: $float_type,
+            /// Numerical bound $\beta$ of the interaction strength.
+            pub bound: $float_type,
+            /// Defines a cutoff $\zeta$ after which the potential will be fixed to exactly zero.
+            pub cutoff: $float_type,
+            /// Exponent $n$ of the potential
+            pub en: $float_type,
+            /// Exponent $m$ of the potential
+            pub em: $float_type,
         }
-        if r > self.cutoff {
-            return Ok((SVector::<F, D>::zeros(), SVector::<F, D>::zeros()));
+
+        impl<const D: usize> Interaction<
+            SVector<$float_type, D>,
+            SVector<$float_type, D>,
+            SVector<$float_type, D>,
+            $float_type
+        >
+            for $name
+        {
+            fn calculate_force_between(
+                &self,
+                own_pos: &SVector<$float_type, D>,
+                _own_vel: &SVector<$float_type, D>,
+                ext_pos: &SVector<$float_type, D>,
+                _ext_vel: &SVector<$float_type, D>,
+                ext_radius: &$float_type,
+            ) -> Result<(SVector<$float_type, D>, SVector<$float_type, D>), CalcError> {
+                let z = own_pos - ext_pos;
+                let r = z.norm();
+                if r == 0.0 {
+                    return Err(CalcError(format!(
+                        "identical position for two objects. Cannot Calculate force in Mie potential"
+                    )));
+                }
+                if r > self.cutoff {
+                    return Ok((
+                        SVector::<$float_type, D>::zeros(),
+                        SVector::<$float_type, D>::zeros()
+                    ));
+                }
+                let dir = z / r;
+                let x = (self.radius + *ext_radius);
+                let sigma = self.radius_to_sigma_factor() * x;
+                let mie_constant =
+                    self.en / (self.en - self.em)
+                        * (self.en / self.em).powf(self.em / (self.en - self.em));
+                let potential_part = self.en / sigma * (sigma / r).powf(self.en + 1.0)
+                    - self.em /sigma * (sigma / r).powf(self.em + 1.0);
+                let force = (mie_constant * self.strength * potential_part).min(self.bound);
+                Ok((dir * force, - dir * force))
+            }
+
+            fn get_interaction_information(&self) -> $float_type {
+                self.radius
+            }
         }
-        let dir = z / r;
-        let x = (self.radius + *ext_radius) / r;
-        let sigma = self.radius_to_sigma_factor() * x;
-        let mie_constant =
-            self.en / (self.en - self.em) * (self.en / self.em).powf(self.em / (self.en - self.em));
-        let potential_part =
-            self.en * (sigma.powf(self.en + F::one()) - x.powf(self.em + F::one()));
-        let force = self.potential_strength * mie_constant * potential_part;
-        let force = force.min(self.bound);
-        Ok((-dir * force, dir * force))
-    }
 
-    fn get_interaction_information(&self) -> F {
-        self.radius
+        impl $name {
+            fn radius_to_sigma_factor(&self) -> $float_type {
+                (self.em / self.en).powf(1.0 / (self.en - self.em))
+            }
+        }
     }
-}
+);
 
-impl<F, const N: usize, const M: usize> MiePotential<N, M, F>
-where
-    F: nalgebra::RealField + num::FromPrimitive + Copy,
-{
-    fn radius_to_sigma_factor(&self) -> F {
-        (self.em / self.en).powf(F::one() / (self.en - self.em))
-    }
-
-    /// Constructs a new [MiePotential] with given parameters.
-    pub fn new(radius: F, potential_strength: F, bound: F, cutoff: F) -> Result<Self, CalcError> {
-        let em = F::from_usize(M).ok_or(CalcError(format!(
-            "could not convert usize {} to float of type {}",
-            M,
-            std::any::type_name::<F>()
-        )))?;
-        let en = F::from_usize(N).ok_or(CalcError(format!(
-            "could not convert usize {} to float of type {}",
-            N,
-            std::any::type_name::<F>()
-        )))?;
-        Ok(Self {
-            radius,
-            potential_strength,
-            bound,
-            cutoff,
-            en,
-            em,
-        })
-    }
-}
+implement_mie_potential!(MiePotential, f64);
+implement_mie_potential!(MiePotentialF32, f32);
 
 /// Derives an interaction potential from a point-like potential.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
