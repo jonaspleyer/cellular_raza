@@ -184,7 +184,7 @@ macro_rules! implement_morse_potential(
         /// | $r$ | | Distance between interacting particles |
         ///
         /// \\begin{equation}
-        ///     V(r) = V_0\left(1 - \exp\left(-\lambda(r-R)\right)\right)^2
+        ///     V(r) = V_0\left(1 - e^{-\lambda(r-R)}\right)^2
         /// \\end{equation}
         ///
         // TODO remove this entirely or make it somehow work
