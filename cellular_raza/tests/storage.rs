@@ -71,17 +71,6 @@ fn storage_serde_json() -> Result<(), SimulationError> {
     Ok(())
 }
 
-// TODO this is currently not working due to a bug in serde or quick_xml
-/* #[test]
-fn storage_quick_xml() -> Result<(), SimulationError> {
-    let r1 = main_sim([SerdeXml])?;
-    let r2 = main_sim([SerdeXml])?;
-    let r3 = main_sim([SerdeXml])?;
-    assert_eq!(r1, r2);
-    assert_eq!(r2, r3);
-    Ok(())
-}*/
-
 #[test]
 fn storage_ron() -> Result<(), SimulationError> {
     let r1 = main_sim([Ron])?;
