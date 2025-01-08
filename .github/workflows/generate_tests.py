@@ -1,11 +1,11 @@
-oss = ["ubuntu-latest", "macos-12", "macos-13", "windows-latest"]
+oss = ["ubuntu-latest", "macos-13", "macos-14", "windows-latest"]
 toolchains = ["stable", "beta", "nightly"]
 
 
 for toolchain in toolchains:
     for os in oss:
         filename = "test_{}_{}.yml".format(toolchain, os)
-        contents = f'''\
+        contents = f"""\
 on: [push, pull_request]
 
 name: Test-Suite {toolchain} {os}
@@ -16,12 +16,12 @@ jobs:
     with:
       toolchain: {toolchain}
       os: {os}
-'''
+"""
         with open(filename, "w") as f:
             f.write(contents)
 
 print("| | " + " | ".join(toolchains) + " |")
-print("|---" * (len(toolchains)+1) + "|")
+print("|---" * (len(toolchains) + 1) + "|")
 for os in oss:
     line = f"| `{os}` | "
     for toolchain in toolchains:

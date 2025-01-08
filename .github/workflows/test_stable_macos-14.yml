@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Test-Suite stable macos-12
+name: Test-Suite stable macos-14
 
 jobs:
-  CI-stable-macos-12:
+  CI-stable-macos-14:
     uses: ./.github/workflows/reuse.yml
     with:
       toolchain: stable
-      os: macos-12
+      os: macos-14
