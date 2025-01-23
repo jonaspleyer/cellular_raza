@@ -43,4 +43,9 @@ pub mod cpu_os_threads;
 pub mod chili;
 
 #[cfg(feature = "cara")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cara")))]
 pub mod cara;
+
+#[cfg(feature = "elli")]
+#[cfg_attr(docsrs, doc(cfg(feature = "elli")))]
+pub mod elli;

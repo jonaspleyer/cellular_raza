@@ -48,6 +48,12 @@ pyo3 = { workspace = true, optional=true, features=["serde", "py-clone"] }
 circ_buffer = { version = "0.1.8", features = ["serde"] }
 uniquevec = { version = "0.1.0", features = ["serde"] }
 
+# Additional dependencies for cara backend
+cudarc = { version = "0.13", optional = true, features = ["cuda-version-from-build-system"]}
+
+# Additional dependencies for elli backend
+wgpu = { version = "23.0", optional = true }
+
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
 version = "0.1.6"
@@ -65,7 +71,8 @@ tracing = ["dep:tracing", "dep:tracing-subscriber"]
 timestamp = ["dep:chrono"]
 gradients = ["cellular_raza-concepts/gradients"]
 pyo3 = ["dep:pyo3"]
-cara = ["dep:cc"]
+cara = ["dep:cc", "dep:cudarc"]
+elli = ["dep:wgpu"]
 
 # [profile.release]
 # debug = 1
