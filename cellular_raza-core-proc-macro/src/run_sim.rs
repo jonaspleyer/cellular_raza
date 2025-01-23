@@ -85,6 +85,27 @@ pub const DEFAULT_MECHANICS_SOLVER_ORDER: usize = 2;
 pub const DEFAULT_REACTIONS_SOLVER_ORDER_INTRA: usize = 4;
 pub const DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT: usize = 2;
 
+pub fn default_update_mechanics_interaction_step_1_fn_name() -> syn::Ident {
+    syn::Ident::new(
+        "update_mechanics_interaction_step_1",
+        proc_macro2::Span::call_site(),
+    )
+}
+
+pub fn default_update_mechanics_interaction_step_2_fn_name() -> syn::Ident {
+    syn::Ident::new(
+        "update_mechanics_interaction_step_2",
+        proc_macro2::Span::call_site(),
+    )
+}
+
+pub fn default_update_mechanics_interaction_step_3_fn_name() -> syn::Ident {
+    syn::Ident::new(
+        "update_mechanics_interaction_step_3",
+        proc_macro2::Span::call_site(),
+    )
+}
+
 define_kwargs!(
     KwargsSim,
     KwargsSimParsed,
@@ -103,6 +124,14 @@ define_kwargs!(
     mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
     reactions_intra_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_INTRA,
     reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
+
+    // Define functions to call for updates
+    update_mechanics_interaction_step_1: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
+    update_mechanics_interaction_step_2: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
+    update_mechanics_interaction_step_3: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
 );
 
 define_kwargs!(
@@ -150,6 +179,14 @@ define_kwargs!(
     mechanics_solver_order: usize | crate::run_sim::DEFAULT_MECHANICS_SOLVER_ORDER,
     reactions_intra_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_INTRA,
     reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
+
+    // Define functions to call for updates
+    update_mechanics_interaction_step_1: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
+    update_mechanics_interaction_step_2: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
+    update_mechanics_interaction_step_3: syn::Ident |
+        crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
     @from
     KwargsSim
 );
@@ -178,9 +215,12 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
     {
-        step_1.extend(quote!(sbox.update_mechanics_interaction_step_1()?;));
-        step_2.extend(quote!(sbox.update_mechanics_interaction_step_2(#determinism)?;));
-        step_3.extend(quote!(sbox.update_mechanics_interaction_step_3(#determinism)?;));
+        let umis_fn_name_1 = &kwargs.update_mechanics_interaction_step_1;
+        let umis_fn_name_2 = &kwargs.update_mechanics_interaction_step_2;
+        let umis_fn_name_3 = &kwargs.update_mechanics_interaction_step_3;
+        step_1.extend(quote!(sbox. #umis_fn_name_1 ()?;));
+        step_2.extend(quote!(sbox. #umis_fn_name_2 (#determinism)?;));
+        step_3.extend(quote!(sbox. #umis_fn_name_3 (#determinism)?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {
