@@ -546,5 +546,4 @@ pub fn run_simulation(kwargs: KwargsSim) -> proc_macro2::TokenStream {
         #test_compat
         #run_main
     })
-    .into()
 }
