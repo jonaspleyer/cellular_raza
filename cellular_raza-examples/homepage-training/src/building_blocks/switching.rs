@@ -106,8 +106,16 @@ fn test_interaction_different_inf_types() {
         cutoff: 3.0,
         strength: 0.1,
     });
-    let inf1 = i1.get_interaction_information();
-    assert_eq!(inf1, 1.0);
+    let inf1 = <SphericalInteraction as Interaction<
+        nalgebra::Vector2<f64>,
+        _,
+        _,
+        _,
+    >>::get_interaction_information(&i1);
+    match inf1 {
+        IInf::Morse(i1) => assert_eq!(i1, 1.0),
+        IInf::BLJ(_) => assert!(false),
+    }
 
     let i2 = SphericalInteraction::BLJ(BoundLennardJones {
         epsilon: 1.0,
@@ -115,8 +123,16 @@ fn test_interaction_different_inf_types() {
         bound: 4.0,
         cutoff: 4.0,
     });
-    let inf2 = i2.get_interaction_information();
-    assert_eq!(inf2, ());
+    let inf2 = <SphericalInteraction as Interaction<
+        nalgebra::Vector2<f64>,
+        _,
+        _,
+        _,
+    >>::get_interaction_information(&i2);
+    match inf2 {
+        IInf::Morse(i1) => assert!(false),
+        IInf::BLJ(i2) => assert_eq!((), i2),
+    }
 }
 
 #[derive(CellAgent)]
