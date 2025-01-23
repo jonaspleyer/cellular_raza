@@ -1,0 +1,12 @@
+[package]
+name = "cr_homepage_training"
+version.workspace = true
+edition = "2021"
+authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
+
+[lib]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+cellular_raza = { path="../../cellular_raza" }
+nalgebra.workspace = true
