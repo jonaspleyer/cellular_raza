@@ -8,21 +8,21 @@
 //! We aim to provide one general-purpose backend able to solve any given simulation that adheres
 //! to the [cellular_raza_concepts] with the 🌶️ [chili] backend.
 //!
-//! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] |
-//! | --- |:---:|:---:|
-//! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |
-//! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |
-//! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |
-//! | [Reactions](cellular_raza_concepts::Reactions) | ❌ | ✅ |
-//! | [ReactionsContact](cellular_raza_concepts::ReactionsContact) | ❌ | ✅ |
-//! | [ReactionsExtra](cellular_raza_concepts::ReactionsExtra) | ❌ | ✅ |
-//! | [Domain](cellular_raza_concepts::Domain) | ❌ | ✅ |
-//! | [DomainForce](cellular_raza_concepts::SubDomainForce) | ❌ | ✅ |
-//! | [Controller](cellular_raza_concepts::domain_old::Controller) | ✅ | ❌ |
+//! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] | 🐯 [cara] | 🐺 [elli] |
+//! | --- |:---:|:---:|:---:|:---:|
+//! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |❌ |❌ |
+//! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |❌ |❌ |
+//! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |❌ |❌ |
+//! | [Reactions](cellular_raza_concepts::Reactions) | ❌ | ✅ |❌ |❌ |
+//! | [ReactionsContact](cellular_raza_concepts::ReactionsContact) | ❌ | ✅ |❌ |❌ |
+//! | [ReactionsExtra](cellular_raza_concepts::ReactionsExtra) | ❌ | ✅ |❌ |❌ |
+//! | [Domain](cellular_raza_concepts::Domain) | ❌ | ✅ |❌ |❌ |
+//! | [DomainForce](cellular_raza_concepts::SubDomainForce) | ❌ | ✅ |❌ |❌ |
+//! | [Controller](cellular_raza_concepts::domain_old::Controller) | ✅ | ❌ |❌ |❌ |
 //! | Old Aspects |
-//! | [ReactionsOld](cellular_raza_concepts::reactions_old::CellularReactions) | ✅ | ❌ |
-//! | [DomainOld](cellular_raza_concepts::domain_old::Domain) | ✅ | ❌ |
-//! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |
+//! | [ReactionsOld](cellular_raza_concepts::reactions_old::CellularReactions) | ✅ | ❌ |❌ |❌ |
+//! | [DomainOld](cellular_raza_concepts::domain_old::Domain) | ✅ | ❌ |❌ |❌ |
+//! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |❌ |❌ |
 //!
 //! ¹Only supports `Float=f64`.
 
