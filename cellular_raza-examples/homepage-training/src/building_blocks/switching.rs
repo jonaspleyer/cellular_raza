@@ -119,7 +119,7 @@ fn test_interaction_different_inf_types() {
     assert_eq!(inf2, ());
 }
 
-#[derive(Clone, CellAgent, Deserialize, Serialize)]
+#[derive(CellAgent)]
 struct Agent {
     #[Interaction]
     interaction: Box<
