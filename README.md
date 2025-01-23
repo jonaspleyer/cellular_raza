@@ -13,7 +13,7 @@
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
 [![dependency status](https://deps.rs/crate/cellular_raza/latest/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
 
-A cellular Agent-Based modeling tool.
+Cellular Agent-based Modeling from a Clean Slate
 
 | | stable | beta | nightly |
 |---|---|---|---|
