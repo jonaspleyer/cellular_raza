@@ -28,12 +28,12 @@ num = { workspace = true }
 # ode_integrate = { version="0.0.2" }
 plotters = { workspace = true }
 rayon = { version="1.6" }
-kdam = { version="0.5", features = ["template", "rayon"] }
+kdam = { version="0.6", features = ["template", "rayon"] }
 
 # Storage
 bincode = "1.3"
 serde = { workspace = true }
-quick-xml = { version="0.36", features=["serialize"]}
+quick-xml = { version="0.37", features=["serialize"]}
 serde_json = { version="1.0" }
 ron = "0.8"
 sled = { version="0.34" }
