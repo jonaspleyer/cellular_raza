@@ -1,7 +1,7 @@
 <div align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="logos/cellular_raza_dark_mode.svg">
-        <source media="(prefers-color-scheme: light)" srcset="logos/cellular_raza.svg">
+        <source media="(prefers-color-scheme: dark)" srcset="cellular_raza/logos/cellular_raza_dark_mode.svg">
+        <source media="(prefers-color-scheme: light)" srcset="cellular_raza/logos/cellular_raza.svg">
         <img alt="The cellular_raza logo" src="doc/cellular_raza.svg">
     </picture>
 </div>
@@ -13,12 +13,11 @@
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
 [![dependency status](https://deps.rs/crate/cellular_raza/latest/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
 
-A cellular Agent-Based modeling tool.
+Cellular Agent-based Modeling from a Clean Slate
 
 | | stable | beta | nightly |
 |---|---|---|---|
 | `ubuntu-latest` | ![stable-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_ubuntu-latest.yml?style=flat-square&label=CI) |![beta-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_ubuntu-latest.yml?style=flat-square&label=CI) |![nightly-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_ubuntu-latest.yml?style=flat-square&label=CI) |
-| `macos-12` | ![stable-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-12.yml?style=flat-square&label=CI) |![beta-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-12.yml?style=flat-square&label=CI) |![nightly-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-12.yml?style=flat-square&label=CI) |
 | `macos-13` | ![stable-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-13.yml?style=flat-square&label=CI) |![beta-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-13.yml?style=flat-square&label=CI) |![nightly-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-13.yml?style=flat-square&label=CI) |
 | `windows-latest` | ![stable-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_windows-latest.yml?style=flat-square&label=CI) |![beta-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_windows-latest.yml?style=flat-square&label=CI) |![nightly-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_windows-latest.yml?style=flat-square&label=CI) |
 
