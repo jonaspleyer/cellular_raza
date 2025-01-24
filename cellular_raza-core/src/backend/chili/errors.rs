@@ -4,7 +4,6 @@ pub use cellular_raza_concepts::{DecomposeError, IndexError};
 use core::any::type_name;
 use core::fmt::{Debug, Display};
 
-use std::error::Error;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc; // TODO in the future use core::error::Error (unstable right now)
 
@@ -158,15 +157,6 @@ impl<T> From<SendError<T>> for SimulationError {
             "Error receiving object of type {}",
             type_name::<SendError<T>>()
         ))
-    }
-}
-
-impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for SimulationError
-where
-    E: Error + Send + Sync,
-{
-    fn from(drawing_error: plotters::drawing::DrawingAreaErrorKind<E>) -> SimulationError {
-        SimulationError::DrawingError(DrawingError::from(drawing_error))
     }
 }
 
