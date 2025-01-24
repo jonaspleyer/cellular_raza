@@ -46,4 +46,5 @@ gradients = ["cellular_raza-concepts/gradients", "cellular_raza-core/gradients",
 pyo3 = ["cellular_raza-building-blocks/pyo3", "cellular_raza-core/pyo3"]
 
 cpu_os_threads = ["cellular_raza-core/cpu_os_threads"]
+chili = ["cellular_raza-core/chili"]
 cara = ["cellular_raza-core/cara"]
