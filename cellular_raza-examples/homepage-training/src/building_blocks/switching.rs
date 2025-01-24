@@ -135,17 +135,67 @@ fn test_interaction_different_inf_types() {
     }
 }
 
-#[derive(CellAgent)]
-struct Agent {
-    #[Interaction]
-    interaction: Box<
-        dyn Interaction<
-            nalgebra::Vector2<f64>,
-            nalgebra::Vector2<f64>,
-            nalgebra::Vector2<f64>,
-            f64,
-        >,
-    >,
+#[allow(unused)]
+#[derive(Clone)]
+enum SphericalInteraction2 {
+    Morse(MorsePotential),
+    Mie(MiePotential),
+    BLJ(BoundLennardJones),
+}
+
+enum IInf2<I1, I2, I3> {
+    Morse(I1),
+    Mie(I2),
+    BLJ(I3),
+}
+
+impl<Pos, Vel, For, I1, I2, I3> Interaction<Pos, Vel, For, IInf2<I1, I2, I3>>
+    for SphericalInteraction2
+where
+    MorsePotential: Interaction<Pos, Vel, For, I1>,
+    MiePotential: Interaction<Pos, Vel, For, I2>,
+    BoundLennardJones: Interaction<Pos, Vel, For, I3>,
+{
+    fn get_interaction_information(&self) -> IInf2<I1, I2, I3> {
+        match self {
+            SphericalInteraction2::Morse(pot) => {
+                IInf2::Morse(pot.get_interaction_information())
+            }
+            SphericalInteraction2::Mie(pot) => {
+                IInf2::Mie(pot.get_interaction_information())
+            }
+            SphericalInteraction2::BLJ(pot) => {
+                IInf2::BLJ(pot.get_interaction_information())
+            }
+        }
+    }
+
+    fn calculate_force_between(
+        &self,
+        own_pos: &Pos,
+        own_vel: &Vel,
+        ext_pos: &Pos,
+        ext_vel: &Vel,
+        ext_info: &IInf2<I1, I2, I3>,
+    ) -> Result<(For, For), CalcError> {
+        match (self, ext_info) {
+            (SphericalInteraction2::Morse(pot), IInf2::Morse(ext_info)) => pot
+                .calculate_force_between(
+                    own_pos, own_vel, ext_pos, ext_vel, ext_info,
+                ),
+            (SphericalInteraction2::Mie(pot), IInf2::Mie(ext_info)) => pot
+                .calculate_force_between(
+                    own_pos, own_vel, ext_pos, ext_vel, ext_info,
+                ),
+            (SphericalInteraction2::BLJ(pot), IInf2::BLJ(ext_info)) => pot
+                .calculate_force_between(
+                    own_pos, own_vel, ext_pos, ext_vel, ext_info,
+                ),
+            _ => Err(CalcError(format!(
+                "interaction type and information type are not matching"
+            ))),
+        }
+    }
 }
 
 #[test]
