@@ -8,5 +8,6 @@ authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-cellular_raza = { path="../../cellular_raza" }
+cellular_raza = { path="../../cellular_raza", features = ["pyo3"] }
 nalgebra.workspace = true
+pyo3.workspace = true
