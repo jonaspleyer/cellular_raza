@@ -38,6 +38,8 @@
 // TODO deprecate this!
 // #[deprecated]
 // #[allow(deprecated)]
+#[cfg(feature = "cpu_os_threads")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cpu_os_threads")))]
 pub mod cpu_os_threads;
 
 pub mod chili;
