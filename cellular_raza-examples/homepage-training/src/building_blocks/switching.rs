@@ -15,18 +15,18 @@ where
     fn calculate_force_between(
         &self,
         own_pos: &T,
-        ext_pos: &T,
         own_vel: &T,
+        ext_pos: &T,
         ext_vel: &T,
         inf: &I,
     ) -> Result<(T, T), CalcError> {
         use RadiusBasedInteraction::*;
         match self {
             Morse(pot) => pot.calculate_force_between(
-                own_pos, ext_pos, own_vel, ext_vel, inf,
+                own_pos, own_vel, ext_pos, ext_vel, inf,
             ),
             Mie(pot) => pot.calculate_force_between(
-                own_pos, ext_pos, own_vel, ext_vel, inf,
+                own_pos, own_vel, ext_pos, ext_vel, inf,
             ),
         }
     }
