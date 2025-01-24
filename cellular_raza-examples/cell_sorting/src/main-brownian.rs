@@ -1,8 +1,4 @@
-use cellular_raza::core::backend::chili::*;
-use cellular_raza::prelude::{
-    Brownian3D, CalcError, CartesianCuboid3New, CellAgent, Interaction, Mechanics, Position,
-    RngError, StorageBuilder, Velocity,
-};
+use cellular_raza::prelude::*;
 
 use nalgebra::Vector3;
 use rand::{Rng, SeedableRng};

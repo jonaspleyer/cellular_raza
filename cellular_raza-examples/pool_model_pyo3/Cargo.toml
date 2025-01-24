@@ -15,6 +15,6 @@ rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
 nalgebra = { version="0.33" }
 num = { workspace = true }
-cellular_raza = { path="../../cellular_raza", features=["default", "pyo3"] }
+cellular_raza = { path="../../cellular_raza", default-features = false, features=["timestamp", "pyo3", "cpu_os_threads"] }
 plotters = { workspace = true }
 serde_json = { version="1.0" }
