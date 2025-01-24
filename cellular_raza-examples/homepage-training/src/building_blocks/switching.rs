@@ -130,7 +130,7 @@ fn test_interaction_different_inf_types() {
         _,
     >>::get_interaction_information(&i2);
     match inf2 {
-        IInf::Morse(i1) => assert!(false),
+        IInf::Morse(_) => assert!(false),
         IInf::BLJ(i2) => assert_eq!((), i2),
     }
 }
