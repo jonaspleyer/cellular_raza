@@ -291,8 +291,8 @@ impl Cycle<Bacteria> for BacteriaCycle {
 }
 
 /// Species of the cells (S1, S2)
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[pyclass(eq, eq_int)]
 pub enum Species {
     /// Species 1
     S1,
