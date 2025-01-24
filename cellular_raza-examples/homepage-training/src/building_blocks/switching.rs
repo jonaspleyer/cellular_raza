@@ -199,16 +199,37 @@ where
 }
 
 #[test]
-fn test_interaction_box() {
-    use core::ops::Deref;
-    let agent = Agent {
-        interaction: Box::new(MorsePotential {
-            radius: 1.0,
-            potential_stiffness: 0.3,
-            cutoff: 3.0,
-            strength: 0.1,
-        }),
-    };
-    let inf = agent.get_interaction_information();
-    assert_eq!(inf, 1.0);
+fn test_interaction_all_different_types() {
+    let int1 = SphericalInteraction2::Morse(MorsePotential {
+        radius: 1.0,
+        potential_stiffness: 0.3,
+        cutoff: 4.0,
+        strength: 0.3,
+    });
+    let int2 = SphericalInteraction2::Mie(MiePotential {
+        radius: 1.0,
+        strength: 0.01,
+        bound: 10.0,
+        cutoff: 8.0,
+        en: 2.0,
+        em: 3.0,
+    });
+
+    let inf1 = <SphericalInteraction2 as Interaction<
+        nalgebra::Vector2<f64>,
+        _,
+        _,
+        _,
+    >>::get_interaction_information(&int1);
+    let inf2 = <SphericalInteraction2 as Interaction<
+        nalgebra::Vector2<f64>,
+        _,
+        _,
+        _,
+    >>::get_interaction_information(&int2);
+
+    match (inf1, inf2) {
+        (IInf2::Morse(_), IInf2::Mie(_)) => (),
+        _ => assert!(false),
+    }
 }
