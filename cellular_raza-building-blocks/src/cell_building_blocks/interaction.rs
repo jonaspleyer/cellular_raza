@@ -253,6 +253,7 @@ macro_rules! implement_morse_potential(
             #[doc = stringify!($struct_name)]
             /// ]
             /// ```
+            #[doc = concat!("use cellular_raza_building_blocks::", stringify!($struct_name), ";")]
             /// # let (radius, potential_stiffness, cutoff, strength) = (1.0, 1.0, 1.0, 1.0);
             #[doc = concat!("let morse_potential = ", stringify!($struct_name), "::new(")]
             ///     radius,
@@ -378,6 +379,7 @@ macro_rules! implement_mie_potential(
             #[doc = stringify!($name)]
             /// ]
             /// ```
+            #[doc = concat!("use cellular_raza_building_blocks::", stringify!($name), ";")]
             /// let (radius, strength, bound, cutoff, en, em) = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
             #[doc = concat!("let mie_potential = ", stringify!($name), "::new(")]
             ////    radius,
