@@ -197,7 +197,6 @@ macro_rules! implement_morse_potential(
         /// Physical Review, vol. 34, no. 1. American Physical Society (APS),
         /// pp. 57–64, Jul. 01, 1929.
         /// doi: [10.1103/physrev.34.57](https://doi.org/10.1103/PhysRev.34.57).
-        ///
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
         pub struct $struct_name {
@@ -298,7 +297,6 @@ macro_rules! implement_mie_potential(
         /// [MiePotentialF32].
         ///
         /// # References
-        /// [1]
         /// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
         /// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
         /// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
