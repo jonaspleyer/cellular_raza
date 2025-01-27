@@ -245,6 +245,38 @@ macro_rules! implement_morse_potential(
                 )
             }
         }
+
+        #[cfg(feature = "pyo3")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
+        #[pymethods]
+        impl $struct_name {
+            /// Constructs a new [
+            #[doc = stringify!($struct_name)]
+            /// ]
+            /// ```
+            #[doc = concat!("let morse_potential = ", stringify!($struct_name), "::new(")]
+            ///     radius,
+            ///     potential_stiffness,
+            ///     cutoff,
+            ///     strength,
+            /// );
+            /// ```
+            #[new]
+            #[pyo3(signature = (radius, potential_stiffness, cutoff, strength))]
+            pub fn new(
+                radius: $float_type,
+                potential_stiffness: $float_type,
+                cutoff: $float_type,
+                strength: $float_type
+            ) -> Self {
+                Self {
+                    radius,
+                    potential_stiffness,
+                    cutoff,
+                    strength,
+                }
+            }
+        }
     };
 );
 
@@ -336,6 +368,44 @@ macro_rules! implement_mie_potential(
         impl $name {
             fn radius_to_sigma_factor(&self) -> $float_type {
                 (self.em / self.en).powf(1.0 / (self.en - self.em))
+            }
+        }
+
+        #[cfg(feature = "pyo3")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "pyo3")))]
+        #[pymethods]
+        impl $name {
+            /// Constructs a new [
+            #[doc = stringify!($name)]
+            /// ]
+            /// ```
+            #[doc = concat!("let mie_potential = ", stringify!($name), "::new(")]
+            ////    radius,
+            ////    strength,
+            ////    bound,
+            ////    cutoff,
+            ////    en,
+            ////    em,
+            /// );
+            /// ```
+            #[new]
+            #[pyo3(signature = (radius, strength, bound, cutoff, en, em))]
+            pub fn new(
+                radius: $float_type,
+                strength: $float_type,
+                bound: $float_type,
+                cutoff: $float_type,
+                en: $float_type,
+                em: $float_type,
+            ) -> Self {
+                Self {
+                    radius,
+                    strength,
+                    bound,
+                    cutoff,
+                    en,
+                    em,
+                }
             }
         }
     }
