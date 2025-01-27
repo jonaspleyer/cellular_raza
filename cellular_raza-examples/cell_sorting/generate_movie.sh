@@ -3,7 +3,7 @@
 FOLDERS=($(ls "out/cell_sorting"))
 LAST_FOLDER=${FOLDERS[-1]}
 
-python plot.py
+python src/plot.py
 
 ffmpeg \
     -y \
