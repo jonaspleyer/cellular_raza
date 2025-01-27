@@ -382,12 +382,12 @@ macro_rules! implement_mie_potential(
             #[doc = concat!("use cellular_raza_building_blocks::", stringify!($name), ";")]
             /// let (radius, strength, bound, cutoff, en, em) = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
             #[doc = concat!("let mie_potential = ", stringify!($name), "::new(")]
-            ////    radius,
-            ////    strength,
-            ////    bound,
-            ////    cutoff,
-            ////    en,
-            ////    em,
+            ///     radius,
+            ///     strength,
+            ///     bound,
+            ///     cutoff,
+            ///     en,
+            ///     em,
             /// );
             /// ```
             #[new]
