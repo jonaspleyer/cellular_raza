@@ -12,7 +12,9 @@ reliable method for continuous integration, testing and compatibility.
 | `bacteria_population`         | `cargo run -r --bin cr_bacteria_population`       | 🐧 |
 | `bacterial_branching`         | `cargo run -r --bin cr_bacterial_branching`       | 🌶️ |
 | `bacterial_rods`              | `cargo run -r --bin cr_bacterial_rods`            | 🌶️ |
-| `cell_sorting`                | `cargo run -r --bin cr_cell_sorting`              | 🌶️ |
+| `cell_sorting` Default        | `cargo run -r --bin cr_cell_sorting_default`      | 🌶️ |
+| `cell_sorting` Brownian       | `cargo run -r --bin cr_cell_sorting_brownian`     | 🌶️ |
+| `cell_sorting` Langevin       | `cargo run -r --bin cr_cell_sorting_langevin`     | 🌶️ |
 | `cellular_raza-template-pyo3` | -                                                 | 🌶️ |
 | `cellular_raza-template`      | `cargo run -r --bin cr_cellular_raza-template`    | 🌶️ |
 | `diffusion`                   | `cargo run -r --bin cr_diffusion`                 | 🌶️ |
