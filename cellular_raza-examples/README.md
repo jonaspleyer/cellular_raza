@@ -1,30 +1,30 @@
 # Examples
 
-These examples will be explained in more detail on the website
+Some of these examples will be explained in more detail on the documentation website
 [cellular_raza.com](https://cellular_raza.com).
-They do not only server as illustrative examples of what `cellular_raza` is capable of but also as a
-reliable method for continuous integration testing and compatibility.
+They do not only serve as illustrative examples of what `cellular_raza` is capable of but also as a
+reliable method for continuous integration, testing and compatibility.
 
 ## Overview
 
-| Name | Execution Command | Backend |
-|:--- |:---|:---:|
-| `bacteria_population` | `cargo run -r --bin cr_bacteria_population` | 🌶️ |
-| `bacterial_branching` | `cargo run -r --bin cr_bacterial_branching` | 🐧 |
-| `bacterial_rods` | `cargo run -r --bin cr_bacterial_rods` | 🌶️ |
-| `cell_sorting` | `cargo run -r --bin cr_cell_sorting` | 🌶️ |
-| `cellular_raza-template-pyo3` | - | 🌶️ |
-| `cellular_raza-template` | `cargo run -r --bin cr_cellular_raza-template` | 🌶️ |
-| `diffusion` | `cargo run -r --bin cr_diffusion` | 🌶️ |
-| `getting-started` | `cargo run -r --bin cr_getting-started` | 🌶️ |
-| `homepage-training` | - | 🌶️ |
-| `immersed_boundary` | `cargo run -r --bin cr_immersed_boundary` | 🌶️ |
-| `organoid_turing_growth` | `cargo run -r --bin cr_organoid_turing_growth` | 🐧 |
-| `pool_model_pyo3` | - | 🐧 |
-| `puzzle` | `cargo run -r --bin cr_puzzle` | 🌶️ |
-| `semi_vertex` | `cargo run -r --bin cr_semi_vertex` | 🌶️ |
-| `sender-receiver` | `cargo run -r --bin cr_sender-receiver` | 🐧 |
-| `ureter_signalling` | `cargo run -r --bin cr_ureter_signalling` | 🐧 |
+| Name                          | Execution Command                                 | Backend |
+|:---                           |:---                                               |:---:|
+| `bacteria_population`         | `cargo run -r --bin cr_bacteria_population`       | 🌶️ |
+| `bacterial_branching`         | `cargo run -r --bin cr_bacterial_branching`       | 🐧 |
+| `bacterial_rods`              | `cargo run -r --bin cr_bacterial_rods`            | 🌶️ |
+| `cell_sorting`                | `cargo run -r --bin cr_cell_sorting`              | 🌶️ |
+| `cellular_raza-template-pyo3` | -                                                 | 🌶️ |
+| `cellular_raza-template`      | `cargo run -r --bin cr_cellular_raza-template`    | 🌶️ |
+| `diffusion`                   | `cargo run -r --bin cr_diffusion`                 | 🌶️ |
+| `getting-started`             | `cargo run -r --bin cr_getting-started`           | 🌶️ |
+| `homepage-training`           | -                                                 | 🌶️ |
+| `immersed_boundary`           | `cargo run -r --bin cr_immersed_boundary`         | 🌶️ |
+| `organoid_turing_growth`      | `cargo run -r --bin cr_organoid_turing_growth`    | 🐧 |
+| `pool_model_pyo3`             | -                                                 | 🐧 |
+| `puzzle`                      | `cargo run -r --bin cr_puzzle`                    | 🌶️ |
+| `semi_vertex`                 | `cargo run -r --bin cr_semi_vertex`               | 🌶️ |
+| `sender-receiver`             | `cargo run -r --bin cr_sender-receiver`           | 🐧 |
+| `ureter_signalling`           | `cargo run -r --bin cr_ureter_signalling`         | 🐧 |
 
 Every binary example can also be run by navigating to the respective subfolder and executing `cargo
 run -r`.
