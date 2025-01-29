@@ -16,16 +16,16 @@ reliable method for continuous integration, testing and compatibility.
 | `cell_sorting` Brownian       | `cargo run -r --bin cr_cell_sorting_brownian`     | 🌶️ |
 | `cell_sorting` Langevin       | `cargo run -r --bin cr_cell_sorting_langevin`     | 🌶️ |
 | `cellular_raza-template-pyo3` | -                                                 | 🌶️ |
-| `cellular_raza-template`      | `cargo run -r --bin cr_cellular_raza-template`    | 🌶️ |
-| `diffusion`                   | `cargo run -r --bin cr_diffusion`                 | 🌶️ |
-| `getting-started`             | `cargo run -r --bin cr_getting-started`           | 🌶️ |
+| `cellular_raza-template`      | `cargo run -r --bin cellular_raza-template`       | 🌶️ |
+| `diffusion`                   | Example only used for development.                | 🌶️ |
+| `getting-started`             | `cargo run -r --bin cr_getting_started`           | 🌶️ |
 | `homepage-training`           | -                                                 | 🌶️ |
 | `immersed_boundary`           | `cargo run -r --bin cr_immersed_boundary`         | 🌶️ |
 | `organoid_turing_growth`      | `cargo run -r --bin cr_organoid_turing_growth`    | 🐧 |
 | `pool_model_pyo3`             | -                                                 | 🐧 |
-| `puzzle`                      | `cargo run -r --bin cr_puzzle`                    | 🌶️ |
+| `puzzle`                      | `cargo run -r --bin cr_puzzle_cells`              | 🌶️ |
 | `semi_vertex`                 | `cargo run -r --bin cr_semi_vertex`               | 🌶️ |
-| `sender-receiver`             | `cargo run -r --bin cr_sender-receiver`           | 🐧 |
+| `sender-receiver`             | `cargo run -r --bin cr_sender_receiver`           | 🐧 |
 | `ureter_signalling`           | `cargo run -r --bin cr_ureter_signalling`         | 🐧 |
 
 Every binary example can also be run by navigating to the respective subfolder and executing `cargo
