@@ -9,8 +9,8 @@ reliable method for continuous integration, testing and compatibility.
 
 | Name                          | Execution Command                                 | Backend |
 |:---                           |:---                                               |:---:|
-| `bacteria_population`         | `cargo run -r --bin cr_bacteria_population`       | 🌶️ |
-| `bacterial_branching`         | `cargo run -r --bin cr_bacterial_branching`       | 🐧 |
+| `bacteria_population`         | `cargo run -r --bin cr_bacteria_population`       | 🐧 |
+| `bacterial_branching`         | `cargo run -r --bin cr_bacterial_branching`       | 🌶️ |
 | `bacterial_rods`              | `cargo run -r --bin cr_bacterial_rods`            | 🌶️ |
 | `cell_sorting`                | `cargo run -r --bin cr_cell_sorting`              | 🌶️ |
 | `cellular_raza-template-pyo3` | -                                                 | 🌶️ |
