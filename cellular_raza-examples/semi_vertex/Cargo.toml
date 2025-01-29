@@ -12,6 +12,6 @@ nalgebra = { version="0.33" }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 plotters = { workspace = true }
 num = { workspace = true }
-kdam = "0.5.2"
+kdam.workspace = true
 rayon = "1.10.0"
 itertools.workspace = true

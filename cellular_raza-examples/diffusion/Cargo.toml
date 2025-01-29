@@ -12,7 +12,7 @@ nalgebra = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 num = { workspace = true }
 rayon = "1.8"
-kdam = { version="0.5", features = ["template"] }
+kdam = { workspace = true, features = ["template"] }
 ndarray = { version = "0.16" }
 plotters = { workspace = true }
 tracing = "0.1.40"

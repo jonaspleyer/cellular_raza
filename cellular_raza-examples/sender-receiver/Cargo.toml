@@ -14,4 +14,4 @@ cellular_raza = { path="../../cellular_raza", default-features = false, features
 plotters = { workspace = true, features = ["default", "ttf"] }
 ode_integrate = "0.0.2"
 rayon = "1.10.0"
-kdam = { version = "0.5.1", features = ["rayon"] }
+kdam = { workspace = true, features = ["rayon"] }
