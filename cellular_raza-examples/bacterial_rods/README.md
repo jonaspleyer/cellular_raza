@@ -3,7 +3,7 @@
 To run the simulation from the base folder of the `cellular_raza` workspace use
 
 ```bash
-cargo run -r --bin bacterial_rods
+cargo run -r --bin cr_bacterial_rods
 ```
 
 or from the folder of this example `cellular_raza-examples/bacterial_rods`

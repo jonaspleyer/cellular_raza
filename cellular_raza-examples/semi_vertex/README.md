@@ -3,7 +3,7 @@
 To run the simulation from the base folder of the `cellular_raza` workspace use
 
 ```bash
-cargo run -r --bin semi_vertex
+cargo run -r --bin cr_semi_vertex
 ```
 
 or from the folder of this example `cellular_raza-examples/semi_vertex`

@@ -3,7 +3,7 @@
 To run the simulation from the base folder of the `cellular_raza` workspace use
 
 ```bash
-cargo run -r --bin puzzle
+cargo run -r --bin cr_puzzle_cells
 ```
 
 or from the folder of this example `cellular_raza-examples/puzzle`

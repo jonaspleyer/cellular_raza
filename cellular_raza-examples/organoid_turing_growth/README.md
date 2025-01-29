@@ -3,7 +3,7 @@
 To run the simulation from the base folder of the `cellular_raza` workspace use
 
 ```bash
-cargo run -r --bin organoid_turing_growth
+cargo run -r --bin cr_organoid_turing_growth
 ```
 
 or from the folder of this example `cellular_raza-examples/organoid_turing_growth`

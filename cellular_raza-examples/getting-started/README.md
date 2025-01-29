@@ -3,7 +3,7 @@
 To run the simulation from the base folder of the `cellular_raza` workspace use
 
 ```bash
-cargo run -r --bin getting-started
+cargo run -r --bin cr_getting_started
 ```
 
 or from the folder of this example `cellular_raza-examples/getting-started`
