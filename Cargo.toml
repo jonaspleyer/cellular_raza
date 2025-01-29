@@ -7,23 +7,7 @@ members = [
     "cellular_raza-building-blocks",
 
     # Examples
-    # "cellular_raza-examples/*",
-    "cellular_raza-examples/bacterial_branching",
-    "cellular_raza-examples/bacteria_population",
-    "cellular_raza-examples/cell_sorting",
-    "cellular_raza-examples/cellular_raza-template",
-    "cellular_raza-examples/cellular_raza-template-pyo3",
-    "cellular_raza-examples/diffusion",
-    "cellular_raza-examples/immersed_boundary",
-    "cellular_raza-examples/semi_vertex",
-    "cellular_raza-examples/organoid_turing_growth",
-    "cellular_raza-examples/pool_model_pyo3",
-    "cellular_raza-examples/ureter_signalling",
-    "cellular_raza-examples/sender-receiver",
-    "cellular_raza-examples/bacterial_rods",
-    "cellular_raza-examples/puzzle",
-    "cellular_raza-examples/getting-started",
-    "cellular_raza-examples/homepage-training",
+    "cellular_raza-examples/*",
 ]
 resolver = "2"
 
