@@ -17,7 +17,7 @@ reliable method for continuous integration, testing and compatibility.
 | `cell_sorting` Langevin       | `cargo run -r --bin cr_cell_sorting_langevin`     | 🌶️ |
 | `cellular_raza-template-pyo3` | -                                                 | 🌶️ |
 | `cellular_raza-template`      | `cargo run -r --bin cellular_raza-template`       | 🌶️ |
-| `diffusion`                   | Example only used for development.                | 🌶️ |
+| `diffusion`                   | Example only used for development.                |    |
 | `getting-started`             | `cargo run -r --bin cr_getting_started`           | 🌶️ |
 | `homepage-training`           | -                                                 | 🌶️ |
 | `immersed_boundary`           | `cargo run -r --bin cr_immersed_boundary`         | 🌶️ |
