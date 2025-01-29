@@ -37,5 +37,5 @@ pyo3 = ["cellular_raza/pyo3"]
 gradients = ["cellular_raza/gradients"]
 
 [[bin]]
-name = "cell_sorting"
+name = "benchmark_cell_sorting"
 path = "src/cell_sorting.rs"
