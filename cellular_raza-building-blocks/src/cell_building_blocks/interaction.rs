@@ -302,7 +302,7 @@ macro_rules! implement_mie_potential(
         /// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
         /// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
         /// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
-        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         pub struct $name {
             /// Interaction strength $\epsilon$ of the potential.
