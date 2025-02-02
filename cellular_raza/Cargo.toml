@@ -11,6 +11,7 @@ keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
 autoexamples = false
 homepage.workspace =  true
+include = ["logos/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
