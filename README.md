@@ -24,10 +24,11 @@ Cellular Agent-based Modeling from a Clean Slate
 ## Documentation
 The documentation at [cellular-raza.com](https://cellular-raza.com/) provides an introduction,
 examples, the most recent technical documentation, submission guidelines and much more.
-Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of
-the package.
-Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentations for specific
-versions as published to crates.io.
+
+## Getting Started
+The "getting-started" guide at
+[cellular-raza.com/guides/getting-started](https://cellular-raza.com/guides/getting-started)
+is a good entry point to learn how to use `cellular_raza`.
 
 ## Contributing
 Please use [github](https://www.github.com/jonaspleyer/cellular_raza) to write a pull-request.
