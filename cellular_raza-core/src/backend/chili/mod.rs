@@ -395,6 +395,25 @@ impl CellIdentifier {
         self.hash(&mut hasher);
         hasher.finish()
     }
+
+    /// Implementes the `__getitem__` method. Since the [CellIdentifier] is built like a list this
+    /// only works for the entires 0 and 1 and will yield an error otherwise
+    pub fn __getitem__<'py>(
+        &self,
+        py: pyo3::Python<'py>,
+        key: usize,
+    ) -> pyo3::PyResult<pyo3::PyObject> {
+        use pyo3::IntoPy;
+        if key == 0 {
+            Ok(self.0.into_py(py))
+        } else if key == 1 {
+            Ok(self.1.into_py(py))
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err(
+                "CellIdentifier can only be indexed at 0 and 1",
+            ))
+        }
+    }
 }
 
 /// Contains structs to store aspects of the simulation and macros to construct them.
