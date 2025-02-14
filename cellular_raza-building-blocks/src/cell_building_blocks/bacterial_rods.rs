@@ -519,7 +519,6 @@ where
     {
         let mut state = serializer.serialize_struct("RodMechanics", 6)?;
         state.serialize_field("pos", &self.pos)?;
-        state.serialize_field("pos", &self.pos)?;
         state.serialize_field("vel", &self.vel)?;
         state.serialize_field("diffusion_constant", &self.diffusion_constant)?;
         state.serialize_field("spring_tension", &self.spring_tension)?;
