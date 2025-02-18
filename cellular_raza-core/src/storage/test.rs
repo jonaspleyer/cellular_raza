@@ -28,8 +28,7 @@ fn store_load_json() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(unused)]
 macro_rules! open_storage_interface(
     (@internal_path) => {{
-        use tempdir::TempDir;
-        let dir = TempDir::new("tempdir").unwrap();
+        let dir = tempfile::tempdir().unwrap();
         let location = dir.path().join(
             concat!("tempdir_", stringify!($interface_name))
         );

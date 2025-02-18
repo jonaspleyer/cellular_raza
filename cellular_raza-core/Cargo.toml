@@ -63,7 +63,7 @@ path = "../cellular_raza-core-proc-macro"
 version = "0.1.6"
 
 [dev-dependencies]
-tempdir.workspace = true
+tempfile.workspace = true
 
 [features]
 default = ["timestamp", "chili"]

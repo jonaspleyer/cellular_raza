@@ -28,7 +28,7 @@ fn main_sim(
     let domain = CartesianCuboid::from_boundaries_and_n_voxels([-1e3; 3], [-5e2; 3], [3; 3])?;
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(0.0, 0.1, 100, 1)?;
     // Create temporary directory which will delete itself after usage
-    let tmp_dir = tempdir::TempDir::new("out_tmp")?;
+    let tmp_dir = tempfile::TempDir::new()?;
     let storage = StorageBuilder::new()
         .location(tmp_dir.path())
         .priority(storage_options);
