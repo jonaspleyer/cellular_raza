@@ -181,6 +181,12 @@ rates from a uniform distribution.
     }
 \end{figure}
 
+# Further Information
+The full documentation including guides, all examples from above and more is available at
+[cellular-raza.com](https://cellular-raza.com/).
+`cellular_raza` can also be used as a numerical backend together with the `pyo3` and `maturin`
+[@PyO3_Project_and_Contributors_PyO3,@maturin2025] crates.
+
 # Acknowledgements
 
 The author(s) declare that financial support was received for the research, authorship, and/or
