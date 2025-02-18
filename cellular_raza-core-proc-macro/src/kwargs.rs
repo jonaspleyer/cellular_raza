@@ -120,6 +120,27 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         zero_reactions_default: syn::ExprClosure,
     },
+    update_mechanics_interaction_step_1 {
+        #[allow(unused)]
+        update_mechanics_interaction_step_1_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        update_mechanics_interaction_step_1: syn::Ident,
+    },
+    update_mechanics_interaction_step_2 {
+        #[allow(unused)]
+        update_mechanics_interaction_step_2_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        update_mechanics_interaction_step_2: syn::Ident,
+    },
+    update_mechanics_interaction_step_3 {
+        #[allow(unused)]
+        update_mechanics_interaction_step_3_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        update_mechanics_interaction_step_3: syn::Ident,
+    },
 }
 
 macro_rules! parse_optional_kw(
@@ -220,6 +241,27 @@ impl syn::parse::Parse for Kwarg {
                 double_colon: input.parse()?,
                 zero_reactions_default: input.parse()?,
             }),
+            "update_mechanics_interaction_step_1" => {
+                Ok(Kwarg::update_mechanics_interaction_step_1 {
+                    update_mechanics_interaction_step_1_kw: keyword,
+                    double_colon: input.parse()?,
+                    update_mechanics_interaction_step_1: input.parse()?,
+                })
+            }
+            "update_mechanics_interaction_step_2" => {
+                Ok(Kwarg::update_mechanics_interaction_step_2 {
+                    update_mechanics_interaction_step_2_kw: keyword,
+                    double_colon: input.parse()?,
+                    update_mechanics_interaction_step_2: input.parse()?,
+                })
+            }
+            "update_mechanics_interaction_step_3" => {
+                Ok(Kwarg::update_mechanics_interaction_step_3 {
+                    update_mechanics_interaction_step_3_kw: keyword,
+                    double_colon: input.parse()?,
+                    update_mechanics_interaction_step_3: input.parse()?,
+                })
+            }
             _ => Err(syn::Error::new(
                 keyword.span(),
                 format!("{keyword} is not a valid keyword for this macro"),

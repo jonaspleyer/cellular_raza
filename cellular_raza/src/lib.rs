@@ -1,5 +1,6 @@
 #![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! > “What I cannot create, I do not understand.”
 //! >
 //! >  --- Richard P. Feynman

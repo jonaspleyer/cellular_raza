@@ -8,18 +8,18 @@ authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 serde = { workspace = true, features=["rc"] }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
-nalgebra = { version="0.33" }
+nalgebra = { workspace = true }
 cellular_raza = { path="../../cellular_raza" }
 num = { workspace = true }
 
 [[bin]]
-name = "default"
+name = "cr_cell_sorting_default"
 path = "src/main.rs"
 
 [[bin]]
-name = "langevin"
+name = "cr_cell_sorting_langevin"
 path = "src/main-langevin.rs"
 
 [[bin]]
-name = "brownian"
+name = "cr_cell_sorting_brownian"
 path = "src/main-brownian.rs"

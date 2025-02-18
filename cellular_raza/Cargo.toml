@@ -2,15 +2,16 @@
 authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 name = "cellular_raza"
 version.workspace = true
-edition = "2021"
-license = "GPL-2.0"
-description = "Cellular simulation tool"
+edition.workspace = true
+license.workspace = true
+description = "Cellular Agent-based Modeling from a Clean Slate"
 readme = "README.md"
 repository = "https://github.com/jonaspleyer/cellular_raza"
 keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
 autoexamples = false
 homepage.workspace =  true
+include = ["logos/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
@@ -39,8 +40,13 @@ nalgebra.workspace = true
 ode_integrate = "0.0.2"
 
 [features]
-default = ["gradients", "timestamp"]
+default = ["timestamp", "chili"]
 tracing = ["cellular_raza-core/tracing"]
 timestamp = ["cellular_raza-core/timestamp"]
 gradients = ["cellular_raza-concepts/gradients", "cellular_raza-core/gradients", "cellular_raza-building-blocks/gradients"]
 pyo3 = ["cellular_raza-building-blocks/pyo3", "cellular_raza-core/pyo3"]
+
+cpu_os_threads = ["cellular_raza-core/cpu_os_threads"]
+chili = ["cellular_raza-core/chili"]
+cara = ["cellular_raza-core/cara"]
+elli = ["cellular_raza-core/elli"]

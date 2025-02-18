@@ -8,10 +8,10 @@ authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 serde = { workspace = true, features=["rc"] }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
-nalgebra = { version="0.33" }
+nalgebra = { workspace = true }
 num = { workspace = true }
-cellular_raza = { path="../../cellular_raza", features=["default"] }
+cellular_raza = { path="../../cellular_raza", default-features = false, features=["gradients", "timestamp", "cpu_os_threads"] }
 plotters = { workspace = true, features = ["default", "ttf"] }
 ode_integrate = "0.0.2"
 rayon = "1.10.0"
-kdam = { version = "0.5.1", features = ["rayon"] }
+kdam = { workspace = true, features = ["rayon"] }

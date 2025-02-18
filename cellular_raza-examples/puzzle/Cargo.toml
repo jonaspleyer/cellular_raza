@@ -8,12 +8,12 @@ authors = ["Jonas Pleyer <jonas.pleyer@fdm.uni-freiburg.de>"]
 serde = { workspace = true }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
-nalgebra = { version="0.33" }
+nalgebra = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 plotters = { workspace = true }
 num = { workspace = true }
-kdam = "0.5.2"
+kdam.workspace = true
 rayon = "1.10.0"
 itertools.workspace = true
-rand_distr = "0.4.3"
-geo = { version = "0.28.0", features = ["earcutr"] }
+rand_distr.workspace = true
+geo = { version = "0.29", features = ["earcutr"] }

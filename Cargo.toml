@@ -7,22 +7,7 @@ members = [
     "cellular_raza-building-blocks",
 
     # Examples
-    # "cellular_raza-examples/*",
-    "cellular_raza-examples/bacterial_branching",
-    "cellular_raza-examples/bacteria_population",
-    "cellular_raza-examples/cell_sorting",
-    "cellular_raza-examples/cellular_raza-template",
-    "cellular_raza-examples/cellular_raza-template-pyo3",
-    "cellular_raza-examples/diffusion",
-    "cellular_raza-examples/immersed_boundary",
-    "cellular_raza-examples/semi_vertex",
-    "cellular_raza-examples/organoid_turing_growth",
-    "cellular_raza-examples/pool_model_pyo3",
-    "cellular_raza-examples/ureter_signalling",
-    "cellular_raza-examples/sender-receiver",
-    "cellular_raza-examples/bacterial_rods",
-    "cellular_raza-examples/puzzle",
-    "cellular_raza-examples/getting-started",
+    "cellular_raza-examples/*",
 ]
 resolver = "2"
 
@@ -38,7 +23,7 @@ homepage = "https://cellular-raza.com/"
 
 [workspace.dependencies]
 num = "0.4"
-itertools = "0.13"
+itertools = "0.14"
 plotters = { version="0.3", default-features = false, features=[
         "bitmap_backend", "bitmap_encoder", "bitmap_gif",
         "svg_backend",
@@ -49,9 +34,12 @@ plotters = { version="0.3", default-features = false, features=[
         "full_palette",
         "colormaps"
 ]}
+# We cannot upgrade these versions at the moment since nalgebra 0.33 still requires rand_distr 0.4
 rand = { version="0.8", features = ["small_rng"] }
+rand_distr = "0.4"
 rand_chacha = { version="0.3.1", features=["serde1"] }
 serde = "1.0"
 tempdir = "0.3"
 nalgebra = { version="<0.34, >=0.30", features=["serde-serialize", "rand"]}
 pyo3 = { version = "<0.24, >=0.22", features = ["serde", "py-clone"]}
+kdam = "0.6"

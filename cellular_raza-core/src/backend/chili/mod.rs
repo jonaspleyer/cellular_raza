@@ -396,21 +396,23 @@ impl CellIdentifier {
         hasher.finish()
     }
 
-    /// Used to pickle the object
-    #[deprecated(
-        note = "This method exists as part of experimentation and may change behaviour or\
-        be removed in the future"
-    )]
-    pub fn __reduce__<'a>(&'a self, py: pyo3::Python<'a>) -> pyo3::Bound<pyo3::types::PyTuple> {
-        use pyo3::prelude::*;
-        use pyo3::PyTypeInfo;
-        pyo3::types::PyTuple::new_bound(
-            py,
-            [
-                Self::type_object_bound(py).to_object(py),
-                pyo3::types::PyTuple::new_bound(py, [self.0 .0 as u64, self.1]).to_object(py),
-            ],
-        )
+    /// Implementes the `__getitem__` method. Since the [CellIdentifier] is built like a list this
+    /// only works for the entires 0 and 1 and will yield an error otherwise
+    pub fn __getitem__<'py>(
+        &self,
+        py: pyo3::Python<'py>,
+        key: usize,
+    ) -> pyo3::PyResult<pyo3::PyObject> {
+        use pyo3::IntoPy;
+        if key == 0 {
+            Ok(self.0.into_py(py))
+        } else if key == 1 {
+            Ok(self.1.into_py(py))
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err(
+                "CellIdentifier can only be indexed at 0 and 1",
+            ))
+        }
     }
 }
 

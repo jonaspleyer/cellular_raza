@@ -4,9 +4,6 @@ mod errors;
 mod supervisor;
 mod trait_bounds;
 
-// Concepts for every simulation aspect
-pub use cellular_raza_concepts::*;
-
 // Implementation Details necessary
 pub use config::*;
 pub use domain_decomposition::*;

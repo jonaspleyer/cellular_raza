@@ -11,8 +11,10 @@ import tqdm
 from threading import Thread
 import os
 
+
 def get_last_output_path() -> Path:
     return Path(sorted(list(glob("out/semi_vertex/*")))[-1])
+
 
 class Loader:
     def __init__(self, opath: Path = get_last_output_path()):
@@ -20,7 +22,9 @@ class Loader:
         folders = glob(str(self.opath / "cells/json/*"))
         self.__iterations = np.sort(np.array([int(Path(f).name) for f in folders]))
         self.__all_files = {
-            iteration: list(glob(str(self.opath / "cells/json/{:020}/*.json".format(iteration))))
+            iteration: list(
+                glob(str(self.opath / "cells/json/{:020}/*.json".format(iteration)))
+            )
             for iteration in self.__iterations
         }
 
@@ -42,10 +46,12 @@ class Loader:
     def iterations(self) -> np.ndarray:
         return np.copy(self.__iterations)
 
+
 def run_plotter_iterations(instance: int, opath: Path, iterations, **kwargs):
     plotter = Plotter(opath)
     iterations = tqdm.tqdm(iterations, total=len(iterations), position=instance)
     plotter.plot_cells_at_iterations(iterations, **kwargs, progress_bar=False)
+
 
 class Plotter:
     loader: Loader
@@ -61,20 +67,16 @@ class Plotter:
         rate_max = np.max(growth_rates)
         t = [(0.5 + 0.5 * rate / rate_max) for rate in growth_rates]
         facecolors = [self.cm(ti) for ti in t]
-        pc = PatchCollection(
-            polys,
-            facecolors=facecolors,
-            edgecolors='white'
-        )
+        pc = PatchCollection(polys, facecolors=facecolors, edgecolors="white")
         self.pc = self.ax.add_collection(pc)
 
     def plot_cells_at_iter(
-            self,
-            iteration: int,
-            save_path: Path | None = None,
-            overwrite: bool = False,
-            transparent: bool = False,
-        ):
+        self,
+        iteration: int,
+        save_path: Path | None = None,
+        overwrite: bool = False,
+        transparent: bool = False,
+    ):
         if save_path is None:
             save_path = self.loader.opath / "images"
         save_path.mkdir(parents=True, exist_ok=True)
@@ -93,16 +95,17 @@ class Plotter:
         return save_path
 
     def plot_cells_at_iterations(
-            self,
-            iterations: list[int] | np.ndarray,
-            save_path: Path | None = None,
-            overwrite: bool = False,
-            transparent: bool = True,
-            progress_bar: bool = True,
-        ):
+        self,
+        iterations: list[int] | np.ndarray,
+        save_path: Path | None = None,
+        overwrite: bool = False,
+        transparent: bool = True,
+        progress_bar: bool = True,
+    ):
         iterations = tqdm.tqdm(iterations) if progress_bar else iterations
         for iteration in iterations:
             self.plot_cells_at_iter(iteration, save_path, overwrite, transparent)
+
 
 def plot_cells_at_all_iterations(
     opath: Path = get_last_output_path(),
@@ -111,8 +114,8 @@ def plot_cells_at_all_iterations(
     transparent: bool = False,
     n_threads: int | None = None,
 ):
-    plt.close('all')
-    matplotlib.use('svg')
+    plt.close("all")
+    matplotlib.use("svg")
     if n_threads is None:
         n_threads = os.cpu_count()
     results = []
@@ -130,15 +133,16 @@ def plot_cells_at_all_iterations(
             target=run_plotter_iterations,
             args=[i, loader.opath, iterations],
             kwargs={
-                "save_path":save_path,
-                "overwrite":overwrite,
-                "transparent":transparent
+                "save_path": save_path,
+                "overwrite": overwrite,
+                "transparent": transparent,
             },
         )
         results.append(t)
 
     for t in results:
         t.start()
+
 
 def plot_growth(opath: Path = get_last_output_path(), iteration: int | None = None):
     loader = Loader(opath)
@@ -151,7 +155,7 @@ def plot_growth(opath: Path = get_last_output_path(), iteration: int | None = No
         bins=int(len(values) / 10),
         linewidth=1,
         facecolor=(0.75, 0.75, 0.75),
-        edgecolor='k',
+        edgecolor="k",
         fill=True,
     )
     bin_centers = 0.5 * (bins[:-1] + bins[1:])
@@ -161,14 +165,16 @@ def plot_growth(opath: Path = get_last_output_path(), iteration: int | None = No
 
     cm = matplotlib.colormaps.get_cmap("YlGn")
     for c, p in zip(col, patches):
-        plt.setp(p, "facecolor", cm(0.5 + 0.5*c))
+        plt.setp(p, "facecolor", cm(0.5 + 0.5 * c))
     ax[0].set_xlabel("Growth rate [area/simulation step]")
     ax[0].set_title("Distribution of growth-rates")
     sub_iterations = loader.iterations[::50]
-    areas = np.array([
-        loader.load_cells(iteration)["cell.mechanics.cell_area"]
-        for iteration in sub_iterations
-    ])
+    areas = np.array(
+        [
+            loader.load_cells(iteration)["cell.mechanics.cell_area"]
+            for iteration in sub_iterations
+        ]
+    )
     ax[1].errorbar(
         sub_iterations,
         np.mean(areas, axis=1),
@@ -179,6 +185,7 @@ def plot_growth(opath: Path = get_last_output_path(), iteration: int | None = No
     ax[1].set_title("Average cell area")
     fig.tight_layout()
     fig.savefig("{}/growth.png".format(loader.opath))
+
 
 if __name__ == "__main__":
     plot_cells_at_all_iterations(transparent=True, n_threads=1)

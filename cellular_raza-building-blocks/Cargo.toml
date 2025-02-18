@@ -20,7 +20,7 @@ all-features = true
 plotters = { workspace = true }
 num = { workspace = true }
 rand = { workspace = true, features=["small_rng"] }
-rand_distr = { version="0.4", features = ["serde1"]}
+rand_distr = { workspace = true, features = ["serde1"]}
 rand_chacha = { workspace = true, features=["serde1"]}
 nalgebra.workspace = true
 serde = { workspace = true }

@@ -13,22 +13,22 @@
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
 [![dependency status](https://deps.rs/crate/cellular_raza/latest/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
 
-A cellular Agent-Based modeling tool.
+Cellular Agent-based Modeling from a Clean Slate
 
 | | stable | beta | nightly |
 |---|---|---|---|
 | `ubuntu-latest` | ![stable-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_ubuntu-latest.yml?style=flat-square&label=CI) |![beta-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_ubuntu-latest.yml?style=flat-square&label=CI) |![nightly-ubuntu-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_ubuntu-latest.yml?style=flat-square&label=CI) |
-| `macos-12` | ![stable-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-12.yml?style=flat-square&label=CI) |![beta-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-12.yml?style=flat-square&label=CI) |![nightly-macos-12](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-12.yml?style=flat-square&label=CI) |
 | `macos-13` | ![stable-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-13.yml?style=flat-square&label=CI) |![beta-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-13.yml?style=flat-square&label=CI) |![nightly-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-13.yml?style=flat-square&label=CI) |
 | `windows-latest` | ![stable-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_windows-latest.yml?style=flat-square&label=CI) |![beta-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_windows-latest.yml?style=flat-square&label=CI) |![nightly-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_windows-latest.yml?style=flat-square&label=CI) |
 
 ## Documentation
 The documentation at [cellular-raza.com](https://cellular-raza.com/) provides an introduction,
 examples, the most recent technical documentation, submission guidelines and much more.
-Visit [crates.io/crates/cellular_raza](https://crates.io/crates/cellular_raza) for an overview of
-the package.
-Visit [docs.rs/cellular_raza](https://docs.rs/cellular_raza) to view documentations for specific
-versions as published to crates.io.
+
+## Getting Started
+The "getting-started" guide at
+[cellular-raza.com/guides/getting-started](https://cellular-raza.com/guides/getting-started)
+is a good entry point to learn how to use `cellular_raza`.
 
 ## Contributing
 Please use [github](https://www.github.com/jonaspleyer/cellular_raza) to write a pull-request.

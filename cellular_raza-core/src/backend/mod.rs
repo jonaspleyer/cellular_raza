@@ -8,21 +8,21 @@
 //! We aim to provide one general-purpose backend able to solve any given simulation that adheres
 //! to the [cellular_raza_concepts] with the 🌶️ [chili] backend.
 //!
-//! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] |
-//! | --- |:---:|:---:|
-//! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |
-//! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |
-//! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |
-//! | [Reactions](cellular_raza_concepts::Reactions) | ❌ | ✅ |
-//! | [ReactionsContact](cellular_raza_concepts::ReactionsContact) | ❌ | ✅ |
-//! | [ReactionsExtra](cellular_raza_concepts::ReactionsExtra) | ❌ | ✅ |
-//! | [Domain](cellular_raza_concepts::Domain) | ❌ | ✅ |
-//! | [DomainForce](cellular_raza_concepts::SubDomainForce) | ❌ | ✅ |
-//! | [Controller](cellular_raza_concepts::domain_old::Controller) | ✅ | ❌ |
+//! | Aspect | 🐧 [cpu_os_threads] | 🌶️ [chili] | 🐯 [cara] | 🐺 [elli] |
+//! | --- |:---:|:---:|:---:|:---:|
+//! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |❌ |❌ |
+//! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |❌ |❌ |
+//! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |❌ |❌ |
+//! | [Reactions](cellular_raza_concepts::Reactions) | ❌ | ✅ |❌ |❌ |
+//! | [ReactionsContact](cellular_raza_concepts::ReactionsContact) | ❌ | ✅ |❌ |❌ |
+//! | [ReactionsExtra](cellular_raza_concepts::ReactionsExtra) | ❌ | ✅ |❌ |❌ |
+//! | [Domain](cellular_raza_concepts::Domain) | ❌ | ✅ |❌ |❌ |
+//! | [DomainForce](cellular_raza_concepts::SubDomainForce) | ❌ | ✅ |❌ |❌ |
+//! | [Controller](cellular_raza_concepts::domain_old::Controller) | ✅ | ❌ |❌ |❌ |
 //! | Old Aspects |
-//! | [ReactionsOld](cellular_raza_concepts::reactions_old::CellularReactions) | ✅ | ❌ |
-//! | [DomainOld](cellular_raza_concepts::domain_old::Domain) | ✅ | ❌ |
-//! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |
+//! | [ReactionsOld](cellular_raza_concepts::reactions_old::CellularReactions) | ✅ | ❌ |❌ |❌ |
+//! | [DomainOld](cellular_raza_concepts::domain_old::Domain) | ✅ | ❌ |❌ |❌ |
+//! | [Plotting](cellular_raza_concepts::PlotSelf) | ✅ | ❌ |❌ |❌ |
 //!
 //! ¹Only supports `Float=f64`.
 
@@ -38,11 +38,18 @@
 // TODO deprecate this!
 // #[deprecated]
 // #[allow(deprecated)]
+#[cfg(feature = "cpu_os_threads")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cpu_os_threads")))]
 pub mod cpu_os_threads;
 
+#[cfg(feature = "chili")]
+#[cfg_attr(docsrs, doc(cfg(feature = "chili")))]
 pub mod chili;
 
-/// 🐯 (Placeholder) GPU-centered backend using [OpenCL](https://www.khronos.org/opencl/)
-///
-/// This backend is currently not developed and only here to serve as a placeholder.
-pub mod cara {}
+#[cfg(feature = "cara")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cara")))]
+pub mod cara;
+
+#[cfg(feature = "elli")]
+#[cfg_attr(docsrs, doc(cfg(feature = "elli")))]
+pub mod elli;

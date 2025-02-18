@@ -1,8 +1,4 @@
-use cellular_raza::core::backend::chili::*;
-use cellular_raza::prelude::{
-    CalcError, CartesianCuboid3New, CellAgent, Interaction, Langevin3D, Mechanics, Position,
-    RngError, StorageBuilder, Velocity,
-};
+use cellular_raza::prelude::*;
 
 use nalgebra::Vector3;
 use rand::{Rng, SeedableRng};
@@ -120,7 +116,13 @@ fn main() -> Result<(), SimulationError> {
                 rng.gen_range(0.0..DOMAIN_SIZE),
             ];
             Cell {
-                mechanics: Langevin3D::new(pos, [0.0; 3], 10.0, CELL_DAMPING, CELL_KB_TEMP),
+                mechanics: Langevin3D {
+                    pos: pos.into(),
+                    vel: [0.0; 3].into(),
+                    mass: 10.0,
+                    damping: CELL_DAMPING,
+                    kb_temperature: CELL_KB_TEMP,
+                },
                 interaction: CellSpecificInteraction {
                     species: match n <= N_CELLS_BLUE {
                         true => Species::BlueCell,

@@ -11,9 +11,11 @@ authors:
   - given-names: Jonas
     family-names: Pleyer
     email: jonas.pleyer@fdm.uni-freiburg.de
+    orcid: "https://orcid.org/0009-0001-0613-7978"
 identifiers:
   - type: url
     value: 'https://cellular_raza.com'
+    description: Cellular Agent-based Modeling from a Clean Slate
 repository-code: 'https://github.com/jonaspleyer/cellular_raza'
 url: 'https://cellular_raza.com'
 license: GPL-2.0
