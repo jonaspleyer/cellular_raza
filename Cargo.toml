@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "cellular_raza",
     "cellular_raza-benchmarks",
     "cellular_raza-concepts",
     "cellular_raza-core",
@@ -12,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.6"
+version = "0.2.0"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 edition = "2021"
 license = "GPL-2.0"
