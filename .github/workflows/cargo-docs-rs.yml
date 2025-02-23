@@ -9,6 +9,10 @@ jobs:
       RUSTDOCFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: 'recursive'
+          lfs: 'false'
       - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/install@cargo-docs-rs
       - run: cargo docs-rs -p cellular_raza-concepts
