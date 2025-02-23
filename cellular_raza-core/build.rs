@@ -1,4 +1,4 @@
-#[cfg(feature = "cara")]
+#[cfg(all(feature = "cara", not(docsrs)))]
 fn main() {
     println!("cargo:rerun-if-changed=src/backend/cara");
     cc::Build::new()
@@ -27,5 +27,5 @@ fn main() {
         .compile("bar");
 }
 
-#[cfg(not(feature = "cara"))]
+#[cfg(not(all(feature = "cara", not(docsrs))))]
 fn main() {}
