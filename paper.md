@@ -49,7 +49,7 @@ General-purpose agent-based toolkits are often designed without specific applica
 [@Abar2017; @Datseris2022; @Wilensky:1999].
 They are often able to define agents bottom-up and can be a good choice if they allow for the
 desired cellular representation.
-However, they lack the explicit forethough to be applied in cellular systems
+However, they lack the explicit forethought to be applied in cellular systems
 and may not be able to describe every cellular aspect.
 
 ## Cellular Agent-Based Frameworks
