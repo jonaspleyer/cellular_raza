@@ -12,6 +12,7 @@ jobs:
     name: Create Docs
     runs-on: ubuntu-latest
     env:
+      RUSTFLAGS: --cfg docsrs
       RUSTDOCFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v4
