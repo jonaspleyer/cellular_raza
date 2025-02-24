@@ -363,6 +363,14 @@ pub trait SubDomainReactions<Pos, Re, Float> {
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::SubDomain;
 
-// TODO
+/// Derives aspects related to the simulation [Domain]
+///
+/// | Attribute | Trait | Implemented |
+/// | -- | --- |:---:|
+/// | `Base` | [Domain] | ✅ |
+/// | `DomainPartialDerive` | [Domain] | ✅ |
+/// | `DomainRngSeed` | [DomainRngSeed] | ✅ |
+/// | `DomainCreateSubDomains` | [DomainCreateSubDomains] | ✅ |
+/// | `SortCells` | [SortCells] | ✅ |
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::Domain;
