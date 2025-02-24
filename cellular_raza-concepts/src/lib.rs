@@ -1,5 +1,4 @@
 #![deny(missing_docs)]
-#![deny(clippy::missing_docs_in_private_items)]
 //! This crate encapsulates concepts which govern an agent-based model specified by
 //! [cellular_raza](https://docs.rs/cellular_raza).
 //! To learn more about the math and philosophy behind these concepts please refer to
