@@ -1,5 +1,4 @@
 #![deny(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
 //! This crate provides powerful macros to derive traits from the core crate.
 //! It also provides macros to automatically construct AuxStorage structs
 //! used to store intermediate data for running update steps and Communicator
