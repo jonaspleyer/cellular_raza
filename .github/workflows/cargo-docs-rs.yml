@@ -15,7 +15,7 @@ jobs:
           lfs: 'false'
       - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/install@cargo-docs-rs
-      - run: cargo docs-rs -p cellular_raza-concepts
-      - run: cargo docs-rs -p cellular_raza-building-blocks
-      - run: cargo docs-rs -p cellular_raza-core
-      - run: cargo docs-rs -p cellular_raza
+      - run: cd cellular_raza-concepts && cargo docs-rs
+      - run: cd cellular_raza-building-blocks && cargo docs-rs
+      - run: cd cellular_raza-core && cargo docs-rs
+      - run: cd cellular_raza && cargo docs-rs
