@@ -1,6 +1,6 @@
 fn main() {
     // Exit early without doing anything if we are building for docsrs
-    if !std::env::var("DOCS_RS").is_ok() {
+    if std::env::var("DOCS_RS").is_ok() {
         return;
     }
 
