@@ -1,5 +1,9 @@
-#[cfg(all(feature = "cara", not(docsrs)))]
 fn main() {
+    // Exit early without doing anything if we are building for docsrs
+    if std::env::var("DOCS_RS").is_ok() {
+        return
+    }
+
     println!("cargo:rerun-if-changed=src/backend/cara");
     cc::Build::new()
         // Switch to CUDA C++ library compilation using NVCC.
@@ -25,14 +29,4 @@ fn main() {
         .flag("-t0")
         .file("src/backend/cara/cara.cu")
         .compile("bar");
-}
-
-#[cfg(not(all(feature = "cara", not(docsrs))))]
-fn main() {
-    #[cfg(docsrs)]
-    {
-        println!("cargo:rustc-cfg=feature=\"cudarc/cuda-12080\"");
-        println!("cargo:rustc-cfg=feature=\"cudarc/f16\"");
-        println!("cargo:rustc-cfg=feature=\"cudarc/cudnn\"");
-    }
 }
