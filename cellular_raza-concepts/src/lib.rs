@@ -8,7 +8,7 @@ mod cell;
 mod cycle;
 mod domain;
 mod reactions;
-/// Contains traits and types which specify cellular reactions specific to the [cpu_os_threads]
+/// Contains traits and types which specify cellular reactions specific to the `cpu_os_threads`
 /// backend.
 pub mod reactions_old;
 
