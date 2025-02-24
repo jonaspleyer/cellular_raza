@@ -28,4 +28,11 @@ fn main() {
 }
 
 #[cfg(not(all(feature = "cara", not(docsrs))))]
-fn main() {}
+fn main() {
+    #[cfg(docsrs)]
+    {
+        println!("cargo:rustc-cfg=feature=\"cudarc/cuda-12080\"");
+        println!("cargo:rustc-cfg=feature=\"cudarc/f16\"");
+        println!("cargo:rustc-cfg=feature=\"cudarc/cudnn\"");
+    }
+}
