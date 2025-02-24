@@ -22,5 +22,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/install@cargo-docs-rs
       - run: |
-          cargo package -p ${{ inputs.crate }} --target-dir target/package/${{ inputs.crate }}
-          cd target/package/${{ inputs.crate }} && cargo docs-rs
+          cargo package -p --all-features ${{ inputs.crate }}
+          crate_path=target/package/${{ inputs.crate }}
+          for c in $( ls $crate_path-*/ ); do
+            echo Generating Documentation for $c
+            cd target/package/$c && cargo docs-rs; cd ../../../
+          done
