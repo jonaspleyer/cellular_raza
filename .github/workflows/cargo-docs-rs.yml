@@ -2,20 +2,27 @@ name: test docs
 on: [push, pull_request]
 
 jobs:
-  doc:
-    name: Documentation
-    runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: -Dwarnings
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          submodules: 'recursive'
-          lfs: 'false'
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: dtolnay/install@cargo-docs-rs
-      - run: cd cellular_raza-concepts && cargo docs-rs
-      - run: cd cellular_raza-building-blocks && cargo docs-rs
-      - run: cd cellular_raza-core && cargo docs-rs
-      - run: cd cellular_raza && cargo docs-rs
+  doctest-cellular_raza-concepts-derive:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza-concepts-derive
+  doctest-cellular_raza-concepts:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza-concepts
+  doctest-cellular_raza-core-proc-macro:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza-core-proc-macro
+  doctest-cellular_raza-core:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza-core
+  doctest-cellular_raza-building-blocks:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza-building_blocks
+  doctest-cellular_raza:
+    uses: ./.github/workflows/cargo-docs-rs-reuse.yml
+    with:
+      crate: cellular_raza

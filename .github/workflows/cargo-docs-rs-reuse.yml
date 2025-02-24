@@ -1,0 +1,28 @@
+name: cargo-docs-rs
+
+on:
+  workflow_call:
+    inputs:
+      crate:
+        required: true
+        type: string
+
+jobs:
+  doc:
+    name: Create Docs
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: 'recursive'
+          lfs: 'false'
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/install@cargo-docs-rs
+      - run: |
+          cargo package -p ${{ inputs.crate }} --target-dir target/package/${{ inputs.crate }}
+          cd target/package/${{ inputs.crate }}
+          cargo docs-rs
+          cd ../../
