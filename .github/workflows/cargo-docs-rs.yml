@@ -21,7 +21,7 @@ jobs:
   doctest-cellular_raza-building-blocks:
     uses: ./.github/workflows/cargo-docs-rs-reuse.yml
     with:
-      crate: cellular_raza-building_blocks
+      crate: cellular_raza-building-blocks
   doctest-cellular_raza:
     uses: ./.github/workflows/cargo-docs-rs-reuse.yml
     with:
