@@ -23,6 +23,4 @@ jobs:
       - uses: dtolnay/install@cargo-docs-rs
       - run: |
           cargo package -p ${{ inputs.crate }} --target-dir target/package/${{ inputs.crate }}
-          cd target/package/${{ inputs.crate }}
-          cargo docs-rs
-          cd ../../
+          cd target/package/${{ inputs.crate }} && cargo docs-rs
