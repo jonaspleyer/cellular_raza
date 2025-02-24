@@ -68,7 +68,7 @@ where
 /// order to obtain better numerical stability.
 ///
 /// # References
-/// [1]
+/// \[1\]
 /// “On the determination of molecular fields.—I. From the variation of the viscosity of a gas with
 /// temperature,”
 /// Proceedings of the Royal Society of London.
@@ -191,7 +191,7 @@ macro_rules! implement_morse_potential(
         // #[doc = include_str!("plot_morse_potential.html")]
         ///
         /// # References
-        /// [1]
+        /// \[1\]
         /// P. M. Morse,
         /// “Diatomic Molecules According to the Wave Mechanics. II. Vibrational Levels,”
         /// Physical Review, vol. 34, no. 1. American Physical Society (APS),
@@ -756,7 +756,7 @@ where
                     &average_vel_own,
                     &point_ext,
                     &average_vel_ext,
-                    &inf2,
+                    inf2,
                 )?;
                 let dir = (middle_ext - middle_own).normalize();
                 let calc_own = -dir * calc_own.norm();
@@ -778,7 +778,7 @@ where
                         &average_vel_own,
                         &point_ext,
                         &average_vel_ext,
-                        &inf1,
+                        inf1,
                     )?;
                     let mut force_ext = total_force_ext.row_mut(n_row_ext);
                     force_ext += calc_ext.transpose();
@@ -821,7 +821,7 @@ mod test {
 
         // Check if the distance and point are matching
         for (q, r, d) in test_points.iter() {
-            let (dist, nearest_point, _) = super::nearest_point_from_point_to_line(&q, &(p1, p2));
+            let (dist, nearest_point, _) = super::nearest_point_from_point_to_line(q, &(p1, p2));
             assert_eq!(dist, *d);
             assert_eq!(nearest_point, *r);
         }
@@ -868,14 +868,13 @@ mod test {
         // Check the points inside the polygon
         for p in points_inside.iter() {
             let n_intersections: usize = polygon
-                .clone()
                 .into_iter()
                 .circular_tuple_windows::<(_, _)>()
                 .map(|line| {
                     super::ray_intersects_line_segment(&(*p, point_outside_polygon), &line) as usize
                 })
                 .sum();
-            assert_eq!(n_intersections % 2 == 1, true);
+            assert!(n_intersections % 2 == 1);
         }
 
         // Define points which should be outside the polygon
@@ -891,7 +890,6 @@ mod test {
         // Check them
         for q in points_outside.iter() {
             let n_intersections: usize = polygon
-                .clone()
                 .into_iter()
                 .circular_tuple_windows()
                 .map(|line| {
@@ -899,7 +897,7 @@ mod test {
                 })
                 .sum();
 
-            assert_eq!(n_intersections % 2 == 0, true);
+            assert!(n_intersections % 2 == 0);
         }
 
         // These are sample values taken from a random simulation
@@ -919,7 +917,6 @@ mod test {
 
         for q in points_inside_2.iter() {
             let n_intersections: usize = new_polygon
-                .clone()
                 .into_iter()
                 .circular_tuple_windows()
                 .map(|line| {
@@ -928,7 +925,7 @@ mod test {
                 })
                 .sum();
 
-            assert_eq!(n_intersections % 2 == 0, false);
+            assert!(n_intersections % 2 == 0);
         }
     }
 }
