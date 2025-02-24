@@ -925,7 +925,7 @@ mod test {
                 })
                 .sum();
 
-            assert!(n_intersections % 2 == 0);
+            assert!(n_intersections % 2 != 0);
         }
     }
 }
