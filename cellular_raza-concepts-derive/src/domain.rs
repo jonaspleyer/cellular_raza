@@ -26,13 +26,11 @@ impl From<DomainParser> for DomainImplementer {
         let mut create_subdomains = None;
         let mut partial_derive = false;
 
-        value
-            .attrs
-            .into_iter()
-            .for_each(|domain_property| match domain_property {
-                DomainProperty::DomainPartialDerive => partial_derive = true,
-                _ => (),
-            });
+        value.attrs.into_iter().for_each(|domain_property| {
+            if let DomainProperty::DomainPartialDerive = domain_property {
+                partial_derive = true;
+            }
+        });
 
         value
             .elements

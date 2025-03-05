@@ -14,11 +14,11 @@ authors:
     orcid: "https://orcid.org/0009-0001-0613-7978"
 identifiers:
   - type: url
-    value: 'https://cellular_raza.com'
+    value: 'https://cellular-raza.com'
     description: Cellular Agent-based Modeling from a Clean Slate
 repository-code: 'https://github.com/jonaspleyer/cellular_raza'
-url: 'https://cellular_raza.com'
+url: 'https://cellular-raza.com'
 license: GPL-2.0
 commit: 0.0.5
-version: 0.1.6
-date-released: '2024-11-14'
+version: 0.2.1
+date-released: '2025-02-23'

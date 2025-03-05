@@ -634,20 +634,16 @@ impl<const D: usize> VertexMechanics2D<D> {
         // Calculate the radius from cell area
         let radius = (cell_area / D as f64 / angle_fraction.sin() / angle_fraction.cos()).sqrt();
         // TODO this needs to be calculated again
-        let points = nalgebra::SMatrix::<f64, D, 2>::from_row_iterator(
-            (0..D)
-                .map(|n| {
-                    let angle = rotation_angle
-                        + 2.0 * angle_fraction * n as f64 * (1.0 - r * rng.clone()());
-                    let radius_modified = radius * (1.0 + 0.5 * r * (1.0 - rng.clone()()));
-                    [
-                        middle.x + radius_modified * angle.cos(),
-                        middle.y + radius_modified * angle.sin(),
-                    ]
-                    .into_iter()
-                })
-                .flatten(),
-        );
+        let points = nalgebra::SMatrix::<f64, D, 2>::from_row_iterator((0..D).flat_map(|n| {
+            let angle =
+                rotation_angle + 2.0 * angle_fraction * n as f64 * (1.0 - r * rng.clone()());
+            let radius_modified = radius * (1.0 + 0.5 * r * (1.0 - rng.clone()()));
+            [
+                middle.x + radius_modified * angle.cos(),
+                middle.y + radius_modified * angle.sin(),
+            ]
+            .into_iter()
+        }));
         // Randomize the boundary lengths
         let cell_boundary_lengths = SVector::<f64, D>::from_iterator(
             points
@@ -703,10 +699,7 @@ impl<const D: usize> VertexMechanics2D<D> {
         self.points
             .row_iter()
             .tuple_windows::<(_, _)>()
-            .map(|(p1, p2)| {
-                let dist = (p2 - p1).norm();
-                dist
-            })
+            .map(|(p1, p2)| (p2 - p1).norm())
             .sum::<f64>()
     }
 
@@ -720,7 +713,7 @@ impl<const D: usize> VertexMechanics2D<D> {
     pub fn set_cell_area_and_boundary_length(&mut self, cell_area: f64) {
         // Calculate the relative difference to current area
         match self.cell_area {
-            a if a == 0.0 => {
+            0.0 => {
                 let new_interaction_parameters = Self::new(
                     self.points
                         .row_iter()
@@ -758,7 +751,7 @@ impl VertexMechanics2D<6> {
     /// the top border has a flat top.
     ///
     /// The produced pattern will like similar to this.
-    /// ```ignore
+    /// ```text
     /// __________________________________
     /// |   ___       ___          ___   |
     /// |  /   \     /   \        /   \  |
@@ -791,7 +784,7 @@ impl VertexMechanics2D<6> {
         let n_max_x = (side_x - 2.0 * radius_outer).div_euclid(3.0 / 2.0 * radius_outer) as usize;
         let n_max_y = side_y.div_euclid(2.0 * radius_inner);
         let total_width_x = 2.0 * radius_outer + (n_max_x - 1) as f64 * 3.0 / 2.0 * radius_outer;
-        let total_width_y = n_max_y as f64 * 2.0 * radius_inner;
+        let total_width_y = n_max_y * 2.0 * radius_inner;
 
         let pad_x = (side_x - total_width_x) / 2.0;
         let pad_y = (side_y - total_width_y) / 2.0;
@@ -831,57 +824,6 @@ impl VertexMechanics2D<6> {
     }
 }
 
-#[cfg(test)]
-mod test_vertex_mechanics_6n {
-    #[test]
-    fn test_fill_too_small() {
-        use crate::VertexMechanics2D;
-        use nalgebra::Vector2;
-        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
-            200.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            [Vector2::from([1.0, 1.0]), Vector2::from([2.0, 2.0])],
-        );
-        assert_eq!(models.len(), 0);
-    }
-
-    #[test]
-    fn test_fill_multiple() {
-        use crate::VertexMechanics2D;
-        use cellular_raza_concepts::Position;
-        use nalgebra::Vector2;
-        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
-            36.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            [Vector2::from([0.0; 2]), Vector2::from([100.0; 2])],
-        );
-        use itertools::Itertools;
-        for (m1, m2) in models.into_iter().circular_tuple_windows() {
-            if m1.pos().row_mean().transpose().x == m2.pos().row_mean().transpose().x {
-                let max = m1
-                    .pos()
-                    .row_iter()
-                    .map(|row| row.transpose().y)
-                    .max_by(|x0, x1| x0.partial_cmp(x1).unwrap())
-                    .unwrap();
-                let min = m2
-                    .pos()
-                    .row_iter()
-                    .map(|row| row.transpose().y)
-                    .min_by(|x0, x1| x0.partial_cmp(x1).unwrap())
-                    .unwrap();
-                assert!((max - min).abs() < 1e-7);
-            }
-        }
-    }
-}
-
 impl VertexMechanics2D<4> {
     /// Fill a specified rectangle with cells of 4 vertices
     pub fn fill_rectangle(
@@ -910,7 +852,7 @@ impl VertexMechanics2D<4> {
                     - number_of_cells_y as f64 * cell_side_length_padded);
 
         use itertools::iproduct;
-        let filled_rectangle = iproduct!(0..number_of_cells_x, 0..number_of_cells_y)
+        iproduct!(0..number_of_cells_x, 0..number_of_cells_y)
             .map(|(i, j)| {
                 let corner = (
                     start_x + (i as f64) * cell_side_length_padded,
@@ -942,9 +884,7 @@ impl VertexMechanics2D<4> {
                     diffusion_constant,
                 }
             })
-            .collect::<Vec<_>>();
-
-        filled_rectangle
+            .collect::<Vec<_>>()
     }
 }
 
@@ -997,7 +937,7 @@ impl<const D: usize>
                 .map(|(p1, p2)| p1.transpose().perp(&p2.transpose()))
                 .sum::<f64>();
 
-        let mut internal_force = self.points.clone() * 0.0;
+        let mut internal_force = self.points * 0.0;
         for (index, (point_1, point_2, point_3)) in self
             .points
             .row_iter()
@@ -1027,8 +967,8 @@ impl<const D: usize>
             // Combine forces
             force_2 += force1 + force2 + force3;
         }
-        let dx = self.velocity.clone();
-        let dv = force + internal_force - self.damping_constant * self.velocity.clone();
+        let dx = self.velocity;
+        let dv = force + internal_force - self.damping_constant * self.velocity;
         Ok((dx, dv))
     }
 
@@ -1056,11 +996,11 @@ impl<const D: usize> cellular_raza_concepts::Position<nalgebra::SMatrix<f64, D, 
     for VertexMechanics2D<D>
 {
     fn pos(&self) -> nalgebra::SMatrix<f64, D, 2> {
-        self.points.clone()
+        self.points
     }
 
     fn set_pos(&mut self, pos: &nalgebra::SMatrix<f64, D, 2>) {
-        self.points = pos.clone();
+        self.points = *pos;
     }
 }
 
@@ -1068,10 +1008,61 @@ impl<const D: usize> cellular_raza_concepts::Velocity<nalgebra::SMatrix<f64, D, 
     for VertexMechanics2D<D>
 {
     fn velocity(&self) -> nalgebra::SMatrix<f64, D, 2> {
-        self.velocity.clone()
+        self.velocity
     }
 
     fn set_velocity(&mut self, velocity: &nalgebra::SMatrix<f64, D, 2>) {
-        self.velocity = velocity.clone();
+        self.velocity = *velocity;
+    }
+}
+
+#[cfg(test)]
+mod test_vertex_mechanics_6n {
+    #[test]
+    fn test_fill_too_small() {
+        use crate::VertexMechanics2D;
+        use nalgebra::Vector2;
+        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
+            200.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            [Vector2::from([1.0, 1.0]), Vector2::from([2.0, 2.0])],
+        );
+        assert_eq!(models.len(), 0);
+    }
+
+    #[test]
+    fn test_fill_multiple() {
+        use crate::VertexMechanics2D;
+        use cellular_raza_concepts::Position;
+        use nalgebra::Vector2;
+        let models = VertexMechanics2D::<6>::fill_rectangle_flat_top(
+            36.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            [Vector2::from([0.0; 2]), Vector2::from([100.0; 2])],
+        );
+        use itertools::Itertools;
+        for (m1, m2) in models.into_iter().circular_tuple_windows() {
+            if m1.pos().row_mean().transpose().x == m2.pos().row_mean().transpose().x {
+                let max = m1
+                    .pos()
+                    .row_iter()
+                    .map(|row| row.transpose().y)
+                    .max_by(|x0, x1| x0.partial_cmp(x1).unwrap())
+                    .unwrap();
+                let min = m2
+                    .pos()
+                    .row_iter()
+                    .map(|row| row.transpose().y)
+                    .min_by(|x0, x1| x0.partial_cmp(x1).unwrap())
+                    .unwrap();
+                assert!((max - min).abs() < 1e-7);
+            }
+        }
     }
 }

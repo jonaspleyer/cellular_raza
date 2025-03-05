@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           submodules: 'recursive'

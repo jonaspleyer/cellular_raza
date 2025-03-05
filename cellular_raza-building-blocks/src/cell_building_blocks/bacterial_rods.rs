@@ -263,10 +263,10 @@ where
                 );
 
                 let (f_own, f_ext) = self.0.calculate_force_between(
-                    &p1.transpose().into(),
-                    &own_vel.row(i).transpose().into(),
-                    &nearest_point.into(),
-                    &ext_vel.row(j).transpose().into(),
+                    &p1.transpose(),
+                    &own_vel.row(i).transpose(),
+                    &nearest_point,
+                    &ext_vel.row(j).transpose(),
                     ext_inf,
                 )?;
 

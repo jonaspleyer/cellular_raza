@@ -315,10 +315,11 @@ pub trait SubDomainReactions<Pos, Re, Float> {
 
     /// Obtain extracellular concentrations at given point.
     fn get_extracellular_at_pos(&self, pos: &Pos) -> Result<Re, crate::CalcError>;
-    /// Obtains the [NeighborValue] which should be sent to the neighbor which has exposed the given
-    /// [BorderInfo].
+    /// Obtains the [SubDomainReactions::NeighborValue] which should be sent to the neighbor which
+    /// has exposed the given [SubDomainReactions::BorderInfo].
     fn get_neighbor_value(&self, border_info: Self::BorderInfo) -> Self::NeighborValue;
-    /// Obtains the [BorderInfo] used to retrieve the [NeighborValue].
+    /// Obtains the [SubDomainReactions::BorderInfo] used to retrieve the
+    /// [SubDomainReactions::NeighborValue].
     fn get_border_info(&self) -> Self::BorderInfo;
 }
 
@@ -362,6 +363,14 @@ pub trait SubDomainReactions<Pos, Re, Float> {
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::SubDomain;
 
-// TODO
+/// Derives aspects related to the simulation [Domain]
+///
+/// | Attribute | Trait | Implemented |
+/// | -- | --- |:---:|
+/// | `Base` | [Domain] | ✅ |
+/// | `DomainPartialDerive` | [Domain] | ✅ |
+/// | `DomainRngSeed` | [DomainRngSeed] | ✅ |
+/// | `DomainCreateSubDomains` | [DomainCreateSubDomains] | ✅ |
+/// | `SortCells` | [SortCells] | ✅ |
 #[doc(inline)]
 pub use cellular_raza_concepts_derive::Domain;

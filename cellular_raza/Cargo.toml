@@ -11,7 +11,12 @@ keywords = ["cell", "cellular", "simulation"]
 categories = ["science", "mathematics", "simulation"]
 autoexamples = false
 homepage.workspace =  true
-include = ["logos/"]
+include = [
+    "logos/",
+    "src/",
+    "tests/",
+    ".docs-header.html"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
@@ -20,22 +25,22 @@ all-features = true
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
-version = "0.1.6"
+version = "0.2.1"
 
 [dependencies.cellular_raza-building-blocks]
 path = "../cellular_raza-building-blocks"
-version = "0.1.6"
+version = "0.2.1"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.1.6"
+version = "0.2.1"
 
 [dev-dependencies]
 num.workspace = true
 rand_chacha.workspace = true
 serde.workspace = true
 rand.workspace = true
-tempdir.workspace = true
+tempfile.workspace = true
 nalgebra.workspace = true
 ode_integrate = "0.0.2"
 
