@@ -34,7 +34,7 @@ numerical backend to a python package.
 
 # Statement of Need
 
-In contrast to classical particle simulations, ABMs treat every cell individually.
+In contrast to classical particle simulations, Agent-based models (ABMs) treat every cell individually.
 This implies that parameters can vary between agents and that every cell should be traceable
 throughout time and space.
 In addition, they can describe growth, proliferation, death and many other cellular processes and
@@ -46,13 +46,13 @@ also be used to introduce spatial effects into existing population-based models.
 
 # State of Field
 
-Agent-based models (ABMs) have become popular in cellular biology
+Agent-based models have become popular in cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
 While these tools have proven to be effective for targeted research questions,
 they often lack the ability to be applied more generically.\
 <!-- Nevertheless, core functionalities such as numerical solvers, storage solutions or domain
 decomposition methods could be shared between models.-->
-General-purpose agent-based toolkits on the other hand are designed without specific applications
+General-purpose ABM toolkits on the other hand are designed without specific applications
 in mind [@Abar2017; @Datseris2022; @Wilensky:1999].
 They are often able to define agents bottom-up and can be a good choice if they allow for the
 desired cellular representation.
