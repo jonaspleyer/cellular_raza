@@ -396,6 +396,11 @@ impl CellIdentifier {
         hasher.finish()
     }
 
+    ///  Performs the `<` operation
+    pub fn __lt__(&self, other: &Self) -> bool {
+        self.lt(other)
+    }
+
     /// Implementes the `__getitem__` method. Since the [CellIdentifier] is built like a list this
     /// only works for the entires 0 and 1 and will yield an error otherwise
     pub fn __getitem__<'py>(
