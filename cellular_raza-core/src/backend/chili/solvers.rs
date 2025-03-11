@@ -512,7 +512,7 @@ where
 mod test_solvers_reactions {
     use rand::SeedableRng;
 
-    use crate::backend::chili::{local_reactions_use_increment, UpdateReactions};
+    use crate::backend::chili::{UpdateReactions, local_reactions_use_increment};
 
     use super::*;
 

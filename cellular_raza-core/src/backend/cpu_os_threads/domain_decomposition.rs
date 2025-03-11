@@ -126,16 +126,16 @@ pub struct VoxelBox<
 }
 
 impl<
-        Ind,
-        Vox,
-        Cel,
-        Pos,
-        Vel,
-        For,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-    > Id
+    Ind,
+    Vox,
+    Cel,
+    Pos,
+    Vel,
+    For,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+> Id
     for VoxelBox<
         Ind,
         Pos,
@@ -195,16 +195,16 @@ where
 }
 
 impl<
-        Ind,
-        Vox,
-        Cel,
-        Pos,
-        Vel,
-        For,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-    >
+    Ind,
+    Vox,
+    Cel,
+    Pos,
+    Vel,
+    For,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+>
     VoxelBox<
         Ind,
         Pos,
@@ -260,16 +260,16 @@ where
 }
 
 impl<
-        Ind,
-        Vox,
-        Cel,
-        Pos,
-        Vel,
-        For,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-    >
+    Ind,
+    Vox,
+    Cel,
+    Pos,
+    Vel,
+    For,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+>
     VoxelBox<
         Ind,
         Pos,
@@ -579,18 +579,18 @@ pub struct MultiVoxelContainer<
 }
 
 impl<
-        Ind,
-        Pos,
-        Vel,
-        For,
-        Inf,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-        Vox,
-        Dom,
-        Cel,
-    >
+    Ind,
+    Pos,
+    Vel,
+    For,
+    Inf,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    Vox,
+    Dom,
+    Cel,
+>
     MultiVoxelContainer<
         Ind,
         Pos,
@@ -633,13 +633,13 @@ where
         Cel: Agent<Pos, Vel, For, Inf>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            >,
     {
         self.voxels
             .iter_mut()
@@ -777,13 +777,13 @@ where
     ) -> Result<(), SimulationError>
     where
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            >,
     {
         let indices_iterator = self
             .voxels
@@ -822,13 +822,13 @@ where
     ) -> Result<(), SimulationError>
     where
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            >,
     {
         // Receive IndexBoundaryInformation and send back BoundaryConcentrationInformation
         for index_boundary_information in self.receiver_index.try_iter() {
@@ -866,13 +866,13 @@ where
         ConcVecExtracellular: cellular_raza_concepts::domain_old::Concentration,
         ConcTotalExtracellular: cellular_raza_concepts::domain_old::Concentration,
         Vox: ExtracellularMechanics<
-            Ind,
-            Pos,
-            ConcVecExtracellular,
-            ConcGradientExtracellular,
-            ConcTotalExtracellular,
-            ConcBoundaryExtracellular,
-        >,
+                Ind,
+                Pos,
+                ConcVecExtracellular,
+                ConcGradientExtracellular,
+                ConcTotalExtracellular,
+                ConcBoundaryExtracellular,
+            >,
     {
         // Update boundary conditions with new
         for concentration_boundary_information in self.receiver_concentrations.try_iter() {
@@ -1013,13 +1013,14 @@ where
     {
         // Receive PositionInformation and send back ForceInformation
         for pos_info in self.receiver_pos.try_iter() {
-            let vox =
-                self.voxels
-                    .get_mut(&pos_info.index_receiver)
-                    .ok_or(IndexError(format!(
+            let vox = self
+                .voxels
+                .get_mut(&pos_info.index_receiver)
+                .ok_or(IndexError(format!(
                     "EngineError: Voxel with index {:?} of PosInformation can not be found in this\
                     thread.",
-                    pos_info.index_receiver)))?;
+                    pos_info.index_receiver
+                )))?;
             // Calculate force from cells in voxel
             let force = vox.calculate_force_between_cells_external(
                 &pos_info.pos,

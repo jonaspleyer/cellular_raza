@@ -17,6 +17,8 @@ impl<Cel, Float> Cycle<Cel, Float> for NoCycle {
     }
 
     fn divide(_: &mut rand_chacha::ChaCha8Rng, _: &mut Cel) -> Result<Cel, DivisionError> {
-        panic!("This is the divide() function of the NoCycle struct which should never be called. This is a backend error. Please report!")
+        panic!(
+            "This is the divide() function of the NoCycle struct which should never be called. This is a backend error. Please report!"
+        )
     }
 }

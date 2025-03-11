@@ -4,7 +4,7 @@ use cellular_raza::concepts::{
 };
 
 use cellular_raza_building_blocks::CartesianCuboid;
-use cellular_raza_core::backend::chili::{run_simulation, Settings};
+use cellular_raza_core::backend::chili::{Settings, run_simulation};
 use cellular_raza_core::storage::{StorageBuilder, StorageInterfaceLoad, StorageOption};
 use cellular_raza_core::time::FixedStepsize;
 use nalgebra::Vector2;

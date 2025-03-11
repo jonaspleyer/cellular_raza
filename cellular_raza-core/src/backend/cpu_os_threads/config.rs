@@ -1,8 +1,8 @@
 use super::{Agent, ForceBound, PositionBound, VelocityBound};
 use crate::backend::cpu_os_threads::domain_decomposition::AuxiliaryCellPropertyStorage;
 use crate::storage::StorageManager;
-use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::CellAgentBox;
+use cellular_raza_concepts::domain_old::*;
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -15,7 +15,7 @@ use cellular_raza_concepts::CellularIdentifier;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use hurdles::Barrier;
 
 use serde::{Deserialize, Serialize};
@@ -192,20 +192,20 @@ where
 }
 
 impl<
-        Pos,
-        For,
-        Inf,
-        Vel,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-        Cel,
-        Ind,
-        Vox,
-        Dom,
-        Cont,
-        Obs,
-    >
+    Pos,
+    For,
+    Inf,
+    Vel,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    Cel,
+    Ind,
+    Vox,
+    Dom,
+    Cont,
+    Obs,
+>
     SimulationSupervisor<
         MultiVoxelContainer<
             Ind,

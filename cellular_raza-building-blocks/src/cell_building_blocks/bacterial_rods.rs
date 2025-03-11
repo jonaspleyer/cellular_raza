@@ -2,7 +2,7 @@ use crate::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza_concepts::*;
 
 use num::FromPrimitive;
-use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, ser::SerializeStruct};
 
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
 
