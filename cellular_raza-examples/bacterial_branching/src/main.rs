@@ -19,24 +19,22 @@ use subdomain::*;
 #[group()]
 #[clap(next_help_heading = Some("Bacteria"))]
 struct BacterialParameters {
-    /// Number of cells to put into simulation in the Beginning
     #[arg(short, long, default_value_t = 3)]
     n_bacteria_initial: u32,
-
-    /// Mechanical parameters
     #[arg(short, long, default_value_t = 6.0)]
     radius: f32,
+    /// Multiple of the radius at which the cell will divide
+    #[arg(short, long, default_value_t = 2.0)]
+    division_threshold: f32,
+    #[arg(long, default_value_t = 0.1)]
+    potential_stiffness: f32,
     #[arg(long, default_value_t = 0.2)]
-    exponent: f32,
-    #[arg(long, default_value_t = 4.0)]
     potential_strength: f32,
     #[arg(long, default_value_t = 1.0)]
     damping_constant: f32,
-
-    /// Parameters for cell cycle
-    #[arg(short, long, default_value_t = 0.8)]
+    #[arg(short, long, default_value_t = 1.0)]
     uptake_rate: f32,
-    #[arg(short, long, default_value_t = 3.0)]
+    #[arg(short, long, default_value_t = 0.4)]
     growth_rate: f32,
 }
 
@@ -44,16 +42,26 @@ struct BacterialParameters {
 #[group()]
 #[clap(next_help_heading = Some("Domain"))]
 struct DomainParameters {
-    /// Parameters for domain
-    #[arg(short, long, default_value_t = 300.0)]
+    /// Overall size of the domain
+    #[arg(short, long, default_value_t = 3000.0)]
     domain_size: f32,
-    /// Discretization used to model the diffusion process
+    #[arg(
+        long,
+        default_value_t = 30.0,
+        help = "\
+        Size of one voxel containing individual cells.\n\
+        This value should be chosen `>=3*RADIUS`.\
+    "
+    )]
+    voxel_size: f32,
+    /// Size of the square for initlal placement of bacteria
+    #[arg(long, default_value_t = 100.0)]
+    domain_starting_size: f32,
+    /// Discretization of the diffusion process
     #[arg(long, default_value_t = 20.0)]
     reactions_dx: f32,
-    /// Parameters for Voxel Reaction+Diffusion
-    #[arg(long, default_value_t = 25.0)]
+    #[arg(long, default_value_t = 20.0)]
     diffusion_constant: f32,
-    /// Initial concentration of food in domain
     #[arg(long, default_value_t = 10.0)]
     initial_concentration: f32,
 }
@@ -62,7 +70,6 @@ struct DomainParameters {
 #[group()]
 #[clap(next_help_heading = Some("Time"))]
 struct TimeParameters {
-    /// Time parameters
     #[arg(long, default_value_t = 0.05)]
     dt: f32,
     #[arg(long, default_value_t = 100.0)]
@@ -100,7 +107,8 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
             BacterialParameters {
                 n_bacteria_initial,
                 radius: cell_radius,
-                exponent,
+                division_threshold,
+                potential_stiffness,
                 potential_strength,
                 damping_constant,
                 uptake_rate,
@@ -109,6 +117,8 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         domain:
             DomainParameters {
                 domain_size,
+                voxel_size: domain_voxel_size,
+                domain_starting_size,
                 reactions_dx,
                 diffusion_constant,
                 initial_concentration,
@@ -122,18 +132,16 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         threads: n_threads,
     } = parameters;
 
-    let starting_domain_x_low = domain_size / 2.0 - 50.0;
-    let starting_domain_x_high = domain_size / 2.0 + 50.0;
-    let starting_domain_y_low = domain_size / 2.0 - 50.0;
-    let starting_domain_y_high = domain_size / 2.0 + 50.0;
+    let ds = domain_size / 2.0;
+    let dx = domain_starting_size / 2.0;
 
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
     let cells = (0..n_bacteria_initial)
         .map(|_| {
-            let x = rng.gen_range(starting_domain_x_low..starting_domain_x_high);
-            let y = rng.gen_range(starting_domain_y_low..starting_domain_y_high);
+            let x = rng.gen_range(ds - dx..ds + dx);
+            let y = rng.gen_range(ds - dx..ds + dx);
 
             let pos = Vector2::from([x, y]);
             MyAgent {
@@ -143,13 +151,14 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
                     damping_constant,
                     mass: 1.0,
                 },
-                interaction: MyInteraction {
-                    cell_radius,
-                    exponent,
-                    potential_strength,
+                interaction: MorsePotentialF32 {
+                    radius: cell_radius,
+                    potential_stiffness,
+                    cutoff: division_threshold * cell_radius,
+                    strength: potential_strength,
                 },
                 uptake_rate,
-                division_radius: cell_radius * 2.0,
+                division_radius: division_threshold * cell_radius,
                 growth_rate,
             }
         })
