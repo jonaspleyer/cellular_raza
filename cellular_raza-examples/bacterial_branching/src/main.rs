@@ -13,7 +13,7 @@ mod bacteria_properties;
 mod subdomain;
 
 use bacteria_properties::*;
-use subdomain::MyDomain;
+use subdomain::*;
 
 #[derive(Clone, Args, Debug)]
 #[group()]
@@ -160,13 +160,13 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         println!("Warning: The stability condition dt <= 0.5 dx^2/D for the integration method is not satisfied. Results can be inaccurate.");
     }
 
-    let domain = MyDomain {
+    let domain = CartesianDiffusion2D {
         domain: CartesianCuboid::from_boundaries_and_interaction_range(
             [0.0; 2],
             [domain_size, domain_size],
-            domain_size / 10.0,
+            domain_voxel_size,
         )?,
-        reactions_dx,
+        reactions_dx: [reactions_dx; 2].into(),
         diffusion_constant,
         initial_value: ReactionVector::from([initial_concentration]),
     };
