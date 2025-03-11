@@ -64,11 +64,11 @@ impl Cycle<MyAgent, f32> for MyAgent {
 // 0         CELL RADIUS
 impl Intracellular<ReactionVector> for MyAgent {
     fn set_intracellular(&mut self, intracellular: ReactionVector) {
-        self.interaction.cell_radius = intracellular[0];
+        self.interaction.radius = (intracellular[0] / PI).powf(0.5);
     }
 
     fn get_intracellular(&self) -> ReactionVector {
-        [self.interaction.cell_radius].into()
+        [PI * self.interaction.radius.powf(2.0)].into()
     }
 }
 
