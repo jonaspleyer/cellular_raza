@@ -79,6 +79,7 @@ def load_subdomains_at_iteration(
         "reactions_max",
         "reactions_dx",
         "extracellular.data",
+        "ownership_array.data",
     ]:
         df[key] = df[key].apply(lambda x: np.array(x, dtype=float))
     return df
@@ -116,10 +117,10 @@ def plot_iteration(
 
     # Plot cells
     points = np.array([p for p in dfc["cell.mechanics.pos"]])
-    radii = np.array([r for r in dfc["cell.interaction.cell_radius"]])
+    radii = np.array([r for r in dfc["cell.interaction.radius"]])
     s = np.clip(
         (
-            np.array([r for r in dfc["cell.interaction.cell_radius"]])
+            np.array([r for r in dfc["cell.interaction.radius"]])
             / np.array([r for r in dfc["cell.division_radius"]])
             - intra_bounds[0]
         )
