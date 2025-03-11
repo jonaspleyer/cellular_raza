@@ -443,11 +443,20 @@ where
                     let cell_index = self.subdomain.get_voxel_index_of(&c);
                     match cell_index {
                         Ok(index) => {
-                            let plain_index = self.voxel_index_to_plain_index[&index];
-                            &plain_index != voxel_index
+                            let plain_index = self.voxel_index_to_plain_index.get(&index);
+                            match plain_index {
+                                Some(i) => i != voxel_index,
+                                None => {
+                                    errors.push(SimulationError::from(IndexError(format!(
+                                        "Could not find matching plain index for given voxel index"
+                                    ))));
+                                    false
+                                }
+                            }
+                            // &plain_index != voxel_index
                         }
                         Err(e) => {
-                            errors.push(e);
+                            errors.push(e.into());
                             false
                         }
                     }
