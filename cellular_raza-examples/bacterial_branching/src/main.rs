@@ -166,7 +166,21 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
 
     let cond = dt - 0.5 * reactions_dx / diffusion_constant;
     if cond >= 0.0 {
-        println!("Warning: The stability condition dt <= 0.5 dx^2/D for the integration method is not satisfied. Results can be inaccurate.");
+        println!(
+            "❗Warning: The stability condition \
+            dt <= 0.5 dx^2/D for the integration \
+            method is not satisfied. This can \
+            lead to solving errors and inaccurate \
+            results."
+        );
+    }
+
+    if domain_voxel_size < division_threshold * cell_radius {
+        println!(
+            "❗Warning: The domain_voxel_size has been chosen \
+            smaller than the length of the interaction. This \
+            will probably yield incorrect results."
+        );
     }
 
     let domain = CartesianDiffusion2D {
