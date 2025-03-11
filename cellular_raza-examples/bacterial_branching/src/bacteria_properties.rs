@@ -50,7 +50,7 @@ impl Cycle<MyAgent, f32> for MyAgent {
 
         // Define new positions for cells
         // It is randomly chosen if the old cell is left or right
-        let offset = dir_vec * r / std::f32::consts::SQRT_2;
+        let offset = dir_vec * r / SQRT_2;
         let old_pos = c1.pos();
 
         c1.set_pos(&(old_pos + offset));
