@@ -1,5 +1,3 @@
-use backend::chili::Settings;
-use cellular_raza::core::backend::chili;
 use cellular_raza::prelude::*;
 
 use clap::{Args, Parser};
@@ -11,7 +9,11 @@ use rand_chacha::ChaCha8Rng;
 
 use serde::{Deserialize, Serialize};
 
+mod bacteria_properties;
+mod subdomain;
 
+use bacteria_properties::*;
+use subdomain::MyDomain;
 
 #[derive(Clone, Args, Debug)]
 #[group()]
@@ -87,12 +89,12 @@ struct Parameters {
     threads: usize,
 }
 
-fn main() -> Result<(), chili::SimulationError> {
+fn main() -> Result<(), SimulationError> {
     let parameters = Parameters::parse();
     run_sim(parameters)
 }
 
-fn run_sim(parameters: Parameters) -> Result<(), chili::SimulationError> {
+fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
     let Parameters {
         bacteria:
             BacterialParameters {
@@ -158,7 +160,7 @@ fn run_sim(parameters: Parameters) -> Result<(), chili::SimulationError> {
         println!("Warning: The stability condition dt <= 0.5 dx^2/D for the integration method is not satisfied. Results can be inaccurate.");
     }
 
-    let domain = CartesianDiffusion2D {
+    let domain = MyDomain {
         domain: CartesianCuboid::from_boundaries_and_interaction_range(
             [0.0; 2],
             [domain_size, domain_size],
@@ -178,7 +180,7 @@ fn run_sim(parameters: Parameters) -> Result<(), chili::SimulationError> {
         show_progressbar: true,
     };
 
-    let _storager = chili::run_simulation!(
+    let _storager = run_simulation!(
         agents: cells,
         domain: domain,
         settings: settings,
