@@ -103,17 +103,24 @@ def plot_iteration(
     ax.set_ylim([domain_min[1], domain_max[1]])
 
     # Plot background
+    max_size = np.max([dfsi["index_max"] for _, dfsi in dfs.iterrows()], axis=0)
+    all_values = np.zeros(max_size)
     for n_sub, dfsi in dfs.iterrows():
-        smin = dfsi["reactions_min"]
-        smax = dfsi["reactions_max"]
-        values = dfsi["extracellular.data"].reshape(dfsi["extracellular.dim"])[:,:,0]
-        ax.imshow(
-            values.T,
-            vmin=extra_bounds[0],
-            vmax=extra_bounds[1],
-            extent=[smin[0], smax[0], smin[1], smax[1]],
-            origin='lower',
-        )
+        values = dfsi["extracellular.data"].reshape(dfsi["extracellular.dim"])[:, :, 0]
+        filt = dfsi["ownership_array.data"].reshape(dfsi["ownership_array.dim"])
+        filt = filt[1:-1, 1:-1]
+
+        index_min = np.array(dfsi["index_min"])
+        slow = index_min
+        shigh = index_min + np.array(values.shape)
+        all_values[slow[0] : shigh[0], slow[1] : shigh[1]] += values * filt
+    ax.imshow(
+        all_values.T,
+        vmin=extra_bounds[0],
+        vmax=extra_bounds[1],
+        extent=(domain_min[0], domain_max[0], domain_min[1], domain_max[1]),
+        origin="lower",
+    )
 
     # Plot cells
     points = np.array([p for p in dfc["cell.mechanics.pos"]])
