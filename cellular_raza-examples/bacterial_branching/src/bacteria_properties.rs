@@ -61,7 +61,7 @@ impl Cycle<MyAgent, f32> for MyAgent {
 }
 
 // COMPONENT DESCRIPTION
-// 0         CELL RADIUS
+// 0         CELL AREA
 impl Intracellular<ReactionVector> for MyAgent {
     fn set_intracellular(&mut self, intracellular: ReactionVector) {
         self.interaction.radius = (intracellular[0] / PI).powf(0.5);
