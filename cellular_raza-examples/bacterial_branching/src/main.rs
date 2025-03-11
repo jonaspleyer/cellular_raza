@@ -166,7 +166,7 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
             [domain_size, domain_size],
             domain_size / 10.0,
         )?,
-        reactions_dx: [reactions_dx; 2].into(),
+        reactions_dx,
         diffusion_constant,
         initial_value: ReactionVector::from([initial_concentration]),
     };

@@ -2,8 +2,9 @@ use crate::{ReactionVector, N_REACTIONS};
 use cellular_raza::prelude::*;
 use nalgebra::SVector;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
+#[derive(Domain)]
 pub struct MyDomain {
     #[DomainRngSeed]
     #[DomainPartialDerive]
