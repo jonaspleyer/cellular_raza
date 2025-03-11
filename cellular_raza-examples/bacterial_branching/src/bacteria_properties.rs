@@ -1,7 +1,7 @@
 use core::f32;
 
 use cellular_raza::prelude::*;
-use nalgebra::{SVector, Vector2};
+use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
 pub const N_REACTIONS: usize = 1;
