@@ -60,7 +60,7 @@ struct DomainParameters {
     /// Discretization of the diffusion process
     #[arg(long, default_value_t = 20.0)]
     reactions_dx: f32,
-    #[arg(long, default_value_t = 40.0)]
+    #[arg(long, default_value_t = 80.0)]
     diffusion_constant: f32,
     #[arg(long, default_value_t = 10.0)]
     initial_concentration: f32,
@@ -70,11 +70,11 @@ struct DomainParameters {
 #[group()]
 #[clap(next_help_heading = Some("Time"))]
 struct TimeParameters {
-    #[arg(long, default_value_t = 0.2)]
+    #[arg(long, default_value_t = 0.1)]
     dt: f32,
     #[arg(long, default_value_t = 2000.0)]
     tmax: f32,
-    #[arg(long, default_value_t = 100)]
+    #[arg(long, default_value_t = 200)]
     save_interval: usize,
 }
 
