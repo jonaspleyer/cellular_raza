@@ -15,6 +15,7 @@ pub struct SledStorageInterface<Id, Element, const TEMP: bool = false> {
     // buffer: StorageBuffer<Id, Element>,
     id_phantom: PhantomData<Id>,
     element_phantom: PhantomData<Element>,
+    bincode_config: bincode::config::Configuration,
 }
 
 impl<Id, Element, const TEMP: bool> SledStorageInterface<Id, Element, TEMP> {
@@ -24,8 +25,11 @@ impl<Id, Element, const TEMP: bool> SledStorageInterface<Id, Element, TEMP> {
     }
 
     /// Transform the key given by the tree to the corresponding iteartion u64 value
-    fn key_to_iteration(key: &sled::IVec) -> Result<u64, StorageError> {
-        let iteration = bincode::deserialize::<u64>(key)?;
+    fn key_to_iteration(
+        key: &sled::IVec,
+        bincode_config: bincode::config::Configuration,
+    ) -> Result<u64, StorageError> {
+        let iteration = bincode::serde::decode_from_slice(key, bincode_config)?.0;
         Ok(iteration)
     }
 
@@ -62,11 +66,13 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceOpen
             .use_compression(false);
 
         let db = config.open()?;
+        let bincode_config = bincode::config::standard();
 
         Ok(SledStorageInterface {
             db,
             id_phantom: PhantomData,
             element_phantom: PhantomData,
+            bincode_config,
         })
     }
 }
@@ -87,8 +93,9 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>
         let tree = self.open_or_create_tree(iteration)?;
 
         // Serialize the identifier and the element
-        let identifier_serialized = bincode::serialize(&identifier)?;
-        let element_serialized = bincode::serialize(&element)?;
+        let identifier_serialized =
+            bincode::serde::encode_to_vec(&identifier, self.bincode_config)?;
+        let element_serialized = bincode::serde::encode_to_vec(&element, self.bincode_config)?;
         match tree.insert(identifier_serialized, element_serialized)? {
             None => Ok(()),
             Some(_) => Err(StorageError::InitError(format!(
@@ -112,8 +119,9 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>
         let tree = self.open_or_create_tree(iteration)?;
         let mut batch = sled::Batch::default();
         for (identifier, element) in identifiers_elements.into_iter() {
-            let identifier_serialized = bincode::serialize(&identifier)?;
-            let element_serialized = bincode::serialize(&element)?;
+            let identifier_serialized =
+                bincode::serde::encode_to_vec(&identifier, self.bincode_config)?;
+            let element_serialized = bincode::serde::encode_to_vec(&element, self.bincode_config)?;
             batch.insert(identifier_serialized, element_serialized)
         }
         tree.apply_batch(batch)?;
@@ -137,10 +145,11 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
             Some(tree) => tree,
             None => return Ok(None),
         };
-        let identifier_serialized = bincode::serialize(identifier)?;
+        let identifier_serialized = bincode::serde::encode_to_vec(identifier, self.bincode_config)?;
         match tree.get(&identifier_serialized)? {
             Some(element_serialized) => {
-                let element: Element = bincode::deserialize(&element_serialized)?;
+                let element: Element =
+                    bincode::serde::decode_from_slice(&element_serialized, self.bincode_config)?.0;
                 Ok(Some(element))
             }
             None => Ok(None),
@@ -161,10 +170,11 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
         // Save results in this hashmap
         let mut accumulator = HashMap::new();
         // Serialize the identifier
-        let identifier_serialized = bincode::serialize(identifier)?;
+        let identifier_serialized = bincode::serde::encode_to_vec(identifier, self.bincode_config)?;
         for iteration_serialized in self.db.tree_names() {
             // If we are above the maximal or below the minimal iteration, we skip checking
-            let iteration: u64 = bincode::deserialize(&iteration_serialized)?;
+            let iteration: u64 =
+                bincode::serde::decode_from_slice(&iteration_serialized, self.bincode_config)?.0;
             match minimal_iteration {
                 None => (),
                 Some(min_iter) => {
@@ -186,7 +196,11 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
             match tree.get(&identifier_serialized)? {
                 // We found and element insert it
                 Some(element_serialized) => {
-                    let element: Element = bincode::deserialize(&element_serialized)?;
+                    let element: Element = bincode::serde::decode_from_slice(
+                        &element_serialized,
+                        self.bincode_config,
+                    )?
+                    .0;
                     accumulator.insert(iteration, element);
                     success_iteration = Some(iteration);
                 }
@@ -246,8 +260,11 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
         tree.iter()
             .map(|entry_result| {
                 let (identifier_serialized, element_serialized) = entry_result?;
-                let identifier: Id = bincode::deserialize(&identifier_serialized)?;
-                let element: Element = bincode::deserialize(&element_serialized)?;
+                let identifier: Id =
+                    bincode::serde::decode_from_slice(&identifier_serialized, self.bincode_config)?
+                        .0;
+                let element: Element =
+                    bincode::serde::decode_from_slice(&element_serialized, self.bincode_config)?.0;
                 Ok((identifier, element))
             })
             .collect::<Result<HashMap<Id, Element>, StorageError>>()
@@ -263,13 +280,21 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
             .iter()
             .map(|tree_name_serialized| {
                 let tree = self.db.open_tree(tree_name_serialized)?;
-                let iteration = Self::key_to_iteration(tree_name_serialized)?;
+                let iteration = Self::key_to_iteration(tree_name_serialized, self.bincode_config)?;
                 let identifier_to_element = tree
                     .iter()
                     .map(|entry_result| {
                         let (identifier_serialized, element_serialized) = entry_result?;
-                        let identifier: Id = bincode::deserialize(&identifier_serialized)?;
-                        let element: Element = bincode::deserialize(&element_serialized)?;
+                        let identifier: Id = bincode::serde::decode_from_slice(
+                            &identifier_serialized,
+                            self.bincode_config,
+                        )?
+                        .0;
+                        let element: Element = bincode::serde::decode_from_slice(
+                            &element_serialized,
+                            self.bincode_config,
+                        )?
+                        .0;
                         Ok((identifier, element))
                     })
                     .collect::<Result<HashMap<Id, Element>, StorageError>>()?;
@@ -290,7 +315,7 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceLoad<Id, Element>
                         95, 95, 115, 108, 101, 100, 95, 95, 100, 101, 102, 97, 117, 108, 116,
                     ])
             })
-            .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized))
+            .map(|tree_name_serialized| Self::key_to_iteration(tree_name_serialized, self.bincode_config))
             .collect::<Result<Vec<_>, StorageError>>()?;
 
         Ok(iterations)
