@@ -125,13 +125,9 @@ def plot_iteration(
     # Plot cells
     points = np.array([p for p in dfc["cell.mechanics.pos"]])
     radii = np.array([r for r in dfc["cell.interaction.radius"]])
+    radii_div = np.array([r for r in dfc["cell.division_radius"]])
     s = np.clip(
-        (
-            np.array([r for r in dfc["cell.interaction.radius"]])
-            / np.array([r for r in dfc["cell.division_radius"]])
-            - intra_bounds[0]
-        )
-        / (intra_bounds[1] - intra_bounds[0]),
+        (radii / radii_div - intra_bounds[0]) / (intra_bounds[1] - intra_bounds[0]),
         0,
         1,
     )
@@ -232,7 +228,7 @@ def generate_movie(opath: Path | None = None, play_movie: bool = True):
 if __name__ == "__main__":
     output_path = get_last_output_path()
     plot_all_iterations(
-        (0, 1),
+        (0.5, 1),
         (0, 10.0),
         output_path,
     )
