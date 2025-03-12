@@ -150,7 +150,6 @@ def plot_iteration(
             for i in range(points.shape[0])
         ],
         facecolors=color,
-        edgecolors="black",
     )
     ax.add_collection(collection)
     ax.text(
