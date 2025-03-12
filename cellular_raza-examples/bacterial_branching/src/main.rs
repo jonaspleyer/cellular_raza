@@ -19,22 +19,22 @@ use subdomain::*;
 #[group()]
 #[clap(next_help_heading = Some("Bacteria"))]
 struct BacterialParameters {
-    #[arg(short, long, default_value_t = 3)]
+    #[arg(short, long, default_value_t = 5)]
     n_bacteria_initial: u32,
     #[arg(short, long, default_value_t = 6.0)]
     radius: f32,
     /// Multiple of the radius at which the cell will divide
-    #[arg(short, long, default_value_t = 2.0)]
+    #[arg(long, default_value_t = 2.0)]
     division_threshold: f32,
-    #[arg(long, default_value_t = 0.1)]
+    #[arg(long, default_value_t = 0.15)]
     potential_stiffness: f32,
-    #[arg(long, default_value_t = 0.2)]
+    #[arg(long, default_value_t = 2.0)]
     potential_strength: f32,
     #[arg(long, default_value_t = 1.0)]
     damping_constant: f32,
     #[arg(short, long, default_value_t = 1.0)]
     uptake_rate: f32,
-    #[arg(short, long, default_value_t = 0.4)]
+    #[arg(short, long, default_value_t = 13.0)]
     growth_rate: f32,
 }
 
@@ -60,7 +60,7 @@ struct DomainParameters {
     /// Discretization of the diffusion process
     #[arg(long, default_value_t = 20.0)]
     reactions_dx: f32,
-    #[arg(long, default_value_t = 20.0)]
+    #[arg(long, default_value_t = 40.0)]
     diffusion_constant: f32,
     #[arg(long, default_value_t = 10.0)]
     initial_concentration: f32,
@@ -70,9 +70,9 @@ struct DomainParameters {
 #[group()]
 #[clap(next_help_heading = Some("Time"))]
 struct TimeParameters {
-    #[arg(long, default_value_t = 0.05)]
+    #[arg(long, default_value_t = 0.2)]
     dt: f32,
-    #[arg(long, default_value_t = 100.0)]
+    #[arg(long, default_value_t = 2000.0)]
     tmax: f32,
     #[arg(long, default_value_t = 100)]
     save_interval: usize,
