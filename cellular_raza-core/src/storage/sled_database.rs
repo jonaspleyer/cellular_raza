@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 
 /// Use the [sled] database to save results to an embedded database.
 // TODO use custom field for config [](https://docs.rs/sled/latest/sled/struct.Config.html) to let the user control these parameters
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SledStorageInterface<Id, Element, const TEMP: bool = false> {
     db: sled::Db,
     // TODO use this buffer
@@ -16,6 +16,32 @@ pub struct SledStorageInterface<Id, Element, const TEMP: bool = false> {
     id_phantom: PhantomData<Id>,
     element_phantom: PhantomData<Element>,
     bincode_config: bincode::config::Configuration,
+}
+
+impl<Id: core::fmt::Debug, Element: core::fmt::Debug, const TEMP: bool> core::fmt::Debug
+    for SledStorageInterface<Id, Element, TEMP>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        #[allow(unused)]
+        #[derive(Debug)]
+        struct DbDebug<Id, Element, const TEMP: bool> {
+            db: sled::Db,
+            id_phantom: PhantomData<Id>,
+            element_phantom: PhantomData<Element>,
+        }
+        let SledStorageInterface {
+            db,
+            id_phantom,
+            element_phantom,
+            bincode_config: _,
+        } = self;
+        let db_debug = DbDebug::<Id, Element, TEMP> {
+            db: db.clone(),
+            id_phantom: *id_phantom,
+            element_phantom: *element_phantom,
+        };
+        core::fmt::Debug::fmt(&db_debug, f)
+    }
 }
 
 impl<Id, Element, const TEMP: bool> SledStorageInterface<Id, Element, TEMP> {
