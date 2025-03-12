@@ -154,7 +154,7 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
                 interaction: MorsePotentialF32 {
                     radius: cell_radius,
                     potential_stiffness,
-                    cutoff: division_threshold * cell_radius,
+                    cutoff: 2.0 * division_threshold * cell_radius,
                     strength: potential_strength,
                 },
                 uptake_rate,
