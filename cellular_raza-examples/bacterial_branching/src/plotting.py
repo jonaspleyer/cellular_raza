@@ -91,6 +91,7 @@ def plot_iteration(
     extra_bounds: tuple[float, float],
     output_path: Path = get_last_output_path(),
     save_figure: bool = True,
+    figsize: int = 32,
 ) -> matplotlib.figure.Figure | None:
     dfc = load_cells_at_iteration(iteration, output_path)
     dfs = load_subdomains_at_iteration(iteration, output_path)
@@ -98,7 +99,7 @@ def plot_iteration(
     # Set size of the image
     domain_min = dfs["subdomain.domain_min"][0]
     domain_max = dfs["subdomain.domain_max"][0]
-    fig, ax = plt.subplots(figsize=(16, 16))
+    fig, ax = plt.subplots(figsize=(figsize, figsize))
     ax.set_xlim([domain_min[0], domain_max[0]])
     ax.set_ylim([domain_min[1], domain_max[1]])
 
