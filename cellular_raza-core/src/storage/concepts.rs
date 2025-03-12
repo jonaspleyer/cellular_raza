@@ -27,7 +27,9 @@ pub enum StorageError {
     /// Generic error related to the [sled] database.
     SledError(sled::Error),
     /// Generic serialization error thrown by the [bincode] library.
-    SerializeError(Box<bincode::ErrorKind>),
+    BincodeSeError(bincode::error::EncodeError),
+    /// Generic deserialization error thrown by the [bincode] library.
+    BincodeDeError(bincode::error::DecodeError),
     /// Initialization error mainly used for initialization of databases such as [sled].
     InitError(String),
     /// Error when parsing file/folder names.
@@ -60,9 +62,15 @@ impl From<sled::Error> for StorageError {
     }
 }
 
-impl From<Box<bincode::ErrorKind>> for StorageError {
-    fn from(err: Box<bincode::ErrorKind>) -> Self {
-        StorageError::SerializeError(err)
+impl From<bincode::error::EncodeError> for StorageError {
+    fn from(err: bincode::error::EncodeError) -> Self {
+        StorageError::BincodeSeError(err)
+    }
+}
+
+impl From<bincode::error::DecodeError> for StorageError {
+    fn from(err: bincode::error::DecodeError) -> Self {
+        StorageError::BincodeDeError(err)
     }
 }
 
@@ -91,7 +99,8 @@ impl Display for StorageError {
             StorageError::RonError(message) => write!(f, "{}", message),
             StorageError::RonSpannedError(message) => write!(f, "{}", message),
             StorageError::SledError(message) => write!(f, "{}", message),
-            StorageError::SerializeError(message) => write!(f, "{}", message),
+            StorageError::BincodeSeError(message) => write!(f, "{}", message),
+            StorageError::BincodeDeError(message) => write!(f, "{}", message),
             StorageError::IoError(message) => write!(f, "{}", message),
             StorageError::InitError(message) => write!(f, "{}", message),
             StorageError::Utf8Error(message) => write!(f, "{}", message),
