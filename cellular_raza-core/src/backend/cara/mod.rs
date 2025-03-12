@@ -47,7 +47,7 @@ struct AgentContainer {
     agent: Agent,
 }
 
-extern "C" {
+unsafe extern "C" {
     fn do_compute();
     fn update_positions(runner: &mut Runner);
     fn print_positions(runner: &Runner);
