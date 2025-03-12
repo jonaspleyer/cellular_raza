@@ -167,7 +167,8 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
     let cond = dt - 0.5 * reactions_dx / diffusion_constant;
     if cond >= 0.0 {
         println!(
-            "❗Warning: The stability condition \
+            "❗❗❗WARNING❗❗❗\n\
+            The stability condition \
             dt <= 0.5 dx^2/D for the integration \
             method is not satisfied. This can \
             lead to solving errors and inaccurate \
@@ -177,9 +178,11 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
 
     if domain_voxel_size < division_threshold * cell_radius {
         println!(
-            "❗Warning: The domain_voxel_size has been chosen \
-            smaller than the length of the interaction. This \
-            will probably yield incorrect results."
+            "❗❗❗WARNING❗❗❗\n\
+            The domain_voxel_size {domain_voxel_size} has been chosen \
+            smaller than the length of the interaction {}. This \
+            will probably yield incorrect results.",
+            division_threshold * cell_radius,
         );
     }
 
