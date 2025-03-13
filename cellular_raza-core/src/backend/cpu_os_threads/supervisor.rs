@@ -15,8 +15,8 @@ use super::config::{
     ImageType, PlottingConfig, SimulationConfig, SimulationMetaParams, SimulationSetup, TimeSetup,
 };
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use core::ops::{Add, AddAssign, Mul};
@@ -99,20 +99,20 @@ where
 }
 
 impl<
-        Pos,
-        Vel,
-        For,
-        Inf,
-        Cel,
-        Ind,
-        Vox,
-        Dom,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-        Cont,
-        Obs,
-    >
+    Pos,
+    Vel,
+    For,
+    Inf,
+    Cel,
+    Ind,
+    Vox,
+    Dom,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    Cont,
+    Obs,
+>
     SimulationSupervisor<
         MultiVoxelContainer<
             Ind,
@@ -486,17 +486,17 @@ fn construct_progress_bar(n_iterations: usize) -> Result<kdam::Bar, SimulationEr
 }
 
 impl<
-        Ind,
-        Pos,
-        For,
-        Vel,
-        ConcVecExtracellular,
-        ConcBoundaryExtracellular,
-        ConcVecIntracellular,
-        Vox,
-        Dom,
-        Cel,
-    >
+    Ind,
+    Pos,
+    For,
+    Vel,
+    ConcVecExtracellular,
+    ConcBoundaryExtracellular,
+    ConcVecIntracellular,
+    Vox,
+    Dom,
+    Cel,
+>
     SimulationResult<
         Ind,
         Pos,

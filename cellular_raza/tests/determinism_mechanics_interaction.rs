@@ -61,8 +61,8 @@ macro_rules! ensure_results_identical(
     }
 );
 
-fn test_newton_damped(
-) -> Result<HashMap<u64, HashMap<CellIdentifier, MyAgent>>, Box<dyn std::error::Error>> {
+fn test_newton_damped()
+-> Result<HashMap<u64, HashMap<CellIdentifier, MyAgent>>, Box<dyn std::error::Error>> {
     let domain =
         cellular_raza::building_blocks::CartesianCuboid::from_boundaries_and_interaction_range(
             [0f64; 3], [100.0; 3], 20.0,
@@ -107,8 +107,8 @@ ensure_results_identical!(
     test_newton_damped
 );
 
-fn test_pure_brownian(
-) -> Result<HashMap<u64, HashMap<CellIdentifier, Brownian3D>>, Box<dyn std::error::Error>> {
+fn test_pure_brownian()
+-> Result<HashMap<u64, HashMap<CellIdentifier, Brownian3D>>, Box<dyn std::error::Error>> {
     let domain =
         cellular_raza::building_blocks::CartesianCuboid::from_boundaries_and_interaction_range(
             [-30f64; 3],

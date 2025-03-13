@@ -1,7 +1,7 @@
+use StorageOption::*;
 use cellular_raza::building_blocks::*;
 use cellular_raza::core::backend::chili::*;
 use cellular_raza::core::storage::*;
-use StorageOption::*;
 
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;

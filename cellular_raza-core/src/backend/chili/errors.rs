@@ -4,8 +4,8 @@ pub use cellular_raza_concepts::{DecomposeError, IndexError};
 use core::any::type_name;
 use core::fmt::{Debug, Display};
 
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc; // TODO in the future use core::error::Error (unstable right now)
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool; // TODO in the future use core::error::Error (unstable right now)
 
 use crossbeam_channel::{RecvError, SendError};
 
@@ -257,8 +257,8 @@ impl ErrorHandler for DefaultHandler {
 #[cfg(feature = "pyo3")]
 impl From<SimulationError> for pyo3::PyErr {
     fn from(value: SimulationError) -> Self {
-        use pyo3::exceptions::*;
         use SimulationError::*;
+        use pyo3::exceptions::*;
         match value {
             CalcError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),
             DecomposeError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),

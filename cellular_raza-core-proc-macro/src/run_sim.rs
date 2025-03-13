@@ -192,8 +192,8 @@ define_kwargs!(
 );
 
 pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
-    use quote::quote;
     use SimulationAspect::*;
+    use quote::quote;
 
     let mut step_1 = proc_macro2::TokenStream::new();
     let mut step_2 = proc_macro2::TokenStream::new();

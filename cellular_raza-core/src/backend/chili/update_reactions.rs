@@ -1,7 +1,7 @@
 use super::{
-    reactions_contact_adams_bashforth_3rd, Communicator, ReactionsRungeKuttaSolver, RungeKutta,
-    SimulationError, SubDomainBox, SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact,
-    Voxel, VoxelPlainIndex,
+    Communicator, ReactionsRungeKuttaSolver, RungeKutta, SimulationError, SubDomainBox,
+    SubDomainPlainIndex, UpdateReactions, UpdateReactionsContact, Voxel, VoxelPlainIndex,
+    reactions_contact_adams_bashforth_3rd,
 };
 use cellular_raza_concepts::*;
 
@@ -28,9 +28,9 @@ where
         C: ReactionsExtra<Ri, Re>,
         S: SubDomainReactions<Pos, Re, Float>,
         Com: Communicator<
-            SubDomainPlainIndex,
-            ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
-        >,
+                SubDomainPlainIndex,
+                ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
+            >,
     {
         for neighbor_index in self.neighbors.iter() {
             let border_info = self.subdomain.get_border_info();
@@ -53,13 +53,15 @@ where
         C: ReactionsExtra<Ri, Re>,
         S: SubDomainReactions<Pos, Re, Float>,
         Com: Communicator<
-            SubDomainPlainIndex,
-            ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
-        >,
+                SubDomainPlainIndex,
+                ReactionsExtraBorderReturn<
+                    <S as SubDomainReactions<Pos, Re, Float>>::NeighborValue,
+                >,
+            >,
         Com: Communicator<
-            SubDomainPlainIndex,
-            ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
-        >,
+                SubDomainPlainIndex,
+                ReactionsExtraBorderInfo<<S as SubDomainReactions<Pos, Re, Float>>::BorderInfo>,
+            >,
     {
         let mut received_infos = <Com as Communicator<
             SubDomainPlainIndex,
@@ -92,9 +94,11 @@ where
         C: Position<Pos>,
         S: SubDomainReactions<Pos, Re, Float>,
         Com: Communicator<
-            SubDomainPlainIndex,
-            ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
-        >,
+                SubDomainPlainIndex,
+                ReactionsExtraBorderReturn<
+                    <S as SubDomainReactions<Pos, Re, Float>>::NeighborValue,
+                >,
+            >,
     {
         let mut errors: Vec<CalcError> = vec![];
         // TODO Think about doing this in two passes

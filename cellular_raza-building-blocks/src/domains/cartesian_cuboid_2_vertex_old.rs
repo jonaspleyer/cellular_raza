@@ -454,7 +454,7 @@ where
             None => {
                 return Err(CalcError(
                     "Could not find a suiting decomposition".to_owned(),
-                ))
+                ));
             }
         };
 

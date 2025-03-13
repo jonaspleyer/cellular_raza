@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 
 macro_rules! new_ident(
     ($name:ident, $ident:literal) => {

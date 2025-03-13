@@ -142,7 +142,7 @@ pub trait ExtracellularMechanics<
 
     /// Simple setter function to specify concentrations after backend has updated values.
     fn set_total_extracellular(&mut self, concentration_total: &ConcTotal)
-        -> Result<(), CalcError>;
+    -> Result<(), CalcError>;
 
     /// Calculates the time-derivative of the function that increments the concentrations.
     fn calculate_increment(

@@ -537,11 +537,11 @@ where
         .enumerate()
         .map(|(n_row, line)| (n_row, nearest_point_from_point_to_line(point, &line)))
         .fold(None, |acc, v| {
-            let distance_v = v.1 .0;
+            let distance_v = v.1.0;
             match acc {
                 None => Some(v),
                 Some(e) => {
-                    let distance_acc = e.1 .0;
+                    let distance_acc = e.1.0;
                     if distance_v < distance_acc {
                         Some(v)
                     } else {

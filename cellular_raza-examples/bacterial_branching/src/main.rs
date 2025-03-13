@@ -1,9 +1,7 @@
-use backend::chili::Settings;
-use cellular_raza::core::backend::chili;
 use cellular_raza::prelude::*;
 
+use clap::{Args, Parser};
 use nalgebra::Vector2;
-
 use num::Zero;
 
 use rand::{Rng, SeedableRng};
@@ -11,102 +9,204 @@ use rand_chacha::ChaCha8Rng;
 
 use serde::{Deserialize, Serialize};
 
-// Number of cells to put into simulation in the Beginning
-pub const N_BACTERIA_INITIAL: u32 = 3;
-
-// Mechanical parameters
-pub const BACTERIA_MECHANICS_RADIUS: f32 = 6.0;
-pub const BACTERIA_MECHANICS_EXPONENT: f32 = 0.2;
-pub const BACTERIA_MECHANICS_POTENTIAL_STRENGTH: f32 = 4.0;
-pub const BACTERIA_MECHANICS_VELOCITY_REDUCTION: f32 = 1.0;
-
-// Reaction parameters of the cell
-pub const BACTERIA_FOOD_INITIAL_CONCENTRATION_LOW: f32 = 0.0;
-pub const BACTERIA_FOOD_INITIAL_CONCENTRATION_HIGH: f32 = 0.0;
-pub const BACTERIA_FOOD_TURNOVER_RATE: f32 = 0.0;
-pub const BACTERIA_FOOD_UPTAKE_RATE: f32 = 0.5;
-
-// Parameters for cell cycle
-pub const BACTERIA_CYCLE_GROWTH_RATE: f32 = 5.2;
-
-// Parameters for domain
-pub const DOMAIN_SIZE: f32 = 5_000.0;
-pub const DOMAIN_MIDDLE: Vector2<f32> = nalgebra::vector![DOMAIN_SIZE / 2.0, DOMAIN_SIZE / 2.0];
-
-// Where will the cells be placed initially
-pub const STARTING_DOMAIN_X_LOW: f32 = DOMAIN_SIZE / 2.0 - 50.0;
-pub const STARTING_DOMAIN_X_HIGH: f32 = DOMAIN_SIZE / 2.0 + 50.0;
-pub const STARTING_DOMAIN_Y_LOW: f32 = DOMAIN_SIZE / 2.0 - 50.0;
-pub const STARTING_DOMAIN_Y_HIGH: f32 = DOMAIN_SIZE / 2.0 + 50.0;
-
-// Parameters for Voxel Reaction+Diffusion
-pub const FOOD_DIFFUSION_CONSTANT: f32 = 25.0;
-pub const FOOD_INITIAL_CONCENTRATION: f32 = 10.0;
-
-// Time parameters
-pub const DT: f32 = 0.01;
-pub const T_START: f32 = 0.0;
-pub const T_MAX: f32 = 100.0;
-pub const SAVE_INTERVAL: usize = 1_000;
-
-// Meta Parameters to control solving
-pub const N_THREADS: usize = 2;
-
 mod bacteria_properties;
+mod subdomain;
 
 use bacteria_properties::*;
-use time::FixedStepsize;
+use subdomain::*;
 
-fn main() -> Result<(), chili::SimulationError> {
+#[derive(Clone, Args, Debug)]
+#[group()]
+#[clap(next_help_heading = Some("Bacteria"))]
+struct BacterialParameters {
+    #[arg(short, long, default_value_t = 5)]
+    n_bacteria_initial: u32,
+    #[arg(short, long, default_value_t = 6.0)]
+    radius: f32,
+    /// Multiple of the radius at which the cell will divide
+    #[arg(long, default_value_t = 2.0)]
+    division_threshold: f32,
+    #[arg(long, default_value_t = 0.15)]
+    potential_stiffness: f32,
+    #[arg(long, default_value_t = 2.0)]
+    potential_strength: f32,
+    #[arg(long, default_value_t = 1.0)]
+    damping_constant: f32,
+    #[arg(short, long, default_value_t = 1.0)]
+    uptake_rate: f32,
+    #[arg(short, long, default_value_t = 13.0)]
+    growth_rate: f32,
+}
+
+#[derive(Clone, Args, Debug)]
+#[group()]
+#[clap(next_help_heading = Some("Domain"))]
+struct DomainParameters {
+    /// Overall size of the domain
+    #[arg(short, long, default_value_t = 3000.0)]
+    domain_size: f32,
+    #[arg(
+        long,
+        default_value_t = 30.0,
+        help = "\
+        Size of one voxel containing individual cells.\n\
+        This value should be chosen `>=3*RADIUS`.\
+    "
+    )]
+    voxel_size: f32,
+    /// Size of the square for initlal placement of bacteria
+    #[arg(long, default_value_t = 100.0)]
+    domain_starting_size: f32,
+    /// Discretization of the diffusion process
+    #[arg(long, default_value_t = 20.0)]
+    reactions_dx: f32,
+    #[arg(long, default_value_t = 80.0)]
+    diffusion_constant: f32,
+    #[arg(long, default_value_t = 10.0)]
+    initial_concentration: f32,
+}
+
+#[derive(Clone, Args, Debug)]
+#[group()]
+#[clap(next_help_heading = Some("Time"))]
+struct TimeParameters {
+    #[arg(long, default_value_t = 0.1)]
+    dt: f32,
+    #[arg(long, default_value_t = 2000.0)]
+    tmax: f32,
+    #[arg(long, default_value_t = 200)]
+    save_interval: usize,
+}
+
+#[derive(Clone, Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Parameters {
+    #[command(flatten)]
+    bacteria: BacterialParameters,
+
+    #[command(flatten)]
+    domain: DomainParameters,
+
+    #[command(flatten)]
+    time: TimeParameters,
+
+    #[clap(help_heading = Some("Other"))]
+    /// Meta Parameters to control solving
+    #[arg(long, default_value_t = 2)]
+    threads: usize,
+}
+
+fn main() -> Result<(), SimulationError> {
+    let parameters = Parameters::parse();
+    run_sim(parameters)
+}
+
+fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
+    let Parameters {
+        bacteria:
+            BacterialParameters {
+                n_bacteria_initial,
+                radius: cell_radius,
+                division_threshold,
+                potential_stiffness,
+                potential_strength,
+                damping_constant,
+                uptake_rate,
+                growth_rate,
+            },
+        domain:
+            DomainParameters {
+                domain_size,
+                voxel_size: domain_voxel_size,
+                domain_starting_size,
+                reactions_dx,
+                diffusion_constant,
+                initial_concentration,
+            },
+        time:
+            TimeParameters {
+                dt,
+                tmax: t_max,
+                save_interval,
+            },
+        threads: n_threads,
+    } = parameters;
+
+    let ds = domain_size / 2.0;
+    let dx = domain_starting_size / 2.0;
+
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
-    let cells = (0..N_BACTERIA_INITIAL)
+    let cells = (0..n_bacteria_initial)
         .map(|_| {
-            let x = rng.gen_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH);
-            let y = rng.gen_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH);
+            let x = rng.gen_range(ds - dx..ds + dx);
+            let y = rng.gen_range(ds - dx..ds + dx);
 
             let pos = Vector2::from([x, y]);
             MyAgent {
                 mechanics: NewtonDamped2DF32 {
                     pos,
                     vel: Vector2::zero(),
-                    damping_constant: BACTERIA_MECHANICS_VELOCITY_REDUCTION,
+                    damping_constant,
                     mass: 1.0,
                 },
-                interaction: MyInteraction {
-                    cell_radius: BACTERIA_MECHANICS_RADIUS,
-                    exponent: BACTERIA_MECHANICS_EXPONENT,
-                    potential_strength: BACTERIA_MECHANICS_POTENTIAL_STRENGTH,
+                interaction: MorsePotentialF32 {
+                    radius: cell_radius,
+                    potential_stiffness,
+                    cutoff: 2.0 * division_threshold * cell_radius,
+                    strength: potential_strength,
                 },
-                uptake_rate: BACTERIA_FOOD_UPTAKE_RATE,
-                division_radius: BACTERIA_MECHANICS_RADIUS * 2.0,
-                growth_rate: BACTERIA_CYCLE_GROWTH_RATE,
+                uptake_rate,
+                division_radius: division_threshold * cell_radius,
+                growth_rate,
             }
         })
         .collect::<Vec<_>>();
 
-    let domain = MyDomain {
+    let cond = dt - 0.5 * reactions_dx / diffusion_constant;
+    if cond >= 0.0 {
+        println!(
+            "❗❗❗WARNING❗❗❗\n\
+            The stability condition \
+            dt <= 0.5 dx^2/D for the integration \
+            method is not satisfied. This can \
+            lead to solving errors and inaccurate \
+            results."
+        );
+    }
+
+    if domain_voxel_size < division_threshold * cell_radius {
+        println!(
+            "❗❗❗WARNING❗❗❗\n\
+            The domain_voxel_size {domain_voxel_size} has been chosen \
+            smaller than the length of the interaction {}. This \
+            will probably yield incorrect results.",
+            division_threshold * cell_radius,
+        );
+    }
+
+    let domain = CartesianDiffusion2D {
         domain: CartesianCuboid::from_boundaries_and_interaction_range(
             [0.0; 2],
-            [DOMAIN_SIZE, DOMAIN_SIZE],
-            DOMAIN_SIZE / 10.0,
+            [domain_size, domain_size],
+            domain_voxel_size,
         )?,
-        reactions_dx: 10.0,
-        diffusion_constant: FOOD_DIFFUSION_CONSTANT,
-        initial_value: ReactionVector::from([FOOD_INITIAL_CONCENTRATION]),
+        reactions_dx: [reactions_dx; 2].into(),
+        diffusion_constant,
+        initial_value: ReactionVector::from([initial_concentration]),
     };
 
     let storage = StorageBuilder::new().priority([StorageOption::SerdeJson]);
-    let time = FixedStepsize::from_partial_save_freq(0.0, DT, T_MAX, SAVE_INTERVAL)?;
+    let time = FixedStepsize::from_partial_save_freq(0.0, dt, t_max, save_interval)?;
     let settings = Settings {
-        n_threads: N_THREADS.try_into().unwrap(),
+        n_threads: n_threads.try_into().unwrap(),
         time,
         storage,
         show_progressbar: true,
     };
 
-    let _storager = chili::run_simulation!(
+    let _storager = run_simulation!(
         agents: cells,
         domain: domain,
         settings: settings,

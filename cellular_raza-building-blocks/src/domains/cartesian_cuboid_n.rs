@@ -12,7 +12,7 @@ use std::usize;
 use itertools::Itertools;
 use nalgebra::SVector;
 
-use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, ser::SerializeStruct};
 
 /// Helper function to calculate the decomposition of a large number N into n as evenly-sizedchunks
 /// chunks as possible
@@ -508,7 +508,7 @@ fn serialize_cartesiansubdomain() {
         domain_n_voxels: [1, 2].into(),
     };
     // TODO finish this test
-    use serde_test::{assert_de_tokens, assert_ser_tokens, Token};
+    use serde_test::{Token, assert_de_tokens, assert_ser_tokens};
     let tokens = [
         Token::Struct {
             name: "CartesianSubDomain",
