@@ -14,7 +14,7 @@ authors:
 affiliations:
  - name: Freiburg Center for Data-Analysis and Modeling
    index: 1
-date: 01 June 2024
+date: 13 March 2025
 bibliography: paper.bib
 
 ---
