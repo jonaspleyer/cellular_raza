@@ -16,7 +16,7 @@ homepage.workspace =  true
 
 [dependencies]
 rand = { workspace = true, features=["small_rng"] }
-rand_chacha = { workspace = true, features=["serde1"]}
+rand_chacha = { workspace = true, features=["serde"]}
 nalgebra = { workspace = true, features=["serde-serialize"]}
 serde = { workspace = true }
 num = { workspace = true }
