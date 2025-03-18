@@ -304,13 +304,13 @@ mod test_time_stepper {
         F: num::Float + From<f32> + num::FromPrimitive,
     {
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(rng_seed);
-        let t0 = <F as From<_>>::from(rng.gen_range(0.0..1.0));
-        let dt = <F as From<_>>::from(rng.gen_range(0.1..2.0));
+        let t0 = <F as From<_>>::from(rng.random_range(0.0..1.0));
+        let dt = <F as From<_>>::from(rng.random_range(0.1..2.0));
         let save_points = vec![
-            <F as From<_>>::from(rng.gen_range(0.01..1.8)),
-            <F as From<_>>::from(rng.gen_range(2.01..3.8)),
-            <F as From<_>>::from(rng.gen_range(4.01..5.8)),
-            <F as From<_>>::from(rng.gen_range(6.01..7.8)),
+            <F as From<_>>::from(rng.random_range(0.01..1.8)),
+            <F as From<_>>::from(rng.random_range(2.01..3.8)),
+            <F as From<_>>::from(rng.random_range(4.01..5.8)),
+            <F as From<_>>::from(rng.random_range(6.01..7.8)),
         ];
         FixedStepsize::<F>::from_partial_save_points(t0, dt, save_points).unwrap()
     }

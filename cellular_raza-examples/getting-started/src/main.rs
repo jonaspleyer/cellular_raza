@@ -59,8 +59,8 @@ fn main() -> Result<(), SimulationError> {
 
     let cells = (0..parameters.cell_number).map(|_| {
         let pos = [
-            rng.gen_range(0.0..parameters.domain_size),
-            rng.gen_range(0.0..parameters.domain_size),
+            rng.random_range(0.0..parameters.domain_size),
+            rng.random_range(0.0..parameters.domain_size),
         ];
         Agent {
             mechanics: Langevin2D {

@@ -623,7 +623,7 @@ impl<const D: usize> VertexMechanics2D<D> {
         };
         let rng = || -> f64 {
             match randomize {
-                Some((_, mut rng)) => rng.gen_range(0.0..1.0),
+                Some((_, mut rng)) => rng.random_range(0.0..1.0),
                 None => 0.0,
             }
         };

@@ -76,7 +76,7 @@ fn main() -> Result<(), chili::SimulationError> {
                     average_radius: CELL_MECHANICS_AREA.sqrt(),
                 },
             ),
-            growth_rate: rng.gen_range(0.0..1.0) * growth_rate,
+            growth_rate: rng.random_range(0.0..1.0) * growth_rate,
         })
         .collect::<Vec<_>>();
 

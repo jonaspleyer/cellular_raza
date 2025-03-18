@@ -14,9 +14,9 @@ fn main_sim(
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
     let agents = (0..10).map(|_| Langevin3D {
         pos: [
-            rng.gen_range(-1e3..-5e2),
-            rng.gen_range(-1e3..-5e2),
-            rng.gen_range(-1e3..-5e2),
+            rng.random_range(-1e3..-5e2),
+            rng.random_range(-1e3..-5e2),
+            rng.random_range(-1e3..-5e2),
         ]
         .into(),
         vel: [0.0; 3].into(),

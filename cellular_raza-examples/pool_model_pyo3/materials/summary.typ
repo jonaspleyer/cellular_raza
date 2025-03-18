@@ -41,7 +41,7 @@ In our case, we can savely assume $N_"max cells"=N_t$.
 
 We transition with the probability $p=lambda Delta t$ from the lag-phase to the growth phase.
 ```rs
-let q = rng.gen_range(0.0..1.0);
+let q = rng.random_range(0.0..1.0);
 if q <= self.transition_rate * dt {
     self.is_in_lag_phase = false;
 }

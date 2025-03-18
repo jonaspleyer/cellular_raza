@@ -132,8 +132,8 @@ fn main() {
     // Cells of Type 1
     /* let mut cells = (0..N_CELLS_1 as i32).map(|_| {
         let pos = Vector2::<f64>::from([
-            rng.gen_range(STARTING_DOMAIN_1_X_LOW..STARTING_DOMAIN_1_X_HIGH),
-            rng.gen_range(STARTING_DOMAIN_1_Y_LOW..STARTING_DOMAIN_1_Y_HIGH)]);
+            rng.random_range(STARTING_DOMAIN_1_X_LOW..STARTING_DOMAIN_1_X_HIGH),
+            rng.random_range(STARTING_DOMAIN_1_Y_LOW..STARTING_DOMAIN_1_Y_HIGH)]);
         ModularCell {
         mechanics: MechanicsModel2D {
             pos,
@@ -147,7 +147,7 @@ fn main() {
         },
         interaction_extracellular: GradientSensing {},
         cycle: OwnCycle::new(
-            rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
+            rng.random_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
             CELL_MECHANICS_RADIUS,
             CELL_CYCLE_GROWTH_RATE,
             CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
@@ -201,8 +201,8 @@ fn main() {
     // let mut cells1_bottom = cells1_right.clone();
     // cells1_bottom.iter_mut().for_each(|cell| {
     //     let new_position = Vector2::from([
-    //         rng.gen_range(STARTING_DOMAIN_1_BOTTOM_X_LOW..STARTING_DOMAIN_1_BOTTOM_X_HIGH),
-    //         rng.gen_range(STARTING_DOMAIN_1_BOTTIM_Y_LOW..STARTING_DOMAIN_1_BOTTOM_Y_HIGH)
+    //         rng.random_range(STARTING_DOMAIN_1_BOTTOM_X_LOW..STARTING_DOMAIN_1_BOTTOM_X_HIGH),
+    //         rng.random_range(STARTING_DOMAIN_1_BOTTIM_Y_LOW..STARTING_DOMAIN_1_BOTTOM_Y_HIGH)
     //     ]);
     //     cell.set_pos(&new_position);
     // });
@@ -212,8 +212,8 @@ fn main() {
 
     let cells = (0..N_CELLS_2 as i32)
         .map(|_| {
-            let x = rng.gen_range(STARTING_DOMAIN_2_X_LOW..STARTING_DOMAIN_2_X_HIGH);
-            let y = rng.gen_range(STARTING_DOMAIN_2_Y_LOW..STARTING_DOMAIN_2_Y_HIGH);
+            let x = rng.random_range(STARTING_DOMAIN_2_X_LOW..STARTING_DOMAIN_2_X_HIGH);
+            let y = rng.random_range(STARTING_DOMAIN_2_Y_LOW..STARTING_DOMAIN_2_Y_HIGH);
 
             let pos = Vector2::from([x, y]);
             ModularCell {
@@ -230,7 +230,7 @@ fn main() {
                 },
                 interaction_extracellular: GradientSensing {},
                 cycle: OwnCycle::new(
-                    rng.gen_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
+                    rng.random_range(CELL_CYCLE_DIVISION_AGE_MIN..CELL_CYCLE_DIVISION_AGE_MAX),
                     CELL_MECHANICS_RADIUS,
                     CELL_CYCLE_GROWTH_RATE,
                     CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
@@ -242,8 +242,8 @@ fn main() {
                     intracellular_concentrations: ReactionVector::from([
                         0.0,
                         CELL_FOOD_INITIAL_CONCENTRATION,
-                        rng.gen_range(200.0..500.0),
-                        rng.gen_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
                     ]),
                     intracellular_concentrations_saturation_level: ReactionVector::from([
                         CELL_SPATIAL_SIGNALLING_MOLECULE_SATURATION,

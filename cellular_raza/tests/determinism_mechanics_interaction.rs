@@ -72,9 +72,9 @@ fn test_newton_damped()
     let agents = (0..n_agents).map(|_| MyAgent {
         mechanics: NewtonDamped3D {
             pos: [
-                rng.gen_range(0.0..100.0),
-                rng.gen_range(0.0..100.0),
-                rng.gen_range(0.0..100.0),
+                rng.random_range(0.0..100.0),
+                rng.random_range(0.0..100.0),
+                rng.random_range(0.0..100.0),
             ]
             .into(),
             vel: [0.0; 3].into(),
@@ -119,9 +119,9 @@ fn test_pure_brownian()
     let agents = (0..10).map(|_| {
         Brownian3D::new(
             [
-                rng.gen_range(-30.0..100.0),
-                rng.gen_range(-30.0..100.0),
-                rng.gen_range(-30.0..100.0),
+                rng.random_range(-30.0..100.0),
+                rng.random_range(-30.0..100.0),
+                rng.random_range(-30.0..100.0),
             ]
             .into(),
             1e-12,
