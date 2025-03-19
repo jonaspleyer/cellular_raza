@@ -163,8 +163,8 @@ signifies a lack thereof.
 
 \begin{figure}[!h]
     \centering
-    \includegraphics[width=0.5\textwidth]{figures/cells_at_iter_0000028000.png}%
-    \includegraphics[width=0.5\textwidth]{figures/cells_at_iter_0000099000.png}
+    \includegraphics[width=0.5\textwidth]{figures/cells_at_iter_0000009800.png}%
+    \includegraphics[width=0.5\textwidth]{figures/cells_at_iter_0000060200.png}
     \caption{
         The bacterial colony grows outwards towards the nutrient-rich parts of the domain thus
         forming branches in the process.
