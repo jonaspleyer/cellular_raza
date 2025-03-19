@@ -116,9 +116,9 @@ fn main() -> Result<(), SimulationError> {
     let cells = (0..N_CELLS_1 + N_CELLS_2)
         .map(|n| {
             let pos = [
-                rng.gen_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
-                rng.gen_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
-                rng.gen_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
+                rng.random_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
+                rng.random_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
+                rng.random_range(0.1 * DOMAIN_SIZE..0.9 * DOMAIN_SIZE),
             ];
             Cell {
                 mechanics: Brownian3D::new(

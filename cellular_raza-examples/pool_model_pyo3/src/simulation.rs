@@ -182,8 +182,8 @@ pub fn generate_cells(
     let cells = (0..n_bacteria_1 + n_bacteria_2)
         .map(|n_cell| {
             let mut new_bacteria = bacteria.clone();
-            let x = rng.gen_range(0.0..domain.size);
-            let y = rng.gen_range(0.0..domain.size);
+            let x = rng.random_range(0.0..domain.size);
+            let y = rng.random_range(0.0..domain.size);
 
             if n_cell >= n_bacteria_1 {
                 let mut reactions = new_bacteria

@@ -140,8 +140,8 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
 
     let cells = (0..n_bacteria_initial)
         .map(|_| {
-            let x = rng.gen_range(ds - dx..ds + dx);
-            let y = rng.gen_range(ds - dx..ds + dx);
+            let x = rng.random_range(ds - dx..ds + dx);
+            let y = rng.random_range(ds - dx..ds + dx);
 
             let pos = Vector2::from([x, y]);
             MyAgent {

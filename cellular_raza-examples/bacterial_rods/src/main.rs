@@ -133,15 +133,15 @@ fn main() -> Result<(), SimulationError> {
     let delta_x = agent.mechanics.spring_length * nrows as f64;
     let agents = (0..5).map(|_| {
         let mut new_agent = agent.clone();
-        new_agent.mechanics.spring_length = rng.gen_range(1.5..2.5) * MICRO_METRE;
+        new_agent.mechanics.spring_length = rng.random_range(1.5..2.5) * MICRO_METRE;
         let mut pos = nalgebra::MatrixXx3::zeros(nrows);
-        pos[(0, 0)] = rng.gen_range(delta_x..2.0 * delta_x);
-        pos[(0, 1)] = rng.gen_range(delta_x / 3.0..delta_x * 2.0 / 3.0);
-        pos[(0, 2)] = rng.gen_range(delta_x..2.0 * delta_x);
-        let theta = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+        pos[(0, 0)] = rng.random_range(delta_x..2.0 * delta_x);
+        pos[(0, 1)] = rng.random_range(delta_x / 3.0..delta_x * 2.0 / 3.0);
+        pos[(0, 2)] = rng.random_range(delta_x..2.0 * delta_x);
+        let theta = rng.random_range(0.0..2.0 * std::f64::consts::PI);
         for i in 1..pos.nrows() {
             let phi =
-                theta + rng.gen_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
+                theta + rng.random_range(-std::f64::consts::FRAC_PI_8..std::f64::consts::FRAC_PI_8);
             let mut direction = nalgebra::Vector3::zeros();
             direction[0] = phi.cos();
             direction[1] = phi.sin();

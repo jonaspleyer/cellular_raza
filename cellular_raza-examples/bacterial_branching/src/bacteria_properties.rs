@@ -45,7 +45,7 @@ impl Cycle<MyAgent, f32> for MyAgent {
 
         // Generate cellular splitting direction randomly
         use rand::Rng;
-        let alpha = rng.gen_range(0.0..2.0 * PI);
+        let alpha = rng.random_range(0.0..2.0 * PI);
         let dir_vec = nalgebra::Vector2::from([alpha.cos(), alpha.sin()]);
 
         // Define new positions for cells

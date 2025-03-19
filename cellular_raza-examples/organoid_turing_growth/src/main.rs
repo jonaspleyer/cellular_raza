@@ -129,8 +129,8 @@ fn main() {
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     let mut cells = (0..N_CELLS_ORGANOID as i32)
         .map(|_| {
-            let x = rng.gen_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH);
-            let y = rng.gen_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH);
+            let x = rng.random_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH);
+            let y = rng.random_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH);
 
             let pos = Vector2::from([x, y]);
             ModularCell {
@@ -147,7 +147,7 @@ fn main() {
                 },
                 interaction_extracellular: GradientSensing {},
                 cycle: OwnCycle::new(
-                    rng.gen_range(0.0..CELL_CYCLE_DIVISION_AGE_MAX),
+                    rng.random_range(0.0..CELL_CYCLE_DIVISION_AGE_MAX),
                     CELL_MECHANICS_RADIUS,
                     CELL_CYCLE_GROWTH_RATE,
                     CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
@@ -159,8 +159,8 @@ fn main() {
                     intracellular_concentrations: ReactionVector::from([
                         0.0,
                         CELL_FOOD_INITIAL_CONCENTRATION,
-                        rng.gen_range(200.0..500.0),
-                        rng.gen_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
                     ]),
                     intracellular_concentrations_saturation_level: ReactionVector::from([
                         CELL_BMP4_SATURATION,
@@ -207,8 +207,8 @@ fn main() {
 
     let mut cells2 = (0..N_CELLS_SENDER)
         .map(|_| {
-            let x = rng.gen_range(STARTING_DOMAIN_X_SENDER_LOW..STARTING_DOMAIN_X_SENDER_HIGH);
-            let y = rng.gen_range(STARTING_DOMAIN_Y_SENDER_LOW..STARTING_DOMAIN_Y_SENDER_HIGH);
+            let x = rng.random_range(STARTING_DOMAIN_X_SENDER_LOW..STARTING_DOMAIN_X_SENDER_HIGH);
+            let y = rng.random_range(STARTING_DOMAIN_Y_SENDER_LOW..STARTING_DOMAIN_Y_SENDER_HIGH);
 
             let pos = Vector2::from([x, y]);
             ModularCell {
@@ -225,7 +225,7 @@ fn main() {
                 },
                 interaction_extracellular: GradientSensing {},
                 cycle: OwnCycle::new(
-                    rng.gen_range(0.0..CELL_CYCLE_DIVISION_AGE_MAX),
+                    rng.random_range(0.0..CELL_CYCLE_DIVISION_AGE_MAX),
                     CELL_MECHANICS_RADIUS,
                     0.0,
                     CELL_CYCLE_FOOD_GROWTH_RATE_MULTIPLIER,
@@ -237,8 +237,8 @@ fn main() {
                     intracellular_concentrations: ReactionVector::from([
                         0.0,
                         CELL_FOOD_INITIAL_CONCENTRATION,
-                        rng.gen_range(200.0..500.0),
-                        rng.gen_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
+                        rng.random_range(200.0..500.0),
                     ]),
                     intracellular_concentrations_saturation_level: ReactionVector::from([
                         CELL_BMP4_SATURATION,

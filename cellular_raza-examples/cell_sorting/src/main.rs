@@ -115,9 +115,9 @@ fn main() -> Result<(), SimulationError> {
     let cells = (0..N_CELLS_1 + N_CELLS_2)
         .map(|n| {
             let pos = Vector3::from([
-                rng.gen_range(0.0..DOMAIN_SIZE),
-                rng.gen_range(0.0..DOMAIN_SIZE),
-                rng.gen_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
             ]);
             Cell {
                 mechanics: NewtonDamped3D {

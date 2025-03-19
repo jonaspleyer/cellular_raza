@@ -124,9 +124,9 @@ fn run_simulation(sim_settings: &SimSettings) -> Result<(), chili::SimulationErr
 
     let cells = (0..n_cells_1 + n_cells_2).map(|n| {
         let pos = Vector3::from([
-            rng.gen_range(0.0..domain_size),
-            rng.gen_range(0.0..domain_size),
-            rng.gen_range(0.0..domain_size),
+            rng.random_range(0.0..domain_size),
+            rng.random_range(0.0..domain_size),
+            rng.random_range(0.0..domain_size),
         ]);
         Cell {
             mechanics: NewtonDamped3D {

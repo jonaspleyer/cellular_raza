@@ -111,9 +111,9 @@ fn main() -> Result<(), SimulationError> {
     let cells = (0..N_CELLS_BLUE + N_CELLS_RED)
         .map(|n| {
             let pos = [
-                rng.gen_range(0.0..DOMAIN_SIZE),
-                rng.gen_range(0.0..DOMAIN_SIZE),
-                rng.gen_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
+                rng.random_range(0.0..DOMAIN_SIZE),
             ];
             Cell {
                 mechanics: Langevin3D {

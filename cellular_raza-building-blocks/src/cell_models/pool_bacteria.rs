@@ -247,8 +247,8 @@ impl Cycle<Bacteria> for BacteriaCycle {
                 // TODO read out extracellular concentrations of nutrients here
                 // change the probability to be
                 // P = dt * lambda * N_external / N_external_initial
-                Species::S1 => rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate_1),
-                Species::S2 => rng.gen_bool(dt * cell.cycle.lag_phase_transition_rate_2),
+                Species::S1 => rng.random_bool(dt * cell.cycle.lag_phase_transition_rate_1),
+                Species::S2 => rng.random_bool(dt * cell.cycle.lag_phase_transition_rate_2),
             };
             if p {
                 cell.cellular_reactions.lag_phase_active = false;
@@ -275,7 +275,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
         c2.cellular_reactions.cell_volume /= 2.0;
 
         // Generate cellular splitting direction randomly
-        let angle_1 = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+        let angle_1 = rng.random_range(0.0..2.0 * std::f64::consts::PI);
         let dir_vec = nalgebra::Rotation2::new(angle_1) * Vector2::from([1.0, 0.0]);
 
         // Define new positions for cells

@@ -355,7 +355,7 @@ where
                     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(seed + n);
                     F::one()
                         + <F as num::Float>::clamp(r.clone(), F::zero(), F::one())
-                            * rng.gen_range(-F::one()..F::one())
+                            * rng.random_range(-F::one()..F::one())
                 }
                 None => F::one(),
             }

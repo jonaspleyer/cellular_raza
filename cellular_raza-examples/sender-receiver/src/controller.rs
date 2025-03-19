@@ -45,12 +45,12 @@ fn default_setup(
     let domain = create_domain(DOMAIN_SIZE)?;
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
-            let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
+            let y = DOMAIN_SIZE * rng.random_range(0.3..0.7);
             let (species, x) = if n_cell < N_CELLS_INITIAL_SENDER {
-                let x = DOMAIN_SIZE * rng.gen_range(0.0..0.2);
+                let x = DOMAIN_SIZE * rng.random_range(0.0..0.2);
                 (Species::Sender, x)
             } else {
-                let x = DOMAIN_SIZE * rng.gen_range(0.8..1.0);
+                let x = DOMAIN_SIZE * rng.random_range(0.8..1.0);
                 (Species::Receiver, x)
             };
             create_cell([x, y], species)
@@ -66,12 +66,12 @@ fn circular_setup(
     let domain = create_domain(NEW_DOMAIN_SIZE)?;
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
-            let phi = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+            let phi = rng.random_range(0.0..2.0 * std::f64::consts::PI);
             let (species, r) = if n_cell < N_CELLS_INITIAL_SENDER {
-                let r = 0.5 * NEW_DOMAIN_SIZE * rng.gen_range(0.7..1.0);
+                let r = 0.5 * NEW_DOMAIN_SIZE * rng.random_range(0.7..1.0);
                 (Species::Sender, r)
             } else {
-                let r = 0.5 * NEW_DOMAIN_SIZE * rng.gen_range(0.0..0.3);
+                let r = 0.5 * NEW_DOMAIN_SIZE * rng.random_range(0.0..0.3);
                 (Species::Receiver, r)
             };
             create_cell(
@@ -93,12 +93,12 @@ fn branch_setup(
     let cells = (0..N_CELLS_INITIAL_SENDER + N_CELLS_INITIAL_RECEIVER)
         .map(|n_cell| {
             let (species, x, y) = if n_cell < N_CELLS_INITIAL_SENDER {
-                let y = DOMAIN_SIZE * rng.gen_range(0.3..0.7);
-                let x = DOMAIN_SIZE * rng.gen_range(0.0..0.2);
+                let y = DOMAIN_SIZE * rng.random_range(0.3..0.7);
+                let x = DOMAIN_SIZE * rng.random_range(0.0..0.2);
                 (Species::Sender, x, y)
             } else {
-                let x = rng.gen_range(0.0..0.4 * DOMAIN_SIZE);
-                let y = 0.5 * DOMAIN_SIZE + rng.gen_range(-1_f64..1_f64).signum() * x;
+                let x = rng.random_range(0.0..0.4 * DOMAIN_SIZE);
+                let y = 0.5 * DOMAIN_SIZE + rng.random_range(-1_f64..1_f64).signum() * x;
                 (Species::Receiver, DOMAIN_SIZE - x, y)
             };
             create_cell([x, y], species)

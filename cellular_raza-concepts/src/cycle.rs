@@ -83,7 +83,7 @@ pub enum CycleEvent {
 ///
 ///         // Define a new position for both cells
 ///         // To do this: Pick a random number as an angle.
-///         let angle = rng.gen_range(0.0..2.0*std::f64::consts::PI);
+///         let angle = rng.random_range(0.0..2.0*std::f64::consts::PI);
 ///
 ///         // Calculate the new position of the original and new cell with this angle
 ///         let pos = [

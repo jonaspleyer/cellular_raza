@@ -158,8 +158,8 @@ fn main() {
     // ###################################### DEFINE CELLS IN SIMULATION ######################################
     let cells = (0..N_BACTERIA_INITIAL)
         .map(|_| {
-            let x = rng.gen_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH);
-            let y = rng.gen_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH);
+            let x = rng.random_range(STARTING_DOMAIN_X_LOW..STARTING_DOMAIN_X_HIGH);
+            let y = rng.random_range(STARTING_DOMAIN_Y_LOW..STARTING_DOMAIN_Y_HIGH);
 
             let pos = Vector2::from([x, y]);
             ModularCell {
@@ -176,7 +176,7 @@ fn main() {
                 },
                 interaction_extracellular: GradientSensing {},
                 cycle: OwnCycle::new(
-                    rng.gen_range(0.0..BACTERIA_CYCLE_DIVISION_AGE_MAX),
+                    rng.random_range(0.0..BACTERIA_CYCLE_DIVISION_AGE_MAX),
                     BACTERIA_MECHANICS_RADIUS,
                     BACTERIA_CYCLE_GROWTH_RATE,
                     BACTERIA_CYCLE_FOOD_THRESHOLD,

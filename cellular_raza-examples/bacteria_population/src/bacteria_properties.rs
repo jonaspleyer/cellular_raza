@@ -137,7 +137,7 @@ impl Cycle<MyCellType> for OwnCycle {
             // Check if the cell has grown enough
             cell.interaction.cell_radius >= cell.cycle.maximum_cell_radius &&
             // Random selection but chance increased when significantly above the food threshold
-            rng.gen_range(0.0..1.0) < relative_division_food_level
+            rng.random_range(0.0..1.0) < relative_division_food_level
         {
             return Some(CycleEvent::Division);
         }
@@ -160,7 +160,7 @@ impl Cycle<MyCellType> for OwnCycle {
         c2.interaction.cell_radius *= (1.0 - relative_size_difference) / std::f64::consts::SQRT_2;
 
         // Generate cellular splitting direction randomly
-        let angle_1 = rng.gen_range(0.0..2.0 * std::f64::consts::PI);
+        let angle_1 = rng.random_range(0.0..2.0 * std::f64::consts::PI);
         let dir_vec = nalgebra::Rotation2::new(angle_1) * Vector2::from([1.0, 0.0]);
 
         // Define new positions for cells
