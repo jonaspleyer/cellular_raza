@@ -408,11 +408,11 @@ impl CellIdentifier {
         py: pyo3::Python<'py>,
         key: usize,
     ) -> pyo3::PyResult<pyo3::PyObject> {
-        use pyo3::IntoPy;
+        use pyo3::IntoPyObject;
         if key == 0 {
-            Ok(self.0.into_py(py))
+            Ok(self.0.into_pyobject(py)?)
         } else if key == 1 {
-            Ok(self.1.into_py(py))
+            Ok(self.1.into_pyobject(py)?)
         } else {
             Err(pyo3::exceptions::PyValueError::new_err(
                 "CellIdentifier can only be indexed at 0 and 1",
