@@ -35,7 +35,8 @@ impl<Id, Element> FileBasedStorage<Id, Element> for RonStorageInterface<Id, Elem
             .separate_tuple_members(false)
             .compact_arrays(true)
             .indentor("  ".to_owned());
-        Ok(ron::ser::to_writer_pretty(writer, value, config)?)
+        let options = ron::Options::default();
+        Ok(options.to_io_writer_pretty(writer, value, config)?)
     }
 
     fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
