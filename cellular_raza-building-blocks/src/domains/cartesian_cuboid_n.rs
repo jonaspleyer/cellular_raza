@@ -101,7 +101,7 @@ where
 
     /// Get the number of voxels in each dimension of the domain
     pub fn get_n_voxels(&self) -> SVector<usize, D> {
-        self.n_voxels.clone()
+        self.n_voxels
     }
 }
 
@@ -272,9 +272,7 @@ impl<F, const D: usize> CartesianCuboid<F, D> {
             .multi_cartesian_product()
             .map(|x| {
                 let mut index = [0; D];
-                for j in 0..D {
-                    index[j] = x[j];
-                }
+                index.copy_from_slice(&x);
                 index
             })
     }
@@ -343,7 +341,7 @@ where
                 ),
             ))?;
         }
-        Ok(res.into())
+        Ok(res)
     }
 }
 
@@ -445,11 +443,7 @@ where
             min: s.min,
             max: s.max,
             dx: s.dx,
-            voxels: s
-                .voxels
-                .into_iter()
-                .map(|vox| <[usize; D]>::from(vox))
-                .collect(),
+            voxels: s.voxels.into_iter().map(<[usize; D]>::from).collect(),
             domain_min: s.domain_min,
             domain_max: s.domain_max,
             domain_n_voxels: s.domain_n_voxels,
@@ -472,7 +466,7 @@ where
         let voxels = self
             .voxels
             .iter()
-            .map(|ind| ind.clone().into_iter().collect::<Vec<_>>())
+            .map(|ind| ind.into_iter().collect::<Vec<_>>())
             .collect::<Vec<_>>();
         state.serialize_field("voxels", &voxels)?;
         state.serialize_field("domain_min", &self.domain_min)?;
@@ -610,7 +604,7 @@ where
 
     /// See [CartesianCuboid::get_n_voxels].
     pub fn get_domain_n_voxels(&self) -> SVector<usize, D> {
-        self.domain_n_voxels.clone()
+        self.domain_n_voxels
     }
 }
 
@@ -721,11 +715,11 @@ where
             let subdomain = CartesianSubDomain {
                 min: min.into(),
                 max: max.into(),
-                dx: self.dx.clone(),
+                dx: self.dx,
                 voxels: voxels.clone(),
                 domain_min: self.min,
                 domain_max: self.max,
-                domain_n_voxels: self.n_voxels.clone(),
+                domain_n_voxels: self.n_voxels,
             };
             res.push((n_subdomain, subdomain, voxels));
         }
