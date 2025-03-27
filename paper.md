@@ -12,7 +12,7 @@ authors:
   - name: Christian Fleck
     affiliation: 1
 affiliations:
- - name: Freiburg Center for Data-Analysis and Modeling
+ - name: Freiburg Center for Data Analysis, Modeling and AI
    index: 1
 date: 13 March 2025
 bibliography: paper.bib
