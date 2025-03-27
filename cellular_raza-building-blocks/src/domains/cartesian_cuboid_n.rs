@@ -116,7 +116,10 @@ where
         + num::ToPrimitive
         + core::ops::SubAssign
         + core::ops::Div<Output = F>
-        + core::ops::DivAssign,
+        + core::ops::DivAssign
+        + num::traits::AsPrimitive<usize>
+        + nalgebra::RealField,
+    usize: num::traits::AsPrimitive<F>,
     Ci: IntoIterator<Item = C>,
 {
     type SubDomainIndex = usize;
@@ -636,7 +639,13 @@ impl<F, const D: usize> CartesianSubDomain<F, D> {
 
 impl<F, const D: usize> DomainCreateSubDomains<CartesianSubDomain<F, D>> for CartesianCuboid<F, D>
 where
-    F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
+    F: 'static
+        + num::Float
+        + core::fmt::Debug
+        + num::FromPrimitive
+        + num::traits::AsPrimitive<usize>
+        + nalgebra::RealField,
+    usize: num::traits::AsPrimitive<F>,
 {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; D];
@@ -660,6 +669,62 @@ where
         let (n, _m, average_len) = get_decomp_res(n_indices, n_subdomains.into()).ok_or(
             DecomposeError::Generic("Could not find a suiting decomposition".to_owned()),
         )?;
+
+        // In the case of 2 dimensions we can use the KMR method of the spatial_decomposition crate
+        /* if D == 2 {
+            use num::traits::AsPrimitive;
+            let rectangle = spatial_decomposition::Rectangle {
+                min: [self.min[0], self.min[1]],
+                max: [self.max[0], self.max[1]],
+            };
+            let subdomains = spatial_decomposition::kmr_decompose(&rectangle, n_subdomains);
+            let digits = indices.into_iter().map(|x| {
+                let own_min: [F; 2] = [x[0].as_(), x[1].as_()];
+                let own_max: [F; 2] = [self.get_n_voxels()[0].as_(), self.get_n_voxels()[1].as_()];
+                let rect = spatial_decomposition::Rectangle {
+                    min: [
+                        own_min[0] / own_max[0] * (rectangle.max[0] - rectangle.min[0]),
+                        own_min[1] / own_max[1] * (rectangle.max[1] - rectangle.min[1]),
+                    ],
+                    max: [
+                        (own_min[0] + F::one()) / own_max[0]
+                            * (rectangle.max[0] - rectangle.min[0]),
+                        (own_min[1] + F::one()) / own_max[1]
+                            * (rectangle.max[1] - rectangle.min[1]),
+                    ],
+                };
+                (x, rect)
+            });
+            let sorted =
+                spatial_decomposition::kmr_digitize_1(&rectangle, n_subdomains, digits).unwrap();
+            for s in subdomains.iter() {
+                println!("{:7.2?} {:7.2?}", s.min, s.max);
+            }
+            return Ok(subdomains
+                .into_iter()
+                .zip(sorted)
+                .enumerate()
+                .map(|(n_subdomain, (subdomain, (_, voxels_rects)))| {
+                    let voxels: Vec<_> = voxels_rects.into_iter().map(|(x, _)| x).collect();
+                    let subdomain = CartesianSubDomain {
+                        min: nalgebra::SVector::<F, D>::from_row_slice(&subdomain.min),
+                        max: nalgebra::SVector::<F, D>::from_row_slice(&subdomain.max),
+                        dx: nalgebra::SVector::<F, D>::from_row_slice(&(<[F; D]>::from(self.dx))),
+                        voxels: voxels.clone(),
+                        domain_min: nalgebra::SVector::<F, D>::from_row_slice(&<[F; D]>::from(
+                            self.min,
+                        )),
+                        domain_max: nalgebra::SVector::<F, D>::from_row_slice(&<[F; D]>::from(
+                            self.max,
+                        )),
+                        domain_n_voxels: nalgebra::SVector::<usize, D>::from_row_slice(
+                            &<[usize; D]>::from(self.n_voxels),
+                        ),
+                    };
+                    (n_subdomain, subdomain, voxels)
+                })
+                .collect());
+        }*/
 
         // TODO Currently we are not splitting the voxels apart efficiently
         // These are subdomains which contain n voxels

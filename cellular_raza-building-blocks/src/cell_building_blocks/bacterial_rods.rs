@@ -315,7 +315,13 @@ where
 impl<F, const D: usize> DomainCreateSubDomains<CartesianSubDomainRods<F, D>>
     for CartesianCuboidRods<F, D>
 where
-    F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
+    F: 'static
+        + num::Float
+        + core::fmt::Debug
+        + num::FromPrimitive
+        + num::traits::AsPrimitive<usize>
+        + nalgebra::RealField,
+    usize: num::traits::AsPrimitive<F>,
 {
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; D];

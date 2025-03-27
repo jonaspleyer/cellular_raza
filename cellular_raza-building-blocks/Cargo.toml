@@ -27,6 +27,7 @@ serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
 pyo3 = { workspace = true, optional=true, features=["serde", "py-clone"] }
+spatial-decomposition = "0.2.1"
 
 [dev-dependencies]
 serde_test = "1.0.177"
