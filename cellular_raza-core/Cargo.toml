@@ -19,6 +19,9 @@ all-features = true
 [build-dependencies]
 cc = { version = "1.2.7", features = ["parallel"], optional=true}
 
+[patch.crates-io]
+ron = { git = "https://github.com/ron-rs/ron/" }
+
 [dependencies]
 # Core
 crossbeam-channel = { version="0.5" }
