@@ -162,6 +162,7 @@ fn main() -> Result<(), SimulationError> {
             domain_sizes,
             domain_segments,
         )?,
+        gravity: 0.,
     };
 
     // Storage Setup
