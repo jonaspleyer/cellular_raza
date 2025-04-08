@@ -101,6 +101,15 @@ impl<Id, Element, const TEMP: bool> StorageInterfaceOpen
             bincode_config,
         })
     }
+
+    fn clone_to_new_instance(&self, _storage_instance: u64) -> Self {
+        Self {
+            db: self.db.clone(),
+            bincode_config: self.bincode_config.clone(),
+            id_phantom: PhantomData,
+            element_phantom: PhantomData,
+        }
+    }
 }
 
 impl<Id, Element, const TEMP: bool> StorageInterfaceStore<Id, Element>

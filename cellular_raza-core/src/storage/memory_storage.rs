@@ -25,6 +25,12 @@ impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
             map: BTreeMap::new(),
         })
     }
+
+    fn clone_to_new_instance(&self, _storage_instance: u64) -> Self {
+        Self {
+            map: Arc::clone(&self.map),
+        }
+    }
 }
 
 impl<Id, Element> StorageInterfaceStore<Id, Element> for MemoryStorageInterface<Id, Element>
