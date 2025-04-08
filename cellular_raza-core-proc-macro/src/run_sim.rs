@@ -33,6 +33,10 @@ impl Parallelizer {
                     .into_iter()
                 {
                     let #settings = #settings.clone();
+                    let mut _storage_manager_subdomains = _storage_manager_subdomains_base
+                        .clone_to_new_instance(key as u64);
+                    let mut _storage_manager_cells = _storage_manager_cells_base
+                        .clone_to_new_instance(key as u64);
                     let handle = std::thread::Builder::new()
                         .name(format!("cellular_raza-worker_thread-{:03.0}", key))
                         .spawn(move ||
@@ -61,6 +65,10 @@ impl Parallelizer {
                         _,
                         #core_path::backend::chili::SimulationError
                     > {
+                let mut _storage_manager_subdomains = _storage_manager_subdomains_base
+                    .clone_to_new_instance(key as u64);
+                let mut _storage_manager_cells = _storage_manager_cells_base
+                    .clone_to_new_instance(key as u64);
                         #code
                     })
                     .collect::<Result<Vec<_>, #core_path::backend::chili::SimulationError>>()?;
@@ -319,18 +327,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     );
 
     quote!(
-        let builder = #settings.storage.clone().init();
-        let builder_subdomains = builder.clone().suffix(builder.get_suffix().join("subdomains"));
-        let builder_cells = builder.clone().suffix(builder.get_suffix().join("cells"));
-
-        let mut _storage_manager_subdomains: #core_path::storage::StorageManager<
-            #core_path::backend::chili::SubDomainPlainIndex,
-            _
-        > =
-           #core_path::storage::StorageManager::open_or_create(builder_subdomains, key as u64)?;
-        let mut _storage_manager_cells: #core_path::storage::StorageManager<_, _> =
-           #core_path::storage::StorageManager::open_or_create(builder_cells, key as u64)?;
-
         // Set up the time stepper
         let mut _time_stepper = #settings.time.clone();
         use #core_path::time::TimeStepper;
@@ -394,10 +390,23 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let aux_storage_constructor = crate::aux_storage::default_aux_storage_initializer(&kwargs);
 
     let update_func = run_main_update(kwargs.clone());
+    let create_storage = quote::quote!(
+        let builder = #settings.storage.clone().init();
+        let builder_subdomains = builder.clone().suffix(builder.get_suffix().join("subdomains"));
+        let builder_cells = builder.clone().suffix(builder.get_suffix().join("cells"));
+
+        let _storage_manager_subdomains_base: #core_path::storage::StorageManager<
+            #core_path::backend::chili::SubDomainPlainIndex,
+            _
+        > =
+            #core_path::storage::StorageManager::open_or_create(builder_subdomains, 0)?;
+        let _storage_manager_cells_base: #core_path::storage::StorageManager<_, _> =
+            #core_path::storage::StorageManager::open_or_create(builder_cells, 0)?;
+    );
     let parallelized_update_func =
         kwargs
             .parallelizer
-            .parallelize_execution(&update_func, &core_path, settings);
+            .parallelize_execution(&update_func, core_path, settings);
 
     quote::quote!({
         type _Syncer = #core_path::backend::chili::BarrierSync;
@@ -423,6 +432,7 @@ pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 #aux_storage_constructor,
             )?;
 
+            #create_storage
             let res = #parallelized_update_func?;
             Result::<_, #core_path::backend::chili::SimulationError>::Ok(res)
         };
