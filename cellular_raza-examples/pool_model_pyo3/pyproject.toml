@@ -11,3 +11,6 @@ dev = ["pytest"]
 
 [tool.pytest.ini_options]
 addopts = "--benchmark-disable"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
