@@ -36,6 +36,8 @@ pub enum StorageError {
     ParseIntError(std::num::ParseIntError),
     /// Generic Utf8 error.
     Utf8Error(std::str::Utf8Error),
+    /// Error during locking of Mutex
+    PoisonError(String),
 }
 
 impl From<serde_json::Error> for StorageError {
@@ -92,6 +94,12 @@ impl From<std::num::ParseIntError> for StorageError {
     }
 }
 
+impl<T> From<std::sync::PoisonError<T>> for StorageError {
+    fn from(err: std::sync::PoisonError<T>) -> Self {
+        StorageError::PoisonError(format!("{err}"))
+    }
+}
+
 impl Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -105,6 +113,7 @@ impl Display for StorageError {
             StorageError::InitError(message) => write!(f, "{}", message),
             StorageError::Utf8Error(message) => write!(f, "{}", message),
             StorageError::ParseIntError(message) => write!(f, "{}", message),
+            StorageError::PoisonError(message) => write!(f, "{}", message),
         }
     }
 }
