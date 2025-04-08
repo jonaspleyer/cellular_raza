@@ -289,6 +289,9 @@ pub struct CartesianCuboidRods<F, const D: usize> {
     /// The base-cuboid which is being repurposed
     #[DomainRngSeed]
     pub domain: CartesianCuboid<F, D>,
+    /// Gravitational force which is only relevant for 3D simulations and always acts with constant
+    /// force downwards (negative z-direction).
+    pub gravity: F,
 }
 
 impl<C, F, const D: usize> SortCells<C> for CartesianCuboidRods<F, D>
@@ -339,7 +342,10 @@ where
             .map(move |(subdomain_index, subdomain, voxels)| {
                 (
                     subdomain_index,
-                    CartesianSubDomainRods::<F, D> { subdomain },
+                    CartesianSubDomainRods::<F, D> {
+                        subdomain,
+                        gravity: self.gravity,
+                    },
                     voxels,
                 )
             }))
@@ -352,6 +358,31 @@ pub struct CartesianSubDomainRods<F, const D: usize> {
     /// Base subdomain as created by the [CartesianCuboid] domain.
     #[Base]
     pub subdomain: CartesianSubDomain<F, D>,
+    /// See [CartesianCuboidRods]
+    pub gravity: F,
+}
+
+impl<F>
+    SubDomainForce<
+        Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+    > for CartesianSubDomainRods<F, 3>
+where
+    F: nalgebra::RealField + num::Float,
+{
+    fn calculate_custom_force(
+        &self,
+        pos: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        _: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+    ) -> Result<
+        Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        cellular_raza_concepts::CalcError,
+    > {
+        Ok(nalgebra::MatrixXx3::from_fn(pos.nrows(), |_, m| {
+            if m == 2 { -self.gravity } else { F::zero() }
+        }))
+    }
 }
 
 impl<F, const D: usize>
@@ -420,6 +451,7 @@ where
     CartesianSubDomain<F, D2>: for<'a> Deserialize<'a>,
 {
     subdomain: CartesianSubDomain<F, D2>,
+    gravity: F,
 }
 
 impl<F, const D: usize> From<__CartesianSubDomainRodsSerde<F, D>> for CartesianSubDomainRods<F, D>
@@ -429,6 +461,7 @@ where
     fn from(s: __CartesianSubDomainRodsSerde<F, D>) -> Self {
         CartesianSubDomainRods {
             subdomain: s.subdomain,
+            gravity: s.gravity,
         }
     }
 }
