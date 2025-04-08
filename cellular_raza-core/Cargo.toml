@@ -19,9 +19,6 @@ all-features = true
 [build-dependencies]
 cc = { version = "1.2.7", features = ["parallel"], optional=true}
 
-[patch.crates-io]
-ron = { git = "https://github.com/ron-rs/ron/" }
-
 [dependencies]
 # Core
 crossbeam-channel = { version="0.5" }
@@ -38,7 +35,7 @@ bincode = { version = "2.0", features = ["serde"] }
 serde = { workspace = true }
 quick-xml = { version="0.37", features=["serialize"]}
 serde_json = { version="1.0" }
-ron = "0.9"
+ron = "0.10"
 sled = { version="0.34" }
 chrono = { version = "0.4.31", optional = true }
 tracing = { version = "0.1.40", optional = true }
