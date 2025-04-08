@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Test-Suite beta ubuntu-latest
+name: Test-Suite beta ubuntu-24.04
 
 jobs:
-  CI-beta-ubuntu-latest:
+  CI-beta-ubuntu-24.04:
     uses: ./.github/workflows/reuse.yml
     with:
       toolchain: beta
-      os: ubuntu-latest
+      os: ubuntu-24.04
