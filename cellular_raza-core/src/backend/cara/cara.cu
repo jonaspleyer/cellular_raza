@@ -132,8 +132,8 @@ extern "C" void print_positions(Runner &runner) {
         Agent agent = runner.agents[i].agent;
         Position p  = agent.position;
         Velocity v  = agent.velocity;
-        // printf("%lu p=[%f, %f, %f] v=[%f, %f, %f]\n", agent.id, p.p[0], p.p[1], p.p[2], v.v[0],
-        //        v.v[1], v.v[2]);
+        printf("%lu p=[%f, %f, %f] v=[%f, %f, %f]\n", agent.id, p.p[0], p.p[1], p.p[2], v.v[0],
+               v.v[1], v.v[2]);
     }
 }
 
@@ -170,9 +170,8 @@ extern "C" void do_compute() {
     float maxError = 0.0f;
     for (int i = 0; i < N; i++) {
         maxError = abs(y[i] - 4.0f);
-        // printf("%f\n", maxError);
-        // assert(maxError < 0.001);
     }
+    assert(maxError < 0.001);
 
     cudaFree(d_x);
     cudaFree(d_y);

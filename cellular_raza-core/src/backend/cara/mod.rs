@@ -73,20 +73,10 @@ pub fn run() {
         .collect();
 
     let runner = unsafe { new_runner(agents.as_ptr(), agents.len()) };
-    /* let mut runner = Runner {
-        uid_counter: 0,
-        n_agents,
-        agents_up_to_date: false,
-        // TODO this needs to be changed. What if there are not agents present to index?
-        agents: &mut (agents[0]),
-        positions: &mut 0.0,
-        velocities: &mut 0.0,
-        forces: &mut 0.0,
-    };*/
 
     unsafe {
         update_positions(&mut *runner);
-        print_positions(&*runner);
+        // print_positions(&*runner);
         do_compute();
     }
 }
