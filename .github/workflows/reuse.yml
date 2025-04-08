@@ -19,7 +19,7 @@ jobs:
           submodules: 'recursive'
           lfs: 'false'
       - name: Install libfontconfig1-dev
-        if: ${{ inputs.os == 'ubuntu-latest' }}
+        if: ${{ contains(inputs.os, 'ubuntu') }}
         run: sudo apt-get install libfontconfig1-dev
 
       - name: Install toolchain
