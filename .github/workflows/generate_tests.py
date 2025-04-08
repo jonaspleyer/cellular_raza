@@ -5,13 +5,14 @@ toolchains = ["stable", "beta", "nightly"]
 for toolchain in toolchains:
     for os in oss:
         filename = "test_{}_{}.yml".format(toolchain, os)
+        os_rename = os.replace(".", "_")
         contents = f"""\
 on: [push, pull_request]
 
 name: Test-Suite {toolchain} {os}
 
 jobs:
-  CI-{toolchain}-{os}:
+  CI-{toolchain}-{os_rename}:
     uses: ./.github/workflows/reuse.yml
     with:
       toolchain: {toolchain}
