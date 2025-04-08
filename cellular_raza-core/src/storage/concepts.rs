@@ -36,6 +36,8 @@ pub enum StorageError {
     ParseIntError(std::num::ParseIntError),
     /// Generic Utf8 error.
     Utf8Error(std::str::Utf8Error),
+    /// Error during locking of Mutex
+    PoisonError(String),
 }
 
 impl From<serde_json::Error> for StorageError {
@@ -92,6 +94,12 @@ impl From<std::num::ParseIntError> for StorageError {
     }
 }
 
+impl<T> From<std::sync::PoisonError<T>> for StorageError {
+    fn from(err: std::sync::PoisonError<T>) -> Self {
+        StorageError::PoisonError(format!("{err}"))
+    }
+}
+
 impl Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -105,6 +113,7 @@ impl Display for StorageError {
             StorageError::InitError(message) => write!(f, "{}", message),
             StorageError::Utf8Error(message) => write!(f, "{}", message),
             StorageError::ParseIntError(message) => write!(f, "{}", message),
+            StorageError::PoisonError(message) => write!(f, "{}", message),
         }
     }
 }
@@ -422,6 +431,47 @@ impl<Id, Element> StorageManager<Id, Element> {
         };
 
         Ok(manager)
+    }
+
+    /// Uses an existing storage manager to construct a new one.
+    /// ```
+    /// # use cellular_raza_core::storage::*;
+    /// let builder = StorageBuilder::new()
+    ///     .location("/tmp")
+    ///     .init();
+    ///
+    /// let manager = StorageManager::<usize, f64>::open_or_create(builder, 0)?;
+    /// let manager2 = manager.clone_to_new_instance(1);
+    /// # Ok::<(), StorageError>(())
+    ///
+    /// ```
+    pub fn clone_to_new_instance(&self, storage_instance: u64) -> Self {
+        Self {
+            storage_priority: self.storage_priority.clone(),
+            builder: self.builder.clone(),
+            instance: storage_instance,
+
+            sled_storage: self
+                .sled_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+            sled_temp_storage: self
+                .sled_temp_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+            json_storage: self
+                .json_storage
+                .as_ref()
+                .map(|x| StorageWrapper(x.0.clone_to_new_instance(storage_instance))),
+            ron_storage: self
+                .ron_storage
+                .as_ref()
+                .map(|x| StorageWrapper(x.0.clone_to_new_instance(storage_instance))),
+            memory_storage: self
+                .memory_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+        }
     }
 
     /// Extracts all information given by the [StorageBuilder] when constructing
@@ -774,6 +824,11 @@ pub trait StorageInterfaceOpen {
     ) -> Result<Self, StorageError>
     where
         Self: Sized;
+
+    /// Constructs a new instance from an existing one
+    ///
+    /// For the case of `storage_instance == 0`, an instance with the same value may already exist.
+    fn clone_to_new_instance(&self, storage_instance: u64) -> Self;
 }
 
 /// Handles storing of elements
