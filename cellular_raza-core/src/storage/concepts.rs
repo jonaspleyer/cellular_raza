@@ -424,6 +424,47 @@ impl<Id, Element> StorageManager<Id, Element> {
         Ok(manager)
     }
 
+    /// Uses an existing storage manager to construct a new one.
+    /// ```
+    /// # use cellular_raza_core::storage::*;
+    /// let builder = StorageBuilder::new()
+    ///     .location("/tmp")
+    ///     .init();
+    ///
+    /// let manager = StorageManager::<usize, f64>::open_or_create(builder, 0)?;
+    /// let manager2 = manager.clone_to_new_instance(1);
+    /// # Ok::<(), StorageError>(())
+    ///
+    /// ```
+    pub fn clone_to_new_instance(&self, storage_instance: u64) -> Self {
+        Self {
+            storage_priority: self.storage_priority.clone(),
+            builder: self.builder.clone(),
+            instance: storage_instance,
+
+            sled_storage: self
+                .sled_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+            sled_temp_storage: self
+                .sled_temp_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+            json_storage: self
+                .json_storage
+                .as_ref()
+                .map(|x| StorageWrapper(x.0.clone_to_new_instance(storage_instance))),
+            ron_storage: self
+                .ron_storage
+                .as_ref()
+                .map(|x| StorageWrapper(x.0.clone_to_new_instance(storage_instance))),
+            memory_storage: self
+                .memory_storage
+                .as_ref()
+                .map(|x| x.clone_to_new_instance(storage_instance)),
+        }
+    }
+
     /// Extracts all information given by the [StorageBuilder] when constructing
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn extract_builder(&self) -> StorageBuilder<true> {
@@ -774,6 +815,11 @@ pub trait StorageInterfaceOpen {
     ) -> Result<Self, StorageError>
     where
         Self: Sized;
+
+    /// Constructs a new instance from an existing one
+    ///
+    /// For the case of `storage_instance == 0`, an instance with the same value may already exist.
+    fn clone_to_new_instance(&self, storage_instance: u64) -> Self;
 }
 
 /// Handles storing of elements

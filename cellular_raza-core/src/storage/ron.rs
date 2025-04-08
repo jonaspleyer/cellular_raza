@@ -67,4 +67,13 @@ impl<Id, Element> StorageInterfaceOpen for RonStorageInterface<Id, Element> {
             phantom_element: PhantomData,
         })
     }
+
+    fn clone_to_new_instance(&self, storage_instance: u64) -> Self {
+        Self {
+            path: self.path.clone(),
+            storage_instance,
+            phantom_id: PhantomData,
+            phantom_element: PhantomData,
+        }
+    }
 }
