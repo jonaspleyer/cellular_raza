@@ -76,7 +76,6 @@ pub fn run() {
 
     unsafe {
         update_positions(&mut *runner);
-        // print_positions(&*runner);
         do_compute();
     }
 }
