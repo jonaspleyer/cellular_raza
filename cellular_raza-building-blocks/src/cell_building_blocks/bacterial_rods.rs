@@ -281,6 +281,29 @@ where
         }
         Ok((force_own, force_ext))
     }
+
+    fn is_neighbor(
+        &self,
+        own_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_inf: &Inf,
+    ) -> Result<bool, CalcError> {
+        for p in own_pos.row_iter() {
+            for q in ext_pos.row_iter() {
+                if self
+                    .0
+                    .is_neighbor(&p.transpose(), &q.transpose(), ext_inf)?
+                {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
+        self.0.react_to_neighbors(neighbors)
+    }
 }
 
 /// Cells are represented by rods
