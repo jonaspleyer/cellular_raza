@@ -163,6 +163,8 @@ fn main() -> Result<(), SimulationError> {
             domain_segments,
         )?,
         gravity: 0.,
+        surface_friction: 0.,
+        surface_friction_distance: 1.,
     };
 
     // Storage Setup
