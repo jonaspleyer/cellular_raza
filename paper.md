@@ -40,7 +40,7 @@ throughout time and space.
 In addition, they can describe growth, proliferation, death and many other cellular processes and
 should also accurately model cell lineage.
 These models live on the mesoscopic scale where the underlying complexity of the problem can
-often neither be fully attributed to intracellular or extracellular processes.
+often not be fully attributed to neither intracellular nor extracellular processes.
 Their applications include modeling of self-organization and emergent phenomena but they can
 also be used to introduce spatial effects into existing population-based models.
 
@@ -48,6 +48,8 @@ also be used to introduce spatial effects into existing population-based models.
 
 Agent-based models have become popular in cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
+Many tools have emerged which are capable of describing cellular systems in various details
+[@Pleyer2023; @Abar2017].
 While these tools have proven to be effective for targeted research questions,
 they often lack the ability to be applied more generically.\
 <!-- Nevertheless, core functionalities such as numerical solvers, storage solutions or domain
@@ -85,26 +87,26 @@ We distinguish between different simulation aspects, i.e., mechanics, interactio
 These aspects are directly related to the properties of the cells, domain, or other external
 interactions.
 The user selects a cellular representation, which can be built from pre-existing building blocks or
- fully customized bottom-up , if desired.
-'cellular_raza' utilizes macros to generate code contingent on the simulation aspects .
+ fully customized bottom-up.
+'cellular_raza' utilizes macros to generate code contingent on the simulation aspects.
 It makes extensive use of generics and provides abstract numerical solvers.
 'cellular_raza' encapsulates the inherent complexity of the code generation process, yet enables
-users to modify the specifics of the simulation through the use of additional keyword arguments .
+users to modify the specifics of the simulation through the use of additional keyword arguments.
 Consequently, users are able to fully and deeply customize the representation and behaviour of the
 agents.
 Each simulation aspect is abstractly formulated as a trait in Rust's type system.
-The getting-started guide provides a good entry point and explains every step from building, running
-to visualizing.
+The getting-started guide provides a good entry point and explains every step from building to
+running and visualizing.
 
 # Examples
 
-In the following, we present four different examples how to use `cellular_raza` (see
+In the following, we present four different examples of how to use `cellular_raza` (see
 [cellular-raza.com/showcase](https://cellular-raza.com/showcase)).
 
 ## Cell Sorting
 
 Cell sorting is a naturally occurring phenomenon [@Steinberg1963; @Graner1992].
-The cellular `Interaction` is specific to their species.
+The cellular interaction is specific to their species.
 We consider two distinct types represented by soft spheres.
 They physically attract each other at close proximity if their species is identical.
 Cells are placed randomly inside a cube with reflective boundary conditions.
