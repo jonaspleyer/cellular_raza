@@ -74,16 +74,11 @@ where
             .into_iter()
             .map(|(id, el)| (id.clone(), el.clone()))
             .collect::<Vec<_>>();
-        let n_elements = identifiers_elements.len();
         self.map
             .lock()?
             .entry(iteration)
             .or_insert(HashMap::new())
             .extend(identifiers_elements.into_iter().collect::<HashMap<_, _>>());
-        println!(
-            "{iteration} {n_elements} {}",
-            self.map.lock()?[&iteration].len()
-        );
         Ok(())
     }
 }

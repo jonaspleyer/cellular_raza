@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Test-Suite stable ubuntu-latest
+name: Test-Suite stable ubuntu-24.04
 
 jobs:
-  CI-stable-ubuntu-latest:
+  CI-stable-ubuntu-24_04:
     uses: ./.github/workflows/reuse.yml
     with:
       toolchain: stable
-      os: ubuntu-latest
+      os: ubuntu-24.04

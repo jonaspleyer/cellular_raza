@@ -416,8 +416,8 @@ pub struct CartesianSubDomain<F, const D: usize> {
     max: SVector<F, D>,
     dx: SVector<F, D>,
     voxels: Vec<[usize; D]>,
-    domain_min: SVector<F, D>,
-    domain_max: SVector<F, D>,
+    pub(crate) domain_min: SVector<F, D>,
+    pub(crate) domain_max: SVector<F, D>,
     domain_n_voxels: SVector<usize, D>,
 }
 

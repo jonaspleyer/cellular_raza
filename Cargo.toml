@@ -14,7 +14,7 @@ resolver = "2"
 
 [patch.crates-io]
 nalgebra = { git = "https://github.com/dimforge/nalgebra" }
-ron = { git = "https://github.com/ron-rs/ron/" }
+pathfinder_simd = { git = "https://github.com/servo/pathfinder.git" }
 
 [workspace.package]
 version = "0.2.3"

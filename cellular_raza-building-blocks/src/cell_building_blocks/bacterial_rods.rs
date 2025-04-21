@@ -281,6 +281,29 @@ where
         }
         Ok((force_own, force_ext))
     }
+
+    fn is_neighbor(
+        &self,
+        own_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
+        ext_inf: &Inf,
+    ) -> Result<bool, CalcError> {
+        for p in own_pos.row_iter() {
+            for q in ext_pos.row_iter() {
+                if self
+                    .0
+                    .is_neighbor(&p.transpose(), &q.transpose(), ext_inf)?
+                {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
+        self.0.react_to_neighbors(neighbors)
+    }
 }
 
 /// Cells are represented by rods
@@ -292,6 +315,10 @@ pub struct CartesianCuboidRods<F, const D: usize> {
     /// Gravitational force which is only relevant for 3D simulations and always acts with constant
     /// force downwards (negative z-direction).
     pub gravity: F,
+    /// Computes friction at all surfaces of the box
+    pub surface_friction: F,
+    /// The distance for which the friction will be applied
+    pub surface_friction_distance: F,
 }
 
 impl<C, F, const D: usize> SortCells<C> for CartesianCuboidRods<F, D>
@@ -345,6 +372,8 @@ where
                     CartesianSubDomainRods::<F, D> {
                         subdomain,
                         gravity: self.gravity,
+                        surface_friction: self.surface_friction,
+                        surface_friction_distance: self.surface_friction,
                     },
                     voxels,
                 )
@@ -360,6 +389,10 @@ pub struct CartesianSubDomainRods<F, const D: usize> {
     pub subdomain: CartesianSubDomain<F, D>,
     /// See [CartesianCuboidRods]
     pub gravity: F,
+    /// Computes friction at all surfaces of the box
+    pub surface_friction: F,
+    /// The distance for which the friction will be applied
+    pub surface_friction_distance: F,
 }
 
 impl<F>
@@ -374,14 +407,29 @@ where
     fn calculate_custom_force(
         &self,
         pos: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
-        _: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        vel: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
     ) -> Result<
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         cellular_raza_concepts::CalcError,
     > {
-        Ok(nalgebra::MatrixXx3::from_fn(pos.nrows(), |_, m| {
+        use core::ops::AddAssign;
+        let mut force = nalgebra::MatrixXx3::from_fn(pos.nrows(), |_, m| {
             if m == 2 { -self.gravity } else { F::zero() }
-        }))
+        });
+        for (i, (p, v)) in pos.row_iter().zip(vel.row_iter()).enumerate() {
+            let d1 = (p.transpose() - self.subdomain.domain_min)
+                .map(|x| <F as num::Float>::abs(x) <= self.surface_friction_distance);
+            let d2 = (p.transpose() - self.subdomain.domain_max)
+                .map(|x| <F as num::Float>::abs(x) <= self.surface_friction_distance);
+            let q = v.norm();
+            if q != F::zero() && d1.zip_map(&d2, |x, y| x || y).into_iter().any(|x| *x) {
+                let dir = v / q;
+                force
+                    .row_mut(i)
+                    .add_assign(-dir * self.gravity * self.surface_friction);
+            }
+        }
+        Ok(force)
     }
 }
 
@@ -452,6 +500,8 @@ where
 {
     subdomain: CartesianSubDomain<F, D2>,
     gravity: F,
+    surface_friction: F,
+    surface_friction_distance: F,
 }
 
 impl<F, const D: usize> From<__CartesianSubDomainRodsSerde<F, D>> for CartesianSubDomainRods<F, D>
@@ -462,6 +512,8 @@ where
         CartesianSubDomainRods {
             subdomain: s.subdomain,
             gravity: s.gravity,
+            surface_friction: s.surface_friction,
+            surface_friction_distance: s.surface_friction_distance,
         }
     }
 }
