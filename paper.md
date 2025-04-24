@@ -34,18 +34,6 @@ numerical backend to a python package.
 
 # Statement of Need
 
-In contrast to classical particle simulations, Agent-based models (ABMs) treat every cell individually.
-This implies that parameters can vary between agents and that every cell should be traceable
-throughout time and space.
-In addition, they can describe growth, proliferation, death and many other cellular processes and
-should also accurately model cell lineage.
-These models live on the mesoscopic scale where the underlying complexity of the problem can
-often not be fully attributed to neither intracellular nor extracellular processes.
-Their applications include modeling of self-organization and emergent phenomena but they can
-also be used to introduce spatial effects into existing population-based models.
-
-# State of Field
-
 Agent-based models have become popular in cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
 Many tools have emerged which are capable of describing cellular systems in various details
@@ -60,6 +48,16 @@ They are often able to define agents bottom-up and can be a good choice if they 
 desired cellular representation.
 However, they lack the explicit forethought to be applied in cellular systems
 and may not be able to describe every cellular aspect.
+
+In contrast to classical particle simulations, Agent-based models (ABMs) treat every cell individually.
+This implies that parameters can vary between agents and that every cell should be traceable
+throughout time and space.
+In addition, they can describe growth, proliferation, death and many other cellular processes and
+should also accurately model cell lineage.
+These models live on the mesoscopic scale where the underlying complexity of the problem can
+often not be fully attributed to neither intracellular nor extracellular processes.
+Their applications include modeling of self-organization and emergent phenomena but they can
+also be used to introduce spatial effects into existing population-based models.
 In order to address these issues and construct models from first principles without any
 assumptions regarding the underlying complexity or abstraction level, we developed
 `cellular_raza`.
