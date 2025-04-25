@@ -142,10 +142,10 @@ fn main() -> Result<(), SimulationError> {
         })
         .collect::<Vec<_>>();
 
-    let domain = CartesianCuboid3New::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid::from_boundaries_and_interaction_range(
         [0.0; 3],
         [DOMAIN_SIZE; 3],
-        [CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_RADIUS * 2.0; 3],
+        CELL_MECHANICS_RELATIVE_INTERACTION_RANGE * CELL_RADIUS * 2.0,
     )?;
 
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
