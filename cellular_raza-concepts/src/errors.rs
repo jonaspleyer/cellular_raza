@@ -118,6 +118,8 @@ impl From<CalcError> for SetupError {
     }
 }
 
+#[cfg(feature = "plotters")]
+#[cfg_attr(docsrs, doc(cfg(feature = "plotters")))]
 impl<E> From<plotters::drawing::DrawingAreaErrorKind<E>> for DrawingError
 where
     E: Error + Send + Sync,

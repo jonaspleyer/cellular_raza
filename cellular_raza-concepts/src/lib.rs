@@ -19,6 +19,8 @@ pub mod domain_old;
 mod errors;
 mod interaction;
 mod mechanics;
+#[cfg(feature = "plotters")]
+#[cfg_attr(docsrs, doc(cfg(feature = "plotters")))]
 mod plotting;
 
 pub use cell::*;
