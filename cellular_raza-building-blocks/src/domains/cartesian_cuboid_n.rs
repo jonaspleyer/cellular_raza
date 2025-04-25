@@ -37,24 +37,22 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
     let mut m = 0;
 
     for _ in 0..n_regions {
-        let r = residue(n, m, average_len);
-        if r == 0 {
-            return Some((n as usize, m as usize, average_len as usize));
-        } else if r > 0 {
-            if n == n_regions as i64 {
-                // Start from the beginning again but with different value for average length
-                average_len += 1;
-                n = n_regions as i64;
-                m = 0;
-            } else {
-                n += 1;
-                m -= 1;
+        match residue(n, m, average_len) {
+            0 => {
+                return Some((n as usize, m as usize, average_len as usize));
             }
-        // Residue is negative. This means we have subtracted too much and we just decrease n and
-        // increase m
-        } else {
-            n -= 1;
-            m += 1;
+            1..=i64::MAX => {
+                if n == n_regions as i64 {
+                    // Start from the beginning again but with different value for average length
+                    average_len += 1;
+                    n = n_regions as i64;
+                    m = 0;
+                }
+            }
+            i64::MIN..0 => {
+                n -= 1;
+                m += 1;
+            }
         }
     }
     None
@@ -613,9 +611,11 @@ where
             }
         }
 
-        // If new position is still out of boundary return error
-        for i in 0..D {
-            if position[i] < self.domain_min[i] || position[i] > self.domain_max[i] {
+        for (p, (dmin, dmax)) in position
+            .iter()
+            .zip(self.domain_min.iter().zip(self.domain_max.iter()))
+        {
+            if p < dmin || p > dmax {
                 return Err(BoundaryError(format!(
                     "Particle is out of domain at position {:?}",
                     pos
@@ -653,9 +653,7 @@ impl<F, const D: usize> SubDomain for CartesianSubDomain<F, D> {
             .multi_cartesian_product()
             .map(|ind_v| {
                 let mut res = [0; D];
-                for i in 0..D {
-                    res[i] = ind_v[i];
-                }
+                <[usize]>::copy_from_slice(&mut res, &ind_v);
                 res
             })
             .filter(|ind| ind != voxel_index)
