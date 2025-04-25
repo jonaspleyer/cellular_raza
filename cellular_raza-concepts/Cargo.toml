@@ -20,7 +20,7 @@ all-features = true
 num = { workspace = true }
 serde = { workspace = true }
 rand_chacha = { workspace = true }
-plotters = { workspace = true }
+plotters = { workspace = true, optional = true }
 
 [dependencies.cellular_raza-concepts-derive]
 path = "../cellular_raza-concepts-derive"
@@ -32,3 +32,4 @@ rand = { workspace = true }
 [features]
 default = ["gradients"]
 gradients = []
+plotters = ["dep:plotters"]
