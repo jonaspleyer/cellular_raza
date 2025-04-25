@@ -23,6 +23,7 @@ rand = { workspace = true, features=["small_rng"] }
 rand_distr = { workspace = true, features = ["serde"]}
 rand_chacha = { workspace = true, features=["serde"]}
 nalgebra.workspace = true
+ndarray.workspace = true
 serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
