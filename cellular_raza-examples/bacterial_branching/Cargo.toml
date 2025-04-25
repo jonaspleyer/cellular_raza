@@ -13,5 +13,5 @@ num = { workspace = true }
 cellular_raza = { path="../../cellular_raza", features=["default"] }
 plotters = { workspace = true }
 rayon = "1.10.0"
-ndarray = { version = "0.16.0", features = ["blas", "serde", "serde-1"] }
+ndarray = { workspace = true, features = ["blas", "serde", "serde-1"] }
 clap = { version = "4.5.31", features = ["derive"] }
