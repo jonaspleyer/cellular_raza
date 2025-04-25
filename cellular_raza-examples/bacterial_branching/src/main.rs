@@ -194,7 +194,7 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         )?,
         reactions_dx: [reactions_dx; 2].into(),
         diffusion_constant,
-        initial_value: ReactionVector::from([initial_concentration]),
+        initial_value: ReactionVector::from(vec![initial_concentration]),
     };
 
     let storage = StorageBuilder::new().priority([StorageOption::SerdeJson]);
@@ -212,6 +212,7 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         settings: settings,
         aspects: [Mechanics, Interaction, ReactionsExtra, Cycle],
         parallelizer: Rayon,
+        zero_reactions_default: |_| nalgebra::DVector::zeros(1),
     )?;
     Ok(())
 }

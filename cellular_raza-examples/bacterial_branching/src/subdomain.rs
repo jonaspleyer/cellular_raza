@@ -1,5 +1,4 @@
-pub const N_REACTIONS: usize = 1;
-pub type ReactionVector = nalgebra::SVector<f32, N_REACTIONS>;
+type ReactionVector = nalgebra::DVector<f32>;
 
 use cellular_raza::prelude::*;
 use serde::{Deserialize, Serialize};
