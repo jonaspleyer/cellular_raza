@@ -28,6 +28,7 @@ serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
 pyo3 = { workspace = true, optional=true, features=["serde", "py-clone"] }
+approx = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_test = "1.0.177"
@@ -40,3 +41,4 @@ version = "0.2.3"
 default = ["gradients"]
 pyo3 = ["dep:pyo3"]
 gradients = ["cellular_raza-concepts/gradients"]
+approx = ["dep:approx"]

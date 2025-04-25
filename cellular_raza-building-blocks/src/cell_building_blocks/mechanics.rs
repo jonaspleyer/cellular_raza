@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "approx")]
+use approx::RelativeEq;
+
 macro_rules! implement_newton_damped_mechanics(
     (
         $struct_name:ident,
@@ -46,10 +49,14 @@ macro_rules! implement_newton_damped_mechanics(
         /// [Cycle](cellular_raza_concepts::Cycle).
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "approx", derive(RelativeEq))]
+        #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {
             /// Current position $\vec{x}$ given by a vector of dimension `D`.
+            #[cfg_attr(feature = "approx", approx(into_iter))]
             pub pos: SVector<$float_type, $d>,
             /// Current velocity $\dot{\vec{x}}$ given by a vector of dimension `D`.
+            #[cfg_attr(feature = "approx", approx(into_iter))]
             pub vel: SVector<$float_type, $d>,
             /// Damping constant $\lambda$.
             pub damping_constant: $float_type,
@@ -241,8 +248,11 @@ macro_rules! implement_brownian_mechanics(
         /// resolve smaller timesteps to more accurately solve the equations.
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "approx", derive(RelativeEq))]
+        #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {
             /// Current position of the particle $\vec{x}$.
+            #[cfg_attr(feature = "approx", approx(into_iter))]
             pub pos: SVector<$float_type, $d>,
             /// Diffusion constant $D$.
             pub diffusion_constant: $float_type,
@@ -396,12 +406,16 @@ macro_rules! define_langevin_nd(
         /// \\begin{equation}
         ///     M \ddot{\mathbf{X}} = - \mathbf{\nabla} U(\mathbf{X}) - \gamma M\dot{\mathbf{X}} + \sqrt{2 M \gamma k_{\rm B} T}\mathbf{R}(t)
         /// \\end{equation}
-        #[cfg_attr(feature = "pyo3", pyclass)]
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "approx", derive(RelativeEq))]
+        #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {
             /// Current position
+            #[cfg_attr(feature = "approx", approx(into_iter))]
             pub pos: SVector<$float_type, $d>,
             /// Current velocity
+            #[cfg_attr(feature = "approx", approx(into_iter))]
             pub vel: SVector<$float_type, $d>,
             /// Mass of the object
             pub mass: $float_type,
