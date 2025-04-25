@@ -27,7 +27,7 @@ ndarray.workspace = true
 serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
-pyo3 = { workspace = true, optional=true, features=["serde", "py-clone"] }
+pyo3 = { workspace = true, optional = true, features=["serde", "py-clone"] }
 approx = { workspace = true, optional = true }
 
 [dev-dependencies]
