@@ -123,11 +123,11 @@ fn analyze_positions_brownian<const D: usize>(
 }
 
 macro_rules! test_brownian {
-    ($parameters:ident, $domain_name:ident, $particle_name:ident, $d:literal) => {{
+    ($parameters:ident, $particle_name:ident, $d:literal) => {{
         let domain_size = $parameters.domain_size;
         assert!(domain_size > 0.0);
         let mut domain =
-            $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
+            CartesianCuboid::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
         domain.rng_seed = $parameters.random_seed;
 
         let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
@@ -173,7 +173,7 @@ fn diffusion_constant_brownian_3d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/brownian_3d_1".into();
     parameters.diffusion_constant = 1.0;
     parameters.random_seed = 1;
-    test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
+    test_brownian!(parameters, Brownian3D, 3)?;
     Ok(())
 }
 
@@ -183,7 +183,7 @@ fn diffusion_constant_brownian_3d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_3d_2".into();
     parameters.random_seed = 2;
-    test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
+    test_brownian!(parameters, Brownian3D, 3)?;
     Ok(())
 }
 
@@ -193,7 +193,7 @@ fn diffusion_constant_brownian_3d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_3d_3".into();
     parameters.random_seed = 3;
-    test_brownian!(parameters, CartesianCuboid3New, Brownian3D, 3)?;
+    test_brownian!(parameters, Brownian3D, 3)?;
     Ok(())
 }
 
@@ -203,7 +203,7 @@ fn diffusion_constant_brownian_2d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/brownian_2d_1".into();
     parameters.diffusion_constant = 1.0;
     parameters.random_seed = 4;
-    test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
+    test_brownian!(parameters, Brownian2D, 2)?;
     Ok(())
 }
 
@@ -213,7 +213,7 @@ fn diffusion_constant_brownian_2d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_2d_2".into();
     parameters.random_seed = 5;
-    test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
+    test_brownian!(parameters, Brownian2D, 2)?;
     Ok(())
 }
 
@@ -223,7 +223,7 @@ fn diffusion_constant_brownian_2d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_2d_3".into();
     parameters.random_seed = 6;
-    test_brownian!(parameters, CartesianCuboid2New, Brownian2D, 2)?;
+    test_brownian!(parameters, Brownian2D, 2)?;
     Ok(())
 }
 
@@ -233,7 +233,7 @@ fn diffusion_constant_brownian_1d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/brownian_1d_1".into();
     parameters.diffusion_constant = 1.0;
     parameters.random_seed = 7;
-    test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
+    test_brownian!(parameters, Brownian1D, 1)?;
     Ok(())
 }
 
@@ -243,7 +243,7 @@ fn diffusion_constant_brownian_1d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.5;
     parameters.storage_name = "out/brownian_1d_2".into();
     parameters.random_seed = 8;
-    test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
+    test_brownian!(parameters, Brownian1D, 1)?;
     Ok(())
 }
 
@@ -253,7 +253,7 @@ fn diffusion_constant_brownian_1d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.diffusion_constant = 0.25;
     parameters.storage_name = "out/brownian_1d_3".into();
     parameters.random_seed = 9;
-    test_brownian!(parameters, CartesianCuboid1New, Brownian1D, 1)?;
+    test_brownian!(parameters, Brownian1D, 1)?;
     Ok(())
 }
 
@@ -290,7 +290,6 @@ fn kb_temp(mass: f64, diffusion_constant: f64, damping: f64) -> f64 {
 macro_rules! test_langevin {
     (
         $parameters:ident,
-        $domain_name:ident,
         $particle_name:ident,
         $d:literal,
         $damping:literal
@@ -298,7 +297,7 @@ macro_rules! test_langevin {
         let domain_size = $parameters.domain_size;
         assert!(domain_size > 0.0);
         let mut domain =
-            $domain_name::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
+            CartesianCuboid::from_boundaries_and_n_voxels([0.0; $d], [domain_size; $d], [3; $d])?;
         domain.rng_seed = $parameters.random_seed;
         let initial_position = nalgebra::SVector::from([domain_size / 2.0; $d]);
         let mass = 1.0;
@@ -346,7 +345,7 @@ fn diffusion_constant_langevin_3d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_3d_1".into();
     parameters.diffusion_constant = 80.0;
     parameters.random_seed = 1;
-    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    test_langevin!(parameters, Langevin3D, 3, 10.0)?;
     Ok(())
 }
 
@@ -356,7 +355,7 @@ fn diffusion_constant_langevin_3d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_3d_2".into();
     parameters.diffusion_constant = 40.0;
     parameters.random_seed = 2;
-    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    test_langevin!(parameters, Langevin3D, 3, 10.0)?;
     Ok(())
 }
 
@@ -366,7 +365,7 @@ fn diffusion_constant_langevin_3d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_3d_3".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 3;
-    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 10.0)?;
+    test_langevin!(parameters, Langevin3D, 3, 10.0)?;
     Ok(())
 }
 
@@ -376,7 +375,7 @@ fn diffusion_constant_langevin_3d_4() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_3d_4".into();
     parameters.diffusion_constant = 40.0;
     parameters.random_seed = 4;
-    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 1.0)?;
+    test_langevin!(parameters, Langevin3D, 3, 1.0)?;
     Ok(())
 }
 
@@ -386,7 +385,7 @@ fn diffusion_constant_langevin_3d_5() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_3d_5".into();
     parameters.diffusion_constant = 40.0;
     parameters.random_seed = 5;
-    test_langevin!(parameters, CartesianCuboid3New, Langevin3D, 3, 0.1)?;
+    test_langevin!(parameters, Langevin3D, 3, 0.1)?;
     Ok(())
 }
 
@@ -396,7 +395,7 @@ fn diffusion_constant_langevin_2d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_2d_1".into();
     parameters.diffusion_constant = 80.0;
     parameters.random_seed = 6;
-    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    test_langevin!(parameters, Langevin2D, 2, 10.0)?;
     Ok(())
 }
 
@@ -406,7 +405,7 @@ fn diffusion_constant_langevin_2d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_2d_2".into();
     parameters.diffusion_constant = 40.0;
     parameters.random_seed = 7;
-    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    test_langevin!(parameters, Langevin2D, 2, 10.0)?;
     Ok(())
 }
 
@@ -416,7 +415,7 @@ fn diffusion_constant_langevin_2d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_2d_3".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 8;
-    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 10.0)?;
+    test_langevin!(parameters, Langevin2D, 2, 10.0)?;
     Ok(())
 }
 
@@ -426,7 +425,7 @@ fn diffusion_constant_langevin_2d_4() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_2d_4".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 9;
-    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 1.0)?;
+    test_langevin!(parameters, Langevin2D, 2, 1.0)?;
     Ok(())
 }
 
@@ -436,7 +435,7 @@ fn diffusion_constant_langevin_2d_5() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_2d_5".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 10;
-    test_langevin!(parameters, CartesianCuboid2New, Langevin2D, 2, 0.1)?;
+    test_langevin!(parameters, Langevin2D, 2, 0.1)?;
     Ok(())
 }
 
@@ -446,7 +445,7 @@ fn diffusion_constant_langevin_1d_1() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_1d_1".into();
     parameters.diffusion_constant = 80.0;
     parameters.random_seed = 11;
-    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    test_langevin!(parameters, Langevin1D, 1, 10.0)?;
     Ok(())
 }
 
@@ -456,7 +455,7 @@ fn diffusion_constant_langevin_1d_2() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_1d_2".into();
     parameters.diffusion_constant = 40.0;
     parameters.random_seed = 12;
-    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    test_langevin!(parameters, Langevin1D, 1, 10.0)?;
     Ok(())
 }
 
@@ -466,7 +465,7 @@ fn diffusion_constant_langevin_1d_3() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_1d_3".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 13;
-    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 10.0)?;
+    test_langevin!(parameters, Langevin1D, 1, 10.0)?;
     Ok(())
 }
 
@@ -476,7 +475,7 @@ fn diffusion_constant_langevin_1d_4() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_1d_4".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 14;
-    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 1.0)?;
+    test_langevin!(parameters, Langevin1D, 1, 1.0)?;
     Ok(())
 }
 
@@ -486,6 +485,6 @@ fn diffusion_constant_langevin_1d_5() -> Result<(), Box<dyn std::error::Error>> 
     parameters.storage_name = "out/langevin_1d_5".into();
     parameters.diffusion_constant = 20.0;
     parameters.random_seed = 15;
-    test_langevin!(parameters, CartesianCuboid1New, Langevin1D, 1, 0.1)?;
+    test_langevin!(parameters, Langevin1D, 1, 0.1)?;
     Ok(())
 }
