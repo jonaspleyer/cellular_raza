@@ -1,3 +1,4 @@
+mod cartesian_2d_diffusion;
 mod cartesian_cuboid_n;
 
 /// Contains deprecated cartesian cuboid implementations for an older vertex model
@@ -9,3 +10,5 @@ pub mod cartesian_cuboid_2_vertex_old;
 pub mod cartesian_cuboid_n_old;
 
 pub use cartesian_cuboid_n::*;
+
+pub use cartesian_2d_diffusion::*;
