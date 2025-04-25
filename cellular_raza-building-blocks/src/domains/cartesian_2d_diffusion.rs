@@ -1,4 +1,4 @@
-type ReactionVector = nalgebra::DVector<f32>;
+type ReactionVector<F> = nalgebra::DVector<F>;
 
 use cellular_raza_concepts::*;
 use serde::{Deserialize, Serialize};
@@ -10,41 +10,48 @@ use super::{CartesianCuboid, CartesianSubDomain};
 /// We solve the equations
 ///
 #[derive(Domain, Clone)]
-pub struct CartesianDiffusion2D {
+pub struct CartesianDiffusion2D<F> {
     /// See [CartesianCuboid]
     #[DomainRngSeed]
     #[DomainPartialDerive]
     #[SortCells]
-    pub domain: CartesianCuboid<f32, 2>,
+    pub domain: CartesianCuboid<F, 2>,
     /// The discretization must be a multiple of the voxel size.
     /// This quantity will be used as an initial estimate and rounded to the nearest candidate.
-    pub reactions_dx: nalgebra::Vector2<f32>,
+    pub reactions_dx: nalgebra::Vector2<F>,
     /// Diffusion constant
-    pub diffusion_constant: f32,
+    pub diffusion_constant: F,
     /// Initial values which are uniform over the simulation domain
-    pub initial_value: ReactionVector,
+    pub initial_value: ReactionVector<F>,
 }
 
 /// Subdomain for the [CartesianDiffusion2D] domain.
-#[derive(Deserialize, SubDomain, Clone, Serialize, Debug)]
-pub struct CartesianDiffusion2DSubDomain {
+#[derive(SubDomain, Clone, Debug, Serialize, Deserialize)]
+#[serde(bound = "F:
+    'static
+    + PartialEq
+    + Clone
+    + core::fmt::Debug
+    + Serialize
+    + for<'a> Deserialize<'a>")]
+pub struct CartesianDiffusion2DSubDomain<F> {
     /// See [CartesianSubDomain]
     #[Base]
     #[SortCells]
     #[Mechanics]
-    subdomain: CartesianSubDomain<f32, 2>,
-    reactions_min: nalgebra::Vector2<f32>,
-    reactions_max: nalgebra::Vector2<f32>,
-    reactions_dx: nalgebra::Vector2<f32>,
+    subdomain: CartesianSubDomain<F, 2>,
+    reactions_min: nalgebra::Vector2<F>,
+    reactions_max: nalgebra::Vector2<F>,
+    reactions_dx: nalgebra::Vector2<F>,
     index_min: nalgebra::Vector2<usize>,
     index_max: nalgebra::Vector2<usize>,
-    extracellular: ndarray::Array3<f32>,
+    extracellular: ndarray::Array3<F>,
     ownership_array: ndarray::Array2<bool>,
     /// Diffusion constant
-    pub diffusion_constant: f32,
-    increments: [ndarray::Array3<f32>; 3],
+    pub diffusion_constant: F,
+    increments: [ndarray::Array3<F>; 3],
     increments_start: usize,
-    helper: ndarray::Array3<f32>,
+    helper: ndarray::Array3<F>,
 }
 
 /// This type is not intendend for direct usage
@@ -54,8 +61,11 @@ pub struct BorderInfo {
     max_sent: nalgebra::Vector2<usize>,
 }
 
-impl CartesianDiffusion2DSubDomain {
-    fn assign_neighbor(&mut self, neighbor: NeighborValue) {
+impl<F> CartesianDiffusion2DSubDomain<F>
+where
+    F: nalgebra::RealField + Clone,
+{
+    fn assign_neighbor(&mut self, neighbor: NeighborValue<F>) {
         use ndarray::*;
         let NeighborValue { min, max, values } = neighbor;
 
@@ -123,28 +133,32 @@ impl CartesianDiffusion2DSubDomain {
 
 /// This type is not intendend for direct usage
 #[doc(hidden)]
-pub struct NeighborValue {
+pub struct NeighborValue<F> {
     min: nalgebra::Vector2<usize>,
     max: nalgebra::Vector2<usize>,
-    values: ndarray::Array2<Option<ndarray::Array1<f32>>>,
+    values: ndarray::Array2<Option<ndarray::Array1<F>>>,
 }
 
-impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
-    for CartesianDiffusion2DSubDomain
+impl<F> SubDomainReactions<nalgebra::SVector<F, 2>, ReactionVector<F>, F>
+    for CartesianDiffusion2DSubDomain<F>
+where
+    F: nalgebra::RealField + Copy + num::traits::AsPrimitive<usize> + ndarray::ScalarOperand,
+    usize: num::traits::AsPrimitive<F>,
 {
     type BorderInfo = BorderInfo;
-    type NeighborValue = NeighborValue;
+    type NeighborValue = NeighborValue<F>;
 
     fn treat_increments<I, J>(&mut self, neighbors: I, sources: J) -> Result<(), CalcError>
     where
         I: IntoIterator<Item = Self::NeighborValue>,
-        J: IntoIterator<Item = (nalgebra::SVector<f32, 2>, ReactionVector)>,
+        J: IntoIterator<Item = (nalgebra::SVector<F, 2>, ReactionVector<F>)>,
     {
         use core::ops::AddAssign;
         use ndarray::*;
-        let dx2 = self.reactions_dx[0].powf(-2.0);
-        let dy2 = self.reactions_dx[1].powf(-2.0);
-        let dd2 = -2.0 * (dx2 + dy2);
+        let two = F::one() + F::one();
+        let dx2 = self.reactions_dx[0].powf(-two);
+        let dy2 = self.reactions_dx[1].powf(-two);
+        let dd2 = -two * (dx2 + dy2);
 
         // Helper variable to store current concentrations
         let co = &self.extracellular;
@@ -152,7 +166,7 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
         // Use helper array which is +2 in every spatial dimension larger than the original array
         // We do this to seamlessly incorporate boundary conditions
         // Fill inner part of the array
-        self.helper.fill(0.0);
+        self.helper.fill(F::zero());
         // _ _ _ _ _ _ _
         // _ x x x x x _
         // _ x x x x x _
@@ -181,21 +195,21 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
             self.assign_neighbor(neighbor);
         }
 
-        // Set increment to next time-step to 0.0 everywhere
+        // Set increment to next time-step to F::zero() everywhere
         let start = self.increments_start;
-        self.increments[start].fill(0.0);
+        self.increments[start].fill(F::zero());
 
         let dc = self.diffusion_constant;
         // - 2u[i,j] /dx^2 - 2u[i,j]/dy^2
-        self.increments[start].add_assign(&(dd2 * dc * &self.helper.slice(s![1..-1, 1..-1, ..])));
+        self.increments[start].add_assign(&(&self.helper.slice(s![1..-1, 1..-1, ..]) * dd2 * dc));
         // + u[i-1,j]/dx^2
-        self.increments[start].add_assign(&(dx2 * dc * &self.helper.slice(s![..-2, 1..-1, ..])));
+        self.increments[start].add_assign(&(&self.helper.slice(s![..-2, 1..-1, ..]) * dx2 * dc));
         // + u[i+1,j]/dx^2
-        self.increments[start].add_assign(&(dx2 * dc * &self.helper.slice(s![2.., 1..-1, ..])));
+        self.increments[start].add_assign(&(&self.helper.slice(s![2.., 1..-1, ..]) * dx2 * dc));
         // + u[i,j-1]/dy^2
-        self.increments[start].add_assign(&(dy2 * dc * &self.helper.slice(s![1..-1, ..-2, ..])));
+        self.increments[start].add_assign(&(&self.helper.slice(s![1..-1, ..-2, ..]) * dy2 * dc));
         // + u[i,j+1]/dy^2
-        self.increments[start].add_assign(&(dy2 * dc * &self.helper.slice(s![1..-1, 2.., ..])));
+        self.increments[start].add_assign(&(&self.helper.slice(s![1..-1, 2.., ..]) * dy2 * dc));
 
         for (pos, dextra) in sources {
             let index = self.get_extracellular_index(&pos)?;
@@ -209,21 +223,22 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
         Ok(())
     }
 
-    fn update_fluid_dynamics(&mut self, dt: f32) -> Result<(), CalcError> {
+    fn update_fluid_dynamics(&mut self, dt: F) -> Result<(), CalcError> {
         use core::ops::AddAssign;
+        use num::traits::AsPrimitive;
         let start = self.increments_start;
         let n_incr = self.increments.len();
 
         // Adams-Bashforth 3rd order
-        let k1 = 5.0 / 12.0;
-        let k2 = 8.0 / 12.0;
-        let k3 = -1.0 / 12.0;
+        let k1: F = 5usize.as_() / 12usize.as_();
+        let k2: F = 8usize.as_() / 12usize.as_();
+        let k3: F = -1usize.as_() / 12usize.as_();
         self.extracellular.add_assign(
-            &(k1 * dt * &self.increments[start]
-                + k2 * dt * &self.increments[(start + 1) % n_incr]
-                + k3 * dt * &self.increments[(start + 2) % n_incr]),
+            &(&self.increments[start] * k1 * dt
+                + &self.increments[(start + 1) % n_incr] * k2 * dt
+                + &self.increments[(start + 2) % n_incr] * k3 * dt),
         );
-        self.extracellular.map_inplace(|x| *x = x.max(0.0));
+        self.extracellular.map_inplace(|x| *x = x.max(F::zero()));
 
         // TODO DEBUGGING
         // if start == 0 {
@@ -236,10 +251,10 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
 
     fn get_extracellular_at_pos(
         &self,
-        pos: &nalgebra::SVector<f32, 2>,
-    ) -> Result<ReactionVector, CalcError> {
+        pos: &nalgebra::SVector<F, 2>,
+    ) -> Result<ReactionVector<F>, CalcError> {
         let index = self.get_extracellular_index(pos)?;
-        let res = ReactionVector::from_iterator(
+        let res = ReactionVector::<F>::from_iterator(
             self.helper.dim().2,
             self.extracellular
                 .slice(ndarray::s![index[0], index[1], ..])
@@ -280,27 +295,37 @@ impl SubDomainReactions<nalgebra::SVector<f32, 2>, ReactionVector, f32>
     }
 }
 
-impl CartesianDiffusion2DSubDomain {
+impl<F> CartesianDiffusion2DSubDomain<F>
+where
+    F: nalgebra::RealField + Copy + num::traits::AsPrimitive<usize>,
+    usize: num::traits::AsPrimitive<F>,
+{
     fn get_extracellular_index(
         &self,
-        pos: &nalgebra::Vector2<f32>,
+        pos: &nalgebra::Vector2<F>,
     ) -> Result<nalgebra::Vector2<usize>, CalcError> {
+        use num::traits::AsPrimitive;
         let index = (pos - self.reactions_min).component_div(&self.reactions_dx);
         if index
             .iter()
             .enumerate()
-            .any(|(n, &x)| x < 0.0 || x > self.index_max[n] as f32)
+            .any(|(n, &x)| x < F::zero() || x > self.index_max[n].as_())
         {
             return Err(CalcError(format!(
                 "Could not find index for position {:?}",
                 pos
             )));
         }
-        Ok(index.map(|x| x.floor() as usize))
+        Ok(index.map(|x| x.floor().as_()))
     }
 }
 
-impl DomainCreateSubDomains<CartesianDiffusion2DSubDomain> for CartesianDiffusion2D {
+impl<F> DomainCreateSubDomains<CartesianDiffusion2DSubDomain<F>> for CartesianDiffusion2D<F>
+where
+    F: nalgebra::RealField + Copy + num::traits::AsPrimitive<usize>,
+    usize: num::traits::AsPrimitive<F>,
+    F: 'static + num::Float + core::fmt::Debug + num::FromPrimitive,
+{
     type SubDomainIndex = usize;
     type VoxelIndex = [usize; 2];
 
@@ -311,7 +336,7 @@ impl DomainCreateSubDomains<CartesianDiffusion2DSubDomain> for CartesianDiffusio
         impl IntoIterator<
             Item = (
                 Self::SubDomainIndex,
-                CartesianDiffusion2DSubDomain,
+                CartesianDiffusion2DSubDomain<F>,
                 Vec<Self::VoxelIndex>,
             ),
         >,
@@ -321,8 +346,9 @@ impl DomainCreateSubDomains<CartesianDiffusion2DSubDomain> for CartesianDiffusio
         let dx_domain = self.domain.get_dx();
         let n_diffusion = dx_domain
             .component_div(&dx)
-            .map(|x| (x.round() as usize).max(1));
-        let dx = dx_domain.component_div(&n_diffusion.cast::<f32>());
+            .map(|x| (<F as num::Float>::round(x).as_()).max(1));
+        let dx = dx_domain
+            .component_div(&n_diffusion.map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x)));
 
         let diffusion_constant = self.diffusion_constant;
 
@@ -360,8 +386,12 @@ impl DomainCreateSubDomains<CartesianDiffusion2DSubDomain> for CartesianDiffusio
                     .slice(ndarray::s![min[0]..max[0], min[1]..max[1], ..])
                     .into_owned();
 
-                let reactions_min = min.cast::<f32>().component_mul(&dx);
-                let reactions_max = max.cast::<f32>().component_mul(&dx);
+                let reactions_min = min
+                    .map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x))
+                    .component_mul(&dx);
+                let reactions_max = max
+                    .map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x))
+                    .component_mul(&dx);
 
                 // Has entry `true` if the given point is owned by this subdomain.
                 let d = extracellular.dim();
