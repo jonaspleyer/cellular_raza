@@ -10,10 +10,10 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 mod bacteria_properties;
-mod subdomain;
 
 use bacteria_properties::*;
-use subdomain::*;
+
+pub(crate) type ReactionVector = nalgebra::DVector<f32>;
 
 #[derive(Clone, Args, Debug)]
 #[group()]
