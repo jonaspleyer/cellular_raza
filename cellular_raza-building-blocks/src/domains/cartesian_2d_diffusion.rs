@@ -41,7 +41,7 @@ pub struct CartesianDiffusion2DSubDomain<F> {
     #[Mechanics]
     subdomain: CartesianSubDomain<F, 2>,
     reactions_min: nalgebra::Vector2<F>,
-    reactions_max: nalgebra::Vector2<F>,
+    // reactions_max: nalgebra::Vector2<F>,
     reactions_dx: nalgebra::Vector2<F>,
     index_min: nalgebra::Vector2<usize>,
     index_max: nalgebra::Vector2<usize>,
@@ -389,9 +389,9 @@ where
                 let reactions_min = min
                     .map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x))
                     .component_mul(&dx);
-                let reactions_max = max
-                    .map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x))
-                    .component_mul(&dx);
+                // let reactions_max = max
+                //     .map(|x| <usize as num::traits::AsPrimitive<F>>::as_(x))
+                //     .component_mul(&dx);
 
                 // Has entry `true` if the given point is owned by this subdomain.
                 let d = extracellular.dim();
@@ -417,7 +417,7 @@ where
                     CartesianDiffusion2DSubDomain {
                         subdomain,
                         reactions_min,
-                        reactions_max,
+                        // reactions_max,
                         reactions_dx: dx,
                         index_min: min,
                         index_max: max,
