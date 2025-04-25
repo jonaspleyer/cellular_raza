@@ -145,7 +145,7 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 ///     $(determinism: $determinism:bool,)?
 ///     $(aux_storage_name: $aux_storage_name:ident,)?
 ///     $(zero_force_default: $zero_force_default:closure,)?
-///     $(zero_force_reactions_default: $zero_force_reactions_default:closure,)?
+///     $(zero_reactions_default: $zero_force_reactions_default:closure,)?
 ///     $(communicator_name: $communicator_name:ident,)?
 ///     $(mechanics_solver_order: $mechanics_solver_order:NonZeroUsize,)?
 ///     $(reactions_intra_solver_order: $reactions_intra_solver_order:NonZeroUsize,)?
@@ -165,7 +165,7 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `determinism` | Enforces sorting of values received from [step 2](super) | `false` |
 /// | `aux_storage_name` | Name of helper struct to store cellular information. | `_CrAuxStorage` |
 /// | `zero_force_default` | A closure returning the zero value of the force. | <code>&#124;c&#124; {num::Zero::zero()}</code> |
-/// | `zero_force_reactions_default` | A closure returning the zero value of the reactions type. | <code>&#124;c&#124; {num::Zero::zero()}</code> |
+/// | `zero_reactions_default` | A closure returning the zero value of the reactions type. | <code>&#124;c&#124; {num::Zero::zero()}</code> |
 /// | `communicator_name` | Name of the struct responsible for communication between threads. | `_CrCommunicator` |
 /// | `mechanics_solver_order` | Order of the mechanics solver from `0` to `2` | `2` |
 /// | `reactions_intra_solver_order` | Order of the intracellular reactions solver from `1` to `4` | `4` |
@@ -211,7 +211,7 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 /// | `determinism`                     | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 /// | `aux_storage_name`                | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
 /// | `zero_force_default`              | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
-/// | `zero_force_reactions_default`    | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+/// | `zero_reactions_default`          | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
 /// | `communicator_name`               | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
 /// | `mechanics_solver_order`          | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 /// | `reactions_intra_solver_order`    | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
