@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! This crate encapsulates concepts which govern an agent-based model specified by
 //! [cellular_raza](https://docs.rs/cellular_raza).
 //! To learn more about the math and philosophy behind these concepts please refer to
@@ -18,6 +19,8 @@ pub mod domain_old;
 mod errors;
 mod interaction;
 mod mechanics;
+#[cfg(feature = "plotters")]
+#[cfg_attr(docsrs, doc(cfg(feature = "plotters")))]
 mod plotting;
 
 pub use cell::*;
@@ -26,5 +29,7 @@ pub use domain::*;
 pub use errors::*;
 pub use interaction::*;
 pub use mechanics::*;
+#[cfg(feature = "plotters")]
+#[cfg_attr(docsrs, doc(cfg(feature = "plotters")))]
 pub use plotting::*;
 pub use reactions::*;

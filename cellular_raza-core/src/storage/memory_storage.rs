@@ -1,5 +1,6 @@
 use super::concepts::StorageError;
 use super::concepts::{StorageInterfaceLoad, StorageInterfaceOpen, StorageInterfaceStore};
+use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ where
     Id: Sized,
     Element: Sized,
 {
-    map: BTreeMap<u64, HashMap<Id, Element>>,
+    map: Arc<Mutex<BTreeMap<u64, HashMap<Id, Element>>>>,
 }
 
 impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
@@ -22,8 +23,14 @@ impl<Id, Element> StorageInterfaceOpen for MemoryStorageInterface<Id, Element> {
         _storage_instance: u64,
     ) -> Result<Self, StorageError> {
         Ok(Self {
-            map: BTreeMap::new(),
+            map: Arc::new(Mutex::new(BTreeMap::new())),
         })
+    }
+
+    fn clone_to_new_instance(&self, _storage_instance: u64) -> Self {
+        Self {
+            map: Arc::clone(&self.map),
+        }
     }
 }
 
@@ -43,6 +50,7 @@ where
         Element: Serialize,
     {
         self.map
+            .lock()?
             .entry(iteration)
             .and_modify(|e| {
                 e.entry(identifier.clone()).or_insert(element.clone());
@@ -64,13 +72,13 @@ where
         let identifiers_elements = identifiers_elements
             .clone()
             .into_iter()
-            .map(|(id, el)| (id.clone(), el.clone()));
-        match self.map.get_mut(&iteration) {
-            Some(e) => e.extend(identifiers_elements),
-            None => {
-                self.map.insert(iteration, identifiers_elements.collect());
-            }
-        }
+            .map(|(id, el)| (id.clone(), el.clone()))
+            .collect::<Vec<_>>();
+        self.map
+            .lock()?
+            .entry(iteration)
+            .or_insert(HashMap::new())
+            .extend(identifiers_elements.into_iter().collect::<HashMap<_, _>>());
         Ok(())
     }
 }
@@ -91,6 +99,7 @@ where
     {
         Ok(self
             .map
+            .lock()?
             .get(&iteration)
             .and_then(|elements| elements.get(identifier).and_then(|x| Some(x.clone()))))
     }
@@ -103,7 +112,7 @@ where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        match self.map.get(&iteration) {
+        match self.map.lock()?.get(&iteration) {
             Some(x) => Ok(x.clone()),
             None => Ok(HashMap::new()),
         }
@@ -114,10 +123,10 @@ where
         Id: std::hash::Hash + std::cmp::Eq + for<'a> Deserialize<'a>,
         Element: for<'a> Deserialize<'a>,
     {
-        Ok(self.map.clone())
+        Ok(self.map.lock()?.clone())
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
-        Ok(self.map.keys().into_iter().map(|&k| k).collect())
+        Ok(self.map.lock()?.keys().into_iter().map(|&k| k).collect())
     }
 }

@@ -147,10 +147,10 @@ fn run_simulation(sim_settings: &SimSettings) -> Result<(), chili::SimulationErr
         }
     });
 
-    let domain = CartesianCuboid3New::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid::from_boundaries_and_interaction_range(
         [0.0; 3],
         [domain_size; 3],
-        [1.5 * 6.0 * 2.0; 3],
+        1.5 * 6.0 * 2.0,
     )?;
 
     let time = FixedStepsize::from_partial_save_steps(0.0, dt, n_steps as u64, n_steps as u64 + 1)?;

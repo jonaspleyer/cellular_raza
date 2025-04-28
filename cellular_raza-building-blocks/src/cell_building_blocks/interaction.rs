@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "approx")]
+use approx::RelativeEq;
+
 /// No interaction of the cell with any other.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass)]
@@ -76,8 +79,9 @@ where
 /// The Royal Society, pp. 441–462, Oct. 1924. doi:
 /// [10.1098/rspa.1924.0081](https://doi.org/10.1098/rspa.1924.0081).
 ///
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+#[cfg_attr(feature = "approx", derive(RelativeEq))]
 pub struct BoundLennardJones {
     /// Interaction strength $\epsilon$ of the potential.
     pub epsilon: f64,
@@ -89,8 +93,9 @@ pub struct BoundLennardJones {
     pub cutoff: f64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+#[cfg_attr(feature = "approx", derive(RelativeEq))]
 /// Identical to [BoundLennardJones] but for `f32` type.
 pub struct BoundLennardJonesF32 {
     /// Interaction strength $\epsilon$ of the potential.
@@ -199,6 +204,7 @@ macro_rules! implement_morse_potential(
         /// doi: [10.1103/physrev.34.57](https://doi.org/10.1103/PhysRev.34.57).
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
+        #[cfg_attr(feature = "approx", derive(RelativeEq))]
         pub struct $struct_name {
             /// Radius of the object
             pub radius: $float_type,
@@ -303,6 +309,7 @@ macro_rules! implement_mie_potential(
         /// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
         /// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
         #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+        #[cfg_attr(feature = "approx", derive(RelativeEq))]
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         pub struct $name {
             /// Interaction strength $\epsilon$ of the potential.

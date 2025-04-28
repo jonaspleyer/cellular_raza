@@ -71,10 +71,10 @@ fn main() -> Result<(), SimulationError> {
         }
     });
 
-    let domain = CartesianCuboid2New::from_boundaries_and_interaction_ranges(
+    let domain = CartesianCuboid::from_boundaries_and_interaction_range(
         [0.0; 2],
         [parameters.domain_size; 2],
-        [parameters.cell_interaction.cutoff * 2.0; 2],
+        parameters.cell_interaction.cutoff * 2.0,
     )?;
 
     let time = FixedStepsize::from_partial_save_interval(

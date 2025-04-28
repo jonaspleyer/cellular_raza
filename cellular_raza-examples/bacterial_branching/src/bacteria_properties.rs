@@ -68,7 +68,7 @@ impl Intracellular<ReactionVector> for MyAgent {
     }
 
     fn get_intracellular(&self) -> ReactionVector {
-        [PI * self.interaction.radius.powf(2.0)].into()
+        vec![PI * self.interaction.radius.powf(2.0)].into()
     }
 }
 
@@ -83,7 +83,7 @@ impl ReactionsExtra<ReactionVector, ReactionVector> for MyAgent {
 
         let uptake = u * extra;
 
-        let incr_intra: ReactionVector = [self.growth_rate * uptake[0]].into();
+        let incr_intra: ReactionVector = vec![self.growth_rate * uptake[0]].into();
         let incr_extra = -uptake;
 
         Ok((incr_intra, incr_extra))

@@ -19,7 +19,7 @@ jobs:
           submodules: 'recursive'
           lfs: 'false'
       - name: Install libfontconfig1-dev
-        if: ${{ inputs.os == 'ubuntu-latest' }}
+        if: ${{ contains(inputs.os, 'ubuntu') }}
         run: sudo apt-get install libfontconfig1-dev
 
       - name: Install toolchain
@@ -33,5 +33,9 @@ jobs:
       - name: DocTest
         run: cargo test --doc
 
+      - name: Test MacOs
+        if: ${{ contains(inputs.os, 'macos') }}
+        run: cargo test --workspace --exclude cellular_raza-template-pyo3 --exclude cr_pool_model_pyo3
       - name: Test
+        if: ${{ !contains(inputs.os, 'macos') }}
         run: cargo test

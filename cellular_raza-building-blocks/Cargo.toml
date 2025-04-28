@@ -17,17 +17,19 @@ rustdoc-args = ["--cfg", "doc_cfg", "--html-in-header", ".docs-header.html" ]
 all-features = true
 
 [dependencies]
-plotters = { workspace = true }
+plotters = { workspace = true, optional = true }
 num = { workspace = true }
 rand = { workspace = true, features=["small_rng"] }
 rand_distr = { workspace = true, features = ["serde"]}
 rand_chacha = { workspace = true, features=["serde"]}
 nalgebra.workspace = true
+ndarray.workspace = true
 serde = { workspace = true }
 itertools = { workspace = true }
 rayon = { version="1.6" }
-pyo3 = { workspace = true, optional=true, features=["serde", "py-clone"] }
+pyo3 = { workspace = true, optional = true, features=["serde", "py-clone"] }
 spatial-decomposition = "0.2.1"
+approx = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_test = "1.0.177"
@@ -40,3 +42,5 @@ version = "0.2.3"
 default = ["gradients"]
 pyo3 = ["dep:pyo3"]
 gradients = ["cellular_raza-concepts/gradients"]
+approx = ["dep:approx"]
+plotters = ["dep:plotters"]
