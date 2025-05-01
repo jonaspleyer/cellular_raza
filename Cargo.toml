@@ -14,7 +14,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 edition = "2024"
 license = "GPL-2.0"
