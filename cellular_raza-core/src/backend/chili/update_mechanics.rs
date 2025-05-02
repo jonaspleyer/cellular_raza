@@ -197,6 +197,109 @@ where
         S: SubDomainMechanics<Pos, Vel>,
         Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
     {
+        let one_half: Float = Float::one() / (Float::one() + Float::one());
+        let voxel_indices: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+
+        for voxel_index in voxel_indices {
+            let n_cells = self.voxels[&voxel_index].cells.len();
+            // Calculate Interactions internally
+            for n in 0..n_cells {
+                let vox = self.voxels.get_mut(&voxel_index).unwrap();
+                let p1 = vox.cells[n].0.pos();
+                let v1 = vox.cells[n].0.velocity();
+                let i1 = vox.cells[n].0.get_interaction_information();
+
+                for m in n + 1..n_cells {
+                    let mut cells_mut = vox.cells.iter_mut();
+
+                    let (c1, aux1) = cells_mut.nth(n).unwrap();
+                    let (c2, aux2) = cells_mut.nth(m - n - 1).unwrap();
+
+                    let p2 = c2.pos();
+                    let v2 = c2.velocity();
+                    let i2 = c2.get_interaction_information();
+
+                    let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
+                    aux1.add_force(force1.xa(one_half));
+                    aux2.add_force(force2.xa(one_half));
+
+                    let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
+                    aux1.add_force(force1.xa(one_half));
+                    aux2.add_force(force2.xa(one_half));
+
+                    // Also check for neighbors
+                    if c1.is_neighbor(&p1, &p2, &i2)? {
+                        aux1.incr_current_neighbors(1);
+                    }
+                    if c2.is_neighbor(&p2, &p1, &i1)? {
+                        aux2.incr_current_neighbors(1);
+                    }
+                }
+
+                let neighbors = vox.neighbors.clone();
+                let mut force = None;
+                for neighbor_index in &neighbors {
+                    match self.voxels.get_mut(&neighbor_index) {
+                        Some(vox) => {
+                            if let Some(f) =
+                                vox.calculate_force_between_cells_external(&p1, &v1, &i1)?
+                            {
+                                match &mut force {
+                                    Some(f2) => *f2 = f.xapy(Float::one(), &f2),
+                                    f2 @ None => *f2 = Some(f),
+                                }
+                            }
+                        }
+                        None => self.communicator.send(
+                            &self.plain_index_to_subdomain[&neighbor_index],
+                            PosInformation {
+                                index_sender: voxel_index,
+                                index_receiver: neighbor_index.clone(),
+                                pos: p1.clone(),
+                                vel: v1.clone(),
+                                info: i1.clone(),
+                                cell_index_in_vector: n,
+                            },
+                        )?,
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
+where
+    S: SubDomain,
+{
+    /// Update cells position and velocity
+    ///
+    /// We assume that cells implement the
+    /// [Mechanics](cellular_raza_concepts::Mechanics) and
+    /// [Interaction](cellular_raza_concepts::Interaction) traits.
+    /// Then, threads will exchange information in the [PosInformation] format
+    /// to calculate the forces acting on the cells.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    pub fn update_mechanics_interaction_step_1_old<Pos, Vel, For, Float, Inf, const N: usize>(
+        &mut self,
+    ) -> Result<(), SimulationError>
+    where
+        Pos: Clone,
+        Vel: Clone,
+        Inf: Clone,
+        C: cellular_raza_concepts::Position<Pos>,
+        C: cellular_raza_concepts::Velocity<Vel>,
+        C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
+        C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+        A: UpdateMechanics<Pos, Vel, For, N>,
+        A: UpdateInteraction,
+        For: Xapy<Float> + core::ops::AddAssign,
+        Float: num::Float + core::ops::AddAssign,
+        <S as SubDomain>::VoxelIndex: Ord,
+        S: SubDomainMechanics<Pos, Vel>,
+        Com: Communicator<SubDomainPlainIndex, PosInformation<Pos, Vel, Inf>>,
+    {
         for (_, vox) in self.voxels.iter_mut() {
             vox.calculate_force_between_cells_internally()?;
         }

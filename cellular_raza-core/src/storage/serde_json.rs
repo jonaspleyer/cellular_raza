@@ -35,12 +35,11 @@ impl<Id, Element> FileBasedStorage<Id, Element> for JsonStorageInterface<Id, Ele
         Ok(serde_json::to_writer_pretty(writer, value)?)
     }
 
-    fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
+    fn from_str<V>(&self, input: &str) -> Result<V, StorageError>
     where
         V: for<'a> Deserialize<'a>,
-        R: std::io::Read,
     {
-        Ok(serde_json::from_reader(reader)?)
+        Ok(serde_json::from_str(input)?)
     }
 }
 

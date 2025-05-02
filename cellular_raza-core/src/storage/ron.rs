@@ -39,13 +39,11 @@ impl<Id, Element> FileBasedStorage<Id, Element> for RonStorageInterface<Id, Elem
         Ok(options.to_io_writer_pretty(writer, value, config)?)
     }
 
-    fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
+    fn from_str<V>(&self, input: &str) -> Result<V, StorageError>
     where
         V: for<'a> Deserialize<'a>,
-        R: std::io::Read,
     {
-        let reader = std::io::BufReader::new(reader);
-        Ok(ron::de::from_reader(reader)?)
+        Ok(ron::de::from_str(input)?)
     }
 }
 

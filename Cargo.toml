@@ -13,11 +13,11 @@ members = [
 resolver = "2"
 
 [patch.crates-io]
-nalgebra = { git = "https://github.com/dimforge/nalgebra" }
-pathfinder_simd = { git = "https://github.com/servo/pathfinder.git" }
+nalgebra = { git="https://github.com/dimforge/nalgebra" }
+pathfinder_simd = { git="https://github.com/servo/pathfinder" }
 
 [workspace.package]
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 edition = "2024"
 license = "GPL-2.0"
@@ -44,6 +44,9 @@ rand_distr = "0.5"
 rand_chacha = { version="0.9", features=["serde"] }
 serde = "1.0"
 tempfile = "3"
-nalgebra = { version="<0.34, >=0.30", features=["serde-serialize", "rand"]}
+nalgebra = { version="0.33", features=["serde-serialize", "rand"]}
+ndarray = { version = "0.16", features = ["blas", "serde", "serde-1"] }
 pyo3 = { version = "0.24", features = ["serde", "py-clone"]}
 kdam = "0.6"
+approxim = "0.6.5"
+approx = { package = "approxim", version = "0.6.5" }

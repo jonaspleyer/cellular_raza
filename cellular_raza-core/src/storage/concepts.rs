@@ -669,11 +669,10 @@ pub trait FileBasedStorage<Id, Element> {
         V: Serialize,
         W: std::io::Write;
 
-    /// Deserializes the given value type from a reader.
-    fn from_reader<V, R>(&self, reader: R) -> Result<V, StorageError>
+    /// Deserialize the given value from a string
+    fn from_str<V>(&self, input: &str) -> Result<V, StorageError>
     where
-        V: for<'a> Deserialize<'a>,
-        R: std::io::Read;
+        V: for<'a> Deserialize<'a>;
 
     /// Creates a new iteration file with a predefined naming scheme.
     ///
@@ -1016,7 +1015,7 @@ where
             // Load all elements which are inside this folder from batches and singles
             for path in std::fs::read_dir(&iteration_path)? {
                 let p = path?.path();
-                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
+                let content = std::fs::read_to_string(&p)?;
 
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
@@ -1024,7 +1023,7 @@ where
                             let first_name_segment = tail.split("_").into_iter().next();
                             if first_name_segment == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
-                                    self.0.from_reader(file)?;
+                                    self.0.from_str(&content)?;
                                 for json_save_format in result.data.into_iter() {
                                     if &json_save_format.identifier == identifier {
                                         return Ok(Some(json_save_format.element));
@@ -1032,7 +1031,7 @@ where
                                 }
                             } else if first_name_segment == Some("single") {
                                 let result: CombinedSaveFormat<Id, Element> =
-                                    self.0.from_reader(file)?;
+                                    self.0.from_str(&content)?;
                                 if &result.identifier == identifier {
                                     return Ok(Some(result.element));
                                 }
@@ -1068,7 +1067,7 @@ where
             // Load all elements which are inside this folder from batches and singles
             for path in std::fs::read_dir(&iteration_path)? {
                 let p = path?.path();
-                let file = std::fs::OpenOptions::new().read(true).open(&p)?;
+                let content = std::fs::read_to_string(&p)?;
 
                 match p.file_stem() {
                     Some(stem) => match stem.to_str() {
@@ -1076,7 +1075,7 @@ where
                             let first_name_segment = tail.split("_").into_iter().next();
                             if first_name_segment == Some("batch") {
                                 let result: BatchSaveFormat<Id, Element> =
-                                    self.0.from_reader(file)?;
+                                    self.0.from_str(&content)?;
                                 all_elements_at_iteration.extend(result.data.into_iter().map(
                                     |json_save_format| {
                                         (json_save_format.identifier, json_save_format.element)
@@ -1084,7 +1083,7 @@ where
                                 ));
                             } else if first_name_segment == Some("single") {
                                 let result: CombinedSaveFormat<Id, Element> =
-                                    self.0.from_reader(file)?;
+                                    self.0.from_str(&content)?;
                                 all_elements_at_iteration
                                     .extend([(result.identifier, result.element)]);
                             }

@@ -2,7 +2,7 @@ use crate::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza_concepts::*;
 
 use num::FromPrimitive;
-use serde::{Deserialize, Serialize, ser::SerializeStruct};
+use serde::{Deserialize, Serialize};
 
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
 
@@ -68,7 +68,15 @@ use nalgebra::{Const, Dyn, Matrix, VecStorage};
 ///
 /// # References
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(bound = "
+F: 'static
+    + PartialEq
+    + Clone
+    + core::fmt::Debug
+    + Serialize
+    + for<'a> Deserialize<'a>,
+")]
 pub struct RodMechanics<F, const D: usize> {
     /// The current position
     pub pos: Matrix<
@@ -382,7 +390,16 @@ where
 }
 
 /// The corresponding SubDomain of the [CartesianCuboidRods] domain.
-#[derive(Clone, SubDomain)]
+#[derive(Clone, SubDomain, Serialize, Deserialize)]
+#[serde(bound = "
+F: 'static
+    + PartialEq
+    + Clone
+    + core::fmt::Debug
+    + Serialize
+    + for<'a> Deserialize<'a>,
+[usize; D]: Serialize + for<'a> Deserialize<'a>,
+")]
 pub struct CartesianSubDomainRods<F, const D: usize> {
     /// Base subdomain as created by the [CartesianCuboid] domain.
     #[Base]
@@ -488,62 +505,6 @@ where
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename(
-    serialize = "CartesianSubDomainRods",
-    deserialize = "CartesianSubDomainRods",
-))]
-struct __CartesianSubDomainRodsSerde<F, const D2: usize>
-where
-    F: 'static + Clone + core::fmt::Debug + PartialEq + nalgebra::Scalar,
-    CartesianSubDomain<F, D2>: for<'a> Deserialize<'a>,
-{
-    subdomain: CartesianSubDomain<F, D2>,
-    gravity: F,
-    surface_friction: F,
-    surface_friction_distance: F,
-}
-
-impl<F, const D: usize> From<__CartesianSubDomainRodsSerde<F, D>> for CartesianSubDomainRods<F, D>
-where
-    F: 'static + Clone + core::fmt::Debug + PartialEq + for<'a> Deserialize<'a>,
-{
-    fn from(s: __CartesianSubDomainRodsSerde<F, D>) -> Self {
-        CartesianSubDomainRods {
-            subdomain: s.subdomain,
-            gravity: s.gravity,
-            surface_friction: s.surface_friction,
-            surface_friction_distance: s.surface_friction_distance,
-        }
-    }
-}
-
-impl<F, const D: usize> Serialize for CartesianSubDomainRods<F, D>
-where
-    F: nalgebra::Scalar + Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.subdomain.serialize(serializer)
-    }
-}
-
-impl<'de, F, const D: usize> Deserialize<'de> for CartesianSubDomainRods<F, D>
-where
-    F: nalgebra::Scalar + for<'a> Deserialize<'a>,
-{
-    fn deserialize<De>(deserializer: De) -> Result<Self, De::Error>
-    where
-        De: serde::Deserializer<'de>,
-    {
-        let s = __CartesianSubDomainRodsSerde::deserialize(deserializer)?;
-        let subdomain = s.into();
-        Ok(subdomain)
-    }
-}
-
 impl<C, F, const D: usize> SortCells<C> for CartesianSubDomainRods<F, D>
 where
     C: Position<Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>>,
@@ -562,69 +523,6 @@ where
         let pos = cell.pos().row_sum().transpose() / F::from_usize(cell.pos().nrows()).unwrap();
         let index = self.subdomain.get_index_of(pos)?;
         Ok(index)
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(rename(serialize = "RodMechanics", deserialize = "RodMechanics",))]
-struct __RodMechanicsSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize> {
-    pos: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
-    vel: Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
-    diffusion_constant: F,
-    spring_tension: F,
-    rigidity: F,
-    spring_length: F,
-    damping: F,
-}
-
-impl<F, const D: usize> From<__RodMechanicsSerde<F, D>> for RodMechanics<F, D>
-where
-    F: 'static + Clone + core::fmt::Debug + PartialEq,
-{
-    fn from(value: __RodMechanicsSerde<F, D>) -> Self {
-        RodMechanics {
-            pos: value.pos,
-            vel: value.vel,
-            diffusion_constant: value.diffusion_constant,
-            spring_tension: value.spring_tension,
-            rigidity: value.rigidity,
-            spring_length: value.spring_length,
-            damping: value.damping,
-        }
-    }
-}
-
-impl<F, const D: usize> Serialize for RodMechanics<F, D>
-where
-    F: nalgebra::Scalar + Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("RodMechanics", 6)?;
-        state.serialize_field("pos", &self.pos)?;
-        state.serialize_field("vel", &self.vel)?;
-        state.serialize_field("diffusion_constant", &self.diffusion_constant)?;
-        state.serialize_field("spring_tension", &self.spring_tension)?;
-        state.serialize_field("rigidity", &self.rigidity)?;
-        state.serialize_field("spring_length", &self.spring_length)?;
-        state.serialize_field("damping", &self.damping)?;
-        state.end()
-    }
-}
-
-impl<'de, F, const D: usize> Deserialize<'de> for RodMechanics<F, D>
-where
-    F: nalgebra::Scalar + for<'a> Deserialize<'a>,
-{
-    fn deserialize<De>(deserializer: De) -> Result<Self, De::Error>
-    where
-        De: serde::Deserializer<'de>,
-    {
-        let r = __RodMechanicsSerde::deserialize(deserializer)?;
-        let rodmechanics = r.into();
-        Ok(rodmechanics)
     }
 }
 

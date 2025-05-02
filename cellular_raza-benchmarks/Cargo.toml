@@ -29,7 +29,7 @@ tempfile.workspace = true
 
 [dependencies.cellular_raza]
 path = "../cellular_raza"
-version = "0.2.3"
+version = "0.2.4"
 
 [features]
 default = ["gradients"]
@@ -39,3 +39,7 @@ gradients = ["cellular_raza/gradients"]
 [[bin]]
 name = "benchmark_cell_sorting"
 path = "src/cell_sorting.rs"
+
+[[bench]]
+name = "interactions"
+harness = false

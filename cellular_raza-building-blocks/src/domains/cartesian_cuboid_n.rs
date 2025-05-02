@@ -1,18 +1,11 @@
 // Imports from this crate
 use cellular_raza_concepts::*;
 
-#[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
-
-// Imports from std and core
-use core::cmp::{max, min};
-use std::usize;
-
 // Imports from other crates
 use itertools::Itertools;
 use nalgebra::SVector;
 
-use serde::{Deserialize, Deserializer, Serialize, ser::SerializeStruct};
+use serde::{Deserialize, Serialize};
 
 /// Helper function to calculate the decomposition of a large number N into n as evenly-sizedchunks
 /// chunks as possible
@@ -44,24 +37,22 @@ pub(super) fn get_decomp_res(n_voxel: usize, n_regions: usize) -> Option<(usize,
     let mut m = 0;
 
     for _ in 0..n_regions {
-        let r = residue(n, m, average_len);
-        if r == 0 {
-            return Some((n as usize, m as usize, average_len as usize));
-        } else if r > 0 {
-            if n == n_regions as i64 {
-                // Start from the beginning again but with different value for average length
-                average_len += 1;
-                n = n_regions as i64;
-                m = 0;
-            } else {
-                n += 1;
-                m -= 1;
+        match residue(n, m, average_len) {
+            0 => {
+                return Some((n as usize, m as usize, average_len as usize));
             }
-        // Residue is negative. This means we have subtracted too much and we just decrease n and
-        // increase m
-        } else {
-            n -= 1;
-            m += 1;
+            1..=i64::MAX => {
+                if n == n_regions as i64 {
+                    // Start from the beginning again but with different value for average length
+                    average_len += 1;
+                    n = n_regions as i64;
+                    m = 0;
+                }
+            }
+            i64::MIN..0 => {
+                n -= 1;
+                m += 1;
+            }
         }
     }
     None
@@ -410,7 +401,16 @@ fn generate_subdomains() {
 }
 
 /// Subdomain corresponding to the [CartesianCuboid] struct.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(bound = "
+F: 'static
+    + PartialEq
+    + Clone
+    + core::fmt::Debug
+    + Serialize
+    + for<'a> Deserialize<'a>,
+[usize; D]: Serialize + for<'a> Deserialize<'a>,
+")]
 pub struct CartesianSubDomain<F, const D: usize> {
     min: SVector<F, D>,
     max: SVector<F, D>,
@@ -419,151 +419,6 @@ pub struct CartesianSubDomain<F, const D: usize> {
     pub(crate) domain_min: SVector<F, D>,
     pub(crate) domain_max: SVector<F, D>,
     domain_n_voxels: SVector<usize, D>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename(serialize = "CartesianSubDomain", deserialize = "CartesianSubDomain",))]
-struct __CartesianSubDomainSerde<F: 'static + Clone + core::fmt::Debug + PartialEq, const D: usize>
-{
-    min: SVector<F, D>,
-    max: SVector<F, D>,
-    dx: SVector<F, D>,
-    voxels: Vec<SVector<usize, D>>,
-    domain_min: SVector<F, D>,
-    domain_max: SVector<F, D>,
-    domain_n_voxels: SVector<usize, D>,
-}
-
-impl<F, const D: usize> From<__CartesianSubDomainSerde<F, D>> for CartesianSubDomain<F, D>
-where
-    F: 'static + Clone + core::fmt::Debug + PartialEq,
-{
-    fn from(s: __CartesianSubDomainSerde<F, D>) -> Self {
-        CartesianSubDomain {
-            min: s.min,
-            max: s.max,
-            dx: s.dx,
-            voxels: s.voxels.into_iter().map(<[usize; D]>::from).collect(),
-            domain_min: s.domain_min,
-            domain_max: s.domain_max,
-            domain_n_voxels: s.domain_n_voxels,
-        }
-    }
-}
-
-impl<F, const D: usize> Serialize for CartesianSubDomain<F, D>
-where
-    F: nalgebra::Scalar + Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("CartesianSubDomain", 7)?;
-        state.serialize_field("min", &self.min)?;
-        state.serialize_field("max", &self.max)?;
-        state.serialize_field("dx", &self.dx)?;
-        let voxels = self
-            .voxels
-            .iter()
-            .map(|ind| ind.into_iter().collect::<Vec<_>>())
-            .collect::<Vec<_>>();
-        state.serialize_field("voxels", &voxels)?;
-        state.serialize_field("domain_min", &self.domain_min)?;
-        state.serialize_field("domain_max", &self.domain_max)?;
-        state.serialize_field("domain_n_voxels", &self.domain_n_voxels)?;
-        state.end()
-    }
-}
-
-impl<'de, F, const D: usize> Deserialize<'de> for CartesianSubDomain<F, D>
-where
-    F: nalgebra::Scalar + for<'a> Deserialize<'a>,
-{
-    fn deserialize<De>(deserializer: De) -> Result<Self, De::Error>
-    where
-        De: Deserializer<'de>,
-    {
-        let s = __CartesianSubDomainSerde::deserialize(deserializer)?;
-        let subdomain = s.into();
-        Ok(subdomain)
-    }
-}
-
-#[test]
-fn serialize_cartesiansubdomain() {
-    let subdomain = CartesianSubDomain {
-        min: [-30.0, 10.0].into(),
-        max: [55.33, 11.0].into(),
-        dx: [1.0, 0.01].into(),
-        voxels: vec![[1, 2], [3, 4], [5, 6]],
-        domain_min: [-30.0, 10.0].into(),
-        domain_max: [55.33, 22.38].into(),
-        domain_n_voxels: [1, 2].into(),
-    };
-    // TODO finish this test
-    use serde_test::{Token, assert_de_tokens, assert_ser_tokens};
-    let tokens = [
-        Token::Struct {
-            name: "CartesianSubDomain",
-            len: 7,
-        },
-        // subdomain.min
-        Token::Str("min"),
-        Token::Tuple { len: 2 },
-        Token::F64(subdomain.min[0]),
-        Token::F64(subdomain.min[1]),
-        Token::TupleEnd,
-        // subdomain.max
-        Token::Str("max"),
-        Token::Tuple { len: 2 },
-        Token::F64(subdomain.max[0]),
-        Token::F64(subdomain.max[1]),
-        Token::TupleEnd,
-        // subdomain.dx
-        Token::Str("dx"),
-        Token::Tuple { len: 2 },
-        Token::F64(subdomain.dx[0]),
-        Token::F64(subdomain.dx[1]),
-        Token::TupleEnd,
-        // subdomain.voxels
-        Token::Str("voxels"),
-        Token::Seq { len: Some(3) },
-        Token::Seq { len: Some(2) },
-        Token::U64(subdomain.voxels[0][0] as u64),
-        Token::U64(subdomain.voxels[0][1] as u64),
-        Token::SeqEnd,
-        Token::Seq { len: Some(2) },
-        Token::U64(subdomain.voxels[1][0] as u64),
-        Token::U64(subdomain.voxels[1][1] as u64),
-        Token::SeqEnd,
-        Token::Seq { len: Some(2) },
-        Token::U64(subdomain.voxels[2][0] as u64),
-        Token::U64(subdomain.voxels[2][1] as u64),
-        Token::SeqEnd,
-        Token::SeqEnd,
-        // domain.min
-        Token::Str("domain_min"),
-        Token::Tuple { len: 2 },
-        Token::F64(subdomain.domain_min[0]),
-        Token::F64(subdomain.domain_min[1]),
-        Token::TupleEnd,
-        // domain.max
-        Token::Str("domain_max"),
-        Token::Tuple { len: 2 },
-        Token::F64(subdomain.domain_max[0]),
-        Token::F64(subdomain.domain_max[1]),
-        Token::TupleEnd,
-        // domain.dx
-        Token::Str("domain_n_voxels"),
-        Token::Tuple { len: 2 },
-        Token::U64(subdomain.domain_n_voxels[0] as u64),
-        Token::U64(subdomain.domain_n_voxels[1] as u64),
-        Token::TupleEnd,
-        Token::StructEnd,
-    ];
-    assert_ser_tokens(&subdomain, &tokens);
-    assert_de_tokens(&subdomain, &tokens);
 }
 
 impl<F, const D: usize> CartesianSubDomain<F, D>
@@ -756,9 +611,11 @@ where
             }
         }
 
-        // If new position is still out of boundary return error
-        for i in 0..D {
-            if position[i] < self.domain_min[i] || position[i] > self.domain_max[i] {
+        for (p, (dmin, dmax)) in position
+            .iter()
+            .zip(self.domain_min.iter().zip(self.domain_max.iter()))
+        {
+            if p < dmin || p > dmax {
                 return Err(BoundaryError(format!(
                     "Particle is out of domain at position {:?}",
                     pos
@@ -796,530 +653,13 @@ impl<F, const D: usize> SubDomain for CartesianSubDomain<F, D> {
             .multi_cartesian_product()
             .map(|ind_v| {
                 let mut res = [0; D];
-                for i in 0..D {
-                    res[i] = ind_v[i];
-                }
+                <[usize]>::copy_from_slice(&mut res, &ind_v);
                 res
             })
             .filter(|ind| ind != voxel_index)
             .collect()
     }
 }
-
-macro_rules! implement_cartesian_cuboid_domain {
-    (
-        $d: literal,
-        $domain_name: ident,
-        $subdomain_name: ident,
-        $voxel_name: ident,
-        $float_type: ty,
-        $($k: expr),+
-    ) => {
-        #[derive(Clone, Debug, Deserialize, Serialize)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
-        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
-        /// Cartesian cuboid in
-        #[doc = concat!(" `", stringify!($d), "D`")]
-        /// with float type
-        #[doc = concat!(" `", stringify!($float_type), "`")]
-        pub struct $domain_name {
-            /// Lower boundary of domain
-            pub min: [$float_type; $d],
-            /// Upper boundary of domain
-            pub max: [$float_type; $d],
-            /// Number of voxels in domain along axes
-            pub n_voxels: [i64; $d],
-            /// Length of individual voxels in domain
-            pub dx_voxels: [$float_type; $d],
-            /// Initial seed from which to generate seeds for voxels
-            pub rng_seed: u64,
-        }
-
-        impl $domain_name {
-            fn check_min_max(min: [$float_type; $d], max: [$float_type; $d]) -> Result<(), CalcError> {
-                for i in 0..$d {
-                    match max[i] > min[i] {
-                        false => Err(CalcError(format!(
-                            "Min {:?} must be smaller than Max {:?} for domain boundaries!",
-                            min,
-                            max
-                        ))),
-                        true => Ok(()),
-                    }?;
-                }
-                Ok(())
-            }
-
-            fn check_positive<F>(interaction_ranges: [F; $d]) -> Result<(), CalcError>
-            where
-                F: PartialOrd + num::Zero + core::fmt::Debug,
-            {
-                for i in 0..$d {
-                    match interaction_ranges[i] > F::zero() {
-                        false => Err(CalcError(format!("Interaction range must be positive and non-negative! Got value {:?}", interaction_ranges[i]))),
-                        true => Ok(())
-                    }?;
-                }
-                Ok(())
-            }
-
-            /// Construct the domain from given lower/upper boundaries and maximum
-            /// length of interaction ranges along axes.
-            pub fn from_boundaries_and_interaction_ranges(
-                min: [$float_type; $d],
-                max: [$float_type; $d],
-                interaction_ranges: [$float_type; $d]
-            ) -> Result<$domain_name, CalcError>
-            {
-                Self::check_min_max(min, max)?;
-                Self::check_positive(interaction_ranges)?;
-                let mut n_voxels = [0; $d];
-                let mut dx_voxels = [0.0; $d];
-                for i in 0..$d {
-                    n_voxels[i] = ((max[i] - min[i]) / interaction_ranges[i] * 0.5).ceil() as i64;
-                    dx_voxels[i] = (max[i]-min[i])/n_voxels[i] as $float_type;
-                }
-                Ok(Self {
-                    min,
-                    max,
-                    n_voxels,
-                    dx_voxels,
-                    rng_seed: 0,
-                })
-            }
-
-            /// Construct the domain from given lower/upper boundaries and
-            /// number of voxels along axes.
-            pub fn from_boundaries_and_n_voxels(
-                min: [$float_type; $d],
-                max: [$float_type; $d],
-                n_vox: [usize; $d]
-            ) -> Result<$domain_name, CalcError>
-            {
-                Self::check_min_max(min, max)?;
-                Self::check_positive(n_vox)?;
-                let mut dx_voxels = [0.0; $d];
-                for i in 0..$d {
-                    dx_voxels[i] = (max[i] - min[i]) / n_vox[i] as $float_type;
-                }
-                Ok(Self {
-                    min,
-                    max,
-                    n_voxels: [$(n_vox[$k] as i64),+],
-                    dx_voxels,
-                    rng_seed: 0,
-                })
-            }
-
-            fn get_voxel_index(
-                &self,
-                position: &nalgebra::SVector<$float_type, $d>,
-            ) -> Result<[i64; $d], BoundaryError> {
-                let mut percent: nalgebra::SVector<$float_type, $d> = self.max.into();
-                percent -= nalgebra::SVector::<$float_type, $d>::from(self.min);
-                percent = position.component_div(&percent);
-                let vox = [$(
-                    (percent[$k] * self.n_voxels[$k] as $float_type).floor() as i64,
-                )+];
-
-                // If the returned voxel is not positive and smaller than the maximum
-                // number of voxel indices this function needs to return an error.
-                if vox
-                    .iter()
-                    .enumerate()
-                    .any(|(i, &p)| p<0 && self.n_voxels[i]<p) {
-                        return Err(
-                            BoundaryError(format!("Cell with position {:?} could not find index in domain with size min: {:?} max: {:?}", position, self.min, self.max))
-                        );
-                } else {
-                    return Ok(vox);
-                }
-            }
-
-            fn get_neighbor_voxel_indices(&self, index: &[i64; $d]) -> Vec<[i64; $d]> {
-                // Create the bounds for the following creation of all the voxel indices
-                let bounds: [[i64; 2]; $d] = [$(
-                    [
-                        max(index[$k] as i32 - 1, 0) as i64,
-                        min(index[$k]+2, self.n_voxels[$k])
-                    ]
-                ),+];
-
-                // Create voxel indices
-                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invocation
-                    .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
-                    .multi_cartesian_product()                  // all possible combinations
-                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
-                    .filter(|ind| ind!=index)                   // filter the elements such that the current index is not included.
-                    .collect();                                 // collect into the correct type
-
-                return v;
-            }
-
-            fn get_all_voxel_indices(&self) -> Vec<[i64; $d]> {
-                [$($k),+]
-                    .iter()                                     // indices supplied in macro invocation
-                    .map(|i| (0..self.n_voxels[*i]))            // ranges from self.n_vox
-                    .multi_cartesian_product()                  // all possible combinations
-                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
-                    .collect()
-            }
-
-        }
-
-        #[doc ="Subdomain of ["]
-        #[doc = stringify!($domain_name)]
-        #[doc = "]"]
-        ///
-        /// The subdomain contains voxels
-        #[derive(Clone, Debug, Deserialize, Serialize)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
-        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
-        pub struct $subdomain_name {
-            /// All voxels contained in this subdomain
-            pub voxels: Vec<$voxel_name>,
-            domain_min: [$float_type; $d],
-            domain_max: [$float_type; $d],
-            domain_n_voxels: [i64; $d],
-            domain_voxel_sizes: [$float_type; $d],
-        }
-
-        #[derive(Clone, Debug, Deserialize, Serialize)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
-        #[cfg_attr(feature = "pyo3", pyo3(get_all, set_all))]
-        /// Voxel of the [
-        #[doc = stringify!($subdomain_name)]
-        /// ]
-        pub struct $voxel_name {
-            /// Lower boundary of the voxel
-            pub min: [$float_type; $d],
-            /// Upper boundary of the voxel
-            pub max: [$float_type; $d],
-            /// Index of the voxel
-            pub ind: [i64; $d],
-        }
-
-        impl<C, I: IntoIterator<Item=C>> Domain<C, $subdomain_name, I> for $domain_name
-        where
-            // C: cellular_raza_concepts::Mechanics<nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, nalgebra::SVector<$float_type, $d>, $float_type>,
-            C: Position<SVector<$float_type, $d>>,
-        {
-            // TODO THINK VERY HARD ABOUT THESE TYPES! THEY MIGHT BE CHOSEN STUPIDLY!
-            type SubDomainIndex = usize;
-            type VoxelIndex = [i64; $d];
-
-            /// Much more research must be done to effectively write this function.
-            /// We should be using more sophisticated functionality based on common known facts for
-            /// minimizing surface area and number of neighbors.
-            /// For more information also see
-            /// - [Wikipedia](https://en.wikipedia.org/wiki/Plateau%27s_laws)
-            /// - [Math StackExchange](https://math.stackexchange.com/questions/3488409/dividing-a-square-into-n-equal-size-parts-with-minimal-fence)
-            fn decompose(
-                self,
-                n_subdomains: core::num::NonZeroUsize,
-                cells: I,
-            ) -> Result<DecomposedDomain<
-                Self::SubDomainIndex,
-                $subdomain_name,
-                C
-            >, DecomposeError> {
-                let mut indices = self.get_all_voxel_indices();
-
-                let (n, m, average_len);
-                match get_decomp_res(indices.len(), n_subdomains.into()) {
-                    Some(res) => (n, m, average_len) = res,
-                    None => return Err(
-                        DecomposeError::Generic("Could not find a suiting decomposition".to_owned())
-                    ),
-                };
-
-                // TODO optimize this!
-                // Currently we are not splitting the voxels apart efficiently
-                // These are subdomains which contain n voxels
-                let mut ind_n: Vec<Vec<_>> = indices
-                    .drain(0..(average_len*n) as usize)
-                    .into_iter()
-                    .chunks(average_len as usize)
-                    .into_iter()
-                    .map(|chunk| chunk.collect::<Vec<_>>())
-                    .collect();
-
-                // These are subdomains that contain m indices
-                let mut ind_m: Vec<Vec<_>> = indices
-                    .drain(..)
-                    .into_iter()
-                    .chunks((max(average_len-1, 1)) as usize)
-                    .into_iter()
-                    .map(|chunk| chunk.collect::<Vec<_>>())
-                    .collect();
-
-                // Combine them into one Vector
-                ind_n.append(&mut ind_m);
-
-                // We construct all Voxels which are grouped in their according subdomains
-                // Then we construct the subdomain
-                let mut index_subdomain_cells: std::collections::BTreeMap<
-                    Self::SubDomainIndex,
-                    (_, Vec<C>)
-                > = ind_n
-                    .clone()
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, indices)| {
-                        let voxels = indices
-                            .into_iter()
-                            .map(|ind| {
-                                let min = [$(
-                                    self.min[$k] + ind[$k] as $float_type*self.dx_voxels[$k]
-                                ),+];
-                                let max = [$(
-                                    self.min[$k] + (1+ind[$k]) as $float_type*self.dx_voxels[$k]
-                                ),+];
-
-                                $voxel_name {
-                                    min,
-                                    max,
-                                    ind,
-                                }
-                            }).collect::<Vec<_>>();
-                            (i as Self::SubDomainIndex, ($subdomain_name {
-                                voxels,
-                                domain_min: self.min,
-                                domain_max: self.max,
-                                domain_n_voxels: self.n_voxels,
-                                domain_voxel_sizes: self.dx_voxels,
-                            }, Vec::<C>::new()))
-                        }
-                    ).collect();
-
-                // Construct a map from voxel_index to subdomain_index
-                let voxel_index_to_subdomain_index = ind_n
-                    .clone()
-                    .into_iter()
-                    .enumerate()
-                    .map(|(subdomain_index, voxel_indices)| voxel_indices
-                        .into_iter()
-                        .map(move |voxel_index| (voxel_index, subdomain_index))
-                    )
-                    .flatten()
-                    .collect::<std::collections::BTreeMap<Self::VoxelIndex, Self::SubDomainIndex>>();
-
-                // Sort the cells into the correct voxels
-                cells
-                    .into_iter()
-                    .map(|cell| {
-                        // Get the voxel index of the cell
-                        let voxel_index = self.get_voxel_index(&cell.pos())?;
-                        // Now get the subdomain index of the voxel
-                        let subdomain_index = voxel_index_to_subdomain_index.get(&voxel_index).ok_or(
-                            DecomposeError::IndexError(IndexError(
-                                format!(
-                                    "Could not cell with position {:?} in domain {:?}",
-                                    cell.pos(),
-                                    self
-                                )
-                            ))
-                        )?;
-                        // Then add the cell to the subdomains cells.
-                        index_subdomain_cells.get_mut(&subdomain_index).ok_or(
-                            DecomposeError::IndexError(IndexError(
-                                format!(
-                                    "Could not find subdomain index {:?} internally which should\
-                                    have been there.",
-                                    subdomain_index
-                                )
-                            ))
-                        )?.1.push(cell);
-                        Ok(())
-
-                    }).collect::<Result<Vec<_>, DecomposeError>>()?;
-
-                //
-                let index_subdomain_cells: Vec<(Self::SubDomainIndex, _, _)> = index_subdomain_cells
-                    .into_iter()
-                    .map(|(index, (subdomain, cells))| (index, subdomain, cells))
-                    .collect();
-
-                let neighbor_map = ind_n
-                    .into_iter()
-                    .enumerate()
-                    .map(|(subdomain_index, voxel_indices)| {
-                        let neighbor_voxels = voxel_indices
-                            .into_iter()
-                            .map(|voxel_index| self.get_neighbor_voxel_indices(&voxel_index))
-                            .flatten();
-                        let neighbor_subdomains = neighbor_voxels
-                            .map(|neighbor_voxel_index| voxel_index_to_subdomain_index
-                                .get(&neighbor_voxel_index)
-                                .and_then(|v| Some(v.clone()))
-                                .ok_or(
-                                    DecomposeError::IndexError(IndexError(format!(
-                                        "Could not find neighboring voxel index {:?} internally\
-                                        which should have been initialized.",
-                                        neighbor_voxel_index))
-                                )
-                            ))
-                            .collect::<Result<std::collections::BTreeSet<usize>, _>>()?;
-                            /* .and_then(|neighbors| Ok(neighbors
-                                .into_iter()
-                                .unique()
-                                .filter(|neighbor_index| *neighbor_index!=subdomain_index)
-                                .collect::<std::collections::BTreeSet<_>>()))?;*/
-                        Ok((subdomain_index, neighbor_subdomains))
-                    })
-                    .collect::<Result<_, DecomposeError>>()?;
-
-                Ok(DecomposedDomain {
-                    n_subdomains: (n+m).try_into().unwrap_or(1.try_into().unwrap()),
-                    index_subdomain_cells,
-                    neighbor_map,
-                    rng_seed: self.rng_seed.clone(),
-                })
-            }
-        }
-
-        impl SubDomain for $subdomain_name
-        // where
-        //     C: cellular_raza_concepts::Mechanics<SVector<$float_type, $d>, SVector<$float_type, $d>, SVector<$float_type, $d>, $float_type>,
-        {
-            type VoxelIndex = [i64; $d];
-
-
-            fn get_neighbor_voxel_indices(&self, index: &Self::VoxelIndex) -> Vec<Self::VoxelIndex> {
-                // Create the bounds for the following creation of all the voxel indices
-                let bounds: [[i64; 2]; $d] = [$(
-                    [
-                        max(index[$k] as i32 - 1, 0) as i64,
-                        min(index[$k]+2, self.domain_n_voxels[$k])
-                    ]
-                ),+];
-
-                // Create voxel indices
-                let v: Vec<[i64; $d]> = [$($k),+].iter()      // indices supplied in macro invocation
-                    .map(|i| (bounds[*i][0]..bounds[*i][1]))    // ranges from bounds
-                    .multi_cartesian_product()                  // all possible combinations
-                    .map(|ind_v| [$(ind_v[$k]),+])              // multi_cartesian_product gives us vector elements. We map them to arrays.
-                    .filter(|ind| ind!=index)                   // filter the elements such that the current index is not included.
-                    .collect();                                 // collect into the correct type
-
-                return v;
-            }
-
-            fn get_all_indices(&self) -> Vec<Self::VoxelIndex> {
-                self.voxels.iter().map(|vox| vox.ind.clone()).collect()
-            }
-        }
-
-        impl<C> SortCells<C> for $subdomain_name
-        where
-            C: Position<SVector<$float_type, $d>>,
-        {
-            type VoxelIndex = [i64; $d];
-
-            fn get_voxel_index_of(&self, cell: &C) -> Result<Self::VoxelIndex, BoundaryError> {
-                let pos = cell.pos();
-                let mut out = [0; $d];
-
-                for i in 0..$d {
-                    out[i] = ((pos[i] - self.domain_min[0]) / self.domain_voxel_sizes[i]) as i64;
-                    out[i] = out[i].min(self.domain_n_voxels[i]-1).max(0);
-                }
-                Ok(out)
-            }
-        }
-
-        impl SubDomainMechanics<
-            SVector<$float_type, $d>,
-            SVector<$float_type, $d>,
-        > for $subdomain_name {
-            fn apply_boundary(
-                &self,
-                pos: &mut SVector<$float_type, $d>,
-                velocity: &mut SVector<$float_type, $d>
-            ) -> Result<(), BoundaryError> {
-                // For each dimension
-                for i in 0..$d {
-                    // Check if the particle is below lower edge
-                    if pos[i] < self.domain_min[i] {
-                        pos[i] = 2.0 * self.domain_min[i] - pos[i];
-                        velocity[i] = velocity[i].abs();
-                    }
-                    // Check if the particle is over the edge
-                    if pos[i] > self.domain_max[i] {
-                        pos[i] = 2.0 * self.domain_max[i] - pos[i];
-                        velocity[i] = - velocity[i].abs();
-                    }
-                }
-
-                // If new position is still out of boundary return error
-                for i in 0..$d {
-                    if pos[i] < self.domain_min[i] || pos[i] > self.domain_max[i] {
-                        return Err(BoundaryError(
-                                format!("Particle is out of domain at position {:?}", pos)
-                        ));
-                    }
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-implement_cartesian_cuboid_domain!(
-    1,
-    CartesianCuboid1New,
-    CartesianSubDomain1,
-    CartesianVoxel1,
-    f64,
-    0
-);
-implement_cartesian_cuboid_domain!(
-    2,
-    CartesianCuboid2New,
-    CartesianSubDomain2,
-    CartesianVoxel2,
-    f64,
-    0,
-    1
-);
-implement_cartesian_cuboid_domain!(
-    3,
-    CartesianCuboid3New,
-    CartesianSubDomain3,
-    CartesianVoxel3,
-    f64,
-    0,
-    1,
-    2
-);
-
-implement_cartesian_cuboid_domain!(
-    1,
-    CartesianCuboid1NewF32,
-    CartesianSubDomain1F32,
-    CartesianVoxel1F32,
-    f32,
-    0
-);
-implement_cartesian_cuboid_domain!(
-    2,
-    CartesianCuboid2NewF32,
-    CartesianSubDomain2F32,
-    CartesianVoxel2F32,
-    f32,
-    0,
-    1
-);
-implement_cartesian_cuboid_domain!(
-    3,
-    CartesianCuboid3NewF32,
-    CartesianSubDomain3F32,
-    CartesianVoxel3F32,
-    f32,
-    0,
-    1,
-    2
-);
 
 #[cfg(test)]
 mod test {

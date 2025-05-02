@@ -76,7 +76,7 @@ def load_subdomains_at_iteration(
         "subdomain.dx",
         "subdomain.voxels",
         "reactions_min",
-        "reactions_max",
+        # "reactions_max",
         "reactions_dx",
         "extracellular.data",
         "ownership_array.data",
