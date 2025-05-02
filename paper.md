@@ -34,33 +34,31 @@ numerical backend to a python package.
 
 # Statement of Need
 
-Agent-based models have become popular in cellular biology
+Agent-based models have become increasingly prevalent in the field of cellular biology
 [@Mogilner2016; @Cess2022; @Delile2017; @Delile_Herrmann_Peyrieras_Doursat_2017].
-Many tools have emerged which are capable of describing cellular systems in various details
+Numerous tools have been developed that can delineate cellular systems with great precision
 [@Pleyer2023; @Abar2017].
-While these tools have proven to be effective for targeted research questions,
-they often lack the ability to be applied more generically.\
-<!-- Nevertheless, core functionalities such as numerical solvers, storage solutions or domain
-decomposition methods could be shared between models.-->
-General-purpose ABM toolkits on the other hand are designed without specific applications
-in mind [@Abar2017; @Datseris2022; @Wilensky:1999].
-They are often able to define agents bottom-up and can be a good choice if they allow for the
-desired cellular representation.
-However, they lack the explicit forethought to be applied in cellular systems
-and may not be able to describe every cellular aspect.
+While these tools have proven effective for specific research inquiries, they frequently lack the
+capacity to be applied more universally.
+In contrast, general-purpose ABM toolkits are not designed with particular applications in mind
+[@Abar2017; @Datseris2022; @Wilensky:1999].
+These toolkits often enable the definition of agents bottom-up and can be a suitable choice if they
+allow for the desired cellular representation.
+However, they lack the explicit forethought necessary for application in cellular systems and may
+not be able to describe every cellular aspect.
 
-In contrast to classical particle simulations, Agent-based models (ABMs) treat every cell individually.
+In contrast to classical particle simulations, agent-based models (ABMs) treat every cell
+individually.
 This implies that parameters can vary between agents and that every cell should be traceable
 throughout time and space.
-In addition, they can describe growth, proliferation, death and many other cellular processes and
+Additionally, they can describe growth, proliferation, death, and many other cellular processes and
 should also accurately model cell lineage.
-These models live on the mesoscopic scale where the underlying complexity of the problem can
-often not be fully attributed to neither intracellular nor extracellular processes.
-Their applications include modeling of self-organization and emergent phenomena but they can
-also be used to introduce spatial effects into existing population-based models.
-In order to address these issues and construct models from first principles without any
-assumptions regarding the underlying complexity or abstraction level, we developed
-`cellular_raza`.
+These models operate on the mesoscopic scale where the underlying complexity of the problem cannot
+be fully attributed to either intracellular or extracellular processes.
+Their applications include modeling of self-organization and emergent phenomena, but they can also
+be used to introduce spatial effects into existing population-based models.
+To address these issues and construct models from first principles without any assumptions regarding
+the underlying complexity or abstraction level, we developed "cellular_raza."
 
 ## Cellular Agent-Based Frameworks
 
