@@ -39,3 +39,7 @@ gradients = ["cellular_raza/gradients"]
 [[bin]]
 name = "benchmark_cell_sorting"
 path = "src/cell_sorting.rs"
+
+[[bench]]
+name = "interactions"
+harness = false
