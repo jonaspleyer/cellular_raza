@@ -56,11 +56,17 @@ fn run_sim(n_lattice: usize) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    for n_lattice in [16, 32, 64, 128] {
-        c.bench_function(&format!("Interactions {n_lattice}^3 Voxels"), |b| {
+    let mut group =
+        c.benchmark_group("Mechanics(NewtonDamped3D)-Interaction(MorsePotential)-Lattice");
+    group.sample_size(40);
+    group.measurement_time(std::time::Duration::from_secs_f64(15.));
+
+    for n_lattice in [4, 8, 16, 32] {
+        group.bench_function(format!("{n_lattice}^3 Voxels"), |b| {
             b.iter(|| run_sim(n_lattice).unwrap())
         });
     }
+    group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
