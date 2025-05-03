@@ -339,7 +339,7 @@ impl CommunicatorBuilder {
         let struct_name = self.struct_name;
         let index_type = index_type();
         let core_path = &self.core_path;
-        let (generics, fields) = generics_and_fields(&self.aspects, &core_path);
+        let (generics, fields) = generics_and_fields(&self.aspects, core_path);
         // In the following code, we assume that I
         // is the index as implemented above in the build_comm function
         quote!(
