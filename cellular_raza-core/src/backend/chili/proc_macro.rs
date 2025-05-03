@@ -150,6 +150,9 @@ pub use cellular_raza_core_proc_macro::communicator_generics_placeholders;
 ///     $(mechanics_solver_order: $mechanics_solver_order:NonZeroUsize,)?
 ///     $(reactions_intra_solver_order: $reactions_intra_solver_order:NonZeroUsize,)?
 ///     $(reactions_contact_solver_order: $reactions_contact_solver_order:NonZeroUsize,)?
+///     $(update_mechanics_interaction_step_1: $update_mechanics_interaction_step_1:ident,)?
+///     $(update_mechanics_interaction_step_2: $update_mechanics_interaction_step_2:ident,)?
+///     $(update_mechanics_interaction_step_3: $update_mechanics_interaction_step_3:ident,)?
 /// ) -> Result<StorageAccess<_, _>, SimulationError>;
 /// ```
 ///
