@@ -42,8 +42,9 @@ fn prepare_sim(n_lattice: usize) -> Result<Prepared, Box<dyn std::error::Error>>
                 cutoff: 1.1 * dx,
                 radius: 0.5 * dx,
             },
-        });
-    let time = FixedStepsize::from_partial_save_steps(0.0, 0.01, 10, 1)?;
+        })
+        .collect();
+    let time = FixedStepsize::from_partial_save_steps(0.0, 0.01, 1_000, 1000)?;
     let storage = StorageBuilder::new().priority([]);
     let domain =
         CartesianCuboid::from_boundaries_and_n_voxels([0.0; 3], [domain_size; 3], [n_lattice; 3])?;
