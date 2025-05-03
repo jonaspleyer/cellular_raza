@@ -3,14 +3,21 @@ use serde::{Deserialize, Serialize};
 
 use cellular_raza::prelude::*;
 
-fn run_sim(n_lattice: usize) -> Result<(), Box<dyn std::error::Error>> {
-    #[derive(Clone, Debug, Serialize, CellAgent)]
-    struct Agent {
-        #[Mechanics]
-        mechanics: NewtonDamped3D,
-        #[Interaction]
-        interaction: MorsePotential,
-    }
+#[derive(Clone, Debug, Serialize, CellAgent)]
+struct Agent {
+    #[Mechanics]
+    mechanics: NewtonDamped3D,
+    #[Interaction]
+    interaction: MorsePotential,
+}
+
+type Prepared = (
+    Vec<Agent>,
+    CartesianCuboid<f64, 3>,
+    Settings<FixedStepsize<f64>, false>,
+);
+
+fn prepare_sim(n_lattice: usize) -> Result<Prepared, Box<dyn std::error::Error>> {
     let domain_size = 100.0;
     let dx = domain_size / n_lattice as f64;
     let agents = (0..n_lattice)
@@ -46,6 +53,11 @@ fn run_sim(n_lattice: usize) -> Result<(), Box<dyn std::error::Error>> {
         storage,
         show_progressbar: false,
     };
+    Ok((agents, domain, settings))
+}
+
+fn run_sim(prepared: Prepared) -> Result<(), SimulationError> {
+    let (agents, domain, settings) = prepared;
     run_simulation!(
         agents,
         domain,
@@ -63,7 +75,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     for n_lattice in [4, 8, 16, 32] {
         group.bench_function(format!("{n_lattice}^3 Voxels"), |b| {
-            b.iter(|| run_sim(n_lattice).unwrap())
+            let prepared = prepare_sim(n_lattice).unwrap();
+            b.iter(|| run_sim(prepared.clone()).unwrap())
         });
     }
     group.finish();
