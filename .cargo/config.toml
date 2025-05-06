@@ -1,5 +1,5 @@
 [build]
-incremental = true
+incremental = false
 rustflags = "-C target-cpu=native"
 
 [target.x86_64-apple-darwin]
