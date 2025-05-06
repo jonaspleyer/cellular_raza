@@ -10,12 +10,16 @@ use std::sync::atomic::AtomicBool; // TODO in the future use core::error::Error 
 use crossbeam_channel::{RecvError, SendError};
 
 macro_rules! impl_error_variant {
-    ($name: ident, $($err_var: ident),+) => {
+    ($name: ident, $(
+        $(#[$($tt:tt)*])?
+        $err_var: ident
+    ),+) => {
         // Implement Display for ErrorVariant
         impl Display for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     $(
+                        $(#[$($tt)*])?
                         $name::$err_var(message) => write!(f, "{}", message),
                     )+
                 }
@@ -111,6 +115,9 @@ pub enum SimulationError {
 
     /// Only occurs when another thread returns an error
     OtherThreadError(String),
+    /// Error related to [pyo3]
+    #[cfg(feature = "pyo3")]
+    Pyo3Error(pyo3::PyErr),
 }
 
 impl_from_error! {SimulationError,
@@ -144,7 +151,9 @@ impl_error_variant! {SimulationError,
     DrawingError,
     StorageError,
     RngError,
-    OtherThreadError
+    OtherThreadError,
+    #[cfg(feature = "pyo3")]
+    Pyo3Error
 }
 
 // Implement the general error property
@@ -212,6 +221,8 @@ pub trait ErrorHandler: Sized {
             StorageError(_) => Ignore,
             RngError(_) => Abort,
             OtherThreadError(_) => Abort,
+            #[cfg(feature = "pyo3")]
+            Pyo3Error(_) => Abort,
         }
     }
 
@@ -273,8 +284,10 @@ impl From<SimulationError> for pyo3::PyErr {
             ReceiveError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),
             StorageError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),
             RngError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),
-            IoError(e) => pyo3::PyErr::new::<PyIOError, _>(format!("cr_err: {e:?}")),
+            IoError(e) => pyo3::PyErr::from(e),
             OtherThreadError(e) => pyo3::PyErr::new::<PyValueError, _>(format!("cr_err: {e:?}")),
+            #[cfg(feature = "pyo3")]
+            Pyo3Error(e) => e,
         }
     }
 }
