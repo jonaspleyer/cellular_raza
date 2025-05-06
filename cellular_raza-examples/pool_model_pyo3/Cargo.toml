@@ -9,7 +9,7 @@ name = "cr_pool_model_pyo3"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { workspace = true, features = ["extension-module"] }
+pyo3 = { workspace = true }
 serde = { workspace = true, features=["rc"] }
 rand = { workspace = true, features=["small_rng"] }
 rand_chacha = { workspace = true }
