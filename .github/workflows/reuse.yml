@@ -33,9 +33,5 @@ jobs:
       - name: DocTest
         run: cargo test --doc
 
-      - name: Test MacOs
-        if: ${{ contains(inputs.os, 'macos') }}
-        run: cargo test --workspace --exclude cellular_raza-template-pyo3 --exclude cr_pool_model_pyo3
       - name: Test
-        if: ${{ !contains(inputs.os, 'macos') }}
         run: cargo test
