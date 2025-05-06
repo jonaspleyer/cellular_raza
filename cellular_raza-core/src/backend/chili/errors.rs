@@ -29,9 +29,13 @@ macro_rules! impl_error_variant {
 }
 
 macro_rules! impl_from_error {
-    ($name: ident, $(($err_var: ident, $err_type: ty)),+) => {
+    ($name: ident,
+        $($(#[$($tt:tt)*])?
+        ($err_var: ident, $err_type: ty)
+    ),+) => {
         $(
             // Implement conversion from error to errorvariant
+            $(#[$($tt)*])?
             impl From<$err_type> for $name {
                 fn from(err: $err_type) -> Self {
                     $name::$err_var(err)
@@ -133,7 +137,9 @@ impl_from_error! {SimulationError,
     (IoError, std::io::Error),
     (DrawingError, DrawingError),
     (StorageError, StorageError),
-    (RngError, RngError)
+    (RngError, RngError),
+    #[cfg(feature = "pyo3")]
+    (Pyo3Error, pyo3::PyErr)
 }
 
 impl_error_variant! {SimulationError,
