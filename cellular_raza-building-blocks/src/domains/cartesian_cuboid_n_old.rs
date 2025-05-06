@@ -15,7 +15,6 @@ use itertools::Itertools;
 
 // Imports from std and core
 use core::cmp::{max, min};
-use std::usize;
 
 use plotters::backend::BitMapBackend;
 use plotters::coord::cartesian::Cartesian2d;
