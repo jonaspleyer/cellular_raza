@@ -360,9 +360,9 @@ pub struct CartesianCuboidRods<F, const D: usize> {
     /// The base-cuboid which is being repurposed
     #[DomainRngSeed]
     pub domain: CartesianCuboid<F, D>,
-    /// Gravitational force which is only relevant for 3D simulations and always acts with constant
+    /// Gel pressure which is only relevant for 3D simulations and always acts with constant
     /// force downwards (negative z-direction).
-    pub gravity: F,
+    pub gel_pressure: F,
     /// Computes friction at all surfaces of the box
     pub surface_friction: F,
     /// The distance for which the friction will be applied
@@ -419,7 +419,7 @@ where
                     subdomain_index,
                     CartesianSubDomainRods::<F, D> {
                         subdomain,
-                        gravity: self.gravity,
+                        gel_pressure: self.gel_pressure,
                         surface_friction: self.surface_friction,
                         surface_friction_distance: self.surface_friction,
                     },
@@ -445,7 +445,7 @@ pub struct CartesianSubDomainRods<F, const D: usize> {
     #[Base]
     pub subdomain: CartesianSubDomain<F, D>,
     /// See [CartesianCuboidRods]
-    pub gravity: F,
+    pub gel_pressure: F,
     /// Computes friction at all surfaces of the box
     pub surface_friction: F,
     /// The distance for which the friction will be applied
@@ -471,7 +471,11 @@ where
     > {
         use core::ops::AddAssign;
         let mut force = nalgebra::MatrixXx3::from_fn(pos.nrows(), |_, m| {
-            if m == 2 { -self.gravity } else { F::zero() }
+            if m == 2 {
+                -self.gel_pressure
+            } else {
+                F::zero()
+            }
         });
         for (i, (p, v)) in pos.row_iter().zip(vel.row_iter()).enumerate() {
             let d1 = (p.transpose() - self.subdomain.domain_min)
@@ -483,7 +487,7 @@ where
                 let dir = v / q;
                 force
                     .row_mut(i)
-                    .add_assign(-dir * self.gravity * self.surface_friction);
+                    .add_assign(-dir * self.gel_pressure * self.surface_friction);
             }
         }
         Ok(force)
