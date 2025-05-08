@@ -1,10 +1,12 @@
 use crate::{CartesianCuboid, CartesianSubDomain};
 use cellular_raza_concepts::*;
 
+#[cfg(feature = "approx")]
+use approx::AbsDiffEq;
 use num::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
-use nalgebra::{Const, Dyn, Matrix, VecStorage};
+use nalgebra::{Const, Dyn, Matrix, SVector, VecStorage};
 
 /// A mechanical model for Bacterial Rods
 ///
@@ -102,6 +104,43 @@ pub struct RodMechanics<F, const D: usize> {
     pub spring_length: F,
     /// Daming constant
     pub damping: F,
+}
+
+#[cfg(feature = "approx")]
+impl<F, const D: usize> AbsDiffEq for RodMechanics<F, D>
+where
+    F: AbsDiffEq + nalgebra::Scalar,
+    F::Epsilon: Clone,
+{
+    type Epsilon = F::Epsilon;
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        let RodMechanics {
+            pos,
+            vel,
+            diffusion_constant,
+            spring_tension,
+            rigidity,
+            spring_length,
+            damping,
+        } = &self;
+        pos.iter()
+            .zip(other.pos.iter())
+            .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
+            && vel
+                .iter()
+                .zip(other.vel.iter())
+                .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
+            && diffusion_constant.abs_diff_eq(&other.diffusion_constant, epsilon.clone())
+            && spring_tension.abs_diff_eq(&other.spring_tension, epsilon.clone())
+            && rigidity.abs_diff_eq(&other.rigidity, epsilon.clone())
+            && spring_length.abs_diff_eq(&other.spring_length, epsilon.clone())
+            && damping.abs_diff_eq(&other.damping, epsilon)
+    }
+
+    fn default_epsilon() -> Self::Epsilon {
+        F::default_epsilon()
+    }
 }
 
 impl<F, const D: usize>
@@ -227,6 +266,7 @@ impl<F: Clone, const D: usize> Velocity<Matrix<F, Dyn, Const<D>, VecStorage<F, D
 
 /// Automatically derives a [Interaction] suitable for rods from a point-wise interaction.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[cfg_attr(feature = "approx", derive(AbsDiffEq))]
 pub struct RodInteraction<I>(pub I);
 
 impl<I, F, Inf, const D: usize>
