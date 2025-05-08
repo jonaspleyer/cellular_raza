@@ -29,7 +29,7 @@ where
         Ok((For::zero(), For::zero()))
     }
 
-    fn get_interaction_information(&self) -> () {}
+    fn get_interaction_information(&self) {}
 }
 
 /// Lennard-Jones interaction potential with numerical upper and lower limit.
