@@ -162,7 +162,7 @@ fn main() -> Result<(), SimulationError> {
             domain_sizes,
             domain_segments,
         )?,
-        gravity: 0.,
+        gel_pressure: 0.,
         surface_friction: 0.,
         surface_friction_distance: 1.,
     };
