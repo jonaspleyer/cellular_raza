@@ -96,13 +96,14 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
+                #[automatically_derived]
                 impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
                     type SubDomainIndex = <#field_type as Domain<#tokens>>::SubDomainIndex;
                     type VoxelIndex = <#field_type as Domain<#tokens>>::VoxelIndex;
 
-                    #[inline]
+                    #[inline(always)]
                     fn decompose(
                         self,
                         n_subdomains: core::num::NonZeroUsize,
@@ -142,12 +143,13 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
+                #[automatically_derived]
                 impl #impl_generics SortCells<#tokens> for #struct_name #struct_ty_generics
                     #where_clause
                 {
                     type VoxelIndex = <#field_type as SortCells<#tokens>>::VoxelIndex;
 
-                    #[inline]
+                    #[inline(always)]
                     fn get_voxel_index_of(&self, cell: &#cell) -> Result<
                         Self::VoxelIndex,
                         BoundaryError
@@ -173,10 +175,11 @@ impl DomainImplementer {
             let field_name = &field_info.field_name;
 
             quote::quote!(
+                #[automatically_derived]
                 impl #impl_generics DomainRngSeed for #struct_name #struct_ty_generics
                     #where_clause
                 {
-                    #[inline]
+                    #[inline(always)]
                     fn get_rng_seed(&self) -> u64 {
                         <#field_type as DomainRngSeed>::get_rng_seed(&self.#field_name)
                     }
@@ -210,6 +213,7 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
+                #[automatically_derived]
                 impl #impl_generics DomainCreateSubDomains<#tokens>
                     for #struct_name #struct_ty_generics
                     #where_clause
@@ -218,7 +222,7 @@ impl DomainImplementer {
                         ::SubDomainIndex;
                     type VoxelIndex = <#field_type as DomainCreateSubDomains<#tokens>>::VoxelIndex;
 
-                    #[inline]
+                    #[inline(always)]
                     fn create_subdomains(
                         &self,
                         n_subdomains: core::num::NonZeroUsize,
@@ -264,6 +268,7 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
+            #[automatically_derived]
             impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
             #where_clause
                 Self: DomainRngSeed,
