@@ -85,16 +85,19 @@ fn subdomains_communicate(c: &mut Criterion) {
 
 fn one_subdomain_many_cells(c: &mut Criterion) {
     let mut group = c.benchmark_group("SubDomain-Single");
-    group.bench_function("1000cells", |b| {
-        let (agents, domain, settings) = prepare_sim(10).unwrap();
-        let domain = CartesianCuboid::from_boundaries_and_n_voxels(
-            [0.0; 3],
-            [domain.get_max()[0]; 3],
-            [1; 3],
-        )
-        .unwrap();
-        b.iter(|| run_sim((agents.clone(), domain.clone(), settings.clone())).unwrap())
-    });
+    group.measurement_time(std::time::Duration::from_secs_f64(20.));
+    for n_voxels in [1, 2, 3, 4, 5] {
+        group.bench_function(format!("{} cells", (n_voxels * 3usize).pow(3)), |b| {
+            let (agents, domain, settings) = prepare_sim(n_voxels, 3).unwrap();
+            let domain = CartesianCuboid::from_boundaries_and_n_voxels(
+                [0.0; 3],
+                [domain.get_max()[0]; 3],
+                [1; 3],
+            )
+            .unwrap();
+            b.iter(|| run_sim((agents.clone(), domain.clone(), settings.clone())).unwrap())
+        });
+    }
 }
 
 criterion_group!(benches, subdomains_communicate, one_subdomain_many_cells);
