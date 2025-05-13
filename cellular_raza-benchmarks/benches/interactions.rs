@@ -68,9 +68,8 @@ fn run_sim(prepared: Prepared) -> Result<(), SimulationError> {
     Ok(())
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
-    let mut group =
-        c.benchmark_group("Mechanics(NewtonDamped3D)-Interaction(MorsePotential)-Lattice");
+fn subdomains_communicate(c: &mut Criterion) {
+    let mut group = c.benchmark_group("SubDomains-Communicate");
     group.sample_size(40);
     group.measurement_time(std::time::Duration::from_secs_f64(15.));
 
