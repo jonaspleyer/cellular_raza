@@ -17,19 +17,20 @@ type Prepared = (
     Settings<FixedStepsize<f64>, false>,
 );
 
-fn prepare_sim(n_lattice: usize) -> Result<Prepared, Box<dyn std::error::Error>> {
+fn prepare_sim(
+    n_lattice: usize,
+    n_subspacing: usize,
+) -> Result<Prepared, Box<dyn std::error::Error>> {
     let domain_size = 100.0;
     let dx = domain_size / n_lattice as f64;
-    let agents = (0..n_lattice)
-        .zip(0..n_lattice)
-        .zip(0..n_lattice)
-        .zip(0..2)
-        .map(|(((i, j), k), l)| Agent {
+    let ds = 1.0 / (n_subspacing + 1) as f64;
+    let agents = itertools::iproduct!(0..n_lattice, 0..n_lattice, 0..n_lattice, 0..n_subspacing)
+        .map(|(i, j, k, l)| Agent {
             mechanics: NewtonDamped3D {
                 pos: [
-                    (0.3 + i as f64 + 0.3 * l as f64) * dx,
-                    (0.3 + j as f64 + 0.3 * l as f64) * dx,
-                    (0.3 + k as f64 + 0.3 * l as f64) * dx,
+                    (0.3 + i as f64 + ds * l as f64) * dx,
+                    (0.3 + j as f64 + ds * l as f64) * dx,
+                    (0.3 + k as f64 + ds * l as f64) * dx,
                 ]
                 .into(),
                 vel: num::zero(),
@@ -38,9 +39,9 @@ fn prepare_sim(n_lattice: usize) -> Result<Prepared, Box<dyn std::error::Error>>
             },
             interaction: MorsePotential {
                 potential_stiffness: 0.5,
-                strength: 0.01,
+                strength: 0.001,
                 cutoff: 1.1 * dx,
-                radius: 0.5 * dx,
+                radius: 0.25 * dx,
             },
         })
         .collect();
@@ -75,7 +76,7 @@ fn subdomains_communicate(c: &mut Criterion) {
 
     for n_lattice in [4, 8, 16, 32] {
         group.bench_function(format!("{n_lattice}^3 Voxels"), |b| {
-            let prepared = prepare_sim(n_lattice).unwrap();
+            let prepared = prepare_sim(n_lattice, 3).unwrap();
             b.iter(|| run_sim(prepared.clone()).unwrap())
         });
     }
