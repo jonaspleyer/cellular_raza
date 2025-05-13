@@ -359,7 +359,7 @@ impl AgentImplementer {
                     }
                 }
             );
-            return TokenStream::from(new_stream);
+            return new_stream;
         }
         TokenStream::new()
     }
@@ -415,7 +415,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -452,7 +452,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -489,7 +489,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -575,7 +575,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -622,7 +622,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -665,7 +665,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -709,7 +709,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -770,7 +770,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -810,7 +810,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
@@ -844,7 +844,7 @@ impl AgentImplementer {
                     }
                 }
             };
-            return TokenStream::from(res);
+            return res;
         }
         TokenStream::new()
     }
