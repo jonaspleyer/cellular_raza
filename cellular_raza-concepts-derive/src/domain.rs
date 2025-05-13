@@ -268,157 +268,157 @@ impl DomainImplementer {
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
-            #[automatically_derived]
-            impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
-            #where_clause
-                Self: DomainRngSeed,
-                Self: DomainCreateSubDomains<#subdomain>,
-                Self: SortCells<
-                    #cell,
-                    VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
-                >,
-                #subdomain: SubDomain<
-                    VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
-                >,
-                <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone
-                    + core::hash::Hash + Eq + Ord,
-                <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone
-                    + core::hash::Hash + Eq + Ord,
-                #cell_iterator: IntoIterator<Item = #cell>,
-            {
-                type SubDomainIndex = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex;
-                type VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex;
+                #[automatically_derived]
+                impl #impl_generics Domain<#tokens> for #struct_name #struct_ty_generics
+                #where_clause
+                    Self: DomainRngSeed,
+                    Self: DomainCreateSubDomains<#subdomain>,
+                    Self: SortCells<
+                        #cell,
+                        VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
+                    >,
+                    #subdomain: SubDomain<
+                        VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex
+                    >,
+                    <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex: Clone
+                        + core::hash::Hash + Eq + Ord,
+                    <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex: Clone
+                        + core::hash::Hash + Eq + Ord,
+                    #cell_iterator: IntoIterator<Item = #cell>,
+                {
+                    type SubDomainIndex = <Self as DomainCreateSubDomains<#subdomain>>::SubDomainIndex;
+                    type VoxelIndex = <Self as DomainCreateSubDomains<#subdomain>>::VoxelIndex;
 
-                fn decompose(
-                    self,
-                    n_subdomains: core::num::NonZeroUsize,
-                    cells: #cell_iterator,
-                ) -> Result<
-                    DecomposedDomain<Self::SubDomainIndex, #subdomain, #cell>,
-                    DecomposeError
-                > {
-                    // Get all subdomains
-                    let subdomains: Vec<_> = self.create_subdomains(n_subdomains)?
-                        .into_iter()
-                        .collect();
-
-                    // Build a map from a voxel_index to the subdomain_index in which it is
-                    let mut voxel_index_to_subdomain_index:
-                        ::std::collections::BTreeMap<Self::VoxelIndex, Self::SubDomainIndex> =
-                        subdomains
-                        .iter()
-                        .map(|(subdomain_index, subdomain, _)| subdomain
-                            .get_all_indices()
+                    fn decompose(
+                        self,
+                        n_subdomains: core::num::NonZeroUsize,
+                        cells: #cell_iterator,
+                    ) -> Result<
+                        DecomposedDomain<Self::SubDomainIndex, #subdomain, #cell>,
+                        DecomposeError
+                    > {
+                        // Get all subdomains
+                        let subdomains: Vec<_> = self.create_subdomains(n_subdomains)?
                             .into_iter()
-                            .map(|voxel_index| (voxel_index, subdomain_index.clone()))
-                        )
-                        .flatten()
-                        .collect();
+                            .collect();
 
-                    // Build neighbor map
-                    let mut neighbor_map: ::std::collections::BTreeMap<
-                        Self::SubDomainIndex,
-                        std::collections::BTreeSet<Self::SubDomainIndex>
-                    > = subdomains
-                        .iter()
-                        .map(|(subdomain_index, subdomain, voxels)| voxels
-                            .into_iter()
-                            .map(|voxel_index| {
-                                let neighbors = subdomain.get_neighbor_voxel_indices(&voxel_index);
-                                // This covers an edge case where when no neighbors are given the
-                                // overall map between subdomains is not set up correctly.
-                                if neighbors.len() == 0 {
-                                    vec![voxel_index.clone()]
-                                } else {
-                                    neighbors
-                                }
-                            })
-                            .flatten()
-                            .map(|neighbor_voxel_index| (
-                                subdomain_index.clone(),
-                                neighbor_voxel_index
-                            )))
-                        .flatten()
-                        .fold(
-                            ::std::collections::BTreeMap::<
-                                Self::SubDomainIndex,
-                                std::collections::BTreeSet<Self::SubDomainIndex>
-                                >::new(),
-                            |mut acc, (subdomain_index, voxel_index)| {
-                            let mut values = acc
-                                .entry(subdomain_index.clone())
-                                .or_insert(std::collections::BTreeSet::new());
-                            let subdomain_index = voxel_index_to_subdomain_index
-                                .get(&voxel_index)
-                                .ok_or(DecomposeError::IndexError(IndexError(format!(
-                                "could not find subdomain index")))).unwrap().clone();
-                            values.insert(subdomain_index);
-                            acc
-                        });
-
-                    // Build index_subdomain_cells
-                    let mut index_subdomain_cells = Vec::new();
-
-                    // Sort cells into the subdomains
-                    let mut index_to_cells: ::std::collections::HashMap<_, Vec<#cell>> = cells
-                        .into_iter()
-                        .map(|cell| Ok((voxel_index_to_subdomain_index.get(
-                            &self.get_voxel_index_of(&cell)?
-                            ).ok_or(DecomposeError::IndexError(
-                                IndexError(format!("could not find voxel index"))
+                        // Build a map from a voxel_index to the subdomain_index in which it is
+                        let mut voxel_index_to_subdomain_index:
+                            ::std::collections::BTreeMap<Self::VoxelIndex, Self::SubDomainIndex> =
+                            subdomains
+                            .iter()
+                            .map(|(subdomain_index, subdomain, _)| subdomain
+                                .get_all_indices()
+                                .into_iter()
+                                .map(|voxel_index| (voxel_index, subdomain_index.clone()))
                             )
-                        )?
-                        .clone(), cell)))
-                        .collect::<Result<Vec<_>, DecomposeError>>()?
-                        .into_iter()
-                        .fold(
-                            ::std::collections::HashMap::new(),
-                            |mut acc, (index, cell)| {
-                                acc
-                                    .entry(index)
-                                    .or_insert_with(|| Vec::new())
-                                    .push(cell);
-                                acc
-                            }
-                        );
+                            .flatten()
+                            .collect();
 
-                    // Fill both with values
-                    for (subdomain_index, subdomain, voxel_indices) in subdomains.into_iter() {
-                        for voxel_index in voxel_indices.into_iter() {
-                            voxel_index_to_subdomain_index.insert(
-                                voxel_index.clone(),
-                                subdomain_index.clone()
-                            );
-                            for neighbor_voxel_index in subdomain.get_neighbor_voxel_indices(
-                                &voxel_index
-                            ) {
-                                let neighbor_subdomain = voxel_index_to_subdomain_index
-                                    .get(&neighbor_voxel_index)
+                        // Build neighbor map
+                        let mut neighbor_map: ::std::collections::BTreeMap<
+                            Self::SubDomainIndex,
+                            std::collections::BTreeSet<Self::SubDomainIndex>
+                        > = subdomains
+                            .iter()
+                            .map(|(subdomain_index, subdomain, voxels)| voxels
+                                .into_iter()
+                                .map(|voxel_index| {
+                                    let neighbors = subdomain.get_neighbor_voxel_indices(&voxel_index);
+                                    // This covers an edge case where when no neighbors are given the
+                                    // overall map between subdomains is not set up correctly.
+                                    if neighbors.len() == 0 {
+                                        vec![voxel_index.clone()]
+                                    } else {
+                                        neighbors
+                                    }
+                                })
+                                .flatten()
+                                .map(|neighbor_voxel_index| (
+                                    subdomain_index.clone(),
+                                    neighbor_voxel_index
+                                )))
+                            .flatten()
+                            .fold(
+                                ::std::collections::BTreeMap::<
+                                    Self::SubDomainIndex,
+                                    std::collections::BTreeSet<Self::SubDomainIndex>
+                                    >::new(),
+                                |mut acc, (subdomain_index, voxel_index)| {
+                                let mut values = acc
+                                    .entry(subdomain_index.clone())
+                                    .or_insert(std::collections::BTreeSet::new());
+                                let subdomain_index = voxel_index_to_subdomain_index
+                                    .get(&voxel_index)
                                     .ok_or(DecomposeError::IndexError(IndexError(format!(
-                                        "TODO"
-                                    ))))?;
-                                let neighbors = neighbor_map.get_mut(&subdomain_index).ok_or(
-                                    DecomposeError::IndexError(IndexError(format!("TODO"))),
-                                )?;
-                                neighbors.insert(neighbor_subdomain.clone());
+                                    "could not find subdomain index")))).unwrap().clone();
+                                values.insert(subdomain_index);
+                                acc
+                            });
+
+                        // Build index_subdomain_cells
+                        let mut index_subdomain_cells = Vec::new();
+
+                        // Sort cells into the subdomains
+                        let mut index_to_cells: ::std::collections::HashMap<_, Vec<#cell>> = cells
+                            .into_iter()
+                            .map(|cell| Ok((voxel_index_to_subdomain_index.get(
+                                &self.get_voxel_index_of(&cell)?
+                                ).ok_or(DecomposeError::IndexError(
+                                    IndexError(format!("could not find voxel index"))
+                                )
+                            )?
+                            .clone(), cell)))
+                            .collect::<Result<Vec<_>, DecomposeError>>()?
+                            .into_iter()
+                            .fold(
+                                ::std::collections::HashMap::new(),
+                                |mut acc, (index, cell)| {
+                                    acc
+                                        .entry(index)
+                                        .or_insert_with(|| Vec::new())
+                                        .push(cell);
+                                    acc
+                                }
+                            );
+
+                        // Fill both with values
+                        for (subdomain_index, subdomain, voxel_indices) in subdomains.into_iter() {
+                            for voxel_index in voxel_indices.into_iter() {
+                                voxel_index_to_subdomain_index.insert(
+                                    voxel_index.clone(),
+                                    subdomain_index.clone()
+                                );
+                                for neighbor_voxel_index in subdomain.get_neighbor_voxel_indices(
+                                    &voxel_index
+                                ) {
+                                    let neighbor_subdomain = voxel_index_to_subdomain_index
+                                        .get(&neighbor_voxel_index)
+                                        .ok_or(DecomposeError::IndexError(IndexError(format!(
+                                            "TODO"
+                                        ))))?;
+                                    let neighbors = neighbor_map.get_mut(&subdomain_index).ok_or(
+                                        DecomposeError::IndexError(IndexError(format!("TODO"))),
+                                    )?;
+                                    neighbors.insert(neighbor_subdomain.clone());
+                                }
                             }
+
+                            // Obtain cells which are in this subdomain
+                            let cells = index_to_cells
+                                .remove(&subdomain_index)
+                                .unwrap_or(Vec::new());
+                            index_subdomain_cells.push((subdomain_index, subdomain, cells));
                         }
 
-                        // Obtain cells which are in this subdomain
-                        let cells = index_to_cells
-                            .remove(&subdomain_index)
-                            .unwrap_or(Vec::new());
-                        index_subdomain_cells.push((subdomain_index, subdomain, cells));
+                        Ok(DecomposedDomain {
+                            n_subdomains,
+                            index_subdomain_cells,
+                            neighbor_map,
+                            rng_seed: self.get_rng_seed(),
+                        })
                     }
-
-                    Ok(DecomposedDomain {
-                        n_subdomains,
-                        index_subdomain_cells,
-                        neighbor_map,
-                        rng_seed: self.get_rng_seed(),
-                    })
                 }
-            }
             )
         } else {
             quote::quote!()
