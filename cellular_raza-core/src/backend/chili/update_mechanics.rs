@@ -209,11 +209,10 @@ where
                 let v1 = vox.cells[n].0.velocity();
                 let i1 = vox.cells[n].0.get_interaction_information();
 
-                for m in n + 1..n_cells {
-                    let mut cells_mut = vox.cells.iter_mut();
-
-                    let (c1, aux1) = cells_mut.nth(n).unwrap();
-                    let (c2, aux2) = cells_mut.nth(m - n - 1).unwrap();
+                let mut cells_mut = vox.cells.iter_mut();
+                let (c1, aux1) = cells_mut.nth(n).unwrap();
+                for _ in n + 1..n_cells {
+                    let (c2, aux2) = cells_mut.nth(0).unwrap();
 
                     let p2 = c2.pos();
                     let v2 = c2.velocity();
