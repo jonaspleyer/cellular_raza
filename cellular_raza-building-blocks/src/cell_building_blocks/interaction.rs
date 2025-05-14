@@ -112,7 +112,11 @@ pub struct BoundLennardJonesF32 {
 
 macro_rules! implement_bound_lennard_jones(
     ($struct_name:ident, $float_type:ident) => {
-        impl<const D: usize> Interaction<SVector<$float_type, D>, SVector<$float_type, D>, SVector<$float_type, D>>
+        impl<const D: usize> Interaction<
+            SVector<$float_type, D>,
+            SVector<$float_type, D>,
+            SVector<$float_type, D>
+        >
             for $struct_name
         {
             fn calculate_force_between(
