@@ -128,8 +128,7 @@ impl CellAspectField {
         let aspects = field
             .attrs
             .iter()
-            .map(CellAspect::from_attribute)
-            .filter_map(|s| s)
+            .filter_map(CellAspect::from_attribute)
             .collect::<Vec<_>>();
         Self { aspects, field }
     }
@@ -142,12 +141,12 @@ impl CellAspectField {
             syn::Fields::Named(fields_named) => Ok(fields_named
                 .named
                 .into_iter()
-                .map(|field| CellAspectField::from_field(field))
+                .map(CellAspectField::from_field)
                 .collect::<Vec<_>>()),
             syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
                 .unnamed
                 .into_iter()
-                .map(|field| CellAspectField::from_field(field))
+                .map(CellAspectField::from_field)
                 .collect::<Vec<_>>()),
             syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
         }
@@ -517,7 +516,7 @@ impl AgentImplementer {
             push_ident!(generics, information);
             let impl_generics = generics.split_for_impl().0;
 
-            let res = quote! {
+            quote! {
                 #[automatically_derived]
                 impl #impl_generics Interaction<#tokens>
                     for #struct_name #struct_ty_generics #where_clause {
@@ -574,10 +573,10 @@ impl AgentImplementer {
                         )
                     }
                 }
-            };
-            return res;
+            }
+        } else {
+            TokenStream::new()
         }
-        TokenStream::new()
     }
 
     pub fn implement_intracellular(&self) -> TokenStream {
@@ -681,7 +680,9 @@ impl AgentImplementer {
             new_ident!(rextra, "__cr_private_Re");
             let tokens = quote!(#rintra, #rextra);
 
-            let where_clause = append_where_clause!(struct_where_clause @clause field_type, ReactionsExtra, tokens);
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, ReactionsExtra, tokens
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
