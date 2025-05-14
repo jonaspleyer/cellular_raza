@@ -100,15 +100,21 @@ where
     }
 }
 
+impl<Inf, Mec, Int, Cyc, React, IntExtracellular> InteractionInformation<Inf>
+    for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
+where
+    Int: InteractionInformation<Inf>,
+{
+    fn get_interaction_information(&self) -> Inf {
+        self.interaction.get_interaction_information()
+    }
+}
+
 impl<Pos, Vel, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, Vel, For, Inf>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
     Int: Interaction<Pos, Vel, For, Inf>,
 {
-    fn get_interaction_information(&self) -> Inf {
-        self.interaction.get_interaction_information()
-    }
-
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
@@ -125,7 +131,13 @@ where
             ext_information,
         )
     }
+}
 
+impl<Pos, Inf, Mec, Int, Cyc, React, IntExtracellular> NeighborInteraction<Pos, Inf>
+    for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
+where
+    Int: NeighborInteraction<Pos, Inf>,
+{
     fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
         self.interaction.is_neighbor(own_pos, ext_pos, ext_inf)
     }
