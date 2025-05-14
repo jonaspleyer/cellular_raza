@@ -77,6 +77,10 @@ enum CellAspect {
     Velocity,
     Cycle,
     Interaction,
+    InteractionRaw,
+    InteractionInformation,
+    NeighborInteraction,
+    NeighborInteractionRaw,
     Intracellular,
     Reactions,
     ReactionsRaw,
@@ -100,6 +104,10 @@ impl CellAspect {
                 "Velocity" => Some(CellAspect::Velocity),
                 "Cycle" => Some(CellAspect::Cycle),
                 "Interaction" => Some(CellAspect::Interaction),
+                "InteractionRaw" => Some(CellAspect::InteractionRaw),
+                "InteractionInformation" => Some(CellAspect::InteractionInformation),
+                "NeighborInteraction" => Some(CellAspect::NeighborInteraction),
+                "NeighborInteractionRaw" => Some(CellAspect::NeighborInteractionRaw),
                 "Intracellular" => Some(CellAspect::Intracellular),
                 "Reactions" => Some(CellAspect::Reactions),
                 "ReactionsRaw" => Some(CellAspect::ReactionsRaw),
@@ -128,8 +136,7 @@ impl CellAspectField {
         let aspects = field
             .attrs
             .iter()
-            .map(CellAspect::from_attribute)
-            .filter_map(|s| s)
+            .filter_map(CellAspect::from_attribute)
             .collect::<Vec<_>>();
         Self { aspects, field }
     }
@@ -142,12 +149,12 @@ impl CellAspectField {
             syn::Fields::Named(fields_named) => Ok(fields_named
                 .named
                 .into_iter()
-                .map(|field| CellAspectField::from_field(field))
+                .map(CellAspectField::from_field)
                 .collect::<Vec<_>>()),
             syn::Fields::Unnamed(fields_unnamed) => Ok(fields_unnamed
                 .unnamed
                 .into_iter()
-                .map(|field| CellAspectField::from_field(field))
+                .map(CellAspectField::from_field)
                 .collect::<Vec<_>>()),
             syn::Fields::Unit => Err(syn::Error::new(span, "Cannot derive from unit struct")),
         }
@@ -184,7 +191,9 @@ pub struct AgentImplementer {
     mechanics_raw: Option<FieldInfo>,
     position: Option<FieldInfo>,
     velocity: Option<FieldInfo>,
-    interaction: Option<FieldInfo>,
+    interaction_raw: Option<FieldInfo>,
+    interaction_information: Option<FieldInfo>,
+    neighbor_interaction_raw: Option<FieldInfo>,
     intracellular: Option<FieldInfo>,
     reactions_raw: Option<FieldInfo>,
     reactions_extra_raw: Option<FieldInfo>,
@@ -200,6 +209,9 @@ impl From<AgentParser> for AgentImplementer {
         let mut position = None;
         let mut velocity = None;
         let mut interaction = None;
+        let mut interaction_raw = None;
+        let mut interaction_information = None;
+        let mut neighbor_interaction_raw = None;
         let mut intracellular = None;
         let mut reactions_raw = None;
         let mut reactions_extra_raw = None;
@@ -233,7 +245,21 @@ impl From<AgentParser> for AgentImplementer {
                         CellAspect::Position => position = Some(field_info),
                         CellAspect::Velocity => velocity = Some(field_info),
                         CellAspect::Interaction => {
-                            interaction = Some(field_info);
+                            interaction = Some(field_info.clone());
+                            interaction_information = Some(field_info);
+                        }
+                        CellAspect::InteractionRaw => {
+                            interaction_raw = Some(field_info);
+                        }
+                        CellAspect::InteractionInformation => {
+                            interaction_information = Some(field_info);
+                        }
+                        CellAspect::NeighborInteraction => {
+                            neighbor_interaction_raw = Some(field_info.clone());
+                            interaction_information = Some(field_info);
+                        }
+                        CellAspect::NeighborInteractionRaw => {
+                            neighbor_interaction_raw = Some(field_info);
                         }
                         CellAspect::Intracellular => {
                             intracellular = Some(field_info);
@@ -274,7 +300,9 @@ impl From<AgentParser> for AgentImplementer {
             mechanics_raw,
             position,
             velocity,
-            interaction,
+            interaction_raw,
+            interaction_information,
+            neighbor_interaction_raw,
             intracellular,
             reactions_raw,
             reactions_extra_raw,
@@ -485,7 +513,9 @@ impl AgentImplementer {
 
                     #[inline(always)]
                     fn set_velocity(&mut self, velocity: &#velocity) {
-                        <#field_type as Velocity<#tokens>>::set_velocity(&mut self.#field_name, velocity)
+                        <#field_type as Velocity<#tokens>>::set_velocity(
+                            &mut self.#field_name, velocity
+                        )
                     }
                 }
             };
@@ -494,11 +524,11 @@ impl AgentImplementer {
         TokenStream::new()
     }
 
-    pub fn implement_interaction(&self) -> TokenStream {
+    pub fn implement_interaction_raw(&self) -> TokenStream {
         let struct_name = &self.name;
         let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
 
-        if let Some(field_info) = &self.interaction {
+        if let Some(field_info) = &self.interaction_raw {
             let field_name = &field_info.field_name;
             let field_type = &field_info.field_type;
             new_ident!(position, "__cr_private_Pos");
@@ -507,8 +537,10 @@ impl AgentImplementer {
             new_ident!(information, "__cr_private_Inf");
             let tokens = quote!(#position, #velocity, #force, #information);
 
-            let where_clause =
-                append_where_clause!(struct_where_clause @clause field_type, Interaction, tokens);
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, Interaction, tokens,
+                @clause field_type, InteractionInformation, information
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, position);
@@ -517,18 +549,10 @@ impl AgentImplementer {
             push_ident!(generics, information);
             let impl_generics = generics.split_for_impl().0;
 
-            let res = quote! {
+            quote! {
                 #[automatically_derived]
                 impl #impl_generics Interaction<#tokens>
                     for #struct_name #struct_ty_generics #where_clause {
-                    #[inline(always)]
-                    fn get_interaction_information(&self) -> #information {
-                        <#field_type as Interaction<#tokens
-                        >>::get_interaction_information(
-                            &self.#field_name
-                        )
-                    }
-
                     #[inline(always)]
                     fn calculate_force_between(
                         &self,
@@ -547,7 +571,71 @@ impl AgentImplementer {
                             ext_info
                         )
                     }
+                }
+            }
+        } else {
+            TokenStream::new()
+        }
+    }
 
+    pub fn implement_interaction_information(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.interaction_information {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(information, "__cr_private_Inf");
+            let tokens = quote!(#information);
+
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, InteractionInformation, tokens
+            );
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, information);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote! {
+                #[automatically_derived]
+                impl #impl_generics InteractionInformation<#tokens>
+                for #struct_name #struct_ty_generics #where_clause {
+                    #[inline(always)]
+                    fn get_interaction_information(&self) -> #information {
+                        <#field_type as InteractionInformation<#tokens
+                        >>::get_interaction_information(
+                            &self.#field_name
+                        )
+                    }
+                }
+            }
+        } else {
+            TokenStream::new()
+        }
+    }
+
+    pub fn implement_neighbor_interaction_raw(&self) -> TokenStream {
+        let struct_name = &self.name;
+        let (_, struct_ty_generics, struct_where_clause) = &self.generics.split_for_impl();
+
+        if let Some(field_info) = &self.neighbor_interaction_raw {
+            let field_name = &field_info.field_name;
+            let field_type = &field_info.field_type;
+            new_ident!(position, "__cr_private_Pos");
+            new_ident!(information, "__cr_private_Inf");
+            let tokens = quote!(#position, #information);
+
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, NeighborInteraction, tokens);
+
+            let mut generics = self.generics.clone();
+            push_ident!(generics, information);
+            let impl_generics = generics.split_for_impl().0;
+
+            quote! {
+                #[automatically_derived]
+                impl #impl_generics NeighborInteraction<#tokens>
+                for #struct_name #struct_ty_generics #where_clause {
                     #[inline(always)]
                     fn is_neighbor(
                         &self,
@@ -555,7 +643,7 @@ impl AgentImplementer {
                         ext_pos: &#position,
                         ext_inf: &#information
                     ) -> Result<bool, CalcError> {
-                        <#field_type as Interaction<#tokens>>::is_neighbor(
+                        <#field_type as NeighborInteraction<#tokens>>::is_neighbor(
                             &self.#field_name,
                             own_pos,
                             ext_pos,
@@ -568,16 +656,16 @@ impl AgentImplementer {
                         &mut self,
                         neighbors: usize
                     ) -> Result<(), CalcError> {
-                        <#field_type as Interaction<#tokens>>::react_to_neighbors(
+                        <#field_type as NeighborInteraction<#tokens>>::react_to_neighbors(
                             &mut self.#field_name,
                             neighbors
                         )
                     }
                 }
-            };
-            return res;
+            }
+        } else {
+            TokenStream::new()
         }
-        TokenStream::new()
     }
 
     pub fn implement_intracellular(&self) -> TokenStream {
@@ -681,7 +769,9 @@ impl AgentImplementer {
             new_ident!(rextra, "__cr_private_Re");
             let tokens = quote!(#rintra, #rextra);
 
-            let where_clause = append_where_clause!(struct_where_clause @clause field_type, ReactionsExtra, tokens);
+            let where_clause = append_where_clause!(struct_where_clause
+                @clause field_type, ReactionsExtra, tokens
+            );
 
             let mut generics = self.generics.clone();
             push_ident!(generics, rintra);
@@ -864,7 +954,9 @@ pub fn derive_cell_agent(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     res.extend(agent.implement_reactions_raw());
     res.extend(agent.implement_reactions_contact());
     res.extend(agent.implement_reactions_extra_raw());
-    res.extend(agent.implement_interaction());
+    res.extend(agent.implement_interaction_raw());
+    res.extend(agent.implement_interaction_information());
+    res.extend(agent.implement_neighbor_interaction_raw());
     res.extend(agent.implement_extracellular_gradient());
     res.extend(agent.implement_volume());
 
