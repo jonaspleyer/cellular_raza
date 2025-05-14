@@ -1,12 +1,15 @@
 use crate::errors::CalcError;
 
-/// Trait describing force-interactions between cellular agents.
-pub trait Interaction<Pos, Vel, Force, Inf = ()> {
+/// Exposes information to other cells or the domain for calculating interactions
+pub trait InteractionInformation<Inf> {
     /// Get additional information of cellular properties (ie. for cell-specific interactions).
     /// For now, this can also be used to get the mass of the other cell-agent.
     /// In the future, we will probably provide a custom function for this.
     fn get_interaction_information(&self) -> Inf;
+}
 
+/// Trait describing force-interactions between cellular agents.
+pub trait Interaction<Pos, Vel, Force, Inf = ()>: InteractionInformation<Inf> {
     /// Calculates the forces (velocity-derivative) on the corresponding external position given
     /// external velocity.
     /// By providing velocities, we can calculate terms that are related to friction.
@@ -20,8 +23,12 @@ pub trait Interaction<Pos, Vel, Force, Inf = ()> {
         ext_vel: &Vel,
         ext_info: &Inf,
     ) -> Result<(Force, Force), CalcError>;
+}
 
-    /// Checks if the other cell represented by position and information is a neighbor to the current one or not.
+/// Allows cells to react to neighboring cells
+pub trait NeighborInteraction<Pos, Inf>: InteractionInformation<Inf> {
+    /// Checks if the other cell represented by position and information is a neighbor to the
+    /// current one or not.
     #[allow(unused)]
     fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
         Ok(false)
