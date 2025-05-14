@@ -379,7 +379,8 @@ impl SubDomainImplementer {
             new_ident!(position, "__cr_private_Pos");
             new_ident!(velocity, "__cr_private_Vel");
             new_ident!(force, "__cr_private_For");
-            let tokens = quote::quote!(#position, #velocity, #force);
+            new_ident!(information, "__cr_private_Inf");
+            let tokens = quote::quote!(#position, #velocity, #force, #information);
 
             let where_clause = append_where_clause!(struct_where_clause @clause field_type, SubDomainForce, tokens);
 
@@ -387,23 +388,26 @@ impl SubDomainImplementer {
             push_ident!(generics, position);
             push_ident!(generics, velocity);
             push_ident!(generics, force);
+            push_ident!(generics, information);
             let impl_generics = generics.split_for_impl().0;
 
             quote::quote!(
                 #[automatically_derived]
-                impl #impl_generics SubDomainForce<#position, #velocity, #force>
+                impl #impl_generics SubDomainForce<#position, #velocity, #force, #information>
                 for #struct_name #struct_ty_generics #where_clause {
                     #[inline(always)]
                     fn calculate_custom_force(
                         &self,
                         pos: &#position,
                         vel: &#velocity,
+                        inf: &#information,
                     ) -> Result<#force, CalcError> {
-                        <#field_type as SubDomainForce<#position, #velocity, #force>>
+                        <#field_type as SubDomainForce<#position, #velocity, #force, #information>>
                             ::calculate_custom_force(
                                 &self.#field_name,
                                 pos,
                                 vel,
+                                inf,
                         )
                     }
                 }
