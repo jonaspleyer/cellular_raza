@@ -208,6 +208,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let mut step_3 = proc_macro2::TokenStream::new();
     let mut step_4 = proc_macro2::TokenStream::new();
     let mut step_5 = proc_macro2::TokenStream::new();
+    let mut interaction_func_names = Vec::<proc_macro2::TokenStream>::new();
     let mut local_func_names = Vec::<proc_macro2::TokenStream>::new();
     let mut local_subdomain_func_names = Vec::<proc_macro2::TokenStream>::new();
 
