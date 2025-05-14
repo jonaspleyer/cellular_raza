@@ -7,6 +7,7 @@ use cellular_raza::concepts::{
     CalcError, CellAgent, Interaction, Mechanics, Position, RngError, Velocity, Xapy,
 };
 
+use cellular_raza::prelude::InteractionInformation;
 use itertools::Itertools;
 use nalgebra::{SVector, Vector2};
 use rand::SeedableRng;
@@ -747,7 +748,16 @@ where
         }
         Ok((total_force1, total_force2))
     }
+}
 
+impl<F, Ii, Io, I1, I2> InteractionInformation<(Vector2<F>, Vector2<F>, I1, I2)>
+    for PuzzleInteraction<F, Ii, Io, I1, I2>
+where
+    F: Clone + std::fmt::Debug + PartialEq + 'static,
+    F: nalgebra::RealField + num::Float + num::FromPrimitive,
+    Ii: InteractionInformation<I1>,
+    Io: InteractionInformation<I2>,
+{
     fn get_interaction_information(&self) -> (Vector2<F>, Vector2<F>, I1, I2) {
         (
             self.bounding_min,

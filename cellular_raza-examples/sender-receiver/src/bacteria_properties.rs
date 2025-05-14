@@ -83,7 +83,9 @@ impl Interaction<nalgebra::Vector2<f64>, nalgebra::Vector2<f64>, nalgebra::Vecto
 
         Ok((-force, force))
     }
+}
 
+impl InteractionInformation<f64> for MyInteraction {
     fn get_interaction_information(&self) -> f64 {
         self.cell_radius
     }

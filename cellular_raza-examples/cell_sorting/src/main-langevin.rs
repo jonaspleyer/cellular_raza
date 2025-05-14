@@ -78,19 +78,19 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
 
         let force = if r <= radius_combined {
             self.repulsion * (radius_combined - r) * dir
+        } else if r <= self.cutoff {
+            let sigma = r / radius_combined;
+            -attraction * (r - radius_combined) * (self.cutoff - r) / self.cutoff
+                * (-1.0 * (sigma - 1.0).powf(2.0)).exp()
+                * dir
         } else {
-            if r <= self.cutoff {
-                let sigma = r / radius_combined;
-                -attraction * (r - radius_combined) * (self.cutoff - r) / self.cutoff
-                    * (-1.0 * (sigma - 1.0).powf(2.0)).exp()
-                    * dir
-            } else {
-                0.0 * dir
-            }
+            0.0 * dir
         };
         Ok((-force, force))
     }
+}
 
+impl InteractionInformation<(f64, Species)> for CellSpecificInteraction {
     fn get_interaction_information(&self) -> (f64, Species) {
         (self.cell_radius, self.species.clone())
     }

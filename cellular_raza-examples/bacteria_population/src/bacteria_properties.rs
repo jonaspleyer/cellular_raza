@@ -18,11 +18,13 @@ pub struct CellSpecificInteraction {
     pub cell_radius: f64,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
+impl InteractionInformation<f64> for CellSpecificInteraction {
     fn get_interaction_information(&self) -> f64 {
         self.cell_radius
     }
+}
 
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for CellSpecificInteraction {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,

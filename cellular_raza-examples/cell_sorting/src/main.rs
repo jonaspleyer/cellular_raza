@@ -94,7 +94,9 @@ impl Interaction<Vector3<f64>, Vector3<f64>, Vector3<f64>, (f64, Species)>
             Ok((-repelling_force, repelling_force))
         }
     }
+}
 
+impl InteractionInformation<(f64, Species)> for CellSpecificInteraction {
     fn get_interaction_information(&self) -> (f64, Species) {
         (self.cell_radius, self.species.clone())
     }

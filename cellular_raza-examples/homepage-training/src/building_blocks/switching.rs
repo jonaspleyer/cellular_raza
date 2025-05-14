@@ -30,16 +30,22 @@ where
             ),
         }
     }
+}
 
+impl<I> InteractionInformation<I> for RadiusBasedInteraction
+where
+    MorsePotential: InteractionInformation<I>,
+    MiePotential: InteractionInformation<I>,
+{
     fn get_interaction_information(&self) -> I {
         use RadiusBasedInteraction::*;
         match self {
             Morse(pot) => {
-                <MorsePotential as Interaction<T, T, T, I>>::
+                <MorsePotential as InteractionInformation<I>>::
                     get_interaction_information(&pot)
             }
             Mie(pot) => {
-                <MiePotential as Interaction<T, T, T, I>>::
+                <MiePotential as InteractionInformation<I>>::
                     get_interaction_information(&pot)
             }
         }
@@ -85,7 +91,13 @@ where
             ))),
         }
     }
+}
 
+impl<I1, I2> InteractionInformation<IInf<I1, I2>> for SphericalInteraction
+where
+    MorsePotential: InteractionInformation<I1>,
+    BoundLennardJones: InteractionInformation<I2>,
+{
     fn get_interaction_information(&self) -> IInf<I1, I2> {
         use SphericalInteraction::*;
         match self {
@@ -106,10 +118,7 @@ fn test_interaction_different_inf_types() {
         cutoff: 3.0,
         strength: 0.1,
     });
-    let inf1 = <SphericalInteraction as Interaction<
-        nalgebra::Vector2<f64>,
-        _,
-        _,
+    let inf1 = <SphericalInteraction as InteractionInformation<
         _,
     >>::get_interaction_information(&i1);
     match inf1 {
@@ -123,11 +132,8 @@ fn test_interaction_different_inf_types() {
         bound: 4.0,
         cutoff: 4.0,
     });
-    let inf2 = <SphericalInteraction as Interaction<
-        nalgebra::Vector2<f64>,
-        _,
-        _,
-        _,
+    let inf2 = <SphericalInteraction as InteractionInformation<
+        _
     >>::get_interaction_information(&i2);
     match inf2 {
         IInf::Morse(_) => assert!(false),
@@ -149,12 +155,12 @@ enum IInf2<I1, I2, I3> {
     BLJ(I3),
 }
 
-impl<Pos, Vel, For, I1, I2, I3> Interaction<Pos, Vel, For, IInf2<I1, I2, I3>>
+impl<I1, I2, I3> InteractionInformation<IInf2<I1, I2, I3>>
     for SphericalInteraction2
 where
-    MorsePotential: Interaction<Pos, Vel, For, I1>,
-    MiePotential: Interaction<Pos, Vel, For, I2>,
-    BoundLennardJones: Interaction<Pos, Vel, For, I3>,
+    MorsePotential: InteractionInformation<I1>,
+    MiePotential: InteractionInformation<I2>,
+    BoundLennardJones: InteractionInformation<I3>,
 {
     fn get_interaction_information(&self) -> IInf2<I1, I2, I3> {
         match self {
@@ -169,7 +175,15 @@ where
             }
         }
     }
+}
 
+impl<Pos, Vel, For, I1, I2, I3> Interaction<Pos, Vel, For, IInf2<I1, I2, I3>>
+    for SphericalInteraction2
+where
+    MorsePotential: Interaction<Pos, Vel, For, I1>,
+    MiePotential: Interaction<Pos, Vel, For, I2>,
+    BoundLennardJones: Interaction<Pos, Vel, For, I3>,
+{
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
@@ -215,16 +229,10 @@ fn test_interaction_all_different_types() {
         em: 3.0,
     });
 
-    let inf1 = <SphericalInteraction2 as Interaction<
-        nalgebra::Vector2<f64>,
-        _,
-        _,
+    let inf1 = <SphericalInteraction2 as InteractionInformation<
         _,
     >>::get_interaction_information(&int1);
-    let inf2 = <SphericalInteraction2 as Interaction<
-        nalgebra::Vector2<f64>,
-        _,
-        _,
+    let inf2 = <SphericalInteraction2 as InteractionInformation<
         _,
     >>::get_interaction_information(&int2);
 

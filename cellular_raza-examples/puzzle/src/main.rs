@@ -39,8 +39,10 @@ where
         };
         Ok((-force, force))
     }
+}
 
-    fn get_interaction_information(&self) -> () {}
+impl<F> InteractionInformation<()> for InsideInteraction<F> {
+    fn get_interaction_information(&self) {}
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -72,8 +74,10 @@ where
         };
         Ok((-force, force))
     }
+}
 
-    fn get_interaction_information(&self) -> () {}
+impl<F> InteractionInformation<()> for OutsideInteraction<F> {
+    fn get_interaction_information(&self) {}
 }
 
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]

@@ -44,10 +44,6 @@ impl
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
     }
 
-    fn get_interaction_information(&self) -> f64 {
-        self.interaction.0.radius
-    }
-
     fn is_neighbor(
         &self,
         own_pos: &nalgebra::MatrixXx3<f64>,
@@ -71,6 +67,12 @@ impl
             self.growth_rate = GROWTH_BASE_RATE;
         }
         Ok(())
+    }
+}
+
+impl InteractionInformation<f64> for Agent {
+    fn get_interaction_information(&self) -> f64 {
+        self.interaction.0.radius
     }
 }
 

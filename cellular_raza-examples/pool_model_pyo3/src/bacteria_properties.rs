@@ -149,11 +149,13 @@ impl Bacteria {
     }
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReactions {
+impl InteractionInformation<f64> for BacteriaReactions {
     fn get_interaction_information(&self) -> f64 {
         volume_to_radius(self.cell_volume)
     }
+}
 
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReactions {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,
