@@ -1,6 +1,7 @@
 use cellular_raza::building_blocks::NewtonDamped2D;
 use cellular_raza::concepts::{
-    CalcError, CellAgent, Interaction, Mechanics, Position, RngError, Velocity,
+    CalcError, CellAgent, Interaction, InteractionInformation, Mechanics, Position, RngError,
+    Velocity,
 };
 
 use cellular_raza_building_blocks::CartesianCuboid;
@@ -27,10 +28,13 @@ struct MassParticle {
     id: usize,
 }
 
-impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for MassParticle {
+impl InteractionInformation<f64> for MassParticle {
     fn get_interaction_information(&self) -> f64 {
         self.mechanics.mass
     }
+}
+
+impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for MassParticle {
     fn calculate_force_between(
         &self,
         own_pos: &Vector2<f64>,

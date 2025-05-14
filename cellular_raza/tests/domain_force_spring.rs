@@ -53,16 +53,24 @@ struct MySubDomain {
     spring_strength: f64,
 }
 
-impl SubDomainForce<Vector2<f64>, Vector2<f64>, Vector2<f64>> for MySubDomain {
+impl SubDomainForce<Vector2<f64>, Vector2<f64>, Vector2<f64>, ()> for MySubDomain {
     fn calculate_custom_force(
         &self,
         pos: &Vector2<f64>,
         _vel: &Vector2<f64>,
+        _: &(),
     ) -> Result<Vector2<f64>, cellular_raza_concepts::CalcError> {
         let force_x = -self.spring_strength * (pos.x - 0.0);
         let force_y = 0.0;
         Ok([force_x, force_y].into())
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, CellAgent)]
+struct MyAgent(#[Mechanics] NewtonDamped2D);
+
+impl InteractionInformation<()> for MyAgent {
+    fn get_interaction_information(&self) {}
 }
 
 #[test]
@@ -83,12 +91,12 @@ fn spring_single_particle() -> Result<(), SimulationError> {
         show_progressbar: false,
     };
     let x0 = 10.0;
-    let agents = [NewtonDamped2D {
+    let agents = [MyAgent(NewtonDamped2D {
         pos: [x0, 0.0].into(),
         vel: [0.0, 0.0].into(),
         damping_constant: 0.0,
         mass,
-    }];
+    })];
     let storager = cellular_raza::core::backend::chili::run_simulation!(
         agents: agents,
         domain: domain,
@@ -99,7 +107,7 @@ fn spring_single_particle() -> Result<(), SimulationError> {
     let (_, history) = hists.into_iter().next().unwrap();
     let positions = history
         .into_iter()
-        .map(|(iter, (cbox, _))| (iter, cbox.cell.pos));
+        .map(|(iter, (cbox, _))| (iter, cbox.cell.pos()));
     let omega = (spring_strength / mass).sqrt();
     for (iter, pos) in positions {
         let exact = x0 * (omega * iter as f64 * dt).cos();
