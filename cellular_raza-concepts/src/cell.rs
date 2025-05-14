@@ -56,15 +56,21 @@ impl<Cel> CellAgentBox<Cel> {
     }
 }
 
-// Auto-implement traits for CellAgentBox which where also implemented for Agent
-impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
+impl<Inf, A> InteractionInformation<Inf> for CellAgentBox<A>
 where
-    A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,
+    A: InteractionInformation<Inf>,
 {
     fn get_interaction_information(&self) -> Inf {
         self.cell.get_interaction_information()
     }
+}
 
+// Auto-implement traits for CellAgentBox which where also implemented for Agent
+impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
+where
+    A: InteractionInformation<Inf>,
+    A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,
+{
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
@@ -76,7 +82,13 @@ where
         self.cell
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_information)
     }
+}
 
+impl<Pos, Inf, A> NeighborInteraction<Pos, Inf> for CellAgentBox<A>
+where
+    A: InteractionInformation<Inf>,
+    A: NeighborInteraction<Pos, Inf>,
+{
     fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
         self.cell.is_neighbor(own_pos, ext_pos, ext_inf)
     }
