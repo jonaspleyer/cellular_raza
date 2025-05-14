@@ -269,6 +269,15 @@ impl<F: Clone, const D: usize> Velocity<Matrix<F, Dyn, Const<D>, VecStorage<F, D
 #[cfg_attr(feature = "approx", derive(AbsDiffEq))]
 pub struct RodInteraction<I>(pub I);
 
+impl<I, Inf> InteractionInformation<Inf> for RodInteraction<I>
+where
+    I: InteractionInformation<Inf>,
+{
+    fn get_interaction_information(&self) -> Inf {
+        self.0.get_interaction_information()
+    }
+}
+
 impl<I, F, Inf, const D: usize>
     Interaction<
         Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
@@ -280,10 +289,6 @@ where
     I: Interaction<nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, nalgebra::SVector<F, D>, Inf>,
     F: 'static + nalgebra::RealField + Copy + core::fmt::Debug + num::Zero,
 {
-    fn get_interaction_information(&self) -> Inf {
-        self.0.get_interaction_information()
-    }
-
     fn calculate_force_between(
         &self,
         own_pos: &Matrix<F, Dyn, Const<D>, VecStorage<F, Dyn, Const<D>>>,
@@ -457,6 +462,7 @@ impl<F>
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        F,
     > for CartesianSubDomainRods<F, 3>
 where
     F: nalgebra::RealField + num::Float,
@@ -465,6 +471,7 @@ where
         &self,
         pos: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         vel: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
+        radius: &F,
     ) -> Result<
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         cellular_raza_concepts::CalcError,

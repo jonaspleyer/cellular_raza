@@ -28,7 +28,9 @@ where
     ) -> Result<(For, For), CalcError> {
         Ok((For::zero(), For::zero()))
     }
+}
 
+impl InteractionInformation<()> for NoInteraction {
     fn get_interaction_information(&self) {}
 }
 
@@ -130,8 +132,9 @@ macro_rules! implement_bound_lennard_jones(
                 let q = if self.cutoff >= r { 1.0 } else { 0.0 };
                 Ok((- dir * q * max.min(val), dir * q * max.min(val)))
             }
-
-            fn get_interaction_information(&self) -> () {}
+        }
+        impl InteractionInformation<()> for $struct_name {
+            fn get_interaction_information(&self) {}
         }
     };
 );
@@ -224,10 +227,6 @@ macro_rules! implement_morse_potential(
                 $float_type,
             > for $struct_name
         {
-            fn get_interaction_information(&self) -> $float_type {
-                self.radius
-            }
-
             fn calculate_force_between(
                 &self,
                 own_pos: &nalgebra::SVector<$float_type, D>,
@@ -248,6 +247,11 @@ macro_rules! implement_morse_potential(
                     self.strength,
                     self.potential_stiffness,
                 )
+            }
+        }
+        impl InteractionInformation<$float_type> for $struct_name {
+            fn get_interaction_information(&self) -> $float_type {
+                self.radius
             }
         }
 
@@ -366,7 +370,9 @@ macro_rules! implement_mie_potential(
                 let force = (mie_constant * self.strength * potential_part).min(self.bound);
                 Ok((dir * force, - dir * force))
             }
+        }
 
+        impl InteractionInformation<$float_type> for $name {
             fn get_interaction_information(&self) -> $float_type {
                 self.radius
             }
@@ -641,6 +647,18 @@ where
     F::zero() <= u && u < F::one() && F::zero() <= t
 }
 
+impl<A, R, I1, I2> InteractionInformation<(I1, I2)> for VertexDerivedInteraction<A, R, I1, I2>
+where
+    A: InteractionInformation<I1>,
+    R: InteractionInformation<I2>,
+{
+    fn get_interaction_information(&self) -> (I1, I2) {
+        let i1 = self.outside_interaction.get_interaction_information();
+        let i2 = self.inside_interaction.get_interaction_information();
+        (i1, i2)
+    }
+}
+
 impl<F, S, A, R, I1, I2, D>
     Interaction<
         nalgebra::Matrix<F, D, nalgebra::U2, S>,
@@ -663,12 +681,6 @@ where
     S: nalgebra::Storage<F, D, nalgebra::U2>,
     S: Clone,
 {
-    fn get_interaction_information(&self) -> (I1, I2) {
-        let i1 = self.outside_interaction.get_interaction_information();
-        let i2 = self.inside_interaction.get_interaction_information();
-        (i1, i2)
-    }
-
     fn calculate_force_between(
         &self,
         own_pos: &nalgebra::Matrix<F, D, nalgebra::U2, S>,

@@ -100,15 +100,21 @@ where
     }
 }
 
+impl<Inf, Mec, Int, Cyc, React, IntExtracellular> InteractionInformation<Inf>
+    for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
+where
+    Int: InteractionInformation<Inf>,
+{
+    fn get_interaction_information(&self) -> Inf {
+        self.interaction.get_interaction_information()
+    }
+}
+
 impl<Pos, Vel, For, Inf, Mec, Int, Cyc, React, IntExtracellular> Interaction<Pos, Vel, For, Inf>
     for ModularCell<Mec, Int, Cyc, React, IntExtracellular>
 where
     Int: Interaction<Pos, Vel, For, Inf>,
 {
-    fn get_interaction_information(&self) -> Inf {
-        self.interaction.get_interaction_information()
-    }
-
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
