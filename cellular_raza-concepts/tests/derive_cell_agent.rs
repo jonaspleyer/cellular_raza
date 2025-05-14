@@ -1,3 +1,5 @@
+use cellular_raza_concepts::InteractionInformation;
+
 #[test]
 fn derive_cycle() {
     use cellular_raza_concepts::*;
@@ -111,7 +113,6 @@ fn derive_interaction() {
     use cellular_raza_concepts_derive::CellAgent;
     struct InteractionModel;
     impl cellular_raza_concepts::Interaction<f32, f32, f32> for InteractionModel {
-        fn get_interaction_information(&self) -> () {}
         fn calculate_force_between(
             &self,
             _own_pos: &f32,
@@ -122,6 +123,9 @@ fn derive_interaction() {
         ) -> Result<(f32, f32), CalcError> {
             unimplemented!()
         }
+    }
+    impl cellular_raza_concepts::InteractionInformation<()> for InteractionModel {
+        fn get_interaction_information(&self) {}
     }
     #[derive(CellAgent)]
     struct NewAgent1 {
@@ -137,17 +141,19 @@ fn derive_interaction() {
 
 #[test]
 fn derive_interaction_generics() {
-    use cellular_raza_concepts::{CalcError, Interaction};
+    use cellular_raza_concepts::Interaction;
     use cellular_raza_concepts_derive::CellAgent;
 
     struct InteractionModel<const D: usize> {
         index: [usize; D],
     }
 
-    impl<const D: usize> Interaction<f32, f32, f32, [usize; D]> for InteractionModel<D> {
+    impl<const D: usize> InteractionInformation<[usize; D]> for InteractionModel<D> {
         fn get_interaction_information(&self) -> [usize; D] {
-            self.index.clone()
+            self.index
         }
+    }
+    impl<const D: usize> Interaction<f32, f32, f32, [usize; D]> for InteractionModel<D> {
         fn calculate_force_between(
             &self,
             _own_pos: &f32,
