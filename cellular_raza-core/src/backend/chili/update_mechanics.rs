@@ -361,7 +361,7 @@ where
     /// Calculates the custom [force](SubDomainForce) of
     /// the domain on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn calculate_custom_domain_force<Pos, Vel, For, const N: usize>(
+    pub fn calculate_custom_domain_force<Pos, Vel, For, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -369,8 +369,9 @@ where
         Vel: Clone,
         C: cellular_raza_concepts::Position<Pos>,
         C: cellular_raza_concepts::Velocity<Vel>,
+        C: cellular_raza_concepts::InteractionInformation<Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
-        S: SubDomainForce<Pos, Vel, For>,
+        S: SubDomainForce<Pos, Vel, For, Inf>,
     {
         for (cell, aux) in self
             .voxels
@@ -378,9 +379,11 @@ where
             .map(|(_, vox)| vox.cells.iter_mut())
             .flatten()
         {
-            let f = self
-                .subdomain
-                .calculate_custom_force(&cell.pos(), &cell.velocity())?;
+            let f = self.subdomain.calculate_custom_force(
+                &cell.pos(),
+                &cell.velocity(),
+                &cell.get_interaction_information(),
+            )?;
             aux.add_force(f);
         }
         Ok(())
