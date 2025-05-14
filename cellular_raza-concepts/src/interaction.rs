@@ -44,13 +44,9 @@ pub trait NeighborInteraction<Pos, Inf>: InteractionInformation<Inf> {
     // fn contact_function(&mut self, other_cell: &C, environment: &mut Env) -> Result<(), SimulationError>;
 }
 
-impl<Pos, Vel, For, Inf> Interaction<Pos, Vel, For, Inf>
+/* impl<Pos, Vel, For, Inf> Interaction<Pos, Vel, For, Inf>
     for Box<dyn Interaction<Pos, Vel, For, Inf>>
 {
-    fn get_interaction_information(&self) -> Inf {
-        use core::ops::Deref;
-        self.deref().get_interaction_information()
-    }
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
@@ -63,6 +59,18 @@ impl<Pos, Vel, For, Inf> Interaction<Pos, Vel, For, Inf>
         self.deref()
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
     }
+}*/
+
+impl<Inf> InteractionInformation<Inf> for Box<dyn InteractionInformation<Inf>> {
+    fn get_interaction_information(&self) -> Inf {
+        use core::ops::Deref;
+        self.deref().get_interaction_information()
+    }
+}
+
+/* impl<Pos, Inf> NeighborInteraction<Pos, Inf>
+    for Box<dyn NeighborInteraction<Pos, Inf> + InteractionInformation<Inf>>
+{
     fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
         use core::ops::Deref;
         self.deref().is_neighbor(own_pos, ext_pos, ext_inf)
@@ -71,4 +79,4 @@ impl<Pos, Vel, For, Inf> Interaction<Pos, Vel, For, Inf>
         use core::ops::DerefMut;
         self.deref_mut().react_to_neighbors(neighbors)
     }
-}
+}*/
