@@ -31,6 +31,8 @@ mod domain;
         Position,
         Velocity,
         Interaction,
+        InteractionRaw,
+        InteractionInformation,
         Reactions,
         ReactionsContact,
         ReactionsRaw,
