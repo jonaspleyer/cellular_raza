@@ -164,6 +164,74 @@ impl<C, A> Voxel<C, A> {
         }
         Ok(force)
     }
+
+    /// TODO
+    pub fn run_cell_interaction_funcs_external<G, FuncC>(
+        &mut self,
+        gather: &G,
+        func_calculate: FuncC,
+    ) -> Result<(), SimulationError>
+    where
+        FuncC: Fn(&G, &C, &C, &mut A, &mut A) -> Result<(), super::SimulationError>,
+    {
+        for (cell, aux_storage) in self.cells.iter_mut() {
+            // TODO
+            // func_calculate(gather, ca1.0, &cell.cell, ca1.1, aux_storage)?;
+        }
+        Ok(())
+    }
+}
+
+/// TODO
+pub fn interaction_mechanics_step_1_gather<C, A, Pos, Vel, Inf>(
+    c1: &C,
+) -> Result<(Pos, Vel, Inf), CalcError>
+where
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
+    C: cellular_raza_concepts::InteractionInformation<Inf>,
+{
+    let p1 = c1.pos();
+    let v1 = c1.velocity();
+    let i1 = c1.get_interaction_information();
+    Ok((p1, v1, i1))
+}
+
+/// TODO
+pub fn interaction_mechanics_step_1<C, A, Pos, Vel, For, Float, Inf, const N: usize>(
+    gather: (&Pos, &Vel, &Inf),
+    c1: &C,
+    c2: &C,
+    aux1: &mut A,
+    aux2: &mut A,
+) -> Result<(), CalcError>
+where
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::Velocity<Vel>,
+    C: Mechanics<Pos, Vel, For, Float>,
+    C: Interaction<Pos, Vel, For, Inf>,
+    A: UpdateMechanics<Pos, Vel, For, N>,
+    A: UpdateInteraction,
+    Float: num::Float + core::ops::AddAssign,
+    For: Xapy<Float> + core::ops::AddAssign,
+{
+    let one_half: Float = Float::one() / (Float::one() + Float::one());
+
+    let (p1, v1, i1) = gather;
+
+    let p2 = c2.pos();
+    let v2 = c2.velocity();
+    let i2 = c2.get_interaction_information();
+
+    let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
+    aux1.add_force(force1.xa(one_half));
+    aux2.add_force(force2.xa(one_half));
+
+    let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
+    aux1.add_force(force1.xa(one_half));
+    aux2.add_force(force2.xa(one_half));
+
+    Ok(())
 }
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>

@@ -335,6 +335,53 @@ where
         Ok(())
     }
 
+    /// TODO
+    pub fn run_cell_interaction_funcs<FuncG, G, FuncC, FuncV, FuncS, Ret>(
+        &mut self,
+        func_gather: FuncG,
+        func_calculate: FuncC,
+        func_send: FuncS,
+    ) -> Result<(), super::SimulationError>
+    where
+        FuncG: Fn(&C) -> Result<G, super::SimulationError>,
+        FuncC: Fn(&G, &C, &C, &mut A, &mut A) -> Result<(), super::SimulationError>,
+        // TODO FuncS: Fn(&G, &C, &C, &mut A, &mut A) -> Result<(), super::SimulationError>,
+        FuncV: Fn() -> Result<Ret, super::SimulationError>,
+        FuncS:
+            Fn(&VoxelPlainIndex, &VoxelPlainIndex, &G, usize) -> Result<(), super::SimulationError>,
+    {
+        let voxel_indices: Vec<_> = self.voxels.keys().map(|k| *k).collect();
+
+        for voxel_index in voxel_indices {
+            let n_cells = self.voxels[&voxel_index].cells.len();
+            // Calculate Interactions internally
+            for n in 0..n_cells {
+                let vox = self.voxels.get_mut(&voxel_index).unwrap();
+
+                let mut cells_mut = vox.cells.iter_mut();
+                let (c1, aux1) = cells_mut.nth(n).unwrap();
+                let gather = func_gather(&c1)?;
+                for _ in n + 1..n_cells {
+                    let (c2, aux2) = cells_mut.nth(0).unwrap();
+
+                    func_calculate(&gather, c1, c2, aux1, aux2)?;
+                }
+
+                let neighbors = vox.neighbors.clone();
+                for neighbor_index in &neighbors {
+                    match self.voxels.get_mut(&neighbor_index) {
+                        Some(vox) => {
+                            let ret =
+                                vox.run_cell_interaction_funcs_external(&gather, &func_calculate)?;
+                        }
+                        None => func_send(&voxel_index, &neighbor_index, &gather, n)?,
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Save all subdomains with the given storage manager.
     #[cfg_attr(feature = "tracing", instrument(skip(self, storage_manager)))]
     pub fn save_subdomains<
