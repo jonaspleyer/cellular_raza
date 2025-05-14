@@ -169,5 +169,5 @@ where
 // TODO use trait alias when available
 // pub trait InteractionInformation = Send + Sync + Clone + core::fmt::Debug;
 /// Trait implementations needed for the information generic parameter of [Interaction].
-pub trait InteractionInformation: Send + Sync + Clone + core::fmt::Debug {}
-impl<T> InteractionInformation for T where T: Send + Sync + Clone + core::fmt::Debug {}
+pub trait InteractionInf: Send + Sync + Clone + core::fmt::Debug {}
+impl<T> InteractionInf for T where T: Send + Sync + Clone + core::fmt::Debug {}

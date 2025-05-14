@@ -1,4 +1,4 @@
-use super::{Agent, ForceBound, InteractionInformation, PositionBound, VelocityBound};
+use super::{Agent, ForceBound, InteractionInf, PositionBound, VelocityBound};
 use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::reactions_old::*;
 use cellular_raza_concepts::*;
@@ -155,7 +155,7 @@ where
         Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
         Pos: PositionBound,
         For: ForceBound,
-        Inf: InteractionInformation,
+        Inf: InteractionInf,
         Vel: VelocityBound,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,
@@ -320,7 +320,7 @@ where
         Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
         Pos: PositionBound,
         For: ForceBound,
-        Inf: InteractionInformation,
+        Inf: InteractionInf,
         Vel: VelocityBound,
         ConcVecExtracellular: Concentration,
         ConcTotalExtracellular: Concentration,

@@ -1,4 +1,4 @@
-use super::{Agent, ForceBound, InteractionInformation, PositionBound, VelocityBound};
+use super::{Agent, ForceBound, InteractionInf, PositionBound, VelocityBound};
 use cellular_raza_concepts::domain_old::*;
 use cellular_raza_concepts::reactions_old::*;
 use cellular_raza_concepts::*;
@@ -631,7 +631,7 @@ where
         Pos: PositionBound,
         Vel: VelocityBound,
         For: ForceBound,
-        Inf: InteractionInformation,
+        Inf: InteractionInf,
         Cel: Agent<Pos, Vel, For, Inf>
             + InteractionExtracellularGradient<Cel, ConcGradientExtracellular>,
         Vox: ExtracellularMechanics<
