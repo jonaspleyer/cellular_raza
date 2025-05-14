@@ -56,15 +56,20 @@ impl<Cel> CellAgentBox<Cel> {
     }
 }
 
+impl<Inf, A> InteractionInformation<Inf> for CellAgentBox<A>
+where
+    A: InteractionInformation<Inf>,
+{
+    fn get_interaction_information(&self) -> Inf {
+        self.cell.get_interaction_information()
+    }
+}
+
 // Auto-implement traits for CellAgentBox which where also implemented for Agent
 impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
 where
     A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,
 {
-    fn get_interaction_information(&self) -> Inf {
-        self.cell.get_interaction_information()
-    }
-
     fn calculate_force_between(
         &self,
         own_pos: &Pos,
