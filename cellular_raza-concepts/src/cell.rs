@@ -116,22 +116,6 @@ impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A
 where
     A: Mechanics<Pos, Vel, For, Float>,
 {
-    /* fn pos(&self) -> Pos {
-        self.cell.pos()
-    }
-
-    fn velocity(&self) -> Vel {
-        self.cell.velocity()
-    }
-
-    fn set_pos(&mut self, pos: &Pos) {
-        self.cell.set_pos(pos);
-    }
-
-    fn set_velocity(&mut self, velocity: &Vel) {
-        self.cell.set_velocity(velocity);
-    }*/
-
     fn get_random_contribution(
         &self,
         rng: &mut rand_chacha::ChaCha8Rng,
