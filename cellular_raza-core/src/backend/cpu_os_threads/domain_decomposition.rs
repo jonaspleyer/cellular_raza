@@ -343,6 +343,8 @@ where
         Cel: Position<Pos>,
         Cel: Velocity<Vel>,
     {
+        use cellular_raza_concepts::InteractionInformation;
+
         for n in 0..self.cells.len() {
             for m in n + 1..self.cells.len() {
                 let mut cells_mut = self.cells.iter_mut();
@@ -929,6 +931,7 @@ where
         Cel: Position<Pos>,
         Cel: Velocity<Vel>,
     {
+        use cellular_raza_concepts::InteractionInformation;
         // General Idea of this function
         // for each cell
         //      for each neighbor_voxel in neighbors of voxel containing cell
