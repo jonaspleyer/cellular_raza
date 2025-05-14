@@ -245,7 +245,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_4.extend(quote!(sbox.apply_boundary()?;));
     }
 
-    if kwargs.aspects.contains(&Interaction) {
+    if kwargs.aspects.contains(&NeighborInteraction) {
+        // interaction_func_names.push(quote!());
         local_func_names
             .push(quote!(#core_path::backend::chili::local_interaction_react_to_neighbors));
     }

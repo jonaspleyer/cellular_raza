@@ -38,6 +38,7 @@ pub enum SimulationAspect {
     // None,
     Mechanics,
     Interaction,
+    NeighborInteraction,
     Cycle,
     DomainForce,
     Reactions,
@@ -191,6 +192,7 @@ impl SimulationAspect {
         vec![
             SimulationAspect::Mechanics,
             SimulationAspect::Interaction,
+            SimulationAspect::NeighborInteraction,
             SimulationAspect::Cycle,
             SimulationAspect::Reactions,
             SimulationAspect::ReactionsExtra,
@@ -212,6 +214,7 @@ impl SimulationAspect {
         match &self {
             SimulationAspect::Mechanics => quote::quote!(Mechanics),
             SimulationAspect::Interaction => quote::quote!(Interaction),
+            SimulationAspect::NeighborInteraction => quote::quote!(NeighborInteraction),
             SimulationAspect::Cycle => quote::quote!(Cycle),
             SimulationAspect::Reactions => quote::quote!(Reactions),
             SimulationAspect::ReactionsExtra => quote::quote!(ReactionsExtra),
@@ -226,6 +229,7 @@ impl SimulationAspect {
         match &self {
             SimulationAspect::Mechanics => quote::quote!(mechanics),
             SimulationAspect::Interaction => quote::quote!(interaction),
+            SimulationAspect::NeighborInteraction => quote::quote!(neighbor_interaction),
             SimulationAspect::Cycle => quote::quote!(cycle),
             SimulationAspect::Reactions => quote::quote!(reactions),
             SimulationAspect::ReactionsExtra => quote::quote!(reactionsextra),
@@ -240,6 +244,7 @@ impl<'a> From<&'a SimulationAspect> for String {
         match value {
             SimulationAspect::Cycle => "Cycle",
             SimulationAspect::Interaction => "Interaction",
+            SimulationAspect::NeighborInteraction => "NeighborInteraction",
             SimulationAspect::Mechanics => "Mechanics",
             SimulationAspect::Reactions => "Reactions",
             SimulationAspect::ReactionsExtra => "ReactionsExtra",
