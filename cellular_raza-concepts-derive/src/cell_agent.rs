@@ -203,7 +203,6 @@ impl From<AgentParser> for AgentImplementer {
         let mut mechanics_raw = None;
         let mut position = None;
         let mut velocity = None;
-        let mut interaction = None;
         let mut interaction_raw = None;
         let mut interaction_information = None;
         let mut intracellular = None;
@@ -239,7 +238,7 @@ impl From<AgentParser> for AgentImplementer {
                         CellAspect::Position => position = Some(field_info),
                         CellAspect::Velocity => velocity = Some(field_info),
                         CellAspect::Interaction => {
-                            interaction = Some(field_info.clone());
+                            interaction_raw = Some(field_info.clone());
                             interaction_information = Some(field_info);
                         }
                         CellAspect::InteractionRaw => {
