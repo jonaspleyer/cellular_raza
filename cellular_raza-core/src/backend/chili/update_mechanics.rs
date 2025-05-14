@@ -361,7 +361,7 @@ where
     /// Calculates the custom [force](SubDomainForce) of
     /// the domain on the cells.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn calculate_custom_domain_force<Pos, Vel, For, const N: usize>(
+    pub fn calculate_custom_domain_force<Pos, Vel, For, Inf, const N: usize>(
         &mut self,
     ) -> Result<(), SimulationError>
     where
@@ -671,14 +671,14 @@ where
 }
 
 /// Perform the [Interaction::react_to_neighbors] function and clear current neighbors.
-pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
+pub fn local_interaction_react_to_neighbors<C, A, Pos, Inf, Float>(
     cell: &mut C,
     aux_storage: &mut A,
     _dt: Float,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::CalcError>
 where
-    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+    C: cellular_raza_concepts::NeighborInteraction<Pos, Inf>,
     C: cellular_raza_concepts::Position<Pos>,
     A: UpdateInteraction,
 {
