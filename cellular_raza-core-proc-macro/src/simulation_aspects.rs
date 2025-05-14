@@ -138,7 +138,7 @@ impl SimulationAspects {
         aspects: impl IntoIterator<Item = &'a SimulationAspect>,
     ) -> bool {
         for aspect in aspects.into_iter() {
-            if !self.contains(&aspect) {
+            if !self.contains(aspect) {
                 return false;
             }
         }
@@ -151,7 +151,7 @@ impl SimulationAspects {
         aspects: impl IntoIterator<Item = &'a SimulationAspect>,
     ) -> bool {
         for aspect in aspects.into_iter() {
-            if self.contains(&aspect) {
+            if self.contains(aspect) {
                 return true;
             }
         }
@@ -171,7 +171,7 @@ impl SimulationAspects {
         syn::bracketed!(content in input);
         let items = syn::punctuated::Punctuated::<ParsedSimulationAspect, syn::token::Comma>::parse_terminated(&content)?;
         use itertools::*;
-        for duplicate in items.iter().duplicates_by(|pa| &pa.aspect).into_iter() {
+        if let Some(duplicate) = items.iter().duplicates_by(|pa| &pa.aspect).nth(0) {
             return Err(syn::Error::new(
                 duplicate.ident.span(),
                 format!("Found duplicate simulation aspect: {:?}", duplicate.aspect),
