@@ -1,4 +1,4 @@
-use cellular_raza_concepts::InteractionInformation;
+use cellular_raza_concepts::{CalcError, InteractionInformation};
 
 #[test]
 fn derive_cycle() {
