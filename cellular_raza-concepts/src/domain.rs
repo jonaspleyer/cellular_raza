@@ -223,8 +223,8 @@ pub trait SubDomainMechanics<Pos, Vel> {
 ///     damping: f64,
 /// }
 ///
-/// impl SubDomainForce<f64, f64, f64> for MyForce {
-///     fn calculate_custom_force(&self, pos: &f64, vel: &f64) -> Result<f64, CalcError> {
+/// impl SubDomainForce<f64, f64, f64, f64> for MyForce {
+///     fn calculate_custom_force(&self, _: &f64, vel: &f64, _: &f64) -> Result<f64, CalcError> {
 ///         Ok(- self.damping * vel)
 ///     }
 /// }
@@ -239,12 +239,17 @@ pub trait SubDomainMechanics<Pos, Vel> {
 /// #         damping: 0.1,
 /// #     }
 /// # };
-/// # let calculated_force = _my_sdm.calculate_custom_force(&0.0, &1.0).unwrap();
+/// # let calculated_force = _my_sdm.calculate_custom_force(&0.0, &1.0, &0.0).unwrap();
 /// # assert_eq!(calculated_force, -0.1);
 /// ```
-pub trait SubDomainForce<Pos, Vel, For> {
-    ///
-    fn calculate_custom_force(&self, pos: &Pos, vel: &Vel) -> Result<For, crate::CalcError>;
+pub trait SubDomainForce<Pos, Vel, For, Inf> {
+    /// Calculates the force which acts on the cell agent
+    fn calculate_custom_force(
+        &self,
+        pos: &Pos,
+        vel: &Vel,
+        inf: &Inf,
+    ) -> Result<For, crate::CalcError>;
 }
 
 /// Describes extracellular reactions and fluid dynamics
