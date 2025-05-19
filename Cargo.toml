@@ -45,7 +45,7 @@ rand_chacha = { version="0.9", features=["serde"] }
 serde = "1.0"
 tempfile = "3"
 nalgebra = { version="0.33", features=["serde-serialize", "rand"]}
-ndarray = { version = "0.16", features = ["blas", "serde", "serde-1"] }
+ndarray = { version = ">=0.15", features = ["blas", "serde", "serde-1"] }
 pyo3 = { version = "0.24", features = ["serde", "py-clone"]}
 kdam = "0.6"
 approxim = "0.6.5"
