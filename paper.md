@@ -154,8 +154,8 @@ By consuming intracellular nutrients, the cell grows continuously and divides up
 threshold.
 Cells are initially placed inside a centered square after which they grow outwards into the
 nutrient-rich area.
-They are colored bright purple while they are actively growing and dark when not subject to growth
-anymore.
+They are colored by the size of their radii from dark purple right after the division event to
+bright.
 A lighter color in the outer domain indicates that more nutrients are available while a dark color
 signifies a lack thereof.
 
