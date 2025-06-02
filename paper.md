@@ -84,9 +84,9 @@ These aspects are directly related to the properties of the cells, domain, or ot
 interactions.
 The user selects a cellular representation, which can be built from pre-existing building blocks or
  fully customized bottom-up.
-'cellular_raza' utilizes macros to generate code contingent on the simulation aspects.
+`cellular_raza` utilizes macros to generate code contingent on the simulation aspects.
 It makes extensive use of generics and provides abstract numerical solvers.
-'cellular_raza' encapsulates the inherent complexity of the code generation process, yet enables
+`cellular_raza` encapsulates the inherent complexity of the code generation process, yet enables
 users to modify the specifics of the simulation through the use of additional keyword arguments.
 Consequently, users are able to fully and deeply customize the representation and behaviour of the
 agents.
