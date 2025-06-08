@@ -13,8 +13,10 @@ authors:
     affiliation: 1
     orcid: 0000-0002-6371-4495
 affiliations:
- - name: Freiburg Center for Data Analysis, Modeling and AI
-   index: 1
+  - name: Freiburg Center for Data Analysis, Modeling and AI
+    index: 1
+    city: Freiburg im Breisgau
+    country: Germany
 date: 13 March 2025
 bibliography: paper.bib
 
