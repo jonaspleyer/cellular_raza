@@ -33,7 +33,7 @@ parameter introduced.
 It comes with predefined building blocks for agents and their physical domain to quickly
 construct new simulations bottom-up.
 Furthermore, `cellular_raza` can be used with the `pyo3` and `maturin` packages and thus act as a
-numerical backend to a python package.
+numerical backend to a Python package.
 
 # Statement of Need
 
@@ -65,13 +65,13 @@ the underlying complexity or abstraction level, we developed "cellular_raza."
 
 ## Cellular Agent-Based Frameworks
 
-In our previous efforts [@Pleyer2023], we assessed the overall state of modelling toolkits for
+In our previous efforts [@Pleyer2023], we assessed the overall state of modeling toolkits for
 individual-based cellular simulations.
-These frameworks are designed for specific usages and often  require many parameters which are
+These frameworks are designed for specific usages and often require many parameters which are
 unknown or difficult to determine experimentally.
 This poses an inherent problem for their applicability and the ability to properly interpret
 results.
-Few modelling frameworks exist that provide a significant degree of flexibility and customization in
+Few modeling frameworks exist that provide a significant degree of flexibility and customization in
 the definition of cell agents.
 Chaste [@Cooper2020] allows reuse of individual components , such as ODE and PDE solvers, but is
 only partially cell-based.
@@ -86,12 +86,12 @@ We distinguish between different simulation aspects, i.e., mechanics, interactio
 These aspects are directly related to the properties of the cells, domain, or other external
 interactions.
 The user selects a cellular representation, which can be built from pre-existing building blocks or
- fully customized bottom-up.
+fully customized bottom-up.
 `cellular_raza` utilizes macros to generate code contingent on the simulation aspects.
 It makes extensive use of generics and provides abstract numerical solvers.
 `cellular_raza` encapsulates the inherent complexity of the code generation process, yet enables
 users to modify the specifics of the simulation through the use of additional keyword arguments.
-Consequently, users are able to fully and deeply customize the representation and behaviour of the
+Consequently, users are able to fully and deeply customize the representation and behavior of the
 agents.
 Each simulation aspect is abstractly formulated as a trait in Rust's type system.
 The getting-started guide provides a good entry point and explains every step from building to
@@ -104,8 +104,8 @@ In the following, we present four different examples of how to use `cellular_raz
 
 ## Cell Sorting
 
-Cell sorting is a naturally occurring phenomenon [@Steinberg1963; @Graner1992].
-The cellular interaction is specific to their species.
+Cell sorting is a naturally occurring phenomenon [@Steinberg1963; @Graner1992], where
+the cellular interaction is species-specific.
 We consider two distinct types represented by soft spheres.
 They physically attract each other at close proximity if their species is identical.
 Cells are placed randomly inside a cube with reflective boundary conditions.
@@ -126,7 +126,7 @@ Bacteria come in various forms [@Zapun2008; @Young2006] such as elongated shapes
 which grow asymmetrically in the direction of elongation.
 Our model describes the physical mechanics of one cell as a collection of multiple vertices
 $\vec{v}_i$ which are connected by springs.
-Their relative angle $\alpha$ at each connecting vertex introduces a curvature force which is
+Their relative angle $\alpha$ at each connecting vertex introduces a curvature force
 proportional to $2\tan(\alpha/2)$.
 Cells interact via a soft-sphere force potential with short-ranged attraction.
 Multiple contributions are calculated between every vertex and the closest point on the
