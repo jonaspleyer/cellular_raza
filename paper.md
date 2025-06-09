@@ -13,8 +13,8 @@ authors:
     affiliation: 1
     orcid: 0000-0002-6371-4495
 affiliations:
-  - name: Freiburg Center for Data Analysis and Modelling and AI (FDMAI), University of Freiburg, Freiburg, Germany
-    index: 1    
+  - index: 1
+    name: Freiburg Center for Data Analysis and Modelling and AI (FDMAI), University of Freiburg, Freiburg, Germany
 date: 13 March 2025
 bibliography: paper.bib
 
