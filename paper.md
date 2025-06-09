@@ -15,6 +15,7 @@ authors:
 affiliations:
   - index: 1
     name: Freiburg Center for Data Analysis and Modelling and AI (FDMAI), University of Freiburg, Freiburg, Germany
+    ror: 0245cg223
 date: 13 March 2025
 bibliography: paper.bib
 
