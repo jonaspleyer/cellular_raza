@@ -1,24 +1,33 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
-cff-version: 1.2.0
-title: cellular_raza
-message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
-type: software
+cff-version: "1.2.0"
 authors:
-  - given-names: Jonas
-    family-names: Pleyer
-    email: jonas.pleyer@fdm.uni-freiburg.de
+- family-names: Pleyer
+  given-names: Jonas
+  orcid: "https://orcid.org/0009-0001-0613-7978"
+- family-names: Fleck
+  given-names: Christian
+  orcid: "https://orcid.org/0000-0002-6371-4495"
+doi: 10.5281/zenodo.15095966
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Pleyer
+    given-names: Jonas
     orcid: "https://orcid.org/0009-0001-0613-7978"
-identifiers:
-  - type: url
-    value: 'https://cellular-raza.com'
-    description: Cellular Agent-based Modeling from a Clean Slate
-repository-code: 'https://github.com/jonaspleyer/cellular_raza'
-url: 'https://cellular-raza.com'
-license: GPL-2.0
-commit: 0.2.4
-version: 0.2.4
-date-released: '2025-02-23'
+  - family-names: Fleck
+    given-names: Christian
+    orcid: "https://orcid.org/0000-0002-6371-4495"
+  date-published: 2025-06-10
+  doi: 10.21105/joss.07723
+  issn: 2475-9066
+  issue: 110
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 7723
+  title: "cellular_raza: Cellular Agent-based Modeling from a Clean
+    Slate"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.07723"
+  volume: 10
+title: "cellular_raza: Cellular Agent-based Modeling from a Clean Slate"
