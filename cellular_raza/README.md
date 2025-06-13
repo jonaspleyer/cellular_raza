@@ -12,6 +12,7 @@
 [![Crate](https://img.shields.io/crates/v/cellular_raza.svg?style=flat-square)](https://crates.io/crates/cellular_raza)
 [![API](https://img.shields.io/docsrs/cellular_raza/latest?style=flat-square)](https://docs.rs/cellular_raza)
 [![dependency status](https://deps.rs/crate/cellular_raza/latest/status.svg?style=flat-square)](https://deps.rs/crate/cellular_raza)
+[![Static Badge](https://img.shields.io/badge/JOSS-10.21105%2Fjoss.07723-blue?style=flat-square)](https://joss.theoj.org/papers/10.21105/joss.07723)
 
 Cellular Agent-based Modeling from a Clean Slate
 
