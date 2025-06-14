@@ -163,10 +163,10 @@ fn two_body_problem() {
         // Clear previous values
         *dy *= 0.0;
         dy.row_mut(0).add_assign(&y.row(1));
-        dy.row_mut(1).add_assign(&force / m_moon);
+        dy.row_mut(1).add_assign(force / m_moon);
         // Incremetn position and velocity of paticle2
         dy.row_mut(2).add_assign(&y.row(3));
-        dy.row_mut(3).add_assign(&-force / m_earth);
+        dy.row_mut(3).add_assign(-force / m_earth);
         Ok(())
     };
     let y0 = SMatrix::<f64, 4, 2>::from_rows(&[
