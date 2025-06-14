@@ -49,7 +49,11 @@ default = ["timestamp", "chili"]
 tracing = ["cellular_raza-core/tracing"]
 timestamp = ["cellular_raza-core/timestamp"]
 gradients = ["cellular_raza-concepts/gradients", "cellular_raza-core/gradients", "cellular_raza-building-blocks/gradients"]
-pyo3 = ["cellular_raza-building-blocks/pyo3", "cellular_raza-core/pyo3"]
+pyo3 = [
+    "cellular_raza-building-blocks/pyo3",
+    "cellular_raza-core/pyo3",
+    "cellular_raza-concepts/pyo3"
+]
 approx = ["cellular_raza-building-blocks/approx"]
 plotters = ["cellular_raza-building-blocks/plotters", "cellular_raza-core/plotters"]
 
