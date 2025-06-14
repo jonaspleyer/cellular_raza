@@ -48,7 +48,11 @@ ode_integrate = "0.0.2"
 default = ["timestamp", "chili"]
 tracing = ["cellular_raza-core/tracing"]
 timestamp = ["cellular_raza-core/timestamp"]
-gradients = ["cellular_raza-concepts/gradients", "cellular_raza-core/gradients", "cellular_raza-building-blocks/gradients"]
+gradients = [
+    "cellular_raza-concepts/gradients",
+    "cellular_raza-core/gradients",
+    "cellular_raza-building-blocks/gradients"
+]
 pyo3 = [
     "cellular_raza-building-blocks/pyo3",
     "cellular_raza-core/pyo3",

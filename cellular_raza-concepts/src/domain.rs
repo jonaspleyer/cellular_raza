@@ -50,6 +50,7 @@ pub trait Domain<C, S, Ci = Vec<C>> {
     /// 1. Decompose the Domain into [Subdomains](SubDomain)
     /// 2. Build a neighbor map between [SubDomains](SubDomain)
     /// 3. Sort cells to their respective [SubDomain]
+    ///
     /// However, to increase performance or avoid trait bounds, one can also opt to implement this
     /// trait directly.
     fn decompose(
@@ -97,7 +98,7 @@ pub struct DecomposedDomain<I, S, C> {
     pub n_subdomains: core::num::NonZeroUsize,
     /// Vector containing properties of individual [SubDomains](SubDomain).
     /// Entries are [Domain::SubDomainIndex], [SubDomain], and a vector of cells.
-    // TODO can be use another iterator than Vec<(I, S, Vec<C>)>?
+    // TODO can we use another iterator than Vec<(I, S, Vec<C>)>?
     pub index_subdomain_cells: Vec<(I, S, Vec<C>)>,
     /// Encapsulates how the subdomains are linked to each other.
     /// Eg. two subdomains without any boundary will never appear in each others collection

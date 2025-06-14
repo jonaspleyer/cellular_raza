@@ -4,9 +4,10 @@ fn main() {
         return;
     }
 
-    #[cfg(feature = "cara")] {
-    println!("cargo:rerun-if-changed=src/backend/cara");
-    cc::Build::new()
+    #[cfg(feature = "cara")]
+    {
+        println!("cargo:rerun-if-changed=src/backend/cara");
+        cc::Build::new()
         // Switch to CUDA C++ library compilation using NVCC.
         .cuda(true)
         .ccbin(false)
