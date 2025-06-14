@@ -27,10 +27,22 @@ pub enum CellIdentifier {
 #[cfg(feature = "pyo3")]
 #[pyo3::pymethods]
 impl CellIdentifier {
-    /// Constructs a new CellIdentifier
+    /// Constructs a new [CellIdentifier::Division]
     #[new]
     pub fn new(voxel_plain_index: VoxelPlainIndex, counter: u64) -> Self {
-        Self(voxel_plain_index, counter)
+        CellIdentifier::Division(voxel_plain_index, counter)
+    }
+
+    /// Construct a new [CellIdentifier::Initial]
+    #[staticmethod]
+    pub fn new_initial(index: usize) -> Self {
+        CellIdentifier::Initial(index)
+    }
+
+    /// Construct a new [CellIdentifier::Inserted]
+    #[staticmethod]
+    pub fn new_inserted(voxel_plain_index: VoxelPlainIndex, counter: u64) -> Self {
+        Self::Inserted(voxel_plain_index, counter)
     }
 
     /// Returns an identical clone of the identifier
@@ -79,10 +91,15 @@ impl CellIdentifier {
         key: usize,
     ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
         use pyo3::IntoPyObject;
+        let (key0, key1) = match self {
+            CellIdentifier::Initial(key0) => (*key0, None),
+            CellIdentifier::Division(key0, key1) => (key0.0, Some(*key1)),
+            CellIdentifier::Inserted(key0, key1) => (key0.0, Some(*key1)),
+        };
         if key == 0 {
-            Ok(self.0.into_pyobject(py)?.into_any())
+            Ok(key0.into_pyobject(py)?.into_any())
         } else if key == 1 {
-            Ok(self.1.into_pyobject(py)?.into_any())
+            Ok(key1.into_pyobject(py)?.into_any())
         } else {
             Err(pyo3::exceptions::PyValueError::new_err(
                 "CellIdentifier can only be indexed at 0 and 1",
