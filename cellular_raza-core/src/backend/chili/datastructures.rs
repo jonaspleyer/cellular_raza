@@ -10,7 +10,6 @@ use std::num::NonZeroUsize;
 
 use rand::SeedableRng;
 
-use super::aux_storage::*;
 use super::errors::*;
 use super::simulation_flow::*;
 

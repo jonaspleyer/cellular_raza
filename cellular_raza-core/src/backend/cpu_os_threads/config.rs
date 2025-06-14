@@ -1,8 +1,8 @@
 use super::{Agent, ForceBound, PositionBound, VelocityBound};
 use crate::backend::cpu_os_threads::domain_decomposition::AuxiliaryCellPropertyStorage;
 use crate::storage::StorageManager;
-use cellular_raza_concepts::CellAgentBox;
 use cellular_raza_concepts::domain_old::*;
+use cellular_raza_concepts::{CellBox, VoxelPlainIndex};
 
 use super::domain_decomposition::{
     ConcentrationBoundaryInformation, DomainBox, ForceInformation, IndexBoundaryInformation,
@@ -10,7 +10,7 @@ use super::domain_decomposition::{
 };
 use super::supervisor::ControllerBox;
 use super::supervisor::SimulationSupervisor;
-use cellular_raza_concepts::CellularIdentifier;
+use cellular_raza_concepts::CellIdentifier;
 
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
@@ -344,11 +344,11 @@ where
         // Create sender receiver pairs for all threads
         let sender_receiver_pairs_cell: Vec<(
             Sender<(
-                CellAgentBox<Cel>,
+                CellBox<Cel>,
                 AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
             )>,
             Receiver<(
-                CellAgentBox<Cel>,
+                CellBox<Cel>,
                 AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
             )>,
         )> = (0..n_threads).map(|_| unbounded()).collect();
@@ -456,7 +456,7 @@ where
 
         let voxel_and_cell_boxes: Vec<(
             Vec<(PlainIndex, Vox)>,
-            BTreeMap<PlainIndex, Vec<CellAgentBox<Cel>>>,
+            BTreeMap<PlainIndex, Vec<CellBox<Cel>>>,
         )> = voxel_and_raw_cells
             .into_iter()
             .map(|(chunk, sorted_cells)| {
@@ -472,7 +472,12 @@ where
                                     .into_iter()
                                     .enumerate()
                                     .map(|(n_cell, (_, cell))| {
-                                        CellAgentBox::new(ind, n_cell as u64, cell, None)
+                                        CellBox::new(
+                                            VoxelPlainIndex(ind),
+                                            n_cell as u64,
+                                            cell,
+                                            None,
+                                        )
                                     })
                                     .collect(),
                             )
@@ -598,12 +603,11 @@ where
                     .clone()
                     .suffix(builder.get_suffix().join("cell_storage"));
 
-                let storage_cells =
-                    StorageManager::<CellularIdentifier, CellAgentBox<Cel>>::open_or_create(
-                        storage_cells_builder,
-                        i as u64,
-                    )
-                    .unwrap();
+                let storage_cells = StorageManager::<CellIdentifier, CellBox<Cel>>::open_or_create(
+                    storage_cells_builder,
+                    i as u64,
+                )
+                .unwrap();
                 let storage_voxels_builder = builder
                     .clone()
                     .suffix(builder.get_suffix().join("voxel_storage"));

@@ -1,4 +1,4 @@
-use crate::cell::CellAgentBox;
+use crate::cell::CellBox;
 use crate::errors::*;
 
 use core::hash::Hash;
@@ -168,7 +168,7 @@ pub trait Controller<C, O> {
     fn measure<'a, I>(&self, cells: I) -> Result<O, CalcError>
     where
         C: 'a + Serialize + for<'b> Deserialize<'b>,
-        I: IntoIterator<Item = &'a CellAgentBox<C>> + Clone;
+        I: IntoIterator<Item = &'a CellBox<C>> + Clone;
 
     /// Function that operates on cells given an iterator over measurements. It modifies cellular properties and can invoke [CycleEvenets](super::cycle::CycleEvent).
     fn adjust<'a, 'b, I, J>(&mut self, measurements: I, cells: J) -> Result<(), ControllerError>
@@ -176,14 +176,14 @@ pub trait Controller<C, O> {
         O: 'a,
         C: 'b + Serialize + for<'c> Deserialize<'c>,
         I: Iterator<Item = &'a O>,
-        J: Iterator<Item = (&'b mut CellAgentBox<C>, &'b mut Vec<CycleEvent>)>;
+        J: Iterator<Item = (&'b mut CellBox<C>, &'b mut Vec<CycleEvent>)>;
 }
 
 impl<C> Controller<C, ()> for () {
     fn measure<'a, I>(&self, _cells: I) -> Result<(), CalcError>
     where
         C: 'a + Serialize + for<'b> Deserialize<'b>,
-        I: IntoIterator<Item = &'a CellAgentBox<C>> + Clone,
+        I: IntoIterator<Item = &'a CellBox<C>> + Clone,
     {
         Ok(())
     }
@@ -194,7 +194,7 @@ impl<C> Controller<C, ()> for () {
         (): 'a,
         C: 'b + Serialize + for<'c> Deserialize<'c>,
         I: Iterator<Item = &'a ()>,
-        J: Iterator<Item = (&'b mut CellAgentBox<C>, &'b mut Vec<CycleEvent>)>,
+        J: Iterator<Item = (&'b mut CellBox<C>, &'b mut Vec<CycleEvent>)>,
     {
         Ok(())
     }

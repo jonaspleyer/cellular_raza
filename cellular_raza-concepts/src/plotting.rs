@@ -63,10 +63,10 @@ pub trait PlotSelf {
     }
 }
 
-use crate::cell::CellAgentBox;
+use crate::cell::CellBox;
 use serde::{Deserialize, Serialize};
 
-impl<Cel> PlotSelf for CellAgentBox<Cel>
+impl<Cel> PlotSelf for CellBox<Cel>
 where
     Cel: PlotSelf + Serialize + for<'a> Deserialize<'a>,
 {

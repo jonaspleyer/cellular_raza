@@ -45,7 +45,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
     fn measure<'a, I, Cel>(&mut self, thread_index: u32, cells: I) -> Result<(), SimulationError>
     where
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
-        I: Iterator<Item = &'a CellAgentBox<Cel>> + Clone,
+        I: Iterator<Item = &'a CellBox<Cel>> + Clone,
         Cont: Controller<Cel, Obs>,
     {
         let obs = self.controller.measure(cells)?;
@@ -58,7 +58,7 @@ impl<Cont, Obs> ControllerBox<Cont, Obs> {
         Cel: 'a + Serialize + for<'b> Deserialize<'b>,
         J: Iterator<
             Item = (
-                &'a mut CellAgentBox<Cel>,
+                &'a mut CellBox<Cel>,
                 &'a mut Vec<cellular_raza_concepts::CycleEvent>,
             ),
         >,
@@ -455,7 +455,7 @@ pub struct SimulationResult<
 
     pub(crate) domain: DomainBox<Dom>,
     /// [StorageManager] responsible for saving and loading cells
-    pub storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
+    pub storage_cells: StorageManager<CellIdentifier, CellBox<Cel>>,
     /// [StorageManager] responsible for saving and loading voxels
     pub storage_voxels: StorageManager<
         PlainIndex,
@@ -770,7 +770,7 @@ where
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
-        CellAgentBox<Cel>: Send + Sync,
+        CellBox<Cel>: Send + Sync,
         VoxelBox<
             Ind,
             Pos,
@@ -847,7 +847,7 @@ where
             ) -> Result<(), DrawingError>
             + Send
             + Sync,
-        CellAgentBox<Cel>: Send + Sync,
+        CellBox<Cel>: Send + Sync,
         VoxelBox<
             Ind,
             Pos,

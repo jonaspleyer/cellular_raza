@@ -81,16 +81,16 @@ fn create_domain() -> Result<CartesianCuboid2, CalcError> {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CellNumberController {
     target_cell_number: i64,
-    stored_ids: std::collections::HashSet<(u64, u64)>,
+    stored_ids: std::collections::HashSet<CellIdentifier>,
     full: bool,
 }
 
-type Observable = Option<(i64, Vec<(u64, u64)>)>;
+type Observable = Option<(i64, Vec<CellIdentifier>)>;
 
 impl Controller<MyCellType, Observable> for CellNumberController {
     fn measure<'a, I>(&self, cells: I) -> Result<Observable, CalcError>
     where
-        I: IntoIterator<Item = &'a CellAgentBox<MyCellType>> + Clone,
+        I: IntoIterator<Item = &'a CellBox<MyCellType>> + Clone,
     {
         if !self.full {
             let mut n_cells = 0_i64;
@@ -112,17 +112,16 @@ impl Controller<MyCellType, Observable> for CellNumberController {
         Observable: 'a,
         MyCellType: 'b,
         I: Iterator<Item = &'a Observable>,
-        J: Iterator<Item = (&'b mut CellAgentBox<MyCellType>, &'b mut Vec<CycleEvent>)>,
+        J: Iterator<Item = (&'b mut CellBox<MyCellType>, &'b mut Vec<CycleEvent>)>,
     {
         // If we are not full, we
         if !self.full {
             let mut total_cell_number: i64 = 0;
             let all_ids: std::collections::HashSet<_> = measurements
-                .into_iter()
                 .filter_map(|meas| {
                     if let Some((n_cells, ids)) = meas {
                         total_cell_number += n_cells;
-                        Some(ids.into_iter())
+                        Some(ids.iter())
                     } else {
                         None
                     }

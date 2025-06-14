@@ -442,7 +442,7 @@ impl Controller<MyCellType, SRObservable> for SRController {
     fn measure<'a, I>(&self, cells: I) -> Result<SRObservable, cellular_raza::prelude::CalcError>
     where
         MyCellType: 'a + Serialize + for<'b> Deserialize<'b>,
-        I: IntoIterator<Item = &'a cellular_raza::prelude::CellAgentBox<MyCellType>> + Clone,
+        I: IntoIterator<Item = &'a cellular_raza::prelude::CellBox<MyCellType>> + Clone,
     {
         let mut n_cells = 0;
         let mut total_conc = 0.0;
@@ -469,7 +469,7 @@ impl Controller<MyCellType, SRObservable> for SRController {
         I: Iterator<Item = &'a SRObservable>,
         J: Iterator<
             Item = (
-                &'b mut cellular_raza::prelude::CellAgentBox<MyCellType>,
+                &'b mut cellular_raza::prelude::CellBox<MyCellType>,
                 &'b mut Vec<cellular_raza::prelude::CycleEvent>,
             ),
         >,

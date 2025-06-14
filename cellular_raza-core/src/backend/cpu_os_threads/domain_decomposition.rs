@@ -35,14 +35,14 @@ impl<Dom> From<Dom> for DomainBox<Dom> {
     }
 }
 
-impl<Cel, Ind, Vox, Dom> cellular_raza_concepts::domain_old::Domain<CellAgentBox<Cel>, Ind, Vox>
+impl<Cel, Ind, Vox, Dom> cellular_raza_concepts::domain_old::Domain<CellBox<Cel>, Ind, Vox>
     for DomainBox<Dom>
 where
     Dom: cellular_raza_concepts::domain_old::Domain<Cel, Ind, Vox>,
     Vox: Send + Sync,
     Cel: Send + Sync,
 {
-    fn apply_boundary(&self, cbox: &mut CellAgentBox<Cel>) -> Result<(), BoundaryError> {
+    fn apply_boundary(&self, cbox: &mut CellBox<Cel>) -> Result<(), BoundaryError> {
         self.domain_raw.apply_boundary(&mut cbox.cell)
     }
 
@@ -50,7 +50,7 @@ where
         self.domain_raw.get_neighbor_voxel_indices(index)
     }
 
-    fn get_voxel_index(&self, cbox: &CellAgentBox<Cel>) -> Ind {
+    fn get_voxel_index(&self, cbox: &CellBox<Cel>) -> Ind {
         self.domain_raw.get_voxel_index(&cbox.cell)
     }
 
@@ -68,7 +68,7 @@ where
 }
 
 /// This is a purely implementational detail and should not be of any concern to the end user.
-pub type PlainIndex = u64;
+pub type PlainIndex = usize;
 
 pub(crate) struct IndexBoundaryInformation<Ind> {
     pub index_original_sender: PlainIndex,
@@ -115,10 +115,10 @@ pub struct VoxelBox<
     pub(crate) voxel: Vox,
     pub(crate) neighbors: Vec<PlainIndex>,
     pub(crate) cells: Vec<(
-        CellAgentBox<Cel>,
+        CellBox<Cel>,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     )>,
-    pub(crate) new_cells: Vec<(Cel, Option<CellularIdentifier>)>,
+    pub(crate) new_cells: Vec<(Cel, Option<CellIdentifier>)>,
     pub(crate) id_counter: u64,
     pub(crate) rng: ChaCha8Rng,
     pub(crate) extracellular_concentration_increments: Vec<(Pos, ConcVecExtracellular)>,
@@ -226,7 +226,7 @@ where
         index: Ind,
         voxel: Vox,
         neighbors: Vec<PlainIndex>,
-        cells: Vec<CellAgentBox<Cel>>,
+        cells: Vec<CellBox<Cel>>,
         rng_seed: u64,
     ) -> VoxelBox<
         Ind,
@@ -468,7 +468,12 @@ where
             .extend(self.new_cells.drain(..).map(|(cell, parent_id)| {
                 self.id_counter += 1;
                 (
-                    CellAgentBox::new(self.plain_index, self.id_counter, cell, parent_id),
+                    CellBox::new(
+                        VoxelPlainIndex(self.plain_index),
+                        self.id_counter,
+                        cell,
+                        parent_id,
+                    ),
                     AuxiliaryCellPropertyStorage::default(),
                 )
             }));
@@ -534,7 +539,7 @@ pub struct MultiVoxelContainer<
     pub(crate) senders_cell: HashMap<
         usize,
         Sender<(
-            CellAgentBox<Cel>,
+            CellBox<Cel>,
             AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
         )>,
     >,
@@ -547,7 +552,7 @@ pub struct MultiVoxelContainer<
 
     // Same for receiving
     pub(crate) receiver_cell: Receiver<(
-        CellAgentBox<Cel>,
+        CellBox<Cel>,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     )>,
     pub(crate) receiver_pos: Receiver<PosInformation<Pos, Vel, Inf>>,
@@ -561,7 +566,7 @@ pub struct MultiVoxelContainer<
     // processing
     pub(crate) barrier: Barrier,
 
-    pub(crate) storage_cells: StorageManager<CellularIdentifier, CellAgentBox<Cel>>,
+    pub(crate) storage_cells: StorageManager<CellIdentifier, CellBox<Cel>>,
     pub(crate) storage_voxels: StorageManager<
         PlainIndex,
         VoxelBox<
@@ -754,7 +759,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn sort_cell_in_voxel(
         &mut self,
-        cell: CellAgentBox<Cel>,
+        cell: CellBox<Cel>,
         aux_storage: AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>,
     ) -> Result<(), SimulationError> {
         use cellular_raza_concepts::domain_old::Domain;
@@ -1208,7 +1213,7 @@ where
     ) -> Result<(), crate::storage::StorageError>
     where
         Cel: 'static,
-        CellAgentBox<Cel>: Clone,
+        CellBox<Cel>: Clone,
         AuxiliaryCellPropertyStorage<Pos, Vel, For, ConcVecIntracellular>: Clone,
     {
         use crate::storage::StorageInterfaceStore;
