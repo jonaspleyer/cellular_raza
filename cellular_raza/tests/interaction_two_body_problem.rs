@@ -5,6 +5,7 @@ use cellular_raza::concepts::{
 };
 
 use cellular_raza_building_blocks::CartesianCuboid;
+use cellular_raza_concepts::CellIdentifier;
 use cellular_raza_core::backend::chili::{Settings, run_simulation};
 use cellular_raza_core::storage::{StorageBuilder, StorageInterfaceLoad, StorageOption};
 use cellular_raza_core::time::FixedStepsize;
@@ -123,8 +124,11 @@ fn two_body_problem() {
             .unwrap()
             .into_iter()
             .map(|(iteration, elements)| {
-                let mut elements: Vec<_> = elements.into_iter().map(|x| x).collect();
-                elements.sort_by_key(|(id, _)| id.1);
+                let mut elements: Vec<_> = elements.into_iter().collect();
+                elements.sort_by_key(|(id, _)| match id {
+                    CellIdentifier::Initial(key) => *key,
+                    _ => panic!("This should be an initial key"),
+                });
                 let mut matrix = SMatrix::<f64, 4, 2>::zeros();
                 elements
                     .into_iter()
