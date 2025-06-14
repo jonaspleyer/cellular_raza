@@ -15,7 +15,14 @@ use serde::{Deserialize, Serialize};
 /// This ensures that each cell obtains a unique identifier over the course of the simulation.
 #[cfg_attr(feature = "pyo3", pyo3::pyclass)]
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
+pub enum CellIdentifier {
+    /// Produced from a division process
+    Division(VoxelPlainIndex, u64),
+    /// Initially placed inside the simulation
+    Initial(usize),
+    /// Inserted manually by other processes
+    Inserted(VoxelPlainIndex, u64),
+}
 
 #[cfg(feature = "pyo3")]
 #[pyo3::pymethods]
@@ -224,6 +231,15 @@ impl<C> core::ops::DerefMut for CellBox<C> {
 }
 
 impl<C> CellBox<C> {
+    /// Create a new [CellBox] for a cell present initially in the simulation.
+    pub fn new_initial(n_cell: usize, cell: C) -> CellBox<C> {
+        CellBox::<C> {
+            identifier: CellIdentifier::Initial(n_cell),
+            parent: None,
+            cell,
+        }
+    }
+
     /// Create a new [CellBox] at a specific voxel with a voxel-unique number
     /// of cells that has already been created at this position.
     pub fn new(
@@ -233,7 +249,7 @@ impl<C> CellBox<C> {
         parent: Option<CellIdentifier>,
     ) -> CellBox<C> {
         CellBox::<C> {
-            identifier: CellIdentifier(voxel_index, n_cell),
+            identifier: CellIdentifier::Division(voxel_index, n_cell),
             parent,
             cell,
         }
