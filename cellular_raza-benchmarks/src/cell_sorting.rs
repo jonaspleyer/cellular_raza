@@ -246,13 +246,13 @@ fn run_sim(
                     Some(bar) => bar.set_description("Doing Warmup"),
                     None => (),
                 }
-                criterion::black_box(|| main(&setting))();
+                std::hint::black_box(|| main(&setting))();
 
                 // Do main benchmark run
                 let mut times = vec![];
                 for n_sample in 0..args.sample_size {
                     let now = std::time::Instant::now();
-                    criterion::black_box(|| main(&setting))();
+                    std::hint::black_box(|| main(&setting))();
                     let t = now.elapsed().as_nanos();
                     times.push(t);
                     CLIArgs::set_description_and_update(
