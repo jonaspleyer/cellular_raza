@@ -208,7 +208,7 @@ where
                 communicator,
                 syncer,
             };
-            subdomain_box.insert_cells(&mut cells, &init_aux_storage)?;
+            subdomain_box.insert_initial_cells(&mut cells, &init_aux_storage)?;
             Ok((index, subdomain_box))
         })
         .collect::<Result<BTreeMap<_, _>, SimulationError>>()?;
@@ -263,7 +263,7 @@ where
     // TODO this is not a boundary error!
     /// Allows insertion of cells into the subdomain.
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    pub fn insert_cells(
+    pub fn insert_initial_cells(
         &mut self,
         new_cells: &mut Vec<(C, Option<A>)>,
         init_aux_storage: impl Fn(&C) -> A,
@@ -272,17 +272,15 @@ where
         <S as SubDomain>::VoxelIndex: Eq + Hash + Ord,
         S: SortCells<C, VoxelIndex = <S as SubDomain>::VoxelIndex>,
     {
-        for (cell, aux_storage) in new_cells.drain(..) {
+        for (n_cell, (cell, aux_storage)) in new_cells.drain(..).enumerate() {
             let voxel_index = self.subdomain.get_voxel_index_of(&cell)?;
             let plain_index = self.voxel_index_to_plain_index[&voxel_index];
             let voxel = self.voxels.get_mut(&plain_index).ok_or(BoundaryError(
                 "Could not find correct voxel for cell".to_owned(),
             ))?;
             let aux_storage = aux_storage.map_or(init_aux_storage(&cell), |x| x);
-            voxel.cells.push((
-                CellBox::new(voxel.plain_index, voxel.id_counter, cell, None),
-                aux_storage,
-            ));
+            let cbox = CellBox::new_initial(n_cell, cell);
+            voxel.cells.push((cbox, aux_storage));
             voxel.id_counter += 1;
         }
         Ok(())

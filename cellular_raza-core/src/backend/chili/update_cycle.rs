@@ -33,7 +33,8 @@ impl<C, A> Voxel<C, A> {
                             let new_cell = C::divide(&mut self.rng, &mut cbox.cell)?;
                             let parent_ident = cbox.identifier;
                             self.id_counter += 1;
-                            cbox.identifier = CellIdentifier(self.plain_index, self.id_counter);
+                            cbox.identifier =
+                                CellIdentifier::Division(self.plain_index, self.id_counter);
                             cbox.parent = Some(parent_ident);
                             self.new_cells.push((new_cell, Some(parent_ident)));
                         }
