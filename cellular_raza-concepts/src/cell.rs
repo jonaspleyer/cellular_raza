@@ -1,3 +1,4 @@
+use crate::domain::VoxelPlainIndex;
 use crate::errors::{CalcError, RngError};
 use crate::interaction::*;
 use crate::mechanics::{Mechanics, Position, Velocity};
@@ -6,12 +7,82 @@ use serde::{Deserialize, Serialize};
 
 // TODO move this module to cpu_os_threads backend except for traits
 
-/// This is a unique identifier which is deterministic even in multi-threading situations.
-/// Its components are
-/// 1. PlainIndex of Voxel where it was created
-/// 2. Count the number of cells that have already been created in this voxel since simulation begin.
-// TODO consider making this an associated type of the Id trait
-pub type CellularIdentifier = (u64, u64);
+/// Unique identifier which is given to every cell in the simulation
+///
+/// The identifier is comprised of the [VoxelPlainIndex] in which the cell was first spawned.
+/// This can be due to initial setup or due to other methods such as division in a cell cycle.
+/// The second parameter is a counter which is unique for each voxel.
+/// This ensures that each cell obtains a unique identifier over the course of the simulation.
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+#[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+pub struct CellIdentifier(pub VoxelPlainIndex, pub u64);
+
+#[cfg(feature = "pyo3")]
+#[pyo3::pymethods]
+impl CellIdentifier {
+    /// Constructs a new CellIdentifier
+    #[new]
+    pub fn new(voxel_plain_index: VoxelPlainIndex, counter: u64) -> Self {
+        Self(voxel_plain_index, counter)
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn __deepcopy__(&self, _memo: pyo3::Bound<pyo3::types::PyDict>) -> Self {
+        *self
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn copy(&self) -> Self {
+        *self
+    }
+
+    /// Returns an identical clone of the identifier
+    pub fn __copy__(&self) -> Self {
+        *self
+    }
+
+    /// Formats the CellIdentifier
+    pub fn __repr__(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    /// Performs the `==` operation.
+    pub fn __eq__(&self, other: &Self) -> bool {
+        self.eq(other)
+    }
+
+    /// Calculates a hash value of type `u64`
+    pub fn __hash__(&self) -> u64 {
+        use core::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    ///  Performs the `<` operation
+    pub fn __lt__(&self, other: &Self) -> bool {
+        self.lt(other)
+    }
+
+    /// Implementes the `__getitem__` method. Since the [CellIdentifier] is built like a list this
+    /// only works for the entires 0 and 1 and will yield an error otherwise
+    pub fn __getitem__<'py>(
+        &self,
+        py: pyo3::Python<'py>,
+        key: usize,
+    ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
+        use pyo3::IntoPyObject;
+        if key == 0 {
+            Ok(self.0.into_pyobject(py)?.into_any())
+        } else if key == 1 {
+            Ok(self.1.into_pyobject(py)?.into_any())
+        } else {
+            Err(pyo3::exceptions::PyValueError::new_err(
+                "CellIdentifier can only be indexed at 0 and 1",
+            ))
+        }
+    }
+}
 
 /// Specifies how to retrieve a unique identifier of an object.
 pub trait Id {
@@ -25,38 +96,42 @@ pub trait Id {
     fn ref_id(&self) -> &Self::Identifier;
 }
 
-/// A container struct containing meta-information of a given Cell
-/// Some variables such as id are not required and not desired to be
-/// initialized by the user. This [CellAgentBox] acts as a container around the cell
-/// to hold these variables.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CellAgentBox<Cel> {
-    id: CellularIdentifier,
-    parent_id: Option<CellularIdentifier>,
-    /// The user-defined cell which is stored inside this container.
-    pub cell: Cel,
+/// Wrapper around the user-defined CellAgent
+///
+/// This wrapper serves to provide a unique identifier and the option to specify
+/// the parent of the current cell.
+#[derive(Clone, Deserialize, Serialize)]
+pub struct CellBox<C> {
+    /// The identifier is composed of two values, one for the voxel index in which the
+    /// object was created and another one which counts how many elements have already
+    /// been created there.
+    pub identifier: CellIdentifier,
+    /// Identifier of the parent cell if this cell was created by cell-division
+    pub parent: Option<CellIdentifier>,
+    /// The cell which is encapsulated by this box.
+    pub cell: C,
 }
 
-impl<Cel> Id for CellAgentBox<Cel> {
-    type Identifier = CellularIdentifier;
+impl<Cel> Id for CellBox<Cel> {
+    type Identifier = CellIdentifier;
 
-    fn get_id(&self) -> CellularIdentifier {
-        self.id
+    fn get_id(&self) -> CellIdentifier {
+        self.identifier
     }
 
-    fn ref_id(&self) -> &CellularIdentifier {
-        &self.id
+    fn ref_id(&self) -> &CellIdentifier {
+        &self.identifier
     }
 }
 
-impl<Cel> CellAgentBox<Cel> {
+impl<Cel> CellBox<Cel> {
     /// Simple method to retrieve the [CellularIdentifier] of the parent cell if existing.
-    pub fn get_parent_id(&self) -> Option<CellularIdentifier> {
-        self.parent_id
+    pub fn get_parent_id(&self) -> Option<CellIdentifier> {
+        self.parent
     }
 }
 
-impl<Inf, A> InteractionInformation<Inf> for CellAgentBox<A>
+impl<Inf, A> InteractionInformation<Inf> for CellBox<A>
 where
     A: InteractionInformation<Inf>,
 {
@@ -66,7 +141,7 @@ where
 }
 
 // Auto-implement traits for CellAgentBox which where also implemented for Agent
-impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellAgentBox<A>
+impl<Pos, Vel, For, Inf, A> Interaction<Pos, Vel, For, Inf> for CellBox<A>
 where
     A: Interaction<Pos, Vel, For, Inf> + Serialize + for<'a> Deserialize<'a>,
 {
@@ -91,7 +166,7 @@ where
     }
 }
 
-impl<A, Pos> Position<Pos> for CellAgentBox<A>
+impl<A, Pos> Position<Pos> for CellBox<A>
 where
     A: Position<Pos>,
 {
@@ -104,7 +179,7 @@ where
     }
 }
 
-impl<A, Vel> Velocity<Vel> for CellAgentBox<A>
+impl<A, Vel> Velocity<Vel> for CellBox<A>
 where
     A: Velocity<Vel>,
 {
@@ -117,7 +192,7 @@ where
     }
 }
 
-impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellAgentBox<A>
+impl<Pos, Vel, For, Float, A> Mechanics<Pos, Vel, For, Float> for CellBox<A>
 where
     A: Mechanics<Pos, Vel, For, Float>,
 {
@@ -134,19 +209,32 @@ where
     }
 }
 
-impl<Cel> CellAgentBox<Cel> {
-    /// Create a new [CellAgentBox] at a specific voxel with a voxel-unique number
+impl<C> core::ops::Deref for CellBox<C> {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        &self.cell
+    }
+}
+
+impl<C> core::ops::DerefMut for CellBox<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.cell
+    }
+}
+
+impl<C> CellBox<C> {
+    /// Create a new [CellBox] at a specific voxel with a voxel-unique number
     /// of cells that has already been created at this position.
-    // TODO make this generic with respect to voxel_index
     pub fn new(
-        voxel_index: u64,
+        voxel_index: VoxelPlainIndex,
         n_cell: u64,
-        cell: Cel,
-        parent_id: Option<CellularIdentifier>,
-    ) -> CellAgentBox<Cel> {
-        CellAgentBox::<Cel> {
-            id: (voxel_index, n_cell),
-            parent_id,
+        cell: C,
+        parent: Option<CellIdentifier>,
+    ) -> CellBox<C> {
+        CellBox::<C> {
+            identifier: CellIdentifier(voxel_index, n_cell),
+            parent,
             cell,
         }
     }

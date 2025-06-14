@@ -1,6 +1,26 @@
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::errors::{BoundaryError, DecomposeError};
+
+/// Identifier for voxels used internally to get rid of user-defined ones.
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+#[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+pub struct VoxelPlainIndex(pub usize);
+
+/// This is mainly used by the simulation_flow::cocmmunicator for testing purposes
+#[allow(unused)]
+#[doc(hidden)]
+impl VoxelPlainIndex {
+    pub fn new(value: usize) -> Self {
+        Self(value)
+    }
+}
+
+/// Identifier or subdomains
+#[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+pub struct SubDomainPlainIndex(pub usize);
 
 /// Provides an abstraction of the physical total simulation domain.
 ///

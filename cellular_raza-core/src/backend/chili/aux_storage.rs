@@ -2,70 +2,7 @@ use cellular_raza_concepts::CycleEvent;
 pub use circ_buffer::*;
 use serde::{Deserialize, Serialize};
 
-use std::ops::{Deref, DerefMut};
-
 pub use cellular_raza_concepts::Xapy;
-
-use super::{CellIdentifier, VoxelPlainIndex};
-
-/// Wrapper around the user-defined CellAgent
-///
-/// This wrapper serves to provide a unique identifier and the option to specify
-/// the parent of the current cell.
-#[derive(Clone, Deserialize, Serialize)]
-pub struct CellBox<C> {
-    /// The identifier is composed of two values, one for the voxel index in which the
-    /// object was created and another one which counts how many elements have already
-    /// been created there.
-    pub identifier: CellIdentifier,
-    /// Identifier of the parent cell if this cell was created by cell-division
-    pub parent: Option<CellIdentifier>,
-    /// The cell which is encapsulated by this box.
-    pub cell: C,
-}
-
-impl<C> Deref for CellBox<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.cell
-    }
-}
-
-impl<C> DerefMut for CellBox<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.cell
-    }
-}
-
-impl<C> cellular_raza_concepts::Id for CellBox<C> {
-    type Identifier = CellIdentifier;
-
-    fn get_id(&self) -> CellIdentifier {
-        self.identifier
-    }
-
-    fn ref_id(&self) -> &Self::Identifier {
-        &self.identifier
-    }
-}
-
-impl<C> CellBox<C> {
-    /// Create a new [CellBox] at a specific voxel with a voxel-unique number
-    /// of cells that has already been created at this position.
-    pub fn new(
-        voxel_index: VoxelPlainIndex,
-        n_cell: u64,
-        cell: C,
-        parent: Option<CellIdentifier>,
-    ) -> CellBox<C> {
-        CellBox::<C> {
-            identifier: CellIdentifier(voxel_index, n_cell),
-            parent,
-            cell,
-        }
-    }
-}
 
 // --------------------------------- UPDATE-MECHANICS --------------------------------
 /// Used to store intermediate information about last positions and velocities.
