@@ -6,7 +6,7 @@ use approx::AbsDiffEq;
 use num::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
-use nalgebra::{Const, Dyn, Matrix, SVector, VecStorage};
+use nalgebra::{Const, Dyn, Matrix, VecStorage};
 
 /// A mechanical model for Bacterial Rods
 ///
@@ -471,7 +471,7 @@ where
         &self,
         pos: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         vel: &Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
-        radius: &F,
+        _: &F,
     ) -> Result<
         Matrix<F, Dyn, Const<3>, VecStorage<F, Dyn, Const<3>>>,
         cellular_raza_concepts::CalcError,

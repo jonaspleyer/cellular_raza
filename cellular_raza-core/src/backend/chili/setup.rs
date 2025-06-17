@@ -32,7 +32,7 @@ impl<C, D> SimulationSetup<C, D> {
     where
         I: IntoIterator<Item = C>,
     {
-        self.cells.extend(cells.into_iter());
+        self.cells.extend(cells);
     }
 
     /// Decomposes the struct into a [DecomposedDomain] which can be taken by the backend and turned into multiple subdomains.
@@ -261,7 +261,7 @@ mod test {
         let n_subdomains = core::num::NonZeroUsize::new(4).unwrap();
         let decomposed_domain = config.decompose(n_subdomains).unwrap();
         for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
-            assert!(cells.len() > 0);
+            assert!(!cells.is_empty());
             // Test if each cell is really contained in the subdomain it is supposed to be.
             for cell in cells {
                 assert!(cell >= subdomain.min);
@@ -290,14 +290,14 @@ mod test {
         let mut cell_outside = -10.0;
         for (_, subdomain, cells) in decomposed_domain.index_subdomain_cells.into_iter() {
             for cell in cells.into_iter() {
-                let mut cell_prev = cell.clone();
-                let mut _nothing = cell.clone();
+                let mut cell_prev = cell;
+                let mut _nothing = cell;
                 subdomain
                     .apply_boundary(&mut cell_prev, &mut _nothing)
                     .unwrap();
                 assert_eq!(cell_prev, cell);
             }
-            let mut _nothing = cell_outside.clone();
+            let mut _nothing = cell_outside;
             subdomain
                 .apply_boundary(&mut cell_outside, &mut _nothing)
                 .unwrap();
@@ -338,5 +338,3 @@ mod test {
         }
     }
 }
-
-// TODO insert structs and traits for loading from saved results
