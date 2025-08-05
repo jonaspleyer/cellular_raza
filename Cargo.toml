@@ -12,9 +12,6 @@ members = [
 ]
 resolver = "2"
 
-[patch.crates-io]
-pathfinder_simd = { git="https://github.com/servo/pathfinder" }
-
 [workspace.package]
 version = "0.2.4"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
