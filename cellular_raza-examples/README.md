@@ -1,7 +1,7 @@
 # Examples
 
 Some of these examples will be explained in more detail on the documentation website
-[cellular_raza.com](https://cellular_raza.com).
+[cellular_raza.com](https://cellular-raza.com).
 They do not only serve as illustrative examples of what `cellular_raza` is capable of but also as a
 reliable method for continuous integration, testing and compatibility.
 
