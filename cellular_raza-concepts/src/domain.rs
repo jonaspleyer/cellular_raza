@@ -17,6 +17,15 @@ impl VoxelPlainIndex {
     }
 }
 
+#[cfg(feature = "pyo3")]
+#[pyo3::pymethods]
+impl VoxelPlainIndex {
+    #[new]
+    fn __new__(index: usize) -> Self {
+        Self::new(index)
+    }
+}
+
 /// Identifier or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 #[cfg_attr(feature = "pyo3", pyo3::pyclass)]
