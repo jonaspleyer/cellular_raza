@@ -25,7 +25,7 @@ pyo3 = { workspace = true, optional = true }
 
 [dependencies.cellular_raza-concepts-derive]
 path = "../cellular_raza-concepts-derive"
-version = "0.3.0"
+version = "0.3.1-rc1"
 
 [dev-dependencies]
 rand = { workspace = true }
