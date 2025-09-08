@@ -16,4 +16,4 @@ kdam.workspace = true
 rayon = "1.10.0"
 itertools.workspace = true
 rand_distr.workspace = true
-geo = { version = "0.30", features = ["earcutr"] }
+geo = { version = "0.31", features = ["earcutr"] }
