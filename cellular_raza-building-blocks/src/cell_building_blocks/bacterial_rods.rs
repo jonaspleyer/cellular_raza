@@ -640,7 +640,7 @@ impl<F, const D: usize> RodMechanics<F, D> {
             .tuple_windows::<(_, _)>()
             .map(|(x, y)| (x - y).norm())
             .collect();
-        let segment_length = (segments.iter().map(|&x| x).sum::<F>() - two * radius)
+        let segment_length = (segments.iter().copied().sum::<F>() - two * radius)
             / F::from_usize(c2.pos.nrows() - 1).unwrap()
             / two;
 
@@ -649,13 +649,13 @@ impl<F, const D: usize> RodMechanics<F, D> {
             // original vertex at this index k.
             let k = (0..segments.len())
                 .filter(|n| {
-                    segments.iter().map(|&x| x).take(*n).sum::<F>()
+                    segments.iter().copied().take(*n).sum::<F>()
                         <= F::from_usize(n_vertex).unwrap() * segment_length
                 })
                 .max()
                 .unwrap();
             let q = (F::from_usize(n_vertex).unwrap() * segment_length
-                - segments.iter().map(|&x| x).take(k).sum::<F>())
+                - segments.iter().copied().take(k).sum::<F>())
                 / segments[k];
             c1.pos.set_row(
                 n_vertex,
@@ -664,13 +664,13 @@ impl<F, const D: usize> RodMechanics<F, D> {
 
             let m = (0..c2.pos.nrows())
                 .filter(|n| {
-                    segments.iter().rev().map(|&x| x).take(*n).sum::<F>()
+                    segments.iter().rev().copied().take(*n).sum::<F>()
                         <= F::from_usize(n_vertex).unwrap() * segment_length
                 })
                 .max()
                 .unwrap();
             let p = (F::from_usize(n_vertex).unwrap() * segment_length
-                - segments.iter().rev().map(|&x| x).take(m).sum::<F>())
+                - segments.iter().rev().copied().take(m).sum::<F>())
                 / segments[c2.pos.nrows() - m - 2];
             c2.pos.set_row(
                 c2.pos.nrows() - n_vertex - 1,
