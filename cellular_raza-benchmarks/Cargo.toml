@@ -30,7 +30,7 @@ itertools.workspace = true
 
 [dependencies.cellular_raza]
 path = "../cellular_raza"
-version = "0.3.1-rc1"
+version = "0.3.1"
 
 [features]
 default = ["gradients"]
