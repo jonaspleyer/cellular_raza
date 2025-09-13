@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.1"
+version = "0.3.2-rc1"
 authors = ["Jonas Pleyer <jonas.dev@pleyer.org>"]
 edition = "2024"
 license = "GPL-2.0"

@@ -24,13 +24,13 @@ criterion = { version = "0.7", features = ["html_reports"] }
 clap = { version = "4.5.7", features = ["derive"] }
 kdam.workspace = true
 serde_json = "1.0.118"
-glob = "0.3.1"
+glob = "0.3.2-rc1"
 tempfile.workspace = true
 itertools.workspace = true
 
 [dependencies.cellular_raza]
 path = "../cellular_raza"
-version = "0.3.1"
+version = "0.3.2-rc1"
 
 [features]
 default = ["gradients"]
