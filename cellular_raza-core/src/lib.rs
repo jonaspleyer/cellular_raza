@@ -1,5 +1,4 @@
 #![deny(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 //! This crate collects objects and methods needed to run a numerical simulation of
 //! given objects that satisfy the given [concepts](cellular_raza_concepts).
