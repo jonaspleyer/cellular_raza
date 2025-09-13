@@ -122,8 +122,7 @@ fn test_pure_brownian()
                 rng.random_range(-30.0..100.0),
                 rng.random_range(-30.0..100.0),
                 rng.random_range(-30.0..100.0),
-            ]
-            .into(),
+            ],
             1e-12,
             1e-10,
         )

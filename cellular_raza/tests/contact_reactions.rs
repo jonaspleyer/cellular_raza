@@ -33,7 +33,6 @@ impl Intracellular<f64> for ReactionCell {
     }
 
     fn set_intracellular(&mut self, intracellular: f64) {
-        if self.index == (5, 5) {}
         self.intracellular = intracellular;
     }
 }
@@ -55,7 +54,7 @@ impl ReactionsContact<f64, nalgebra::Vector2<f64>> for ReactionCell {
         Ok((diff, -diff))
     }
 
-    fn get_contact_information(&self) -> () {}
+    fn get_contact_information(&self) {}
 }
 
 #[test]
@@ -231,7 +230,7 @@ mod two_component_contact_reaction {
             let ext_dr = [self.alpha0, calculate_incr(ext_intracellular[1])].into();
             Ok((own_dr, ext_dr))
         }
-        fn get_contact_information(&self) -> () {}
+        fn get_contact_information(&self) {}
     }
 
     fn run_cellular_raza(
@@ -346,15 +345,14 @@ mod two_component_contact_reaction {
             fourth_derivative_bound * (3f64 / 8.0 * dt.powi(4))
         ];
         let global_truncation_error = |t: f64| -> nalgebra::Vector2<f64> {
-            let res = nalgebra::Vector2::from([
+            nalgebra::Vector2::from([
                 ((lipschitz_constant[0] * (t - t0_first)).exp() - 1.0) * local_truncation_error[0]
                     / dt
                     / lipschitz_constant[0],
                 ((lipschitz_constant[1] * (t - t0_first)).exp() - 1.0) * local_truncation_error[1]
                     / dt
                     / lipschitz_constant[1],
-            ]);
-            res
+            ])
         };
 
         // Obtain solutions from cellular_raza
@@ -421,7 +419,7 @@ mod two_component_contact_reaction {
             for r_cr in res_cr {
                 write!(file, ",{},{}", r_cr[0], r_cr[1]).unwrap();
             }
-            writeln!(file, "").unwrap();
+            writeln!(file).unwrap();
         }
     }
 

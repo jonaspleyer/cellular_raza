@@ -227,9 +227,7 @@ where
                 new_start_barrier.wait();
 
                 let mut time = t_start;
-                #[allow(unused)]
-                let mut iteration = 0u64;
-                for (t, save) in t_eval {
+                for (iteration, (t, save)) in (0u64..).zip(t_eval) {
                     let dt = t - time;
                     time = t;
 
@@ -282,7 +280,6 @@ where
                         // new_barrier.wait();
                         break;
                     }
-                    iteration += 1;
                 }
                 Ok(cont)
             })?;

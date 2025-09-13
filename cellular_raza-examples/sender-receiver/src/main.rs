@@ -151,9 +151,10 @@ fn main() {
     let strategies_observers = [
         (
             ControlStrategy::PID({
-                let mut pid_default = PIDSettings::default();
-                pid_default.t_d = 0.0;
-                pid_default
+                PIDSettings {
+                    t_d: 0.0,
+                    ..Default::default()
+                }
             }),
             Observer::Predictor { weighting: 0.6 },
         ),
@@ -175,13 +176,12 @@ fn main() {
 
     let all_combinations: Vec<_> = strategies_observers
         .into_iter()
-        .map(|(strategy, observer)| {
+        .flat_map(|(strategy, observer)| {
             spatial_setups
                 .clone()
                 .into_iter()
                 .map(move |setup| (strategy.clone(), observer.clone(), setup))
         })
-        .flatten()
         .collect();
     let n_combinations = all_combinations.len();
 
