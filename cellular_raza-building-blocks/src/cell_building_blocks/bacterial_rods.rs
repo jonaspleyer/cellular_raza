@@ -653,7 +653,9 @@ impl<F, const D: usize> RodMechanics<F, D> {
                         <= F::from_usize(n_vertex).unwrap() * segment_length
                 })
                 .max()
-                .unwrap();
+                .ok_or(DivisionError(
+                    "Could not calculate new segment lengths".to_string(),
+                ))?;
             let q = (F::from_usize(n_vertex).unwrap() * segment_length
                 - segments.iter().copied().take(k).sum::<F>())
                 / segments[k];
@@ -668,7 +670,9 @@ impl<F, const D: usize> RodMechanics<F, D> {
                         <= F::from_usize(n_vertex).unwrap() * segment_length
                 })
                 .max()
-                .unwrap();
+                .ok_or(DivisionError(
+                    "Could not calculate new segment lengths".to_string(),
+                ))?;
             let p = (F::from_usize(n_vertex).unwrap() * segment_length
                 - segments.iter().rev().copied().take(m).sum::<F>())
                 / segments[c2.pos.nrows() - m - 2];
