@@ -89,7 +89,7 @@ fn main() -> Result<(), SimulationError> {
         n_threads: parameters.n_threads,
         time,
         storage: storage_builder,
-        show_progressbar: true,
+        progressbar: Some("".into()),
     };
 
     run_simulation!(

@@ -127,7 +127,7 @@
 //!     n_threads,
 //!     time,
 //!     storage,
-//!     show_progressbar: false,
+//!     progressbar: None,
 //! };
 //!
 //! // This will perform the numerical simulation

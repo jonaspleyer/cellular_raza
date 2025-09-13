@@ -49,7 +49,7 @@ pub trait TimeStepper<F> {
     fn get_last_full_save(&self) -> Option<(F, usize)>;
 
     /// Creates a bar that tracks the simulation progress
-    fn initialize_bar(&self) -> Result<kdam::Bar, TimeError>;
+    fn initialize_bar(&self, title: Option<&str>) -> Result<kdam::Bar, TimeError>;
 
     /// Update a given bar to show the current simulation state
     #[allow(unused)]
@@ -272,17 +272,20 @@ where
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-    fn initialize_bar(&self) -> Result<kdam::Bar, TimeError> {
+    fn initialize_bar(&self, title: Option<&str>) -> Result<kdam::Bar, TimeError> {
         let bar_format = "\
         {desc}{percentage:3.0}%|{animation}| \
         {count}/{total} \
         [{elapsed}, \
         {rate:.2}{unit}/s{postfix}]";
-        Ok(kdam::BarBuilder::default()
+        let mut bar = kdam::BarBuilder::default()
             .total(self.maximum_iterations)
             .bar_format(bar_format)
-            .dynamic_ncols(true)
-            .build()?)
+            .dynamic_ncols(true);
+        if let Some(title) = title {
+            bar = bar.desc(title);
+        }
+        Ok(bar.build()?)
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]

@@ -203,7 +203,7 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         n_threads: n_threads.try_into().unwrap(),
         time,
         storage,
-        show_progressbar: true,
+        progressbar: Some("".into()),
     };
 
     let _storager = run_simulation!(

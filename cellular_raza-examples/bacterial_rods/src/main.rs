@@ -188,7 +188,7 @@ fn main() -> Result<(), SimulationError> {
         n_threads: 8.try_into().unwrap(),
         time: time_stepper,
         storage: storage_builder,
-        show_progressbar: true,
+        progressbar: Some("".into()),
     };
 
     println!("Running Simulation");

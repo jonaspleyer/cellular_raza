@@ -26,14 +26,12 @@ use rayon::prelude::*;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationConfig {
     /// Shows a progressbar when running the simulation.
-    pub show_progressbar: bool,
+    pub progressbar: Option<String>,
 }
 
 impl Default for SimulationConfig {
     fn default() -> Self {
-        SimulationConfig {
-            show_progressbar: true,
-        }
+        SimulationConfig { progressbar: None }
     }
 }
 

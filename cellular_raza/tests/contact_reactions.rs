@@ -105,7 +105,7 @@ fn contact_diffusion_2d_numerical() -> Result<(), SimulationError> {
     let settings = Settings {
         time,
         storage,
-        show_progressbar: false,
+        progressbar: None,
         n_threads: 1.try_into().unwrap(),
     };
     let storager = cellular_raza::core::backend::chili::run_simulation!(
@@ -266,7 +266,7 @@ mod two_component_contact_reaction {
         let storage = StorageBuilder::new().priority([StorageOption::Memory]);
         let settings = Settings {
             n_threads: 1.try_into().unwrap(),
-            show_progressbar: false,
+            progressbar: None,
             storage,
             time,
         };

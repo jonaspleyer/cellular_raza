@@ -88,7 +88,7 @@ fn spring_single_particle() -> Result<(), SimulationError> {
         time,
         storage,
         n_threads: 1.try_into().unwrap(),
-        show_progressbar: false,
+        progressbar: None,
     };
     let x0 = 10.0;
     let agents = [MyAgent(NewtonDamped2D {

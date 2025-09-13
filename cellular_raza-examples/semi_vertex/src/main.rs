@@ -84,7 +84,7 @@ fn main() -> Result<(), chili::SimulationError> {
     let settings = chili::Settings {
         time: FixedStepsize::from_partial_save_steps(0.0, DT, N_TIMES, SAVE_INTERVAL)?,
         n_threads: N_THREADS.try_into().unwrap(),
-        show_progressbar: true,
+        progressbar: Some("".into()),
         storage: StorageBuilder::new()
             .location("out/semi_vertex")
             .priority([StorageOption::SerdeJson]),

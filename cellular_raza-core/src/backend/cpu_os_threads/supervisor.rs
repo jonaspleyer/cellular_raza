@@ -197,7 +197,7 @@ where
         let controller_barrier = Barrier::new(self.multivoxelcontainers.len());
 
         // Create progress bar and define style
-        if self.config.show_progressbar {
+        if self.config.progressbar.is_some() {
             println!("Running Simulation");
         }
 
@@ -214,8 +214,8 @@ where
             let t_eval = self.time.t_eval.clone();
 
             // Add bar
-            let show_progressbar = self.config.show_progressbar;
-            let mut bar = construct_progress_bar(t_eval.len())?;
+            let show_progressbar = self.config.progressbar.is_some();
+            let mut bar = construct_progress_bar(t_eval.len(), &self.config.progressbar)?;
 
             let controller_box = self.controller_box.clone();
 
@@ -476,10 +476,16 @@ pub struct SimulationResult<
 }
 
 #[cfg_attr(feature = "tracing", instrument(skip_all))]
-fn construct_progress_bar(n_iterations: usize) -> Result<kdam::Bar, SimulationError> {
-    let style = kdam::BarBuilder::default()
+fn construct_progress_bar(
+    n_iterations: usize,
+    title: &Option<String>,
+) -> Result<kdam::Bar, SimulationError> {
+    let mut style = kdam::BarBuilder::default()
         .total(n_iterations as usize)
         .bar_format("{desc}{percentage:3.0}%|{animation}| {count}/{total} [{elapsed}]");
+    if let Some(title) = title {
+        style = style.desc(title.clone());
+    }
     Ok(style
         .build()
         .or_else(|string| Err(CalcError(format!("{string}"))))?)
@@ -735,7 +741,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     fn build_progress_bar(&self, n_iterations: u64) -> Result<Option<kdam::Bar>, SimulationError> {
         match self.plotting_config.show_progressbar {
-            true => Ok(Some(construct_progress_bar(n_iterations as usize)?)),
+            true => Ok(Some(construct_progress_bar(n_iterations as usize, &None)?)),
             false => Ok(None),
         }
     }

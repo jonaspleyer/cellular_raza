@@ -73,7 +73,7 @@ pub struct MetaParams {
     pub t_start: f64,
     pub save_interval: usize,
     pub n_threads: usize,
-    pub show_progressbar: bool,
+    pub progressbar: Option<String>,
     pub save_path: String,
     pub save_add_date: bool,
 }
@@ -88,7 +88,7 @@ impl MetaParams {
         t_start=0.0,
         save_interval=100,
         n_threads=1,
-        show_progressbar=true,
+        progressbar=Some("".into()),
         save_path="out/pool_model".into(),
         save_add_date=true,
     ))]
@@ -99,7 +99,7 @@ impl MetaParams {
         t_start: f64,
         save_interval: usize,
         n_threads: usize,
-        show_progressbar: bool,
+        progressbar: Option<String>,
         save_path: String,
         save_add_date: bool,
     ) -> PyResult<Self> {
@@ -110,7 +110,7 @@ impl MetaParams {
             t_start,
             save_interval,
             n_threads,
-            show_progressbar,
+            progressbar,
             save_path,
             save_add_date,
         })
@@ -293,7 +293,7 @@ pub fn run_simulation(
     // let simulation_result = run_full_simulation!(setup, settings, [Mechanics, Interaction, Cycle])?;
     let mut supervisor =
         SimulationSupervisor::initialize_with_strategies(simulation_setup, strategies);
-    supervisor.config.show_progressbar = meta_params.show_progressbar;
+    supervisor.config.progressbar = meta_params.progressbar.clone();
 
     save_initial_state(
         &supervisor.storage.get_full_path(),

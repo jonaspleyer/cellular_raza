@@ -86,9 +86,8 @@ fn run_main(
     // ## CREATE SUPERVISOR AND RUN SIMULATION ##
     // ##########################################
     let mut n_times = ((T_END - T_START) / DT).ceil() as usize + 1;
-    match spatial_setup {
-        SpatialSetup::Circular => n_times *= 2,
-        _ => (),
+    if let SpatialSetup::Circular = spatial_setup {
+        n_times *= 2;
     }
     let storage = StorageBuilder::new()
         .location("out/sender_receiver")
@@ -129,7 +128,7 @@ fn run_main(
     };
 
     let mut supervisor = SimulationSupervisor::initialize_with_strategies(setup, strategies);
-    supervisor.config.show_progressbar = false;
+    supervisor.config.progressbar = Some("Run Simulation".into());
 
     let mut simulation_result = supervisor.run_full_sim()?;
 

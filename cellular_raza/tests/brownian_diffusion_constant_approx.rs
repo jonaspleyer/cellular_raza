@@ -64,7 +64,7 @@ fn define_settings(
         n_threads: 1.try_into().unwrap(),
         time,
         storage,
-        show_progressbar: false,
+        progressbar: None,
     })
 }
 

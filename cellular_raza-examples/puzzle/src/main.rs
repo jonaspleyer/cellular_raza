@@ -243,7 +243,7 @@ fn main() -> Result<(), chili::SimulationError> {
         n_threads: 1.try_into().unwrap(),
         time: FixedStepsize::from_partial_save_interval(0.0, 5e-1, 1e5, 4e1)?,
         storage: StorageBuilder::new().location("out/puzzles"),
-        show_progressbar: true,
+        progressbar: Some("".into()),
     };
     chili::run_simulation!(
         agents: agents,

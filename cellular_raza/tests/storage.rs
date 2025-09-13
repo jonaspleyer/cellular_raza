@@ -35,7 +35,7 @@ fn main_sim(
         n_threads: 1.try_into().unwrap(),
         time,
         storage,
-        show_progressbar: false,
+        progressbar: None,
     };
     let storager = run_simulation!(
         agents: agents,

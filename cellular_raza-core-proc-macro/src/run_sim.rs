@@ -338,8 +338,8 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
 
         // Initialize the progress bar
         #[allow(unused)]
-        let mut pb = match (key, #settings.show_progressbar) {
-            (0, true) => Some(_time_stepper.initialize_bar()?),
+        let mut pb = match (key, &#settings.progressbar) {
+            (0, Some(title)) => Some(_time_stepper.initialize_bar(Some(&title))?),
             _ => None,
         };
 
@@ -356,7 +356,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 sbox.sync()?;
                 #step_5
 
-                match (&mut pb, #settings.show_progressbar) {
+                match (&mut pb, &#settings.progressbar.is_some()) {
                     (Some(bar), true) => _time_stepper.update_bar(bar)?,
                     _ => (),
                 };

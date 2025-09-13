@@ -162,7 +162,7 @@ fn main() -> Result<(), SimulationError> {
         n_threads: N_THREADS.try_into().unwrap(),
         time,
         storage: storage_builder,
-        show_progressbar: true,
+        progressbar: Some("".into()),
     };
 
     run_simulation!(

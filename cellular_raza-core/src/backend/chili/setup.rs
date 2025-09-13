@@ -23,7 +23,7 @@ pub struct Settings<T, const INIT: bool> {
     /// Define storage properties
     pub storage: crate::storage::StorageBuilder<INIT>,
     /// Determines if progress bar should be shown during execution
-    pub show_progressbar: bool,
+    pub progressbar: Option<String>,
 }
 
 impl<C, D> SimulationSetup<C, D> {

@@ -107,7 +107,7 @@ fn two_body_problem() {
     let settings = Settings {
         time,
         storage,
-        show_progressbar: false,
+        progressbar: None,
         n_threads: 1.try_into().unwrap(),
     };
     let storager = run_simulation!(

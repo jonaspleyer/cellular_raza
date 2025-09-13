@@ -164,7 +164,7 @@ fn run_simulation(sim_settings: &SimSettings) -> Result<(), chili::SimulationErr
         n_threads,
         time,
         storage,
-        show_progressbar: false,
+        progressbar: None,
     };
 
     chili::run_simulation!(
