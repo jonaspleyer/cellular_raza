@@ -44,6 +44,10 @@ pub trait TimeStepper<F> {
     #[must_use]
     fn advance(&mut self) -> Result<Option<NextTimePoint<F>>, TimeError>;
 
+    /// Indicates if the initial values should be stored
+    #[must_use]
+    fn save_initial(&self) -> Option<NextTimePoint<F>>;
+
     /// Retrieved the last point at which the simulation was fully recovered.
     /// This might be helpful in the future when error handling is more mature and able to recover.
     fn get_last_full_save(&self) -> Option<(F, usize)>;
@@ -258,6 +262,20 @@ where
             }))
         } else {
             Ok(None)
+        }
+    }
+
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    fn save_initial(&self) -> Option<NextTimePoint<F>> {
+        if self.current_time == self.t0 {
+            Some(NextTimePoint {
+                increment: self.dt,
+                time: self.current_time,
+                iteration: self.current_iteration,
+                event: Some(TimeEvent::PartialSave),
+            })
+        } else {
+            None
         }
     }
 

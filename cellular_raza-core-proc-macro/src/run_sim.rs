@@ -343,6 +343,11 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             _ => None,
         };
 
+        if let Some(next_time_point) = _time_stepper.save_initial() {
+            sbox.save_subdomains(&mut _storage_manager_subdomains, &next_time_point)?;
+            sbox.save_cells(&mut _storage_manager_cells, &next_time_point)?;
+        }
+
         while let Some(next_time_point) = _time_stepper.advance()? {
             let mut f = || -> Result<(), #core_path::backend::chili::SimulationError> {
                 #step_1
