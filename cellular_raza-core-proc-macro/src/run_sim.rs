@@ -379,7 +379,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     )
 }
 
-///
 pub fn run_main(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     let asp = &kwargs
         .aspects
