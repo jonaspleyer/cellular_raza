@@ -185,7 +185,7 @@ fn contact_diffusion_2d_numerical() -> Result<(), SimulationError> {
         ode_integrate::prelude::Rk4,
     )
     .unwrap();
-    for (y1, (_, y2)) in results.iter().skip(1).zip(grids.iter()) {
+    for (y1, (_, y2)) in results.iter().zip(grids.iter()) {
         let e = n_agents_side.pow(2) as f64 * diffusion_constant * dt / dx.powi(2);
         assert!((y1 - y2).norm() < e);
     }
