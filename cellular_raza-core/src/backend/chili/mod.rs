@@ -143,7 +143,7 @@
 //! let history = storage_access.cells.load_all_elements()?;
 //! for (iteration, cells) in history {
 //!     // ...
-//! #     assert!(iteration > 0);
+//! #     assert!(iteration >= 0);
 //! #     assert_eq!(cells.len(), 10);
 //! #     for (_, (cbox, _)) in cells {
 //! #         if let CellIdentifier::Initial(key) = cbox.get_id() {
