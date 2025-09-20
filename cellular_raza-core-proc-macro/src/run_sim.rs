@@ -178,7 +178,7 @@ define_kwargs!(
     aspects: SimulationAspects,
     @optionals
     core_path: syn::Path | crate::kwargs::convert_core_path(None),
-    parallelizer: Parallelizer | Parallelizer::OsThreads,
+    parallelizer: Parallelizer | Parallelizer::Rayon,
     determinism: bool | true,
     aux_storage_name: syn::Ident | crate::aux_storage::default_aux_storage_name(),
     zero_force_default: syn::ExprClosure | crate::aux_storage::zero_force_default(),
