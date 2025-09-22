@@ -22,7 +22,6 @@ reliable method for continuous integration, testing and compatibility.
 | `homepage-training`           | -                                                 | 🌶️ |
 | `immersed_boundary`           | `cargo run -r --bin cr_immersed_boundary`         | 🌶️ |
 | `organoid_turing_growth`      | `cargo run -r --bin cr_organoid_turing_growth`    | 🐧 |
-| `pool_model_pyo3`             | -                                                 | 🐧 |
 | `puzzle`                      | `cargo run -r --bin cr_puzzle_cells`              | 🌶️ |
 | `semi_vertex`                 | `cargo run -r --bin cr_semi_vertex`               | 🌶️ |
 | `sender-receiver`             | `cargo run -r --bin cr_sender_receiver`           | 🐧 |
@@ -38,6 +37,12 @@ This project models rod-shaped bacteria similar to the
 It aims to estimate parameters, generate near-realistic microscopic images and generate data to
 improve existing cell-segmentation and tracking tools.
 Find it at [github.com/jonaspleyer/cr_mech_coli](https://github.com/jonaspleyer/cr_mech_coli).
+
+## cr_pool
+We model growing bacterial populations and assess the impact of spatial distributions on the growth
+curves of two distinct species.
+See
+[github.com/polinagaindrik/pool_model_paper](https://github.com/polinagaindrik/pool_model_paper).
 
 ## cr_trichome
 This project models trichome formation on top of arabidopsis thaliana leaves.
