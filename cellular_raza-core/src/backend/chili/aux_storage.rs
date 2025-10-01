@@ -141,7 +141,7 @@ pub trait UpdateCycle {
     fn get_cycle_events(&self) -> &Vec<CycleEvent>;
 
     /// Drain all cycle events
-    fn drain_cycle_events(&mut self) -> std::vec::Drain<CycleEvent>;
+    fn drain_cycle_events<'a>(&'a mut self) -> std::vec::Drain<'a, CycleEvent>;
 
     /// Add another cycle event to the storage.
     fn add_cycle_event(&mut self, event: CycleEvent);
@@ -184,7 +184,7 @@ impl UpdateCycle for AuxStorageCycle {
     }
 
     #[inline]
-    fn drain_cycle_events(&mut self) -> std::vec::Drain<CycleEvent> {
+    fn drain_cycle_events<'a>(&'a mut self) -> std::vec::Drain<'a, CycleEvent> {
         self.cycle_events.drain(..)
     }
 
