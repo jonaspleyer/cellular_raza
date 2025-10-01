@@ -25,8 +25,10 @@ fn derive_cycle() {
     struct NewAgent2(#[Cycle] Agent);
 
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
-    let mut new_agent = NewAgent2(Agent);
-    assert!(<NewAgent2 as Cycle>::update_cycle(&mut rng, &0.1, &mut new_agent).is_none());
+    let mut new_agent1 = NewAgent1 { _old_agent: Agent };
+    let mut new_agent2 = NewAgent2(Agent);
+    assert!(<NewAgent1 as Cycle>::update_cycle(&mut rng, &0.1, &mut new_agent1).is_none());
+    assert!(<NewAgent2 as Cycle>::update_cycle(&mut rng, &0.1, &mut new_agent2).is_none());
 }
 
 #[test]
