@@ -649,7 +649,7 @@ impl<F, const D: usize> SubDomain for CartesianSubDomain<F, D> {
 
         // Create voxel indices
         (0..D)
-            .map(|i| (bounds[i][0]..bounds[i][1]))
+            .map(|i| bounds[i][0]..bounds[i][1])
             .multi_cartesian_product()
             .map(|ind_v| {
                 let mut res = [0; D];
