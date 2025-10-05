@@ -154,7 +154,7 @@ impl SortCells<Agent> for MySubDomain {
         for i in 0..2 {
             res[i] = n_vox[i] as usize;
         }
-        Ok(res.into())
+        Ok(res)
     }
 }
 
@@ -166,11 +166,11 @@ impl SubDomainMechanics<Vertices<f64>, Vertices<f64>> for MySubDomain {
     ) -> Result<(), BoundaryError> {
         pos.iter_mut()
             .zip(vel.iter_mut())
-            .map(|(mut pos, mut vel)| {
+            .map(|(pos, vel)| {
                 <CartesianSubDomain<f64, 2> as SubDomainMechanics<
                     nalgebra::SVector<f64, 2>,
                     nalgebra::SVector<f64, 2>,
-                >>::apply_boundary(&self.subdomain, &mut pos, &mut vel)
+                >>::apply_boundary(&self.subdomain, pos, vel)
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(())
@@ -220,8 +220,8 @@ fn main() -> Result<(), chili::SimulationError> {
                     damping,
                     Some((0.1, 10 * n_agent as u64)),
                 ),
-                bounding_min: [std::f64::NEG_INFINITY; 2].into(),
-                bounding_max: [std::f64::INFINITY; 2].into(),
+                bounding_min: [f64::NEG_INFINITY; 2].into(),
+                bounding_max: [f64::INFINITY; 2].into(),
                 inside_force: InsideInteraction {
                     strength: 1e0,
                     radius,
