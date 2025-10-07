@@ -44,5 +44,4 @@ nalgebra = { version="0.34", features=["serde-serialize", "rand"]}
 ndarray = { version = ">=0.15", features = ["blas", "serde", "serde-1"] }
 pyo3 = { version = ">=0.24", features = ["serde", "py-clone"]}
 kdam = "0.6"
-approxim = "0.6.5"
 approx = { package = "approxim", version = "0.6.5" }
