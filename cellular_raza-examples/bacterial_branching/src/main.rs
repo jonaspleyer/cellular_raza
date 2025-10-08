@@ -54,9 +54,12 @@ struct DomainParameters {
     "
     )]
     voxel_size: f32,
-    /// Size of the square for initlal placement of bacteria
+    /// Size of the x-side of the square for initlal placement of bacteria
     #[arg(long, default_value_t = 100.0)]
-    domain_starting_size: f32,
+    domain_starting_size_x: f32,
+    /// Size of the y-side of the square for initlal placement of bacteria
+    #[arg(long, default_value_t = 100.0)]
+    domain_starting_size_y: f32,
     /// Discretization of the diffusion process
     #[arg(long, default_value_t = 20.0)]
     reactions_dx: f32,
@@ -64,6 +67,8 @@ struct DomainParameters {
     diffusion_constant: f32,
     #[arg(long, default_value_t = 10.0)]
     initial_concentration: f32,
+    #[arg(long, default_value_t = false)]
+    start_at_bottom: bool,
 }
 
 #[derive(Clone, Args, Debug)]
@@ -118,10 +123,12 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
             DomainParameters {
                 domain_size,
                 voxel_size: domain_voxel_size,
-                domain_starting_size,
+                domain_starting_size_x,
+                domain_starting_size_y,
                 reactions_dx,
                 diffusion_constant,
                 initial_concentration,
+                start_at_bottom,
             },
         time:
             TimeParameters {
@@ -132,16 +139,24 @@ fn run_sim(parameters: Parameters) -> Result<(), SimulationError> {
         threads: n_threads,
     } = parameters;
 
-    let ds = domain_size / 2.0;
-    let dx = domain_starting_size / 2.0;
+    let (xmin, xmax, ymin, ymax) = {
+        let ds = domain_size / 2.0;
+        let dx = domain_starting_size_x / 2.0;
+        let dy = domain_starting_size_y / 2.0;
+        if start_at_bottom {
+            (ds - dx, ds + dx, cell_radius, 2.0 * dy + cell_radius)
+        } else {
+            (ds - dx, ds + dx, ds - dy, ds + dy)
+        }
+    };
 
     // Fix random seed
     let mut rng = ChaCha8Rng::seed_from_u64(2);
 
     let cells = (0..n_bacteria_initial)
         .map(|_| {
-            let x = rng.random_range(ds - dx..ds + dx);
-            let y = rng.random_range(ds - dx..ds + dx);
+            let x = rng.random_range(xmin..xmax);
+            let y = rng.random_range(ymin..ymax);
 
             let pos = Vector2::from([x, y]);
             MyAgent {
