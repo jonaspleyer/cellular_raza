@@ -242,7 +242,6 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
                 _,
                 #mechanics_solver_order
             >));
-        step_4.extend(quote!(sbox.apply_boundary()?;));
     }
 
     if kwargs.aspects.contains(&Interaction) {
@@ -260,6 +259,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
     }
 
     if kwargs.aspects.contains(&Mechanics) {
+        step_4.extend(quote!(sbox.apply_boundary()?;));
         step_4.extend(quote!(sbox.sort_cells_in_voxels_step_1()?;));
         step_5.extend(quote!(sbox.sort_cells_in_voxels_step_2(#determinism)?;));
     }
