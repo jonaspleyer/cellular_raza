@@ -27,6 +27,8 @@ fn collision_response(
     p2: &Vector2<f64>,
     v2: &Vector2<f64>,
     radius: &f64,
+    mass1: f64,
+    mass2: f64,
 ) -> (Vector2<f64>, Vector2<f64>, Vector2<f64>, Vector2<f64>) {
     // Calculate point at which the two paths would intersect
     // First calculate the two incremental velocitities between points t and t+1
@@ -89,11 +91,21 @@ fn collision_response(
     assert!((dir.norm() - 1.) < 1e-3);
 
     // Calculate the new velocities by inverting the direction along the connecting line
-    let v1_new = v1 - 2. * v1.dot(&dir).abs() * dir;
-    let v2_new = v2 + 2. * v2.dot(&dir).abs() * dir;
+    let m0 = (mass1 - mass2) / (mass1 + mass2);
+    let m1 = 2. * mass1 / (mass1 + mass2);
+    let m2 = 2. * mass2 / (mass1 + mass2);
 
-    let p1_new = p1_pre + s * dv1 + (1. - s) * (dv1 - dv1.dot(&dir).abs() * dir);
-    let p2_new = p2_pre + s * dv2 + (1. - s) * (dv2 + dv2.dot(&dir).abs() * dir);
+    let v1_parallel = v1.dot(&dir).abs() * dir;
+    let v2_parallel = -v2.dot(&dir).abs() * dir;
+
+    let v1_orthogonal = v1 - v1_parallel;
+    let v2_orthogonal = v2 - v2_parallel;
+
+    let v1_new = v1_orthogonal + m0 * v1_parallel + m2 * v2_parallel;
+    let v2_new = v2_orthogonal - m0 * v2_parallel + m1 * v1_parallel;
+
+    let p1_new = p1_impact + (1. - s) * (dv1 - dv1.dot(&dir).abs() * dir);
+    let p2_new = p2_impact + (1. - s) * (dv2 + dv2.dot(&dir).abs() * dir);
 
     (p1_new, v1_new, p2_new, v2_new)
 }
@@ -103,39 +115,40 @@ fn main() -> Result<(), SimulationError> {
     let mut p1 = Vector2::zeros();
     let mut p2 = Vector2::from([1.0, 0.0]);
 
-    let mut v1 = Vector2::from([0.0, 0.1]);
-    let mut v2 = Vector2::from([0.0, -0.1]);
-
     let mass1 = 1.0;
-    let mass2 = 0.5;
+    let mass2 = 0.9;
+
+    let mut v1 = Vector2::from([0.0, 0.1 / mass1]);
+    let mut v2 = Vector2::from([0.0, -0.1 / mass2]);
 
     let force = |p1: &Vector2<f64>, p2: &Vector2<f64>| -> Vector2<f64> {
-        let dir = p2 - p1;
-        let d = dir.norm();
-        1.0 / (1.0 + d) * dir
-        // p2 - p1
+        // let dir = p2 - p1;
+        // let d = dir.norm();
+        // 1.0 / (1.0 + d) * dir
+        p2 - p1
     };
 
     let radius = 0.2;
 
-    let dt = 0.01f64;
-    for n in 0..1_000_000 {
+    let dt = 0.001f64;
+    for n in 0..50_000 {
         let p1_pre = p1;
         let p2_pre = p2;
 
         let f = force(&p1, &p2);
 
         // Euler integrator
-        v1 += f * dt;
-        v2 -= f * dt;
+        v1 += f * dt / mass1;
+        v2 -= f * dt / mass2;
         p1 += v1 * dt;
         p2 += v2 * dt;
 
         // Apply collision detection and reponse
         if intersect(&p1, &p2, &radius) {
-            (p1, v1, p2, v2) = collision_response(&p1_pre, &p1, &v1, &p2_pre, &p2, &v2, &radius);
+            (p1, v1, p2, v2) =
+                collision_response(&p1_pre, &p1, &v1, &p2_pre, &p2, &v2, &radius, mass1, mass2);
         }
-        if n % 2 == 0 {
+        if n % 20 == 0 {
             println!("{} {} {} {}", p1[0], p1[1], p2[0], p2[1]);
         }
     }
