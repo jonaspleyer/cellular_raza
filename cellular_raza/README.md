@@ -16,15 +16,6 @@
 
 Cellular Agent-based Modeling from a Clean Slate
 
-
-| | stable | beta | nightly |
-|---|---|---|---|
-| `ubuntu-22.04` | ![stable-ubuntu-22.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_ubuntu-22.04.yml?style=flat-square&label=CI) |![beta-ubuntu-22.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_ubuntu-22.04.yml?style=flat-square&label=CI) |![nightly-ubuntu-22.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_ubuntu-22.04.yml?style=flat-square&label=CI) |
-| `ubuntu-24.04` | ![stable-ubuntu-24.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_ubuntu-24.04.yml?style=flat-square&label=CI) |![beta-ubuntu-24.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_ubuntu-24.04.yml?style=flat-square&label=CI) |![nightly-ubuntu-24.04](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_ubuntu-24.04.yml?style=flat-square&label=CI) |
-| `macos-13` | ![stable-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-13.yml?style=flat-square&label=CI) |![beta-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-13.yml?style=flat-square&label=CI) |![nightly-macos-13](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-13.yml?style=flat-square&label=CI) |
-| `macos-14` | ![stable-macos-14](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_macos-14.yml?style=flat-square&label=CI) |![beta-macos-14](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_macos-14.yml?style=flat-square&label=CI) |![nightly-macos-14](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_macos-14.yml?style=flat-square&label=CI) |
-| `windows-latest` | ![stable-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_stable_windows-latest.yml?style=flat-square&label=CI) |![beta-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_beta_windows-latest.yml?style=flat-square&label=CI) |![nightly-windows-latest](https://img.shields.io/github/actions/workflow/status/jonaspleyer/cellular_raza/test_nightly_windows-latest.yml?style=flat-square&label=CI) |
-
 ## Documentation
 The documentation at [cellular-raza.com](https://cellular-raza.com/) provides an introduction,
 examples, the most recent technical documentation, submission guidelines and much more.
@@ -41,3 +32,20 @@ Also have a look at the
 
 ## License
 Download the [GNU GENERAL PUBLIC LICENSE Version 2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt).
+
+## Citing
+
+```bibtex
+@article{Pleyer2025,
+    doi = {10.21105/joss.07723},
+    url = {https://doi.org/10.21105/joss.07723},
+    year = {2025},
+    publisher = {The Open Journal},
+    volume = {10},
+    number = {110},
+    pages = {7723},
+    author = {Jonas Pleyer and Christian Fleck},
+    title = {cellular\_raza: Cellular Agent-based Modeling from a Clean Slate},
+    journal = {Journal of Open Source Software}
+}
+```
