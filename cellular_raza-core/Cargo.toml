@@ -35,7 +35,7 @@ bincode = { version = "2.0", features = ["serde"] }
 serde = { workspace = true }
 quick-xml = { version="0.38", features=["serialize"]}
 serde_json = { version="1.0" }
-ron = "0.11"
+ron = "0.12"
 sled = { version="0.34" }
 chrono = { version = "0.4.31", optional = true }
 tracing = { version = "0.1.40", optional = true }
