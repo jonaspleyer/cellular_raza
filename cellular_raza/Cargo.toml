@@ -25,15 +25,15 @@ all-features = true
 
 [dependencies.cellular_raza-core]
 path = "../cellular_raza-core"
-version = "0.4.0"
+version = "0.4.1-rc1"
 
 [dependencies.cellular_raza-building-blocks]
 path = "../cellular_raza-building-blocks"
-version = "0.4.0"
+version = "0.4.1-rc1"
 
 [dependencies.cellular_raza-concepts]
 path = "../cellular_raza-concepts"
-version = "0.4.0"
+version = "0.4.1-rc1"
 
 [dev-dependencies]
 num.workspace = true
