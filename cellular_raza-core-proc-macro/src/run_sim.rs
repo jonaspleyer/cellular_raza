@@ -134,6 +134,7 @@ define_kwargs!(
     reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
 
     // Define functions to call for updates
+    neighbor_func: Option<syn::Ident> | None,
     update_mechanics_interaction_step_1: syn::Ident |
         crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
     update_mechanics_interaction_step_2: syn::Ident |
@@ -189,6 +190,7 @@ define_kwargs!(
     reactions_contact_solver_order: usize | crate::run_sim::DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT,
 
     // Define functions to call for updates
+    neighbor_func: Option<syn::Ident> | None,
     update_mechanics_interaction_step_1: syn::Ident |
         crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
     update_mechanics_interaction_step_2: syn::Ident |
@@ -223,11 +225,18 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         .aspects
         .contains_multiple(vec![&Mechanics, &Interaction])
     {
+        let neighbor_func = if let Some(nf) = kwargs.neighbor_func {
+            quote::quote!(#nf)
+        } else if kwargs.aspects.contains(&NeighborSensing) {
+            quote::quote!(#core_path::backend::chili::neighbor_sensing_single)
+        } else {
+            quote::quote!(#core_path::backend::chili::neighbor_sensing_single_empty)
+        };
         let umis_fn_name_1 = &kwargs.update_mechanics_interaction_step_1;
         let umis_fn_name_2 = &kwargs.update_mechanics_interaction_step_2;
         let umis_fn_name_3 = &kwargs.update_mechanics_interaction_step_3;
-        step_1.extend(quote!(sbox. #umis_fn_name_1 ()?;));
-        step_2.extend(quote!(sbox. #umis_fn_name_2 (#determinism)?;));
+        step_1.extend(quote!(sbox. #umis_fn_name_1 (#neighbor_func)?;));
+        step_2.extend(quote!(sbox. #umis_fn_name_2 (#determinism, #neighbor_func)?;));
         step_3.extend(quote!(sbox. #umis_fn_name_3 (#determinism)?;));
     }
 

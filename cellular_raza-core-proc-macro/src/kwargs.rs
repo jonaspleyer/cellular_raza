@@ -120,6 +120,13 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         zero_reactions_default: syn::ExprClosure,
     },
+    neighbor_func {
+        #[allow(unused)]
+        neighbor_func_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        neighbor_func: Option<syn::Ident>,
+    },
     update_mechanics_interaction_step_1 {
         #[allow(unused)]
         update_mechanics_interaction_step_1_kw: syn::Ident,
@@ -240,6 +247,11 @@ impl syn::parse::Parse for Kwarg {
                 zero_reactions_default_kw: keyword,
                 double_colon: input.parse()?,
                 zero_reactions_default: input.parse()?,
+            }),
+            "neighbor_func" => Ok(Kwarg::neighbor_func {
+                neighbor_func_kw: keyword,
+                double_colon: input.parse()?,
+                neighbor_func: Some(input.parse()?),
             }),
             "update_mechanics_interaction_step_1" => {
                 Ok(Kwarg::update_mechanics_interaction_step_1 {

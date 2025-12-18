@@ -24,7 +24,7 @@ mod testing;
         AuxStorageCorePath,
         UpdateCycle,
         UpdateMechanics,
-        UpdateInteraction,
+        UpdateNeighborSensing,
         UpdateReactions,
         UpdateReactionsContact,
     )
