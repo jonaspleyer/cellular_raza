@@ -314,38 +314,23 @@ where
     }
 }
 
-// -------------------------------- UPDATE-Interaction -------------------------------
-/// Interface to store intermediate information about interactions.
-pub trait UpdateInteraction {
-    /// Obtain current number of neighbors
-    fn get_current_neighbors(&self) -> usize;
-    /// Set the number of neighbors
-    fn set_current_neighbors(&mut self, neighbors: usize);
-    /// Increment the number of current neighbors by the provided value
-    fn incr_current_neighbors(&mut self, neighbors: usize);
+// -------------------------------- UPDATE-Neighbor-Sensing -------------------------------
+/// Interface to store intermediate information about neighbors.
+pub trait UpdateNeighborSensing<Acc> {
+    /// Obtains the internally held accumulator for the [cellular_raza_concepts::NeighborSensing]
+    /// trait
+    fn get_accumulator(&mut self) -> &mut Acc;
 }
 
-/// Helper storage for number of neighbors of
-/// [Interaction](cellular_raza_concepts::Interaction) trait.
+/// Helper storage to update information about neighbors
 #[derive(Clone, Default, Deserialize, Serialize)]
-pub struct AuxStorageInteraction {
-    neighbor_count: usize,
+pub struct AuxStorageNeighborSensing<Acc> {
+    accumulator: Acc,
 }
 
-impl UpdateInteraction for AuxStorageInteraction {
-    #[inline]
-    fn get_current_neighbors(&self) -> usize {
-        self.neighbor_count
-    }
-
-    #[inline]
-    fn incr_current_neighbors(&mut self, neighbors: usize) {
-        self.neighbor_count += neighbors;
-    }
-
-    #[inline]
-    fn set_current_neighbors(&mut self, neighbors: usize) {
-        self.neighbor_count = neighbors;
+impl<Acc> UpdateNeighborSensing<Acc> for AuxStorageNeighborSensing<Acc> {
+    fn get_accumulator(&mut self) -> &mut Acc {
+        &mut self.accumulator
     }
 }
 
