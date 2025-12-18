@@ -200,13 +200,13 @@ fn main() -> Result<(), SimulationError> {
 
     println!("Running Simulation");
     run_simulation!(
-        domain: domain,
-        agents: agents,
-        settings: settings,
+        domain,
+        agents,
+        settings,
         aspects: [Mechanics, Interaction, Cycle, NeighborSensing],
         zero_force_default: |c: &Agent| {
             nalgebra::MatrixXx3::zeros(c.mechanics.pos.nrows())
-        },
+        }
     )?;
     Ok(())
 }
