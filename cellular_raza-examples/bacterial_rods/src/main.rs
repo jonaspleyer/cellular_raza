@@ -43,30 +43,37 @@ impl
         self.interaction
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_info)
     }
+}
 
-    fn is_neighbor(
+impl NeighborSensing<nalgebra::MatrixXx3<f64>, usize, f64> for Agent {
+    fn accumulate_information(
         &self,
         own_pos: &nalgebra::MatrixXx3<f64>,
         ext_pos: &nalgebra::MatrixXx3<f64>,
-        _ext_inf: &f64,
-    ) -> Result<bool, CalcError> {
+        _: &f64,
+        accumulator: &mut usize,
+    ) -> Result<(), CalcError> {
         for own_point in own_pos.row_iter() {
             for ext_point in ext_pos.row_iter() {
                 if (own_point - ext_point).norm() < 2.0 * self.interaction.0.radius {
-                    return Ok(true);
+                    *accumulator += 1;
                 }
             }
         }
-        Ok(false)
+        Ok(())
     }
 
-    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
-        if neighbors > 0 {
-            self.growth_rate = (GROWTH_BASE_RATE * (8.0 - neighbors as f64) / 8.0).max(0.0);
+    fn react_to_neighbors(&mut self, neighbors: &usize) -> Result<(), CalcError> {
+        if *neighbors > 0 {
+            self.growth_rate = (GROWTH_BASE_RATE * (8.0 - *neighbors as f64) / 8.0).max(0.0);
         } else {
             self.growth_rate = GROWTH_BASE_RATE;
         }
         Ok(())
+    }
+
+    fn clear_accumulator(accumulator: &mut usize) {
+        *accumulator = 0;
     }
 }
 
@@ -196,7 +203,7 @@ fn main() -> Result<(), SimulationError> {
         domain: domain,
         agents: agents,
         settings: settings,
-        aspects: [Mechanics, Interaction, Cycle],
+        aspects: [Mechanics, Interaction, Cycle, NeighborSensing],
         zero_force_default: |c: &Agent| {
             nalgebra::MatrixXx3::zeros(c.mechanics.pos.nrows())
         },
