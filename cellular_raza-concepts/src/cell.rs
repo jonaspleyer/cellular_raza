@@ -180,14 +180,6 @@ where
         self.cell
             .calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, ext_information)
     }
-
-    fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
-        self.cell.is_neighbor(own_pos, ext_pos, ext_inf)
-    }
-
-    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
-        self.cell.react_to_neighbors(neighbors)
-    }
 }
 
 impl<A, Pos> Position<Pos> for CellBox<A>
