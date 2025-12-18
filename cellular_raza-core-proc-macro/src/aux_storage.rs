@@ -125,9 +125,9 @@ impl Aspect {
             return Ok(Some(Aspect::UpdateCycle(parsed)));
         }
 
-        if cmp("UpdateInteraction") {
-            let parsed: UpdateInteractionParser = syn::parse(stream)?;
-            return Ok(Some(Aspect::UpdateInteraction(parsed)));
+        if cmp("UpdateNeighborSensing") {
+            let parsed: UpdateNeighborSensingParser = syn::parse(stream)?;
+            return Ok(Some(Aspect::UpdateNeighborSensing(parsed)));
         }
 
         if cmp("UpdateReactions") {
@@ -147,7 +147,7 @@ impl Aspect {
 enum Aspect {
     UpdateMechanics(UpdateMechanicsParser),
     UpdateCycle(UpdateCycleParser),
-    UpdateInteraction(UpdateInteractionParser),
+    UpdateNeighborSensing(UpdateNeighborSensingParser),
     UpdateReactions(UpdateReactionsParser),
     UpdateReactionsContact(UpdateReactionsContactParser),
 }
@@ -191,13 +191,19 @@ impl syn::parse::Parse for UpdateCycleParser {
     }
 }
 
-// -------------------------------- UPDATE-INTERACTION -------------------------------
-struct UpdateInteractionParser;
+// ------------------------------ UPDATE-NEIGHBORSENSING -----------------------------
+struct UpdateNeighborSensingParser {
+    accumulator: syn::GenericParam,
+}
 
-impl syn::parse::Parse for UpdateInteractionParser {
+impl syn::parse::Parse for UpdateNeighborSensingParser {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _update_interaction: syn::Ident = input.parse()?;
-        Ok(Self)
+        let _update_neighbor_sensing: syn::Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        Ok(Self {
+            accumulator: content.parse()?,
+        })
     }
 }
 
@@ -242,7 +248,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
     fn from(value: AuxStorageParser) -> Self {
         let mut update_cycle = None;
         let mut update_mechanics = None;
-        let mut update_interaction = None;
+        let mut update_neighbor_sensing = None;
         let mut update_reactions = None;
         let mut update_reactions_contact = None;
 
@@ -272,8 +278,9 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
                                 field_type: aspect_field.field.ty.clone(),
                             })
                         }
-                        Aspect::UpdateInteraction(_) => {
-                            update_interaction = Some(UpdateInteractionImplementer {
+                        Aspect::UpdateNeighborSensing(p) => {
+                            update_neighbor_sensing = Some(UpdateNeighborSensingImplementer {
+                                accumulator: p.accumulator,
                                 field_type: aspect_field.field.ty.clone(),
                                 field_name: aspect_field.field.ident.clone(),
                             })
@@ -301,7 +308,7 @@ impl From<AuxStorageParser> for AuxStorageImplementer {
             generics: value.generics,
             update_cycle,
             update_mechanics,
-            update_interaction,
+            update_neighbor_sensing,
             update_reactions,
             update_reactions_contact,
             core_path: value.core_path,
@@ -316,7 +323,7 @@ struct AuxStorageImplementer {
     generics: syn::Generics,
     update_mechanics: Option<UpdateMechanicsImplementer>,
     update_cycle: Option<UpdateCycleImplementer>,
-    update_interaction: Option<UpdateInteractionImplementer>,
+    update_neighbor_sensing: Option<UpdateNeighborSensingImplementer>,
     update_reactions: Option<UpdateReactionsImplementer>,
     update_reactions_contact: Option<UpdateReactionsContactImplementer>,
     core_path: Option<syn::Path>,
@@ -649,19 +656,21 @@ impl AuxStorageImplementer {
     }
 }
 
-// -------------------------------- UPDATE-INTERACTION -------------------------------
-struct UpdateInteractionImplementer {
+// ------------------------------ UPDATE-NEIGHBORSENSING -----------------------------
+struct UpdateNeighborSensingImplementer {
+    accumulator: syn::GenericParam,
     field_name: Option<syn::Ident>,
     field_type: syn::Type,
 }
 
 impl AuxStorageImplementer {
-    fn implement_update_interaction(&self) -> TokenStream {
-        if let Some(update_interaction) = &self.update_interaction {
-            let field_name = &update_interaction.field_name;
-            let field_type = &update_interaction.field_type;
+    fn implement_update_neighbor_sensing(&self) -> TokenStream {
+        if let Some(update_neighbor_sensing) = &self.update_neighbor_sensing {
+            let accumulator = &update_neighbor_sensing.accumulator;
 
-            let struct_name = &self.name;
+            let field_name = &update_neighbor_sensing.field_name;
+            let field_type = &update_neighbor_sensing.field_type;
+
             let (impl_generics, ty_generics, where_clause) = &self.generics.split_for_impl();
 
             let backend_path = match &self.core_path {
@@ -669,29 +678,13 @@ impl AuxStorageImplementer {
                 None => quote!(),
             };
 
+            let struct_name = &self.name;
+
             let new_stream = wrap_pre_flags(quote!(
-                impl #impl_generics #backend_path UpdateInteraction for #struct_name #ty_generics #where_clause {
+                impl #impl_generics #backend_path UpdateNeighborSensing<#accumulator> for #struct_name #ty_generics #where_clause {
                     #[inline]
-                    fn get_current_neighbors(&self) -> usize {
-                        <#field_type as #backend_path UpdateInteraction>::get_current_neighbors(
-                            &self.#field_name
-                        )
-                    }
-
-                    #[inline]
-                    fn incr_current_neighbors(&mut self, neighbors: usize) {
-                        <#field_type as #backend_path UpdateInteraction>::incr_current_neighbors(
-                            &mut self.#field_name,
-                            neighbors
-                        )
-                    }
-
-                    #[inline]
-                    fn set_current_neighbors(&mut self, neighbors: usize) {
-                        <#field_type as #backend_path UpdateInteraction>::set_current_neighbors(
-                            &mut self.#field_name,
-                            neighbors
-                        )
+                    fn get_accumulator(&mut self) -> &mut #accumulator {
+                        <#field_type as UpdateNeighborSensing<#accumulator>>::get_accumulator(&mut self.#field_name)
                     }
                 }
             ));
@@ -737,7 +730,7 @@ pub fn derive_aux_storage(input: TokenStream) -> TokenStream {
     res.extend(aux_storage.implement_update_mechanics());
     res.extend(aux_storage.implement_update_reactions());
     res.extend(aux_storage.implement_update_reactions_contact());
-    res.extend(aux_storage.implement_update_interaction());
+    res.extend(aux_storage.implement_update_neighbor_sensing());
 
     res
 }
@@ -865,16 +858,16 @@ impl Builder {
             });
         }
 
-        if self.aspects.contains(&Interaction) {
-            let field_name = syn::parse_quote!(interaction);
-            let field_type = syn::parse_quote!(AuxStorageInteraction);
-            let generics = syn::parse_quote!();
+        if self.aspects.contains(&NeighborSensing) {
+            let field_name = syn::parse_quote!(neighbor_sensing);
+            let field_type = syn::parse_quote!(#backend_path AuxStorageNeighborSensing);
+            let generics = syn::parse_quote!(<Acc>);
             let fully_formatted_field = quote!(
-                #[UpdateInteraction]
-                interaction: #backend_path AuxStorageInteraction,
+                #[UpdateNeighborSensing(Acc)]
+                neighbor_sensing: #backend_path AuxStorageNeighborSensing<Acc>,
             );
             fields.push(FieldInfo {
-                aspects: vec![Interaction],
+                aspects: vec![NeighborSensing],
                 field_name,
                 field_type,
                 generics,
