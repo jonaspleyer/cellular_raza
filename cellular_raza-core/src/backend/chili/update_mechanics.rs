@@ -3,7 +3,8 @@ use tracing::instrument;
 
 use super::{
     AdamsBashforth, CellBox, Communicator, MechanicsAdamsBashforthSolver, SimulationError,
-    SubDomainBox, SubDomainPlainIndex, UpdateInteraction, UpdateMechanics, Voxel, VoxelPlainIndex,
+    SubDomainBox, SubDomainPlainIndex, UpdateMechanics, UpdateNeighborSensing, Voxel,
+    VoxelPlainIndex,
 };
 use cellular_raza_concepts::*;
 
@@ -129,13 +130,13 @@ impl<C, A> Voxel<C, A> {
         ext_pos: &Pos,
         ext_vel: &Vel,
         ext_inf: &Inf,
+        neighbor_sensing_func: impl Fn(&mut A, &C, &Pos, &Pos, &Inf) -> Result<(), CalcError>,
     ) -> Result<Option<For>, CalcError>
     where
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>
             + cellular_raza_concepts::Position<Pos>
             + cellular_raza_concepts::Velocity<Vel>,
         A: UpdateMechanics<Pos, Vel, For, N>,
-        A: UpdateInteraction,
         Float: num::Float,
         For: Xapy<Float> + core::ops::AddAssign,
     {
@@ -157,13 +158,40 @@ impl<C, A> Voxel<C, A> {
                 force = Some(f2.xa(one_half));
             }
 
-            // Check for neighbors
-            if cell.is_neighbor(&cell.pos(), &ext_pos, &ext_inf)? {
-                aux_storage.incr_current_neighbors(1);
-            }
+            neighbor_sensing_func(aux_storage, &cell, &cell.pos(), &ext_pos, &ext_inf)?;
         }
         Ok(force)
     }
+}
+
+/// Empty function which is used when no neighbor sensing is activated.
+/// This function is called by the [cellular_raza_core_proc_macro::run_simulation] macro.
+pub fn neighbor_sensing_single_empty<Pos, Inf, A, C>(
+    _aux_storage: &mut A,
+    _cell: &C,
+    _p1: &Pos,
+    _p2: &Pos,
+    _i2: &Inf,
+) -> Result<(), CalcError> {
+    Ok(())
+}
+
+/// Uses [cellular_raza_concepts::NeighborSensing] trait to sense neighbors
+/// This function is called by the [cellular_raza_core_proc_macro::run_simulation] macro.
+pub fn neighbor_sensing_single<Pos, Acc, Inf, A, C>(
+    aux_storage: &mut A,
+    cell: &C,
+    p1: &Pos,
+    p2: &Pos,
+    i2: &Inf,
+) -> Result<(), CalcError>
+where
+    A: UpdateNeighborSensing<Acc>,
+    C: NeighborSensing<Pos, Acc, Inf>,
+{
+    let mut acc = aux_storage.get_accumulator();
+    cell.accumulate_information(&p1, &p2, &i2, &mut acc)?;
+    Ok(())
 }
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
@@ -180,6 +208,7 @@ where
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn update_mechanics_interaction_step_1<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
+        neighbor_sensing_func: impl Fn(&mut A, &C, &Pos, &Pos, &Inf) -> Result<(), CalcError>,
     ) -> Result<(), SimulationError>
     where
         Pos: Clone,
@@ -190,7 +219,6 @@ where
         C: cellular_raza_concepts::Mechanics<Pos, Vel, For, Float>,
         C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
         A: UpdateMechanics<Pos, Vel, For, N>,
-        A: UpdateInteraction,
         For: Xapy<Float> + core::ops::AddAssign,
         Float: num::Float + core::ops::AddAssign,
         <S as SubDomain>::VoxelIndex: Ord,
@@ -226,13 +254,8 @@ where
                     aux1.add_force(force1.xa(one_half));
                     aux2.add_force(force2.xa(one_half));
 
-                    // Also check for neighbors
-                    if c1.is_neighbor(&p1, &p2, &i2)? {
-                        aux1.incr_current_neighbors(1);
-                    }
-                    if c2.is_neighbor(&p2, &p1, &i1)? {
-                        aux2.incr_current_neighbors(1);
-                    }
+                    neighbor_sensing_func(aux1, &c1, &p1, &p2, &i2)?;
+                    neighbor_sensing_func(aux2, &c2, &p2, &p1, &i1)?;
                 }
 
                 let neighbors = vox.neighbors.clone();
@@ -240,9 +263,12 @@ where
                 for neighbor_index in &neighbors {
                     match self.voxels.get_mut(&neighbor_index) {
                         Some(vox) => {
-                            if let Some(f) =
-                                vox.calculate_force_between_cells_external(&p1, &v1, &i1)?
-                            {
+                            if let Some(f) = vox.calculate_force_between_cells_external(
+                                &p1,
+                                &v1,
+                                &i1,
+                                &neighbor_sensing_func,
+                            )? {
                                 match &mut force {
                                     Some(f2) => *f2 = f.xapy(Float::one(), &f2),
                                     f2 @ None => *f2 = Some(f),
@@ -401,11 +427,11 @@ where
     pub fn update_mechanics_interaction_step_2<Pos, Vel, For, Float, Inf, const N: usize>(
         &mut self,
         determinism: bool,
+        neighbor_sensing_func: impl Fn(&mut A, &C, &Pos, &Pos, &Inf) -> Result<(), CalcError>,
     ) -> Result<(), SimulationError>
     where
         For: Xapy<Float>,
         A: UpdateMechanics<Pos, Vel, For, N>,
-        A: UpdateInteraction,
         Float: num::Float,
         Pos: Clone,
         Vel: Clone,
@@ -438,6 +464,7 @@ where
                 &pos_info.pos,
                 &pos_info.vel,
                 &pos_info.info,
+                &neighbor_sensing_func,
             )? {
                 // Send back force information
                 // let thread_index = self.plain_index_to_subdomain[&pos_info.index_sender];
@@ -674,18 +701,19 @@ where
 }
 
 /// Perform the [Interaction::react_to_neighbors] function and clear current neighbors.
-pub fn local_interaction_react_to_neighbors<C, A, Pos, Vel, For, Inf, Float>(
+pub fn local_interaction_react_to_neighbors<C, A, Pos, Acc, Inf, Float>(
     cell: &mut C,
     aux_storage: &mut A,
     _dt: Float,
     _rng: &mut rand_chacha::ChaCha8Rng,
 ) -> Result<(), cellular_raza_concepts::CalcError>
 where
-    C: cellular_raza_concepts::Interaction<Pos, Vel, For, Inf>,
+    C: cellular_raza_concepts::NeighborSensing<Pos, Acc, Inf>,
     C: cellular_raza_concepts::Position<Pos>,
-    A: UpdateInteraction,
+    A: UpdateNeighborSensing<Acc>,
 {
-    cell.react_to_neighbors(aux_storage.get_current_neighbors())?;
-    aux_storage.set_current_neighbors(0);
+    let mut acc = aux_storage.get_accumulator();
+    cell.react_to_neighbors(&acc)?;
+    <C as NeighborSensing<Pos, Acc, Inf>>::clear_accumulator(&mut acc);
     Ok(())
 }
