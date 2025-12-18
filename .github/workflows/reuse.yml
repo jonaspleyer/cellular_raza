@@ -20,7 +20,7 @@ jobs:
           lfs: 'false'
       - name: Install libfontconfig1-dev
         if: ${{ contains(inputs.os, 'ubuntu') }}
-        run: sudo apt-get install libfontconfig1-dev
+        run: sudo apt-get update && sudo apt-get install libfontconfig1-dev
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
