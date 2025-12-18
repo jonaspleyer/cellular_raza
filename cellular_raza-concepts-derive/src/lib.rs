@@ -33,6 +33,8 @@ mod domain;
         Interaction,
         InteractionRaw,
         InteractionInformation,
+        NeighborSensing,
+        NeighborSensingRaw,
         Reactions,
         ReactionsContact,
         ReactionsRaw,
