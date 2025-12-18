@@ -1,5 +1,5 @@
-OLD_VERSION='0\.4\.1-rc1'
-NEW_VERSION='0\.4\.1'
+OLD_VERSION='0\.4\.1'
+NEW_VERSION='0\.5\.0'
 
 for file in $(grep -lr $OLD_VERSION --exclude-dir target *); do
     sed -i "s/$OLD_VERSION/$NEW_VERSION/" $file

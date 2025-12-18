@@ -10,7 +10,7 @@ categories.workspace = true
 homepage.workspace = true
 
 [dependencies]
-cellular_raza = { version = "0.4.1", path = "../../cellular_raza" }
+cellular_raza = { version = "0.5.0", path = "../../cellular_raza" }
 nalgebra.workspace = true
 num.workspace = true
 rand.workspace = true
