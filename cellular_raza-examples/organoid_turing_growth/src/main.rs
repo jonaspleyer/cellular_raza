@@ -319,6 +319,6 @@ fn main() {
     };
 
     simulation_result
-        .plot_spatial_all_iterations_custom_cell_voxel_functions(&plot_modular_cell, &plot_voxel)
+        .plot_spatial_all_iterations_custom_cell_voxel_functions(plot_modular_cell, plot_voxel)
         .unwrap();
 }
