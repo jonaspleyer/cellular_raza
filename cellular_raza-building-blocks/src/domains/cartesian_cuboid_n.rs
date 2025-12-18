@@ -198,7 +198,7 @@ where
         for i in 0..D {
             let n = ((max[i] - min[i]) / interaction_range).floor();
             // This conversion should hopefully never fail.
-            n_voxels[i] = n.to_usize().ok_or(BoundaryError(
+            let m = n.to_usize().ok_or(BoundaryError(
                 cellular_raza_concepts::format_error_message!(
                     format!(
                         "Cannot convert float {:?} of type {} to usize",
@@ -208,6 +208,7 @@ where
                     "conversion error during domain setup"
                 ),
             ))?;
+            n_voxels[i] = m.max(1);
             dx[i] = (max[i] - min[i]) / n;
         }
 
