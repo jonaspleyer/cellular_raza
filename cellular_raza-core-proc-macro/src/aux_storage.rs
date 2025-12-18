@@ -608,47 +608,47 @@ impl AuxStorageImplementer {
             };
 
             let new_stream = wrap_pre_flags(quote!(
-                    impl #impl_generics #backend_path UpdateReactionsContact<#rintra, #nsaves>
-                    for #struct_name #ty_generics #where_clause {
-                        #[inline]
-                        fn get_current_increment(&self) -> Ri {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::get_current_increment(&self.#field_name)
-                        }
-
-                        #[inline]
-                        fn incr_current_increment(&mut self, increment: Ri) {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::incr_current_increment(&mut self.#field_name, increment)
-
-                        }
-
-                        #[inline]
-                        fn set_current_increment(&mut self, new_increment: Ri) {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::set_current_increment(&mut self.#field_name, new_increment)
-                        }
-
-                        #[inline]
-                        fn previous_increments<'a>(
-                            &'a self
-                        ) -> #backend_path RingBufferIterRef<'a, #rintra, #nsaves> {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::previous_increments(&self.#field_name)
-                        }
-
-                        #[inline]
-                        fn set_last_increment(&mut self, increment: #rintra) {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::set_last_increment(&mut self.#field_name, increment)
-                        }
-
-                        #[inline]
-                        fn n_previous_values(&self) -> usize {
-                            <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
-                                ::n_previous_values(&self.#field_name)
-                        }
+                impl #impl_generics #backend_path UpdateReactionsContact<#rintra, #nsaves>
+                for #struct_name #ty_generics #where_clause {
+                    #[inline]
+                    fn get_current_increment(&self) -> Ri {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::get_current_increment(&self.#field_name)
                     }
+
+                    #[inline]
+                    fn incr_current_increment(&mut self, increment: Ri) {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::incr_current_increment(&mut self.#field_name, increment)
+
+                    }
+
+                    #[inline]
+                    fn set_current_increment(&mut self, new_increment: Ri) {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::set_current_increment(&mut self.#field_name, new_increment)
+                    }
+
+                    #[inline]
+                    fn previous_increments<'a>(
+                        &'a self
+                    ) -> #backend_path RingBufferIterRef<'a, #rintra, #nsaves> {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::previous_increments(&self.#field_name)
+                    }
+
+                    #[inline]
+                    fn set_last_increment(&mut self, increment: #rintra) {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::set_last_increment(&mut self.#field_name, increment)
+                    }
+
+                    #[inline]
+                    fn n_previous_values(&self) -> usize {
+                        <#field_type as #backend_path UpdateReactionsContact<#rintra, #nsaves>>
+                            ::n_previous_values(&self.#field_name)
+                    }
+                }
             ));
             return TokenStream::from(new_stream);
         }
