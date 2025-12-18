@@ -34,7 +34,7 @@ impl syn::parse::Parse for IndexParser {
 }
 
 fn index_from_attributes(
-    attrs: &Vec<syn::Attribute>,
+    attrs: &[syn::Attribute],
     span: proc_macro2::Span,
 ) -> syn::Result<syn::Type> {
     let candidates = attrs
@@ -81,7 +81,7 @@ impl syn::parse::Parse for CorePathParser {
 }
 
 fn core_path_from_attributes(
-    attrs: &Vec<syn::Attribute>,
+    attrs: &[syn::Attribute],
     span: proc_macro2::Span,
 ) -> syn::Result<Option<syn::Path>> {
     let mut candidates = attrs
