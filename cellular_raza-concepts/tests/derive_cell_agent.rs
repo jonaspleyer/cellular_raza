@@ -180,3 +180,57 @@ fn derive_interaction_generics() {
     };
     assert_eq!(my_agent.get_interaction_information(), [1, 2, 3]);
 }
+
+#[test]
+fn derive_neighbor_interaction() {
+    use cellular_raza_concepts::NeighborSensing;
+    use cellular_raza_concepts_derive::CellAgent;
+
+    struct Senser;
+
+    impl InteractionInformation<i8> for Senser {
+        fn get_interaction_information(&self) -> i8 {
+            0
+        }
+    }
+
+    impl NeighborSensing<f32, usize, i8> for Senser {
+        fn accumulate_information(
+            &self,
+            _: &f32,
+            _: &f32,
+            ext_inf: &i8,
+            accumulator: &mut usize,
+        ) -> Result<(), CalcError> {
+            *accumulator += *ext_inf as usize;
+            Ok(())
+        }
+
+        fn react_to_neighbors(&mut self, _: &usize) -> Result<(), CalcError> {
+            Ok(())
+        }
+
+        fn clear_accumulator(accumulator: &mut usize) {
+            *accumulator = 0;
+        }
+    }
+
+    #[derive(CellAgent)]
+    struct Agent {
+        #[NeighborSensing]
+        senser: Senser,
+    }
+
+    let senser = Senser;
+
+    let mut accumulator = 0;
+    for i in 0..10 {
+        senser
+            .accumulate_information(&0., &0., &i, &mut accumulator)
+            .unwrap();
+    }
+
+    let mut cell = Agent { senser };
+    cell.react_to_neighbors(&accumulator).unwrap();
+    cell.get_interaction_information();
+}
