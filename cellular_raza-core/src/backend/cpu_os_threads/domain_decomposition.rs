@@ -353,7 +353,6 @@ where
 
                 let p1 = c1.pos();
                 let v1 = c1.velocity();
-                let i1 = c1.get_interaction_information();
 
                 let p2 = c2.pos();
                 let v2 = c2.velocity();
@@ -362,20 +361,6 @@ where
                 let (force1, force2) = c1.calculate_force_between(&p1, &v1, &p2, &v2, &i2)?;
                 aux1.force += force1 * 0.5;
                 aux2.force += force2 * 0.5;
-
-                match c1.is_neighbor(&p1, &p2, &i2)? {
-                    true => aux1.neighbor_count += 1,
-                    false => (),
-                }
-
-                let (force2, force1) = c2.calculate_force_between(&p2, &v2, &p1, &v1, &i1)?;
-                aux1.force += force1 * 0.5;
-                aux2.force += force2 * 0.5;
-
-                match c2.is_neighbor(&p2, &p1, &i1)? {
-                    true => aux2.neighbor_count += 1,
-                    false => (),
-                }
             }
         }
         Ok(())
@@ -409,11 +394,6 @@ where
             )?;
             aux_storage.force += f1;
             force += f2;
-
-            match cell.is_neighbor(&cell.pos(), &ext_pos, &ext_inf)? {
-                true => aux_storage.neighbor_count += 1,
-                false => (),
-            }
         }
         Ok(force)
     }
@@ -663,16 +643,6 @@ where
                     .iter_mut()
                     .map(|(cell, _)| self.domain.apply_boundary(cell))
                     .collect::<Result<(), BoundaryError>>()?;
-
-                // Set counted neighbors to zero
-                vox.cells
-                    .iter_mut()
-                    .map(|(cell, aux_storage)| {
-                        cell.react_to_neighbors(aux_storage.neighbor_count)?;
-                        aux_storage.neighbor_count = 0;
-                        Ok(())
-                    })
-                    .collect::<Result<(), SimulationError>>()?;
 
                 #[cfg(feature = "gradients")]
                 vox.cells
