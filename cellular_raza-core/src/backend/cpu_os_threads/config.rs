@@ -678,7 +678,9 @@ where
 
             domain: setup.domain.into(),
 
-            config: SimulationConfig::default(),
+            config: SimulationConfig {
+                progressbar: Some("".to_string()),
+            },
 
             meta_infos,
 
