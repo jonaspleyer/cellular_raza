@@ -59,6 +59,24 @@ where
 }
 
 #[allow(unused)]
+pub fn neighbor_sensing_implemented<Pos, Acc, Inf, C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::NeighborSensing<Pos, Acc, Inf>,
+{
+}
+
+#[allow(unused)]
+pub fn neighbor_sensing_position_interaction_information<Pos, Acc, Inf, C, Ci>(agents: &Ci)
+where
+    Ci: IntoIterator<Item = C>,
+    C: cellular_raza_concepts::NeighborSensing<Pos, Acc, Inf>,
+    C: cellular_raza_concepts::Position<Pos>,
+    C: cellular_raza_concepts::InteractionInformation<Inf>,
+{
+}
+
+#[allow(unused)]
 pub fn cycle_implemented<Float, C, Ci>(agents: &Ci)
 where
     Ci: IntoIterator<Item = C>,

@@ -509,6 +509,15 @@ pub fn test_compatibility(kwargs: KwargsCompatibility) -> proc_macro2::TokenStre
         ));
     }
 
+    if kwargs.aspects.contains(&NeighborSensing) {
+        output.extend(quote::quote!(
+            #core_path::backend::chili::compatibility_tests::neighbor_sensing_implemented(
+                &#agents,
+            );
+            #core_path::backend::chili::compatibility_tests::neighbor_sensing_position_interaction_information(&#agents);
+        ));
+    }
+
     // TODO see comment at compatibility_tests function in chili backend.
     // if kwargs.aspects.contains(&Interaction) {
     //     output.extend(quote::quote!(
