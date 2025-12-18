@@ -294,6 +294,7 @@ impl SimulationAspect {
                     ),
                 ],
             ),
+            SimulationAspect::NeighborSensing => (vec![], vec![]),
             SimulationAspect::DomainForce => (vec![], vec![]),
         }
     }

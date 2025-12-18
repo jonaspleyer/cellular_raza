@@ -244,7 +244,7 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
             >));
     }
 
-    if kwargs.aspects.contains(&Interaction) {
+    if kwargs.aspects.contains(&NeighborSensing) {
         local_func_names
             .push(quote!(#core_path::backend::chili::local_interaction_react_to_neighbors));
     }
