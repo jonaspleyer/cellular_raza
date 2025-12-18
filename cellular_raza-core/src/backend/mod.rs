@@ -13,6 +13,7 @@
 //! | [Cycle](cellular_raza_concepts::Cycle) | ✅¹ | ✅ |❌ |❌ |
 //! | [Mechanics](cellular_raza_concepts::Mechanics) | ✅¹ | ✅ |❌ |❌ |
 //! | [Interaction](cellular_raza_concepts::Interaction) | ✅ | ✅ |❌ |❌ |
+//! | [NeighborSensing](cellular_raza_concepts::NeighborSensing) | ❌ | ✅ |❌ |❌ |
 //! | [Reactions](cellular_raza_concepts::Reactions) | ❌ | ✅ |❌ |❌ |
 //! | [ReactionsContact](cellular_raza_concepts::ReactionsContact) | ❌ | ✅ |❌ |❌ |
 //! | [ReactionsExtra](cellular_raza_concepts::ReactionsExtra) | ❌ | ✅ |❌ |❌ |
