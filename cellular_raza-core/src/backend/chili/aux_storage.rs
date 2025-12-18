@@ -643,91 +643,91 @@ mod test_derive_aux_storage_compile {
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructInteraction {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    /// struct TestStructInteraction<A> {
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     /// }
     /// ```
-    fn interactions_default() {}
+    fn neighbor_sensing_default() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub struct TestStructInteraction {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    /// pub struct TestStructInteraction<A> {
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     /// }
     /// ```
-    fn interactions_visibility_1() {}
+    fn neighbor_sensing_visibility_1() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// pub(crate) struct TestStructInteraction {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    /// pub(crate) struct TestStructInteraction<A> {
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     /// }
     /// ```
-    fn interactions_visibility_2() {}
+    fn neighbor_sensing_visibility_2() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructInteraction<T> {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    /// struct TestStructInteraction<A, T> {
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     ///     generic: T,
     /// }
     /// ```
-    fn interactions_generic_param() {}
+    fn neighbor_sensing_generic_param() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructInteraction<const N: usize> {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    /// struct TestStructInteraction<A, const N: usize> {
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     ///     generic: [f64; N],
     /// }
     /// ```
-    fn interactions_const_generic_param() {}
+    fn neighbor_sensing_const_generic_param() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructInteraction<T>
+    /// struct TestStructInteraction<A, T>
     /// where
     ///     T: Clone,
     /// {
-    ///     #[UpdateInteraction]
-    ///     aux_interaction: AuxStorageInteraction,
+    ///     #[UpdateNeighborSensing(A)]
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     ///     generic: T,
     /// }
     /// ```
-    fn interactions_where_clause() {}
+    fn neighbor_sensing_where_clause() {}
 
     /// ```
     /// use cellular_raza_core::backend::chili::AuxStorage;
     /// use cellular_raza_core::backend::chili::*;
     ///
     /// #[derive(AuxStorage)]
-    /// struct TestStructInteraction {
-    ///     #[UpdateInteraction]
+    /// struct TestStructInteraction<A> {
+    ///     #[UpdateNeighborSensing(A)]
     ///     #[cfg(not(test))]
-    ///     aux_interaction: AuxStorageInteraction,
+    ///     aux_interaction: AuxStorageNeighborSensing<A>,
     /// }
     /// ```
-    fn interactions_other_attributes() {}
+    fn neighbor_sensing_other_attributes() {}
 }
 
 #[cfg(test)]
@@ -876,13 +876,13 @@ mod test_build_aux_storage {
             ///             assert_eq!(aux_storage.get_current_force_and_reset(), 22_f32);
             ///         }
             ///     };
-            ///     (Interaction) => {
+            ///     (Interaction) => {};
+            ///     (NeighborSensing) => {
             ///         {
-            ///             use cellular_raza_core::backend::chili::UpdateInteraction;
-            ///             aux_storage.incr_current_neighbors(1);
-            ///             aux_storage.incr_current_neighbors(2);
-            ///             aux_storage.incr_current_neighbors(1);
-            ///             assert_eq!(aux_storage.get_current_neighbors(), 4);
+            ///             use cellular_raza_core::backend::chili::UpdateNeighborSensing;
+            ///             let mut acc: &mut Vec<usize> = aux_storage.get_accumulator();
+            ///             acc.push(1);
+            ///             assert_eq!(*aux_storage.get_accumulator(), vec![1]);
             ///         }
             ///     };
             ///     (Cycle) => {
@@ -926,6 +926,6 @@ mod test_build_aux_storage {
 
     cellular_raza_core_proc_macro::run_test_for_aspects!(
         test: construct,
-        aspects: [Mechanics, Interaction, Cycle, Reactions, ReactionsContact]
+        aspects: [Mechanics, Interaction, NeighborSensing, Cycle, Reactions, ReactionsContact]
     );
 }
