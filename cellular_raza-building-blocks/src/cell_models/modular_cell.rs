@@ -131,14 +131,6 @@ where
             ext_information,
         )
     }
-
-    fn is_neighbor(&self, own_pos: &Pos, ext_pos: &Pos, ext_inf: &Inf) -> Result<bool, CalcError> {
-        self.interaction.is_neighbor(own_pos, ext_pos, ext_inf)
-    }
-
-    fn react_to_neighbors(&mut self, neighbors: usize) -> Result<(), CalcError> {
-        self.interaction.react_to_neighbors(neighbors)
-    }
 }
 
 impl<Mec, Int, Cyc, React, IntExtracellular> Volume
