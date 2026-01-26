@@ -159,13 +159,13 @@ impl Cycle<Cell> for Cell {
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(long, default_value_t = 100)]
+    #[arg(long, default_value_t = 500)]
     n_cells: usize,
-    #[arg(long, default_value_t = 400.0)]
+    #[arg(long, default_value_t = 1000.0)]
     domain_size: f64,
     #[arg(long, default_value_t = 200.0)]
     domain_size_z: f64,
-    #[arg(long, default_value_t = 24)]
+    #[arg(long, default_value_t = 4)]
     n_threads: usize,
     #[arg(long, default_value_t = 0.2)]
     time_dt: f64,
@@ -193,7 +193,7 @@ struct Args {
     cell_division_size: f64,
     #[arg(long, default_value_t = 0.1)]
     cell_growth_rate: f64,
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.75)]
     cell_death_rate: f64,
 }
 
