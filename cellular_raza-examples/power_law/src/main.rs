@@ -163,6 +163,8 @@ struct Args {
     n_cells: usize,
     #[arg(long, default_value_t = 400.0)]
     domain_size: f64,
+    #[arg(long, default_value_t = 200.0)]
+    domain_size_z: f64,
     #[arg(long, default_value_t = 24)]
     n_threads: usize,
     #[arg(long, default_value_t = 0.2)]
@@ -202,7 +204,8 @@ fn main() -> Result<(), SimulationError> {
     let Args {
         n_cells,
         domain_size,
-        n_threads,
+        domain_size_z,
+        threads,
         time_dt: dt,
         time_n: n_times,
         time_save_interval: save_interval,
@@ -224,7 +227,7 @@ fn main() -> Result<(), SimulationError> {
             let pos = Vector3::from([
                 rng.random_range(0.0..domain_size),
                 rng.random_range(0.0..domain_size),
-                rng.random_range(0.0..domain_size),
+                rng.random_range(0.0..domain_size_z),
             ]);
             let radius = rng.random_range(0.5 * cell_radius..cell_division_size);
             Cell {
@@ -255,7 +258,7 @@ fn main() -> Result<(), SimulationError> {
 
     let domain = CartesianCuboid::from_boundaries_and_interaction_range(
         [0.0; 3],
-        [domain_size; 3],
+        [domain_size, domain_size, domain_size_z],
         2.0 * cell_division_size,
     )?;
 
