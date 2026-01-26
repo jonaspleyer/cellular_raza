@@ -12,4 +12,4 @@ nalgebra = { workspace = true }
 cellular_raza = { path="../../cellular_raza" }
 num = { workspace = true }
 clap = { version = "4.5.54", features = ["derive"] }
-short_default = { path = "../../../short_default/" }
+short_default = "0.1.1"
