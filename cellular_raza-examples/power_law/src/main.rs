@@ -166,7 +166,7 @@ struct Args {
     #[arg(long, default_value_t = 200.0)]
     domain_size_z: f64,
     #[arg(long, default_value_t = 4)]
-    n_threads: usize,
+    threads: usize,
     #[arg(long, default_value_t = 0.2)]
     time_dt: f64,
     #[arg(long, default_value_t = 30_000)]
@@ -271,7 +271,7 @@ fn main() -> Result<(), SimulationError> {
     let storage_builder = StorageBuilder::new().location("out/cell_sorting");
 
     let settings = cellular_raza::core::backend::chili::Settings {
-        n_threads: n_threads.try_into().unwrap(),
+        n_threads: threads.try_into().unwrap(),
         time,
         storage: storage_builder,
         progressbar: Some("".into()),
