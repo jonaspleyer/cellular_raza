@@ -122,8 +122,8 @@ impl Cycle<Cell> for Cell {
         // Make both cells smaller
         c1.interaction.radius /= core::f64::consts::SQRT_2;
         c2.interaction.radius /= core::f64::consts::SQRT_2;
-        c1.interaction.cutoff = c1.interaction.radius;
-        c2.interaction.cutoff = c1.interaction.radius;
+        c1.interaction.cutoff = 2.0 * c1.interaction.radius;
+        c2.interaction.cutoff = 2.0 * c1.interaction.radius;
 
         // Generate cellular splitting direction randomly
         let theta = rng.random_range(0.0..2.0 * core::f64::consts::PI);
@@ -151,7 +151,7 @@ impl Cycle<Cell> for Cell {
         cell: &mut Cell,
     ) -> Result<bool, DeathError> {
         cell.interaction.radius -= cell.death_rate * dt;
-        cell.interaction.cutoff = cell.interaction.radius;
+        cell.interaction.cutoff = 2.0 * cell.interaction.radius;
         Ok(cell.interaction.radius < cell.division_size / 5.0)
     }
 }
@@ -238,7 +238,7 @@ fn main() -> Result<(), SimulationError> {
                 interaction: MorsePotential {
                     radius,
                     potential_stiffness: cell_potential_stiffness,
-                    cutoff: radius,
+                    cutoff: 2.0 * radius,
                     strength: cell_strength,
                 },
                 health_state: Healthstate::Healthy,
@@ -256,7 +256,7 @@ fn main() -> Result<(), SimulationError> {
     let domain = CartesianCuboid::from_boundaries_and_interaction_range(
         [0.0; 3],
         [domain_size; 3],
-        3.0 * cell_radius,
+        2.0 * cell_division_size,
     )?;
 
     let time = cellular_raza::core::time::FixedStepsize::from_partial_save_steps(
