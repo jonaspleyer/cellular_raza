@@ -53,6 +53,18 @@ def get_subdomains_at_iteration(iteration: int, path: Path) -> list:
     return subdomains
 
 
+def map_health_state(c) -> int:
+    st = c["element"][0]["cell"]["health_state"]
+    if st == "Healthy":
+        return 0
+    elif st == "Selfinfected":
+        return 1
+    elif st == "Infected":
+        return 2
+    else:
+        return -1
+
+
 def get_min_max_from_subdomains(
     iteration: int, path: Path
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -69,7 +81,7 @@ def get_spheres(iteration: int, path: Path):
         return (
             cell["element"][0]["cell"]["mechanics"]["pos"],
             cell["element"][0]["cell"]["interaction"]["radius"],
-            cell["element"][0]["cell"]["is_infected"],
+            map_health_state(cell),
         )
 
     position_radius = [get_info(ci) for ci in cells]
@@ -95,7 +107,7 @@ def plot_spheres(
     plotter.add_mesh(
         spheres,
         scalars="infected",
-        cmap=["red", "green"],
+        cmap=["green", "orange", "red"],
         show_edges=False,
         show_scalar_bar=False,
     )
@@ -166,8 +178,9 @@ if __name__ == "__main__":
         iterations,
         n_cells[:, 0],
         n_cells[:, 1],
-        colors=["red", "green"],
-        labels=["Infected", "Healthy"],
+        n_cells[:, 2],
+        colors=["green", "orange", "red"],
+        labels=["Healthy", "Selfinfected", "Infected"],
     )
     # ax.plot(iterations, n_cells[:, 1], color="green", label="Healthy")
     ax.legend()

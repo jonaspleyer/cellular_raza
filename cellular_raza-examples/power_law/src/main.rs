@@ -8,14 +8,30 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 type P = nalgebra::Vector3<f64>;
-type Inf = (f64, bool);
+type Inf = (f64, Healthstate);
+
+#[derive(Clone, Deserialize, Serialize)]
+enum Healthstate {
+    Healthy,
+    Selfinfected,
+    Infected,
+}
+
+impl Healthstate {
+    fn is_infected(&self) -> bool {
+        match self {
+            Healthstate::Healthy => false,
+            Healthstate::Selfinfected | Healthstate::Infected => true,
+        }
+    }
+}
 
 #[derive(CellAgent, Clone, Deserialize, Serialize)]
 struct Cell {
     interaction: MorsePotential,
     #[Mechanics]
     mechanics: Langevin3D,
-    is_infected: bool,
+    health_state: Healthstate,
     death_range: f64,
     infection_rate_others: f64,
     infection_rate_self: f64,
@@ -33,7 +49,7 @@ impl NeighborSensing<P, usize, Inf> for Cell {
         ext_inf: &Inf,
         accumulator: &mut usize,
     ) -> Result<(), CalcError> {
-        if (own_pos - ext_pos).norm() < self.death_range && ext_inf.1 {
+        if (own_pos - ext_pos).norm() < self.death_range && ext_inf.1.is_infected() {
             *accumulator += 1;
         }
         Ok(())
@@ -51,7 +67,7 @@ impl NeighborSensing<P, usize, Inf> for Cell {
 
 impl InteractionInformation<Inf> for Cell {
     fn get_interaction_information(&self) -> Inf {
-        (self.interaction.radius, self.is_infected)
+        (self.interaction.radius, self.health_state.clone())
     }
 }
 
@@ -81,14 +97,17 @@ impl Cycle<Cell> for Cell {
         // Probability to infect by itself
         let cond2 = rng.random_bool(cell.infection_rate_self * dt);
 
-        if cond1 || cond2 {
-            cell.is_infected = true;
+        if cond1 {
+            cell.health_state = Healthstate::Infected;
+            Some(CycleEvent::PhasedDeath)
+        } else if cond2 {
+            cell.health_state = Healthstate::Selfinfected;
             Some(CycleEvent::PhasedDeath)
         } else if cell.interaction.radius >= cell.division_size {
             Some(CycleEvent::Division)
         } else {
             cell.interaction.radius += dt * cell.growth_rate;
-            cell.interaction.cutoff = cell.interaction.radius;
+            cell.interaction.cutoff = 2.0 * cell.interaction.radius;
             None
         }
     }
@@ -222,7 +241,7 @@ fn main() -> Result<(), SimulationError> {
                     cutoff: radius,
                     strength: cell_strength,
                 },
-                is_infected: false,
+                health_state: Healthstate::Healthy,
                 death_range: cell_death_range,
                 infection_rate_others: cell_infection_rate_others,
                 infection_rate_self: cell_infection_rate_self,
