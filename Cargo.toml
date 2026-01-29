@@ -44,4 +44,4 @@ nalgebra = { version="0.34", features=["serde-serialize", "rand"]}
 ndarray = { version = ">=0.15", features = ["blas", "serde", "serde-1"] }
 pyo3 = { version = ">=0.24", features = ["serde", "py-clone"]}
 kdam = "0.6"
-approx = { git = "https://github.com/brendanzab/approx", branch = "approxim-merge" }
+approx = "0.6.0-rc1"
