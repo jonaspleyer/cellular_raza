@@ -65,7 +65,7 @@ impl MacroParser {
         let macro_name = &self.macro_name;
         let aspects: Vec<_> = self.aspects.to_aspect_list();
         let min_order = self.min_combinations.map(|x| x.get()).unwrap_or(1);
-        let sorted = self.sorted.map(|x| x).unwrap_or(true);
+        let sorted = self.sorted.unwrap_or(true);
 
         let mut stream = quote!();
         for n in min_order..aspects.len() {

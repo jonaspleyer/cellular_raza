@@ -100,7 +100,6 @@ where
                 >,
             >,
     {
-        let mut errors: Vec<CalcError> = vec![];
         // TODO Think about doing this in two passes
         // Pass 1: Calculate increments (dintra, dextra) and store them in AuxStorage (both!)
         // Pass 2: Use non-mutable iterator (ie. self.voxels.iter()) instead of .iter_mut()
@@ -121,10 +120,6 @@ where
             })
             .flatten()
             .collect::<Result<Vec<_>, CalcError>>()?;
-        match errors.len() {
-            1 => return Err(errors.pop().unwrap().into()),
-            _ => (),
-        }
         let mut neighbors = <Com as Communicator<
             SubDomainPlainIndex,
             ReactionsExtraBorderReturn<<S as SubDomainReactions<Pos, Re, Float>>::NeighborValue>,
