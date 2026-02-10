@@ -93,25 +93,39 @@ pub const DEFAULT_MECHANICS_SOLVER_ORDER: usize = 2;
 pub const DEFAULT_REACTIONS_SOLVER_ORDER_INTRA: usize = 4;
 pub const DEFAULT_REACTIONS_SOLVER_ORDER_CONTACT: usize = 2;
 
-pub fn default_update_mechanics_interaction_step_1_fn_name() -> syn::Ident {
-    syn::Ident::new(
-        "update_mechanics_interaction_step_1",
-        proc_macro2::Span::call_site(),
-    )
+macro_rules! path(
+    (@single $content:expr) => {
+        syn::PathSegment {
+            ident: syn::Ident::new(stringify!($content), proc_macro2::Span::call_site()),
+            arguments: syn::PathArguments::None,
+        }
+    };
+    (@segments $p1:tt) => {[path!(@single $p1)]};
+    (@segments $p1:tt $(::$p:tt)*) => {
+        [
+            path!(@single $p1),
+        $(
+            path!(@single $p),
+        )*]
+    };
+    ($($ti:tt)*) => {
+        syn::Path {
+            leading_colon: None,
+            segments: syn::punctuated::Punctuated::from_iter(path!(@segments $($ti)*)),
+        }
+    };
+);
+
+pub fn default_update_mechanics_interaction_step_1_fn_name() -> syn::Path {
+    path!(cellular_raza::core::backend::chili::SubDomainBox::update_mechanics_interaction_step_1)
 }
 
-pub fn default_update_mechanics_interaction_step_2_fn_name() -> syn::Ident {
-    syn::Ident::new(
-        "update_mechanics_interaction_step_2",
-        proc_macro2::Span::call_site(),
-    )
+pub fn default_update_mechanics_interaction_step_2_fn_name() -> syn::Path {
+    path!(cellular_raza::core::backend::chili::SubDomainBox::update_mechanics_interaction_step_2)
 }
 
-pub fn default_update_mechanics_interaction_step_3_fn_name() -> syn::Ident {
-    syn::Ident::new(
-        "update_mechanics_interaction_step_3",
-        proc_macro2::Span::call_site(),
-    )
+pub fn default_update_mechanics_interaction_step_3_fn_name() -> syn::Path {
+    path!(cellular_raza::core::backend::chili::SubDomainBox::update_mechanics_interaction_step_3)
 }
 
 define_kwargs!(
@@ -135,11 +149,11 @@ define_kwargs!(
 
     // Define functions to call for updates
     neighbor_func: Option<syn::Ident> | None,
-    update_mechanics_interaction_step_1: syn::Ident |
+    update_mechanics_interaction_step_1: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
-    update_mechanics_interaction_step_2: syn::Ident |
+    update_mechanics_interaction_step_2: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
-    update_mechanics_interaction_step_3: syn::Ident |
+    update_mechanics_interaction_step_3: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
 );
 
@@ -191,11 +205,11 @@ define_kwargs!(
 
     // Define functions to call for updates
     neighbor_func: Option<syn::Ident> | None,
-    update_mechanics_interaction_step_1: syn::Ident |
+    update_mechanics_interaction_step_1: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_1_fn_name(),
-    update_mechanics_interaction_step_2: syn::Ident |
+    update_mechanics_interaction_step_2: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
-    update_mechanics_interaction_step_3: syn::Ident |
+    update_mechanics_interaction_step_3: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
     @from
     KwargsSim
@@ -235,9 +249,9 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         let umis_fn_name_1 = &kwargs.update_mechanics_interaction_step_1;
         let umis_fn_name_2 = &kwargs.update_mechanics_interaction_step_2;
         let umis_fn_name_3 = &kwargs.update_mechanics_interaction_step_3;
-        step_1.extend(quote!(sbox. #umis_fn_name_1 (#neighbor_func)?;));
-        step_2.extend(quote!(sbox. #umis_fn_name_2 (#determinism, #neighbor_func)?;));
-        step_3.extend(quote!(sbox. #umis_fn_name_3 (#determinism)?;));
+        step_1.extend(quote!(#umis_fn_name_1 (&mut sbox, #neighbor_func)?;));
+        step_2.extend(quote!(#umis_fn_name_2 (&mut sbox, #determinism, #neighbor_func)?;));
+        step_3.extend(quote!(#umis_fn_name_3 (&mut sbox, #determinism)?;));
     }
 
     if kwargs.aspects.contains(&Mechanics) {

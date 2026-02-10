@@ -132,21 +132,21 @@ pub enum Kwarg {
         update_mechanics_interaction_step_1_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
-        update_mechanics_interaction_step_1: syn::Ident,
+        update_mechanics_interaction_step_1: syn::Path,
     },
     update_mechanics_interaction_step_2 {
         #[allow(unused)]
         update_mechanics_interaction_step_2_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
-        update_mechanics_interaction_step_2: syn::Ident,
+        update_mechanics_interaction_step_2: syn::Path,
     },
     update_mechanics_interaction_step_3 {
         #[allow(unused)]
         update_mechanics_interaction_step_3_kw: syn::Ident,
         #[allow(unused)]
         double_colon: syn::Token![:],
-        update_mechanics_interaction_step_3: syn::Ident,
+        update_mechanics_interaction_step_3: syn::Path,
     },
 }
 
