@@ -191,7 +191,7 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
 }
 
 /// ```
-/// use tissue::*;
+/// use tissue_pyo3::*;
 /// use nalgebra::Vector2;
 /// let o1 = Vector2::from([0.0, 0.0]);
 /// let dir = Vector2::from([1.0, 0.0]);
@@ -204,11 +204,6 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
 /// assert!(i1 == i2);
 /// assert!((i1.unwrap()[0] - 1.0).abs() < 1e-3);
 /// assert!((i1.unwrap()[1] - 0.0).abs() < 1e-3);
-///
-///
-/// let o1 = Vector2::from([100.0, 103.1]);
-/// let dir = Vector2::from([0.0, -1.0]);
-/// let seg_start = Vector2::from([])
 /// ```
 pub fn intersect_line_segment(
     line_origin: Pos,
