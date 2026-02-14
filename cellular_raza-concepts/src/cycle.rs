@@ -118,14 +118,14 @@ pub trait Cycle<Cell = Self, Float = f64> {
     /// The user is responsible for correctly adjusting cell-specific values such as intracellular
     /// concentrations or position of the two resulting cells.
     /// Corresponds to [CycleEvent::Division].
-    #[must_use]
+    #[must_use = "the resulting daughter cells need to be used within the backend"]
     fn divide(rng: &mut rand_chacha::ChaCha8Rng, cell: &mut Cell) -> Result<Cell, DivisionError>;
 
     /// Method corresponding to the [CycleEvent::PhasedDeath] event.
     /// Update the cell while returning a boolean which indicates if the updating procedure has
     /// finished. As soon as the return value is `true` the cell is removed.
     #[allow(unused)]
-    #[must_use]
+    #[must_use = "backend implementation should continuously check the result"]
     fn update_conditional_phased_death(
         rng: &mut rand_chacha::ChaCha8Rng,
         dt: &Float,
