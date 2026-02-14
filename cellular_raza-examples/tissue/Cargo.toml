@@ -10,13 +10,12 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 serde = "1.0"
-rand = "0.9"
-rand_chacha = "0.9"
-cellular_raza = { path="../../cellular_raza/", features = ["pyo3"]}
-nalgebra = "0.34"
-rayon = "1.9.0"
-num = "0.4"
-pyo3 = ">=0.24"
+rand.workspace = true
+rand_chacha.workspace = true
+cellular_raza = { path="../../cellular_raza", features=["pyo3"] }
+nalgebra.workspace = true
+num.workspace = true
+pyo3.workspace = true
 numpy = "0.27.1"
 voronoice = "0.2.0"
 approx.workspace = true
