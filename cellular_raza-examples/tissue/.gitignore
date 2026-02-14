@@ -1,0 +1,7 @@
+Cargo.lock
+target
+out
+.venv
+docs/_build
+cr_tissue/*.so
+cr_tissue/__pycache__
