@@ -222,16 +222,28 @@ where
     S: SubDomain,
 {
     #[allow(unused)]
-    pub(crate) index: I,
-    pub(crate) subdomain_plain_index: SubDomainPlainIndex,
-    pub(crate) neighbors: BTreeSet<SubDomainPlainIndex>,
-    pub(crate) subdomain: S,
-    pub(crate) voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
-    pub(crate) voxel_index_to_plain_index: BTreeMap<S::VoxelIndex, VoxelPlainIndex>,
-    pub(crate) plain_index_to_subdomain:
-        std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
-    pub(crate) communicator: Com,
-    pub(crate) syncer: Sy,
+    /// SubdomainIndex as given by the [Domain] and [SubDomain] traits.
+    pub index: I,
+    /// [SubDomainPlainIndex]
+    pub subdomain_plain_index: SubDomainPlainIndex,
+    /// Collection of neighboring [SubDomainPlainIndexs](SubDomainPlainIndex)
+    pub neighbors: BTreeSet<SubDomainPlainIndex>,
+    /// The constructed [SubDomain] as given by the [Domain] trait
+    pub subdomain: S,
+    /// Voxels of the subdomain as given by the [Domain] trait
+    pub voxels: std::collections::BTreeMap<VoxelPlainIndex, Voxel<C, A>>,
+    /// Helper map to convert from [SubDomain::VoxelIndex] to [SubDomainPlainIndex]
+    pub voxel_index_to_plain_index: BTreeMap<S::VoxelIndex, VoxelPlainIndex>,
+    /// Helper map to convert from [VoxelPlainIndex] to [SubDomainPlainIndex]
+    pub plain_index_to_subdomain: std::collections::BTreeMap<VoxelPlainIndex, SubDomainPlainIndex>,
+    /// Allows communication with other [SubDomains](SubDomain)
+    ///
+    /// This is used to exchange information about positions of agents at boundaries to calculate
+    /// forces or concentrations of nutrients etc.
+    pub communicator: Com,
+    /// Handles syncing of simulation steps between multiple parallel executions of [SubDomain]
+    /// update functions
+    pub syncer: Sy,
 }
 
 impl<I, S, C, A, Com, Sy> SubDomainBox<I, S, C, A, Com, Sy>
