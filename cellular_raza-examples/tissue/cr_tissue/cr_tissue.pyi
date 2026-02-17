@@ -5,6 +5,7 @@ import builtins
 import numpy
 import numpy.typing
 import typing
+
 __all__ = [
     "Agent",
     "SimulationSettings",
@@ -53,7 +54,18 @@ class Agent:
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
     def position(self, value: builtins.list[builtins.float]) -> None: ...
-    def __new__(cls, position: numpy.typing.NDArray[numpy.float64], force_area: builtins.float, force_perimeter: builtins.float, target_area: builtins.float, force_dist: builtins.float, min_dist: builtins.float, target_perimeter: builtins.float, damping: builtins.float, diffusion_constant: builtins.float) -> Agent: ...
+    def __new__(
+        cls,
+        position: numpy.typing.NDArray[numpy.float64],
+        force_area: builtins.float,
+        force_perimeter: builtins.float,
+        target_area: builtins.float,
+        force_dist: builtins.float,
+        min_dist: builtins.float,
+        target_perimeter: builtins.float,
+        damping: builtins.float,
+        diffusion_constant: builtins.float,
+    ) -> Agent: ...
 
 @typing.final
 class SimulationSettings:
@@ -135,11 +147,17 @@ class SimulationSettings:
         Creates a new :class:`SimulationSettings` class.
         """
 
-def run_simulation(settings: SimulationSettings, agents: typing.Sequence[Agent]) -> builtins.dict[builtins.int, builtins.list[tuple[builtins.list[builtins.float], builtins.list[tuple], builtins.float]]]:
+def run_simulation(
+    settings: SimulationSettings, agents: typing.Sequence[Agent]
+) -> builtins.dict[
+    builtins.int,
+    builtins.list[
+        tuple[builtins.list[builtins.float], builtins.list[tuple], builtins.float]
+    ],
+]:
     r"""
     Performs a complete numerical simulation of our system.
-    
+
     Args:
         simulation_settings(SimulationSettings): The settings required to run the simulation
     """
-
