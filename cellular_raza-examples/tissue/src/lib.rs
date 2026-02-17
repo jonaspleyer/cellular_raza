@@ -4,6 +4,7 @@
 
 use cellular_raza::prelude::*;
 use pyo3::{prelude::*, types::PyTuple, IntoPyObjectExt};
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction, derive::*};
 
 use serde::{Deserialize, Serialize};
 
@@ -44,6 +45,7 @@ pub struct SimulationSettings {
     pub cell_diffusion_constant: f64,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl SimulationSettings {
     /// Creates a new :class:`SimulationSettings` class.
@@ -81,7 +83,10 @@ struct Inf {
     current_area: f64,
 }
 
+#[gen_stub_pyclass]
+#[pyclass]
 #[derive(Clone, Deserialize, Serialize)]
+#[gen_stub_pymethods]
 struct Agent {
     position: Vector2<f64>,
     velocity: Vector2<f64>,
@@ -661,6 +666,7 @@ where
 ///
 /// Args:
 ///     simulation_settings(SimulationSettings): The settings required to run the simulation
+#[gen_stub_pyfunction]
 #[pyfunction]
 pub fn run_simulation<'py>(
     python: Python<'py>,
@@ -781,3 +787,5 @@ fn cr_tissue(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(construct_polygons, m)?)?;
     Ok(())
 }
+
+define_stub_info_gatherer!(stub_info);

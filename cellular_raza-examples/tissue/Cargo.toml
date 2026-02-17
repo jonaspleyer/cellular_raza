@@ -3,6 +3,10 @@ name = "tissue-pyo3"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "stub_gen"
+doc = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "tissue_pyo3"
@@ -19,3 +23,5 @@ pyo3.workspace = true
 numpy = "0.27.1"
 voronoice = "0.2.0"
 approx.workspace = true
+pyo3-stub-gen = "0.19.0"
+env_logger = "0.11.9"
