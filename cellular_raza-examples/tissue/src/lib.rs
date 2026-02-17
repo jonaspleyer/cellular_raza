@@ -3,6 +3,7 @@
 //! `cellular_raza <https://cellular-raza.com/>`_.
 
 use cellular_raza::prelude::*;
+use numpy::PyArrayMethods;
 use pyo3::{prelude::*, types::PyTuple, IntoPyObjectExt};
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction, derive::*};
 
@@ -15,18 +16,13 @@ use nalgebra::{Vector2, VectorView2};
 // use vertex_based::*;
 
 /// Contains settings needed to specify the simulation
+#[gen_stub_pyclass]
 #[pyclass(get_all, set_all)]
 pub struct SimulationSettings {
-    /// Number of initial plant cells
-    pub n_plants: usize,
-    /// Number of initial Fungi
-    pub n_fungi: usize,
     /// Overall domain size
     pub domain_size: f64,
     /// Number of voxels to create subdivisions
     pub n_voxels: usize,
-    /// Number of threads used
-    pub n_threads: usize,
     /// Time increment used to solve the simulation
     pub dt: f64,
     /// Maximum duration of the simulation
@@ -35,14 +31,8 @@ pub struct SimulationSettings {
     pub save_interval: f64,
     /// Random initial seed
     pub rng_seed: u64,
-    pub target_area: f64,
-    pub force_strength: f64,
-    pub force_strength_weak: f64,
-    pub force_strength_species: f64,
-    pub force_relative_cutoff: f64,
-    pub potential_stiffness: f64,
-    pub damping_constant: f64,
-    pub cell_diffusion_constant: f64,
+    /// Steps to take to approximate the size of the cell
+    pub approximation_steps: usize,
 }
 
 #[gen_stub_pymethods]
@@ -52,24 +42,13 @@ impl SimulationSettings {
     #[new]
     fn new() -> Self {
         Self {
-            n_plants: 10,
-            n_fungi: 5,
             domain_size: 30.0,
             n_voxels: 3,
-            n_threads: 1,
             dt: 0.05,
             t_max: 10.0,
             save_interval: 1.0,
             rng_seed: 0,
-            target_area: 100.0,
-            force_strength: 0.01,
-            force_strength_weak: 0.01,
-            force_strength_species: 0.02,
-
-            force_relative_cutoff: 5.0,
-            potential_stiffness: 0.2,
-            damping_constant: 0.5,
-            cell_diffusion_constant: 0.1,
+            approximation_steps: 20,
         }
     }
 }
@@ -78,30 +57,75 @@ type Pos = Vector2<f64>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Inf {
-    species: usize,
     target_area: f64,
     current_area: f64,
+    path: Vec<PathSegment>,
 }
 
 #[gen_stub_pyclass]
 #[pyclass]
 #[derive(Clone, Deserialize, Serialize)]
-#[gen_stub_pymethods]
-struct Agent {
-    position: Vector2<f64>,
-    velocity: Vector2<f64>,
-    path: Vec<PathSegment>,
-    target_area: f64,
-    current_area: f64,
-    force_strength: f64,
-    force_strength_weak: f64,
-    force_strength_species: f64,
+#[rustfmt::skip]
+pub struct Agent {
+    // Mechanical variables
+    pub position: Vector2<f64>,
+    pub velocity: Vector2<f64>,
+    pub path: Vec<PathSegment>,
+    #[pyo3(get, set)] pub current_area: f64,
+    // Interaction Parameters
+    #[pyo3(get, set)] pub force_area: f64,
+    #[pyo3(get, set)] pub force_perimeter: f64,
+    #[pyo3(get, set)] pub force_dist: f64,
+    #[pyo3(get, set)] pub min_dist: f64,
+    #[pyo3(get, set)] pub target_area: f64,
+    #[pyo3(get, set)] pub target_perimeter: f64,
+    // Mechanical Parameters
+    #[pyo3(get, set)] pub damping: f64,
+    #[pyo3(get, set)] pub diffusion_constant: f64,
+}
 
-    force_relative_cutoff: f64,
-    potential_stiffness: f64,
-    damping: f64,
-    diffusion_constant: f64,
-    species: usize,
+#[gen_stub_pymethods]
+#[pymethods]
+impl Agent {
+    #[new]
+    fn new(
+        position: Bound<numpy::PyArray1<f64>>,
+        force_area: f64,
+        force_perimeter: f64,
+        target_area: f64,
+        force_dist: f64,
+        min_dist: f64,
+        target_perimeter: f64,
+        damping: f64,
+        diffusion_constant: f64,
+    ) -> Self {
+        let position = position.to_owned_array();
+        Self {
+            position: [position[0], position[1]].into(),
+            velocity: Vector2::zeros(),
+            path: vec![],
+            current_area: 0.0,
+            force_area,
+            force_perimeter,
+            force_dist,
+            min_dist,
+            target_area,
+            target_perimeter,
+            damping,
+            diffusion_constant,
+        }
+    }
+
+    #[getter]
+    fn get_position(&self) -> [f64; 2] {
+        [self.position[0], self.position[1]]
+    }
+
+    #[setter]
+    fn set_position(&mut self, position: [f64; 2]) {
+        self.position[0] = position[0];
+        self.position[1] = position[1];
+    }
 }
 
 impl Position<Pos> for Agent {
@@ -136,8 +160,37 @@ impl Mechanics<Pos, Pos, Pos> for Agent {
     }
 
     fn calculate_increment(&self, force: Pos) -> Result<(Pos, Pos), CalcError> {
+        let perimeter = self
+            .path
+            .iter()
+            .map(|segm| match segm {
+                PathSegment::Line { p1, p2 } => (p1 - p2).norm(),
+                PathSegment::Arc {
+                    angle1,
+                    angle2,
+                    radius,
+                    ..
+                } => (angle1 - angle2).abs() * radius,
+            })
+            .sum::<f64>();
+
+        let mut force_perimeter = Pos::zeros();
+        let mut force_area = Pos::zeros();
+        for segm in self.path.iter() {
+            let p1 = segm.pos1();
+
+            let dir = self.position - p1;
+            let perim_diff = perimeter - self.target_perimeter;
+            force_perimeter -= self.force_perimeter * perim_diff * dir;
+
+            let area = self.current_area;
+            let area_diff = area - self.target_area;
+            force_area -= self.force_area * area_diff * dir;
+        }
+
         let dx = self.velocity;
-        let dv = force - self.damping * self.velocity;
+        let dv = force_perimeter + force_area + force - self.damping * self.velocity;
+
         Ok((dx, dv))
     }
 }
@@ -145,11 +198,53 @@ impl Mechanics<Pos, Pos, Pos> for Agent {
 impl InteractionInformation<Inf> for Agent {
     fn get_interaction_information(&self) -> Inf {
         Inf {
-            species: self.species,
             target_area: self.target_area,
             current_area: self.current_area,
+            path: self.path.clone(),
         }
     }
+}
+
+fn get_intersecting_pathsegment(
+    path1: &[PathSegment],
+    path2: &[PathSegment],
+) -> Option<PathSegment> {
+    for s1 in path1.iter() {
+        for s2 in path2.iter() {
+            match (s1, s2) {
+                (PathSegment::Line { p1, p2 }, PathSegment::Line { p1: q1, p2: q2 }) => {
+                    let da = p2 - p1;
+                    let db = q2 - q1;
+                    let dab = p1 - q1;
+
+                    // Cross product to check that they are parallel
+                    let parallel = approx::abs_diff_eq!(da.perp(&db), 0.0, epsilon = 1e-3);
+                    // Cross product to check that they are on the same line
+                    let collinear = approx::abs_diff_eq!(dab.perp(&da), 0.0, epsilon = 1e-3);
+
+                    if parallel && collinear {
+                        let h0 = 0f64;
+                        let h1 = 1f64;
+                        let mut h2 = (q1 - p1).dot(&da) / da.norm_squared();
+                        let mut h3 = (q2 - p1).dot(&da) / da.norm_squared();
+
+                        if h2 > h3 {
+                            std::mem::swap(&mut h2, &mut h3);
+                        }
+
+                        let u0 = h0.max(h3);
+                        let u1 = h1.min(h3);
+                        return Some(PathSegment::Line {
+                            p1: p1 + u0 * da,
+                            p2: p1 + u1 * da,
+                        });
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    None
 }
 
 impl Interaction<Pos, Pos, Pos, Inf> for Agent {
@@ -159,39 +254,66 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         _: &Pos,
         ext_pos: &Pos,
         _: &Pos,
-        ext_info: &Inf,
+        _ext_info: &Inf,
     ) -> Result<(Pos, Pos), CalcError> {
-        let mut dir = own_pos - ext_pos;
-        let d = dir.norm();
-        dir /= d;
-
-        let r1 = (self.target_area / core::f64::consts::PI).sqrt();
-        let r2 = (ext_info.target_area / core::f64::consts::PI).sqrt();
-        let range_scaling = (d / r1).max(1.0 / 3.0).powi(2);
-
-        // Two area conditions
-        let ac1 = self.target_area - self.current_area;
-        let ac2 = ext_info.target_area - ext_info.current_area;
-
-        // CASE 1: Distance is too small => Repulsive
-        let f = if d < 0.8 * (r1 + r2) {
-            self.force_strength / range_scaling * dir
+        let dir = ext_pos - own_pos;
+        let dist = dir.norm();
+        if dist < self.min_dist {
+            // Repulsive force due to close
+            let f = -self.force_dist * dir.normalize();
+            return Ok((f, -f));
         }
-        // CASE 2: Any of the two areas is too small => Repulsive
-        else if ac1 > 0.0 || ac2 > 0.0 {
-            let a = 2.0 * (ac1.max(ac2)) / (self.target_area + ext_info.target_area);
-            a * self.force_strength / range_scaling * dir
-        }
-        // CASE 3: Same Species => Attractive
-        else if self.species == ext_info.species {
-            -self.force_strength_species / range_scaling * dir
-        }
-        // CASE 4: Everything else => Attractive weak
-        else {
-            -self.force_strength_weak / range_scaling * dir
-        };
 
-        Ok((f, -f))
+        /* if let Some(PathSegment::Line { p1, p2 }) =
+            get_intersecting_pathsegment(&self.path, &ext_info.path)
+        {
+            /*
+            let mut dir = own_pos - ext_pos;
+            let d = dir.norm();
+            dir /= d;
+
+            let r1 = (self.target_area / core::f64::consts::PI).sqrt();
+            let r2 = (ext_info.target_area / core::f64::consts::PI).sqrt();
+            let range_scaling = (d / r1).max(1.0 / 3.0).powi(2);
+
+            // Two area conditions
+            let ac1 = self.target_area - self.current_area;
+            let ac2 = ext_info.target_area - ext_info.current_area;
+
+            // CASE 1: Distance is too small => Repulsive
+            let f = if d < 0.8 * (r1 + r2) {
+                self.force_strength / range_scaling * dir
+            }
+            // CASE 2: Any of the two areas is too small => Repulsive
+            else if ac1 > 0.0 || ac2 > 0.0 {
+                let a = 2.0 * (ac1.max(ac2)) / (self.target_area + ext_info.target_area);
+                a * self.force_strength / range_scaling * dir
+            }
+            // CASE 3: Same Species => Attractive
+            else if self.species == ext_info.species {
+                -self.force_strength_species / range_scaling * dir
+            }
+            // CASE 4: Everything else => Attractive weak
+            else {
+                -self.force_strength_weak / range_scaling * dir
+            };*/
+
+            let area = self.current_area;
+            let area_diff = area - self.target_area;
+            let f = -self.force_area
+                * area_diff
+                * (own_pos - ext_pos).normalize()
+                * 0.5
+                * (p1 - own_pos).perp(&(p2 - own_pos)).abs()
+                / area;
+
+            // let f = f1 + f2;
+
+            Ok((f, -f))
+        } else {
+            Ok((Pos::zeros(), Pos::zeros()))
+        }*/
+        Ok((Pos::zeros(), Pos::zeros()))
     }
 }
 
@@ -256,6 +378,7 @@ pub struct MyDomain {
     #[DomainPartialDerive]
     #[DomainRngSeed]
     domain: CartesianCuboid<f64, 2>,
+    approximation_steps: usize,
 }
 
 impl DomainCreateSubDomains<MySubDomain> for MyDomain {
@@ -269,11 +392,21 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
         impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain, Vec<Self::VoxelIndex>)>,
         DecomposeError,
     > {
+        let approximation_steps = self.approximation_steps;
         Ok(self
             .domain
             .create_subdomains(n_subdomains)?
             .into_iter()
-            .map(|(n, subdomain, voxels)| (n, MySubDomain { subdomain }, voxels)))
+            .map(move |(n, subdomain, voxels)| {
+                (
+                    n,
+                    MySubDomain {
+                        subdomain,
+                        approximation_steps,
+                    },
+                    voxels,
+                )
+            }))
     }
 }
 
@@ -282,6 +415,7 @@ pub struct MySubDomain {
     #[Base]
     #[Mechanics]
     subdomain: CartesianSubDomain<f64, 2>,
+    approximation_steps: usize,
 }
 
 impl SortCells<Agent> for MyDomain {
@@ -306,7 +440,7 @@ impl SortCells<Agent> for MySubDomain {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-enum PathSegment {
+pub enum PathSegment {
     Line {
         p1: Vector2<f64>,
         p2: Vector2<f64>,
@@ -342,6 +476,30 @@ impl PathSegment {
         };
         PyTuple::new(py, elements)
     }
+
+    fn pos1(&self) -> Vector2<f64> {
+        match self {
+            PathSegment::Line { p1, p2: _ } => *p1,
+            PathSegment::Arc {
+                center,
+                angle1,
+                radius,
+                ..
+            } => center + Vector2::from([angle1.cos(), angle1.sin()]) * *radius,
+        }
+    }
+
+    fn pos2(&self) -> Vector2<f64> {
+        match self {
+            PathSegment::Line { p1: _, p2 } => *p2,
+            PathSegment::Arc {
+                center,
+                angle2,
+                radius,
+                ..
+            } => center + Vector2::from([angle2.cos(), angle2.sin()]) * *radius,
+        }
+    }
 }
 
 fn get_polygon_area(middle: &Vector2<f64>, vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
@@ -354,6 +512,15 @@ fn get_polygon_area(middle: &Vector2<f64>, vertices: &nalgebra::Matrix2xX<f64>) 
         area += (v1 - middle).perp(&(v2 - middle)).abs();
     }
     area
+}
+
+fn get_polygon_perimeter(vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
+    let mut perimeter = 0.0;
+    let n = vertices.ncols();
+    for i in 0..n {
+        perimeter += (vertices.column(i) - vertices.column((i + 1) % n)).norm();
+    }
+    perimeter
 }
 
 fn minimum_dist_to_line(point: &Vector2<f64>, l1: VectorView2<f64>, l2: VectorView2<f64>) -> f64 {
@@ -529,15 +696,17 @@ fn construct_constrained_path(
     middle: &Vector2<f64>,
     vertices: &nalgebra::Matrix2xX<f64>,
     target_area: f64,
+    target_perimeter: f64,
     approximation_steps: usize,
 ) -> Vec<PathSegment> {
     let poly_area = get_polygon_area(middle, vertices);
+    let poly_perim = get_polygon_perimeter(vertices);
     let n_cols = vertices.ncols();
 
     // CASE 1: FULL POLYGON
     // If the size of the bounding polygon is smaller than the target area, we return the polygon
     // itself
-    if poly_area <= target_area {
+    if poly_area <= target_area || poly_perim <= target_perimeter {
         return (0..n_cols)
             .map(|n| PathSegment::Line {
                 p1: vertices.column(n).into(),
@@ -606,6 +775,7 @@ where
                     &mut c.cell.position,
                     &mut c.cell.path,
                     &mut c.cell.target_area,
+                    &mut c.cell.target_perimeter,
                     &mut c.cell.current_area,
                 )
             })
@@ -640,7 +810,7 @@ where
         .build();
 
     if let Some(voronoi) = voronoi {
-        for ((site, path, target_area, current_area), vcell) in
+        for ((site, path, target_area, target_perimeter, current_area), vcell) in
             info_all.into_iter().zip(voronoi.iter_cells())
         {
             let mut verts = nalgebra::Matrix2xX::zeros(1);
@@ -652,7 +822,13 @@ where
                 verts[(1, n)] = v.y;
             }
 
-            let new_path = construct_constrained_path(&site, &verts, *target_area, 20);
+            let new_path = construct_constrained_path(
+                &site,
+                &verts,
+                *target_area,
+                *target_perimeter,
+                sbox.subdomain.approximation_steps,
+            );
             *path = new_path;
             *current_area = calculate_area(&site, path);
         }
@@ -671,43 +847,20 @@ where
 pub fn run_simulation<'py>(
     python: Python<'py>,
     settings: &SimulationSettings,
-    plant_points: Bound<numpy::PyArray2<f64>>,
-    plant_species: Vec<usize>,
+    agents: Vec<Agent>,
 ) -> Result<
-    std::collections::BTreeMap<u64, Vec<([f64; 2], Vec<Bound<'py, PyTuple>>, usize)>>,
+    std::collections::BTreeMap<u64, Vec<([f64; 2], Vec<Bound<'py, PyTuple>>, f64)>>,
     SimulationError,
 > {
-    use numpy::PyArrayMethods;
-
-    // Agents setup
-    let domain_size = settings.domain_size;
-    let plant_points = plant_points.to_owned_array();
-    let agents = plant_points
-        .axis_iter(numpy::ndarray::Axis(0))
-        .zip(plant_species)
-        .map(|(p, species)| Agent {
-            position: [p[0], p[1]].into(),
-            velocity: Vector2::zeros(),
-            path: vec![],
-            target_area: settings.target_area,
-            current_area: settings.target_area,
-            force_strength: settings.force_strength,
-            force_strength_weak: settings.force_strength_weak,
-            force_strength_species: settings.force_strength_species,
-            force_relative_cutoff: settings.force_relative_cutoff,
-            potential_stiffness: settings.potential_stiffness,
-            damping: settings.damping_constant,
-            diffusion_constant: settings.cell_diffusion_constant,
-            species,
-        });
-
     // Domain Setup
+    let domain_size = settings.domain_size;
     let domain = MyDomain {
         domain: CartesianCuboid::from_boundaries_and_n_voxels(
             [0.0; 2],
             [domain_size; 2],
             [settings.n_voxels; 2],
         )?,
+        approximation_steps: settings.approximation_steps,
     };
 
     // Storage Setup
@@ -726,7 +879,7 @@ pub fn run_simulation<'py>(
     )?;
 
     let settings = Settings {
-        n_threads: settings.n_threads.try_into().unwrap(),
+        n_threads: 1.try_into().unwrap(),
         time: time_stepper,
         storage: storage_builder,
         progressbar: Some("Running Simulation".into()),
@@ -765,7 +918,7 @@ pub fn run_simulation<'py>(
                         })
                         .collect();
 
-                    Some((middle, p, c.cell.species))
+                    Some((middle, p, c.cell.current_area / c.cell.target_area))
                 })
                 .collect::<Vec<_>>();
 
@@ -782,9 +935,9 @@ pub fn run_simulation<'py>(
 
 #[pymodule]
 fn cr_tissue(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<Agent>()?;
     m.add_class::<SimulationSettings>()?;
     m.add_function(wrap_pyfunction!(run_simulation, m)?)?;
-    // m.add_function(wrap_pyfunction!(construct_polygons, m)?)?;
     Ok(())
 }
 
