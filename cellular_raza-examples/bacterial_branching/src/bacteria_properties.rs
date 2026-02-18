@@ -82,9 +82,10 @@ impl ReactionsExtra<ReactionVector, ReactionVector> for MyAgent {
         let u = self.uptake_rate;
 
         let uptake = u * extra;
+        let cell_area = self.interaction.radius.powi(2) * core::f32::consts::PI;
 
         let incr_intra: ReactionVector = vec![self.growth_rate * uptake[0]].into();
-        let incr_extra = -uptake;
+        let incr_extra = -uptake * cell_area;
 
         Ok((incr_intra, incr_extra))
     }

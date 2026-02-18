@@ -26,6 +26,12 @@ pub struct CartesianDiffusion2D<F> {
 }
 
 /// Subdomain for the [CartesianDiffusion2D] domain.
+///
+/// This subdomain tracks concentrations of extracellular compounds.
+/// This distinction is important to keep in mind when implementing reaction-diffusion systems
+/// where one has to normalize with the volume of the voxels and volume of the cells.
+///
+/// We assume that the [ReactionsExtra] trait produces values in units of `concentration*volume`.
 #[derive(SubDomain, Clone, Debug, Serialize, Deserialize)]
 #[serde(bound = "F:
     'static
@@ -155,6 +161,9 @@ where
     {
         use core::ops::AddAssign;
         use ndarray::*;
+
+        // Helper variables
+        // 1/Δd² = 2(1/Δx² + 1/Δy²)
         let two = F::one() + F::one();
         let dx2 = self.reactions_dx[0].powf(-two);
         let dy2 = self.reactions_dx[1].powf(-two);
@@ -211,12 +220,13 @@ where
         // + u[i,j+1]/dy^2
         self.increments[start].add_assign(&(&self.helper.slice(s![1..-1, 2.., ..]) * dy2 * dc));
 
+        let voxel_size = self.reactions_dx[0] * self.reactions_dx[1];
         for (pos, dextra) in sources {
             let index = self.get_extracellular_index(&pos)?;
             for (n, &v) in dextra.iter().enumerate() {
                 self.increments[start]
                     .slice_mut(ndarray::s![index[0], index[1], n])
-                    .add_assign(v);
+                    .add_assign(v / voxel_size);
             }
         }
 

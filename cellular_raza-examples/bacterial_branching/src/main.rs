@@ -32,7 +32,7 @@ struct BacterialParameters {
     potential_strength: f32,
     #[arg(long, default_value_t = 1.0)]
     damping_constant: f32,
-    #[arg(short, long, default_value_t = 1.0)]
+    #[arg(short, long, default_value_t = 5.0)]
     uptake_rate: f32,
     #[arg(short, long, default_value_t = 13.0)]
     growth_rate: f32,
