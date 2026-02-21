@@ -324,48 +324,52 @@ def plot_throughput(
     ax.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
     fig.tight_layout()
     fig.savefig(str(odir) + "/thread_scaling.png")
+    fig.savefig(str(odir) + "/thread_scaling.pdf")
     return fig
 
 
-plot_runtime(
-    entries=[
-        {
-            "name": "12700H-at-2000MHz",
-            "label": "12700H @2GHz",
-            "color": "#ff6361",
-        },
-        {
-            "name": "3960X-at-2000MHz",
-            "label": "3960X @2GHz",
-            "color": "#58508d",
-        },
-        {
-            "name": "3700X-at-2000MHz",
-            "label": "3700X @2GHz",
-            "color": "#003f5c",
-        },
-    ],
-    fit_order=2,
-    fit_exponential=False,
-)
-plot_throughput(
-    entries=[
-        {
-            "name": "3700X-at-2200MHz",
-            "label": "3700X @2.2GHz",
-            "color": "#003f5c",
-            "threads": list(range(16)),
-        },
-        {
-            "name": "3960X-at-2000MHz",
-            "label": "3960X @2GHz",
-            "color": "#58508d",
-            "threads": list(range(46)),
-        },
-        {
-            "name": "12700H-at-2000MHz",
-            "label": "12700H @2GHz",
-            "color": "#ff6361",
-        },
-    ]
-)
+if __name__ == "__main__":
+    set_mpl_rc_params()
+
+    plot_runtime(
+        entries=[
+            {
+                "name": "12700H-at-2000MHz",
+                "label": "12700H @2GHz",
+                "color": "#ff6361",
+            },
+            {
+                "name": "3960X-at-2000MHz",
+                "label": "3960X @2GHz",
+                "color": "#58508d",
+            },
+            {
+                "name": "3700X-at-2000MHz",
+                "label": "3700X @2GHz",
+                "color": "#003f5c",
+            },
+        ],
+        fit_order=2,
+        fit_exponential=False,
+    )
+    plot_throughput(
+        entries=[
+            {
+                "name": "3700X-at-2200MHz",
+                "label": "3700X @2.2GHz",
+                "color": "#003f5c",
+                "threads": list(range(16)),
+            },
+            {
+                "name": "3960X-at-2000MHz",
+                "label": "3960X @2GHz",
+                "color": "#58508d",
+                "threads": list(range(46)),
+            },
+            {
+                "name": "12700H-at-2000MHz",
+                "label": "12700H @2GHz",
+                "color": "#ff6361",
+            },
+        ]
+    )
