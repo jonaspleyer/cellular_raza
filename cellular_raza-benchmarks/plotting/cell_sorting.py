@@ -7,6 +7,31 @@ from pathlib import Path
 import glob
 
 
+def set_mpl_rc_params():
+    plt.rcParams.update(
+        {
+            "font.family": "Courier New",  # monospace font
+            "font.size": 20,
+            "axes.titlesize": 20,
+            "axes.labelsize": 20,
+            "xtick.labelsize": 20,
+            "ytick.labelsize": 20,
+            "legend.fontsize": 20,
+            "figure.titlesize": 20,
+        }
+    )
+
+
+def configure_ax(ax, minor=True):
+    ax.grid(True, which="major", linestyle="-", linewidth=0.75, alpha=0.25)
+    ax.minorticks_on()
+    if minor:
+        ax.grid(True, which="minor", linestyle="-", linewidth=0.25, alpha=0.15)
+    else:
+        ax.grid(False, which="minor")
+    ax.set_axisbelow(True)
+
+
 def load_config_paths(odir: Path = Path("benchmark_results")) -> list[Path]:
     return [Path(p) for p in glob.glob(str(odir) + "/*")]
 
@@ -119,17 +144,6 @@ def plot_runtime(
     fit_order: int = 2,
 ) -> plt.Figure:
     df = get_runtime_dataset(subfolder, odir)
-    plt.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.size": 25,
-            "legend.fontsize": 18,
-            "axes.titlesize": 33,
-            "lines.markersize": 6,
-            "lines.markeredgewidth": 0.5,
-            "lines.linewidth": 2,
-        }
-    )
 
     def fit_func(x, *params):
         if fit_exponential:
@@ -147,7 +161,8 @@ def plot_runtime(
                 [p * x ** (len(params) - i - 1) for i, p in enumerate(params)], axis=0
             )
 
-    fig, ax = plt.subplots(figsize=(12, 9))
+    fig, ax = plt.subplots(figsize=(8, 8))
+    configure_ax(ax)
     for entry in entries:
         name = entry["name"]
         grp = df[df["name"] == name]
@@ -242,6 +257,7 @@ def plot_runtime(
     ax.set_ylabel("Runtime [s/step]")
     fig.tight_layout()
     fig.savefig(str(odir) + "/sim-size-scaling.png")
+    fig.savefig(str(odir) + "/sim-size-scaling.pdf")
     return fig
 
 
@@ -251,19 +267,8 @@ def plot_throughput(
     odir: Path = Path("benchmark_results"),
 ) -> plt.Figure:
     df = get_throughput_dataset(subfolder, odir)
-    plt.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.size": 25,
-            "legend.fontsize": 18,
-            "axes.titlesize": 33,
-            "lines.markersize": 6,
-            "lines.markeredgewidth": 0.5,
-            "lines.linewidth": 2,
-        }
-    )
-
-    fig, ax = plt.subplots(figsize=(12, 9))
+    fig, ax = plt.subplots(figsize=(8, 8))
+    configure_ax(ax)
     for i, entry in enumerate(entries):
         name = entry["name"]
         grp = df[df["name"] == name]
@@ -301,7 +306,7 @@ def plot_throughput(
             x_values,
             y_values,
             yerr=grp["throughput_std"][filt],
-            label="{} $p={:.2f}\pm {:.2f}$%".format(
+            label="{} p={:.2f}±{:.2f}%".format(
                 label, 100 * popt[1], 100 * (pcov[1][1] ** 0.5)
             ),
             color=color,
