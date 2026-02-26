@@ -1052,3 +1052,86 @@ fn cr_tissue(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 define_stub_info_gatherer!(stub_info);
+
+#[test]
+fn test_triangle_circle_intersection_1() {
+    let v1 = nalgebra::vector![1.0, 0.0];
+    let v2 = nalgebra::vector![0.0, 1.0];
+    let area = triangle_circle_intersection_area(1.0, v1, v2);
+    approx::assert_abs_diff_eq!(area, 0.5);
+}
+
+#[test]
+fn test_triangle_circle_intersection_2() {
+    let v1 = nalgebra::vector![2.0, 0.0];
+    let v2 = nalgebra::vector![0.0, 2.0];
+    let radius = 1.0;
+    let area = triangle_circle_intersection_area(radius, v1, v2);
+    approx::assert_abs_diff_eq!(area, 0.25 * core::f64::consts::PI * radius.powi(2));
+}
+
+#[test]
+fn test_triangle_circle_intersection_3() {
+    let v1 = nalgebra::vector![1.0, 0.0];
+    let v2 = nalgebra::vector![1.0, 1.0];
+    let radius = 1.0;
+    let area = triangle_circle_intersection_area(radius, v1, v2);
+    approx::assert_abs_diff_eq!(area, 0.125 * core::f64::consts::PI * radius.powi(2));
+}
+
+#[test]
+fn test_triangle_circle_intersection_4() {
+    let v1 = nalgebra::vector![1.0, 0.0];
+    let v2 = nalgebra::vector![1.0, 1.0];
+    let radius = 1.0;
+    let area = triangle_circle_intersection_area(radius, v1, v2);
+    approx::assert_abs_diff_eq!(area, 0.125 * core::f64::consts::PI * radius.powi(2));
+}
+
+#[test]
+fn test_triangle_circle_intersection_5() {
+    let v1 = nalgebra::vector![-1.0 / 2f64.sqrt(), 1.0 / 2f64.sqrt()];
+    let v2 = nalgebra::vector![2.0 / 2f64.sqrt(), 1.0 / 2f64.sqrt()];
+    let radius = 1.0;
+    let area = triangle_circle_intersection_area(radius, v1, v2);
+    let a1 = 0.5 * radius.powi(2);
+    let helper = nalgebra::vector![v2[1], v2[1]];
+    let a2 = 0.5 * (v2.dot(&helper) / v2.norm() / helper.norm()).acos() * radius.powi(2);
+    approx::assert_abs_diff_eq!(area, a1 + a2, epsilon = 1e-6);
+}
+
+#[test]
+fn test_get_total_intersection_area() {
+    let middle = nalgebra::vector![0.0, 0.0];
+    let vertices = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::matrix![-1.0, -1.0].transpose(),
+        nalgebra::matrix![1.0, -1.0].transpose(),
+        nalgebra::matrix![1.0, 1.0].transpose(),
+        nalgebra::matrix![-1.0, 1.0].transpose(),
+    ]);
+
+    // Square is fully contained in circle
+    let a1 = get_total_intersection_area(&middle, &vertices, 2f64.sqrt());
+    approx::assert_abs_diff_eq!(a1, 4.0);
+
+    // Circle is fully contained in square
+    let a2 = get_total_intersection_area(&middle, &vertices, 1.0);
+    approx::assert_abs_diff_eq!(a2, core::f64::consts::PI);
+
+    // Something in between
+    let mut a_prev = a2;
+    let n_tot = 60;
+    for n in 0..n_tot + 1 {
+        let r = 1.0 + (n as f64 / n_tot as f64) * (2f64.sqrt() - 1.0);
+        // Calculate the expected area
+        let x = 1.0; // Size of the square
+        let alpha = (x / r).asin() - core::f64::consts::PI / 4.0;
+        // Area encapsulated by partial circle
+        let area_circle = alpha * r.powi(2);
+        let area_triangles = (1.0 - (x / r).powi(2)).sqrt() * r * x;
+        // Calculate the area of two triangles making up the corner of the square
+        let a1 = get_total_intersection_area(&middle, &vertices, r);
+        let a2 = 4.0 * area_circle + 4.0 * area_triangles;
+        approx::assert_abs_diff_eq!(a1, a2, epsilon = 1e-3);
+    }
+}
