@@ -822,6 +822,11 @@ fn construct_constrained_path(
     }
 
     // CASE 3: SOMETHING IN BETWEEN
+    // First determine lower and upper bounds.
+    // Lower bound is obviously zero.
+    // Upper bound can be obtained by calculating
+    // the distance of the middle to each vertex
+    // and taking the maximum.
     let mut r_low = 0.0;
     let mut r_high = 0.0;
     for col in vertices.column_iter() {
