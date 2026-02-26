@@ -534,35 +534,115 @@ fn minimum_dist_to_line(point: &Vector2<f64>, l1: VectorView2<f64>, l2: VectorVi
     let x1 = l1 - point;
     let x2 = l2 - point;
     let edge_len = (x1 - x2).norm();
-    (x1[0] * x2[1] - x1[1] * x2[0]).abs() / edge_len
+    x1.perp(&x2).abs() / edge_len
 }
 
 fn triangle_circle_intersection_area(radius: f64, v1: Vector2<f64>, v2: Vector2<f64>) -> f64 {
     let d1 = v1.norm();
     let d2 = v2.norm();
 
-    let det = v1[0] * v2[1] - v1[1] * v2[0];
-    let dv = v2 - v1;
-    let dv_magn_sq = dv.norm_squared();
-    if dv_magn_sq == 0.0 {
+    // Case 1: Triangle fully contained in Circle
+    if d1 <= radius && d2 <= radius {
+        return 0.5 * v1.perp(&v2).abs();
+    }
+
+    // Case 2: Circle fully contained in triangle
+    let closest_dist = minimum_dist_to_line(&Vector2::zeros(), v1.as_view(), v2.as_view());
+    if closest_dist >= radius {
+        return 0.5 * radius.powi(2) * v1.angle(&v2);
+    }
+
+    // Case 3: Intersection of circle and triangle
+    // First ensure that they are not too close to each other.
+    // Otherwise simply return 0
+    if approx::abs_diff_eq!((v1 - v2).norm(), 0.0) {
         return 0.0;
     }
 
-    let t = (v1.dot(&dv) / dv_magn_sq).clamp(0.0, 1.0);
-    let closest = v1 + t * dv;
-    let dist_to_edge = closest.norm();
+    // Calculate normalized connecting vector from v1 to v2
+    let (dir, t1, t2) = {
+        let dir = v2 - v1;
+        let l = dir.norm_squared();
+        // Solve pq formula to obtain intersection point
+        let p = v1.dot(&dir) / l;
+        let q = (v1.norm_squared() - radius.powi(2)) / l;
+        let t1 = -p + (p.powi(2) - q).sqrt();
+        let t2 = -p - (p.powi(2) - q).sqrt();
+        (dir, t1.min(t2), t1.max(t2))
+    };
 
-    if dist_to_edge >= radius {
-        let angle = (v1.dot(&v2) / (d1 * d2)).clamp(0.0, 1.0).acos();
-        return 0.5 * radius.powi(2) * angle;
+    // Wen ensure that t1 and t2 did not overflow the upper
+    // and lower bounds by approximation errors
+    let epsilon = 0.001; // Pick 0.1% relative error
+    let (t1, cond1) = if approx::abs_diff_eq!(t1, 0.0, epsilon = epsilon) {
+        (0.0, true)
+    } else if approx::abs_diff_eq!(t1, 1.0, epsilon = epsilon) {
+        (1.0, true)
+    } else {
+        (t1, 0.0 <= t1 && t1 <= 1.0)
+    };
+    let (t2, cond2) = if approx::abs_diff_eq!(t2, 0.0, epsilon = epsilon) {
+        (0.0, true)
+    } else if approx::abs_diff_eq!(t2, 1.0, epsilon = epsilon) {
+        (1.0, true)
+    } else {
+        (t2, 0.0 <= t2 && t2 <= 1.0)
+    };
+
+    // If the solutions are identical, then we return the area of the triangle
+    // since the circle must be right at the edge of the triangle.
+    if approx::abs_diff_eq!(t1, t2) {
+        return 0.5 * v1.perp(&v2).abs();
     }
 
-    if d1 <= radius && d2 <= radius {
-        return 0.5 * det.abs();
+    // We have 2 possible solutions. Check both for validity
+    match (cond1, cond2) {
+        // Both are valid. This means that v1 and v2 are outside of the circle
+        (true, true) => {
+            // We have a circle section from (0,0) -- (w1) -- (p1)
+            // We have a triangle given by   (0,0) -- (p1) -- (p2)
+            // We have a circle section from (0,0) -- (p2) -- (w2)
+            // where w1 and w2 are on the edge (0,0) -- (v1/v2) with length radius
+            // Calculate the intersection points
+            let p1 = v1 + t1 * dir;
+            let p2 = v1 + t2 * dir;
+            // Calculate first circle section
+            let a_c1 = 0.5 * v1.angle(&p1) * radius.powi(2);
+            // Calculate triangle
+            let a_t = 0.5 * p1.perp(&p2).abs();
+            // Calculate second circle section
+            let a_c2 = 0.5 * p2.angle(&v2) * radius.powi(2);
+            a_c1 + a_t + a_c2
+        }
+        // First is valid => v2 is inside circle
+        // We have a triangle given by (0,0)--(v1)--(p)
+        // and a circle section from (0,0)--(p)--(v2)
+        (true, false) => {
+            // Calculate intersection point
+            let p = v1 + t1 * dir;
+            // Calcualte circle section
+            let a_c = 0.5 * v1.angle(&p) * radius.powi(2);
+            // Calculate triangle
+            let a_t = 0.5 * p.perp(&v2).abs();
+            a_t + a_c
+        }
+        // Second is valid => v1 is inside the circle
+        // We have a tirangle given by (0,0) -- (v1) -- (p)
+        // We have a circle section from (0,0) -- (p) -- (w2)
+        (false, true) => {
+            // Calculate interseciton point
+            let p = v1 + t2 * dir;
+            // Calculate triangle
+            let a_t = 0.5 * v1.perp(&p).abs();
+            // Calculate circle section
+            let a_c = 0.5 * p.angle(&v2) * radius.powi(2);
+            a_c + a_t
+        }
+        // This case should not exist in theory. It may though in practice.
+        // If this is the case, we return 0.0 which is justified since this
+        // case will only manifest if the area is approximately 0.0 anyways.
+        _ => 0.0,
     }
-
-    let angle = (v1.dot(&v2) / (d1 * d2)).clamp(0.0, 1.0).acos();
-    (0.5 * det.abs()).min(0.5 * radius.powi(2) * angle)
 }
 
 fn get_total_intersection_area(
