@@ -949,7 +949,7 @@ pub fn run_simulation<'py>(
     settings: &SimulationSettings,
     agents: Vec<Agent>,
 ) -> Result<
-    std::collections::BTreeMap<u64, Vec<([f64; 2], Vec<Bound<'py, PyTuple>>, f64)>>,
+    std::collections::BTreeMap<u64, Vec<([f64; 2], Vec<Bound<'py, PyTuple>>, [f64; 4])>>,
     SimulationError,
 > {
     // Domain Setup
@@ -1007,7 +1007,7 @@ pub fn run_simulation<'py>(
                     let p = c
                         .cell
                         .path
-                        .into_iter()
+                        .iter()
                         .filter_map(|segm| match segm.to_pytuple(python) {
                             Ok(v) => Some(v),
                             Err(e) => {
@@ -1019,7 +1019,16 @@ pub fn run_simulation<'py>(
                         })
                         .collect();
 
-                    Some((middle, p, c.cell.current_area / c.cell.target_area))
+                    Some((
+                        middle,
+                        p,
+                        [
+                            c.cell.current_area,
+                            c.cell.target_area,
+                            c.cell.get_perimeter(),
+                            c.cell.target_perimeter,
+                        ],
+                    ))
                 })
                 .collect::<Vec<_>>();
 
