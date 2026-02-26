@@ -129,6 +129,21 @@ impl Agent {
         self.position[0] = position[0];
         self.position[1] = position[1];
     }
+
+    fn get_perimeter(&self) -> f64 {
+        self.path
+            .iter()
+            .map(|segm| match segm {
+                PathSegment::Line { p1, p2 } => (p1 - p2).norm(),
+                PathSegment::Arc {
+                    angle1,
+                    angle2,
+                    radius,
+                    ..
+                } => (angle1 - angle2).abs() * radius,
+            })
+            .sum::<f64>()
+    }
 }
 
 impl Position<Pos> for Agent {
@@ -163,37 +178,8 @@ impl Mechanics<Pos, Pos, Pos> for Agent {
     }
 
     fn calculate_increment(&self, force: Pos) -> Result<(Pos, Pos), CalcError> {
-        let perimeter = self
-            .path
-            .iter()
-            .map(|segm| match segm {
-                PathSegment::Line { p1, p2 } => (p1 - p2).norm(),
-                PathSegment::Arc {
-                    angle1,
-                    angle2,
-                    radius,
-                    ..
-                } => (angle1 - angle2).abs() * radius,
-            })
-            .sum::<f64>();
-
-        let mut force_perimeter = Pos::zeros();
-        let mut force_area = Pos::zeros();
-        for segm in self.path.iter() {
-            let p1 = segm.pos1();
-
-            let dir = self.position - p1;
-            let perim_diff = perimeter - self.target_perimeter;
-            force_perimeter -= self.force_perimeter * perim_diff * dir;
-
-            let area = self.current_area;
-            let area_diff = area - self.target_area;
-            force_area -= self.force_area * area_diff * dir;
-        }
-
         let dx = self.velocity;
-        let dv = force_perimeter + force_area + force - self.damping * self.velocity;
-
+        let dv = force - self.damping * self.velocity;
         Ok((dx, dv))
     }
 }
@@ -257,7 +243,7 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         _: &Pos,
         ext_pos: &Pos,
         _: &Pos,
-        _ext_info: &Inf,
+        ext_info: &Inf,
     ) -> Result<(Pos, Pos), CalcError> {
         let dir = ext_pos - own_pos;
         let dist = dir.norm();
@@ -265,6 +251,20 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
             // Repulsive force due to close
             let f = -self.force_dist * dir.normalize();
             return Ok((f, -f));
+        }
+
+        let perimeter = self.get_perimeter();
+        let mut force_perimeter = Pos::zeros();
+        let mut force_area = Pos::zeros();
+        if let Some(segm) = get_intersecting_pathsegment(&self.path, &ext_info.path) {
+            let dir = self.position - ext_pos;
+            let perim_diff = perimeter - self.target_perimeter;
+            force_perimeter -= self.force_perimeter * perim_diff * dir;
+
+            let dir2 = segm.pos2() - segm.pos1();
+            let dir2 = Vector2::from([-dir2[1], dir2[0]]);
+            let area_diff = self.current_area - self.target_area;
+            force_area -= self.force_area * area_diff * dir2;
         }
 
         /* if let Some(PathSegment::Line { p1, p2 }) =
@@ -316,7 +316,8 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         } else {
             Ok((Pos::zeros(), Pos::zeros()))
         }*/
-        Ok((Pos::zeros(), Pos::zeros()))
+        let f = force_area + force_perimeter;
+        Ok((f, -f))
     }
 }
 
