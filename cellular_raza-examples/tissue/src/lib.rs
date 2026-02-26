@@ -516,10 +516,9 @@ fn get_polygon_area(middle: &Vector2<f64>, vertices: &nalgebra::Matrix2xX<f64>) 
     for i in 0..n_col {
         let v1 = vertices.column(i);
         let v2 = vertices.column((i + 1) % n_col);
-
         area += (v1 - middle).perp(&(v2 - middle)).abs();
     }
-    area
+    0.5 * area
 }
 
 fn get_polygon_perimeter(vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
