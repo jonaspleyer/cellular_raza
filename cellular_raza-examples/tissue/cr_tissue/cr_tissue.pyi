@@ -66,6 +66,7 @@ class Agent:
         damping: builtins.float,
         diffusion_constant: builtins.float,
     ) -> Agent: ...
+    def get_perimeter(self) -> builtins.float: ...
 
 @typing.final
 class SimulationSettings:
@@ -133,14 +134,24 @@ class SimulationSettings:
         Random initial seed
         """
     @property
-    def approximation_steps(self) -> builtins.int:
+    def approximation_tolerance(self) -> builtins.float:
         r"""
-        Steps to take to approximate the size of the cell
+        Relative tolerance to satisfy when approximating the size of the cell
         """
-    @approximation_steps.setter
-    def approximation_steps(self, value: builtins.int) -> None:
+    @approximation_tolerance.setter
+    def approximation_tolerance(self, value: builtins.float) -> None:
         r"""
-        Steps to take to approximate the size of the cell
+        Relative tolerance to satisfy when approximating the size of the cell
+        """
+    @property
+    def approximation_max_steps(self) -> builtins.int:
+        r"""
+        Maximum number of steps after which the approximating is stopped
+        """
+    @approximation_max_steps.setter
+    def approximation_max_steps(self, value: builtins.int) -> None:
+        r"""
+        Maximum number of steps after which the approximating is stopped
         """
     def __new__(cls) -> SimulationSettings:
         r"""
@@ -152,7 +163,11 @@ def run_simulation(
 ) -> builtins.dict[
     builtins.int,
     builtins.list[
-        tuple[builtins.list[builtins.float], builtins.list[tuple], builtins.float]
+        tuple[
+            builtins.list[builtins.float],
+            builtins.list[tuple],
+            builtins.list[builtins.float],
+        ]
     ],
 ]:
     r"""
