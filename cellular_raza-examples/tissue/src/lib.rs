@@ -1147,3 +1147,78 @@ fn test_get_total_intersection_area() {
         approx::assert_abs_diff_eq!(a1, a2, epsilon = 1e-3);
     }
 }
+
+#[test]
+fn test_min_dist_to_segment_1() {
+    let m = nalgebra::matrix![0.0, 0.0];
+    let v1 = nalgebra::matrix![1.0, 0.0];
+    let v2 = nalgebra::matrix![0.0, 1.0];
+    let dist = minimum_dist_to_segment(
+        &m.transpose(),
+        v1.transpose().as_view(),
+        v2.transpose().as_view(),
+    );
+    approx::assert_abs_diff_eq!(dist, 1.0 / 2f64.sqrt());
+}
+
+#[test]
+fn test_min_dist_to_segment_2() {
+    let m = nalgebra::matrix![0.0, 0.0];
+    let v1 = nalgebra::matrix![-1.0, 1.0];
+    let v2 = nalgebra::matrix![1.0, 1.0];
+    let dist = minimum_dist_to_segment(
+        &m.transpose(),
+        v1.transpose().as_view(),
+        v2.transpose().as_view(),
+    );
+    approx::assert_abs_diff_eq!(dist, 1.0);
+}
+
+#[test]
+fn test_min_dist_to_segment_3() {
+    let m = nalgebra::matrix![0.0, 0.0];
+    let v1 = nalgebra::matrix![0.0, 2.0];
+    let v2 = nalgebra::matrix![1.0, 0.0];
+    let dist = minimum_dist_to_segment(
+        &m.transpose(),
+        v1.transpose().as_view(),
+        v2.transpose().as_view(),
+    );
+    let h = 2.0 / 5f64.sqrt();
+    approx::assert_abs_diff_eq!(dist, h);
+}
+
+#[test]
+fn test_min_dist_to_segment_4() {
+    let m = nalgebra::matrix![0.0, 0.0];
+    let v1 = nalgebra::matrix![-1.0, 5.0];
+    let v2 = nalgebra::matrix![0.0, 2.0];
+    let dist = minimum_dist_to_segment(
+        &m.transpose(),
+        v1.transpose().as_view(),
+        v2.transpose().as_view(),
+    );
+    approx::assert_abs_diff_eq!(dist, 2.0);
+}
+
+#[test]
+fn test_get_total_intersection_area_ascending() {
+    let middle = Vector2::from([13.230383286359404, 57.91674149353457]);
+    let vertices = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::matrix![13.4537632521754, 63.48028248275224].transpose(),
+        nalgebra::matrix![15.117122610606705, 57.68800580249031].transpose(),
+        nalgebra::matrix![11.317138703572038, 56.705824689224265].transpose(),
+        nalgebra::matrix![0.0, 66.38051863220002].transpose(),
+        nalgebra::matrix![0.0, 72.0976802526207].transpose(),
+        nalgebra::matrix![4.57818363090394, 69.66127890644572].transpose(),
+    ]);
+
+    let dr = 0.3;
+    let mut area = 0.0;
+    for n in 0..100 {
+        let radius = n as f64 * dr;
+        let area_new = get_total_intersection_area(&middle, &vertices, radius);
+        assert!(area_new >= area);
+        area = area_new;
+    }
+}
