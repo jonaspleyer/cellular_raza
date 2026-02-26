@@ -530,11 +530,18 @@ fn get_polygon_perimeter(vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
     perimeter
 }
 
-fn minimum_dist_to_line(point: &Vector2<f64>, l1: VectorView2<f64>, l2: VectorView2<f64>) -> f64 {
-    let x1 = l1 - point;
-    let x2 = l2 - point;
-    let edge_len = (x1 - x2).norm();
-    x1.perp(&x2).abs() / edge_len
+fn minimum_dist_to_segment(
+    point: &Vector2<f64>,
+    v1: VectorView2<f64>,
+    v2: VectorView2<f64>,
+) -> f64 {
+    let l2 = (v1 - v2).norm_squared();
+    if approx::abs_diff_eq!(l2, 0.0) {
+        return (point - v1).norm();
+    }
+    let t = ((point - v1).dot(&(v2 - v1)) / l2).clamp(0.0, 1.0);
+    let closest_point = v1 + t * (v2 - v1);
+    (point - closest_point).norm()
 }
 
 fn triangle_circle_intersection_area(radius: f64, v1: Vector2<f64>, v2: Vector2<f64>) -> f64 {
@@ -547,7 +554,7 @@ fn triangle_circle_intersection_area(radius: f64, v1: Vector2<f64>, v2: Vector2<
     }
 
     // Case 2: Circle fully contained in triangle
-    let closest_dist = minimum_dist_to_line(&Vector2::zeros(), v1.as_view(), v2.as_view());
+    let closest_dist = minimum_dist_to_segment(&Vector2::zeros(), v1.as_view(), v2.as_view());
     if closest_dist >= radius {
         return 0.5 * radius.powi(2) * v1.angle(&v2);
     }
@@ -807,7 +814,7 @@ fn construct_constrained_path(
     // If a circle with correct radius fits inside the bounding polygon, then we return the circle
     let target_radius = (target_area / core::f64::consts::PI).sqrt();
     if (0..n_cols).all(|n| {
-        minimum_dist_to_line(
+        minimum_dist_to_segment(
             middle,
             vertices.column(n),
             vertices.column((n + 1) % n_cols),
