@@ -31,8 +31,10 @@ pub struct SimulationSettings {
     pub save_interval: f64,
     /// Random initial seed
     pub rng_seed: u64,
-    /// Steps to take to approximate the size of the cell
-    pub approximation_steps: usize,
+    /// Relative tolerance to satisfy when approximating the size of the cell
+    pub approximation_tolerance: f64,
+    /// Maximum number of steps after which the approximating is stopped
+    pub approximation_max_steps: usize,
 }
 
 #[gen_stub_pymethods]
@@ -48,7 +50,8 @@ impl SimulationSettings {
             t_max: 10.0,
             save_interval: 1.0,
             rng_seed: 0,
-            approximation_steps: 20,
+            approximation_tolerance: 0.05, // 5% relative tolerance
+            approximation_max_steps: 100,
         }
     }
 }
@@ -378,7 +381,8 @@ pub struct MyDomain {
     #[DomainPartialDerive]
     #[DomainRngSeed]
     domain: CartesianCuboid<f64, 2>,
-    approximation_steps: usize,
+    approximation_tolerance: f64,
+    approximation_max_steps: usize,
 }
 
 impl DomainCreateSubDomains<MySubDomain> for MyDomain {
@@ -392,7 +396,8 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
         impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain, Vec<Self::VoxelIndex>)>,
         DecomposeError,
     > {
-        let approximation_steps = self.approximation_steps;
+        let approximation_tolerance = self.approximation_tolerance;
+        let approximation_max_steps = self.approximation_max_steps;
         Ok(self
             .domain
             .create_subdomains(n_subdomains)?
@@ -402,7 +407,8 @@ impl DomainCreateSubDomains<MySubDomain> for MyDomain {
                     n,
                     MySubDomain {
                         subdomain,
-                        approximation_steps,
+                        approximation_tolerance,
+                        approximation_max_steps,
                     },
                     voxels,
                 )
@@ -415,7 +421,8 @@ pub struct MySubDomain {
     #[Base]
     #[Mechanics]
     subdomain: CartesianSubDomain<f64, 2>,
-    approximation_steps: usize,
+    approximation_tolerance: f64,
+    approximation_max_steps: usize,
 }
 
 impl SortCells<Agent> for MyDomain {
@@ -697,7 +704,8 @@ fn construct_constrained_path(
     vertices: &nalgebra::Matrix2xX<f64>,
     target_area: f64,
     target_perimeter: f64,
-    approximation_steps: usize,
+    approximation_tolerance: f64,
+    approximation_max_steps: usize,
 ) -> Vec<PathSegment> {
     let poly_area = get_polygon_area(middle, vertices);
     let poly_perim = get_polygon_perimeter(vertices);
@@ -744,13 +752,24 @@ fn construct_constrained_path(
     }
 
     // Binary search for the optimal radius
-    for _ in 0..approximation_steps {
+    let r_mid = 0.5 * (r_low + r_high);
+    let mut new_area = get_total_intersection_area(middle, vertices, r_mid);
+    let mut count = 0;
+    while approx::relative_ne!(
+        new_area,
+        target_area,
+        max_relative = approximation_tolerance
+    ) {
         let r_mid = 0.5 * (r_low + r_high);
-        let new_area = get_total_intersection_area(middle, vertices, r_mid);
+        new_area = get_total_intersection_area(middle, vertices, r_mid);
         if new_area < target_area {
             r_low = r_mid;
         } else {
             r_high = r_mid;
+        }
+        count += 1;
+        if count >= approximation_max_steps {
+            break;
         }
     }
 
@@ -827,7 +846,8 @@ where
                 &verts,
                 *target_area,
                 *target_perimeter,
-                sbox.subdomain.approximation_steps,
+                sbox.subdomain.approximation_tolerance,
+                sbox.subdomain.approximation_max_steps,
             );
             *path = new_path;
             *current_area = calculate_area(&site, path);
@@ -860,7 +880,8 @@ pub fn run_simulation<'py>(
             [domain_size; 2],
             [settings.n_voxels; 2],
         )?,
-        approximation_steps: settings.approximation_steps,
+        approximation_tolerance: settings.approximation_tolerance,
+        approximation_max_steps: settings.approximation_max_steps,
     };
 
     // Storage Setup
