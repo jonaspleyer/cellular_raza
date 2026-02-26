@@ -34,22 +34,34 @@ def __construct_polygon(path, resolution):
 
 
 def save_snapshot(iteration, domain_size, result, resolution=30):
-    fig, ax = plt.subplots(figsize=(8, 8))
-    for _, path, area_ratio in result[iteration]:
-        color = mpl.colormaps["Spectral"](area_ratio)
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for middle, path, [area, target_area, perimeter, target_perimeter] in result[
+        iteration
+    ]:
+        color1 = mpl.colormaps["coolwarm"](0.5 * area / target_area)
+        color2 = mpl.colormaps["coolwarm"](0.5 * perimeter / target_perimeter)
         if len(path) > 0:
             polygon = __construct_polygon(path, resolution)
             ax.add_patch(
                 mpl.patches.Polygon(
                     polygon,
-                    facecolor=color,
+                    facecolor=color1,
                     linestyle="-",
                     edgecolor="k",
                 )
             )
+            radius = np.sqrt(target_area / np.pi)
+            ax.add_patch(
+                mpl.patches.Circle(
+                    middle,
+                    0.2 * radius,
+                    facecolor=color2,
+                    edgecolor="k",
+                )
+            )
 
-    centers = np.array([m[0] for m in result[iteration]])
-    ax.scatter(centers[:, 0], centers[:, 1], marker=".", color="k")
+    # centers = np.array([m[0] for m in result[iteration]])
+    # ax.scatter(centers[:, 0], centers[:, 1], marker=".", color="k")
 
     dx = domain_size
     ax.set_xlim(-0.01 * dx, 1.01 * domain_size)
@@ -66,16 +78,18 @@ def __pool_save_snapshot_helper(args):
 if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
-    domain_size = 500
-    domain_size_start = 200
-    n_agents = 700
+    domain_size = 100
+    domain_size_start_x = 80
+    domain_size_start_y = 40
+    n_agents = 40
+    n_voxels = 10
 
     settings.dt = 0.5
-    settings.t_max = 20_000.0
-    settings.save_interval = 200.0
+    settings.t_max = 2000.0  # 20_000.0
+    settings.save_interval = 100.0
     settings.domain_size = domain_size
-    settings.n_voxels = 50
-    settings.approximation_steps = 10
+    settings.n_voxels = n_voxels
+    settings.approximation_tolerance = 0.05
 
     radius = 5.0
     target_area = np.pi * radius**2
@@ -84,8 +98,14 @@ if __name__ == "__main__":
     sampler = sp.stats.qmc.LatinHypercube(d=2, seed=10)
     domain_size = settings.domain_size
     samples = sampler.random(n_agents)
-    dlow = domain_size / 2 - domain_size_start / 2
-    dhigh = domain_size / 2 + domain_size_start / 2
+    dlow = [
+        domain_size / 2 - domain_size_start_x / 2,
+        domain_size / 2 - domain_size_start_y / 2,
+    ]
+    dhigh = [
+        domain_size / 2 + domain_size_start_x / 2,
+        domain_size / 2 + domain_size_start_y / 2,
+    ]
     samples = sp.stats.qmc.scale(samples, dlow, dhigh)
 
     # samples = np.array(
@@ -103,13 +123,13 @@ if __name__ == "__main__":
         agent = crt.Agent(
             pos,
             force_area=0.0001,
-            force_perimeter=0.0001,
-            force_dist=0.1,
-            min_dist=0.6 * radius,
+            force_perimeter=0.00000,
+            force_dist=0.02,
+            min_dist=0.0 * radius,
             target_area=target_area,
             target_perimeter=target_perimeter,
-            damping=1.0,
-            diffusion_constant=0.0001,
+            damping=0.2,
+            diffusion_constant=0.0000,
         )
         agents.append(agent)
 
