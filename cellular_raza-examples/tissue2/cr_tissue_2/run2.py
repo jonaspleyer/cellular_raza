@@ -12,24 +12,11 @@ import cr_tissue_2 as crt
 def save_snapshot(iteration, domain_size, result, resolution=30):
     fig, ax = plt.subplots(figsize=(12, 12))
     for polygon, [area, target_area, perimeter, target_perimeter] in result[iteration]:
-        color1 = mpl.colormaps["coolwarm"](0.5 * area / target_area)
         color2 = mpl.colormaps["coolwarm"](0.5 * perimeter / target_perimeter)
         ax.add_patch(
             mpl.patches.Polygon(
                 polygon.T,
                 facecolor=color2,
-                linestyle="-",
-                edgecolor="k",
-            )
-        )
-        middle = np.mean(polygon, axis=1)
-        radius = np.linalg.norm(polygon.T - middle, axis=1)
-        radius = np.min(radius) / 2
-        ax.add_patch(
-            mpl.patches.Circle(
-                middle,
-                radius,
-                facecolor=color1,
                 linestyle="-",
                 edgecolor="k",
             )
