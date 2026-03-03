@@ -65,7 +65,6 @@ pub struct Agent {
     // polygons. We keep the original position fixed differences due to ordering of the applied
     // restrictions.
     position_helper: Matrix2xX<f64>,
-    pub velocity: Matrix2xX<f64>,
     bounding_box: (Vector2<f64>, Vector2<f64>),
     // Interaction Parameters
     #[pyo3(get, set)] pub force_area: f64,
@@ -118,13 +117,11 @@ impl Agent {
     ) -> Self {
         let position = py_array_to_matrix(position);
         let position_helper = position.clone();
-        let velocity = nalgebra::Matrix2xX::zeros(position.ncols());
         let bounding_box = calculate_bbox(&position);
 
         Self {
             position,
             position_helper,
-            velocity,
             bounding_box,
             force_area,
             force_perimeter,
@@ -172,12 +169,10 @@ impl Position<Pos> for Agent {
 
 impl Velocity<Pos> for Agent {
     fn velocity(&self) -> Pos {
-        self.velocity.clone()
+        Matrix2xX::zeros(self.position.ncols())
     }
 
-    fn set_velocity(&mut self, vel: &Pos) {
-        self.velocity = vel.clone();
-    }
+    fn set_velocity(&mut self, vel: &Pos) {}
 }
 
 impl Mechanics<Pos, Pos, Pos> for Agent {
@@ -195,11 +190,10 @@ impl Mechanics<Pos, Pos, Pos> for Agent {
     }
 
     fn calculate_increment(&self, force: Pos) -> Result<(Pos, Pos), CalcError> {
-        let dx = self.velocity.clone();
         let ncols = self.position.ncols();
-        let dv = force - self.damping / (ncols as f64) * &self.velocity;
+        let dv = Matrix2xX::zeros(ncols);
 
-        let mut f = Matrix2xX::zeros(self.position.ncols());
+        let mut f = Matrix2xX::zeros(ncols);
 
         let area_diff = self.target_area - self.get_area();
         for i1 in 0..ncols {
@@ -242,7 +236,7 @@ impl Mechanics<Pos, Pos, Pos> for Agent {
             f.column_mut(i3).add_assign(-0.5 * force);
         }
 
-        Ok((dx, dv + f))
+        Ok((force + f, dv))
     }
 }
 
