@@ -86,6 +86,20 @@ impl Agent {
     }
 }
 
+fn py_array_to_matrix(py_array: Bound<numpy::PyArray2<f64>>) -> Matrix2xX<f64> {
+    let array = py_array.to_owned_array();
+    nalgebra::Matrix2xX::from_fn(array.ncols(), |i, j| array[(i, j)])
+}
+
+fn matrix_to_py_array<'py>(
+    py: Python<'py>,
+    matrix: &Matrix2xX<f64>,
+) -> Bound<'py, numpy::PyArray2<f64>> {
+    let array =
+        numpy::ndarray::Array2::<f64>::from_shape_fn(matrix.shape(), |(i, j)| matrix[(i, j)]);
+    numpy::PyArray2::from_owned_array(py, array)
+}
+
 #[gen_stub_pymethods]
 #[pymethods]
 impl Agent {
@@ -102,8 +116,7 @@ impl Agent {
         damping: f64,
         diffusion_constant: f64,
     ) -> Self {
-        let position = position.to_owned_array();
-        let position = nalgebra::Matrix2xX::from_fn(position.ncols(), |i, j| position[(i, j)]);
+        let position = py_array_to_matrix(position);
         let position_helper = position.clone();
         let velocity = nalgebra::Matrix2xX::zeros(position.ncols());
         let bounding_box = calculate_bbox(&position);
@@ -131,6 +144,16 @@ impl Agent {
 
     fn get_area(&self) -> f64 {
         get_polygon_area(&self.position)
+    }
+
+    #[getter]
+    fn get_position<'py>(&self, py: Python<'py>) -> Bound<'py, numpy::PyArray2<f64>> {
+        matrix_to_py_array(py, &self.position)
+    }
+
+    #[setter]
+    fn set_position(&mut self, position: Bound<numpy::PyArray2<f64>>) {
+        self.position = py_array_to_matrix(position);
     }
 }
 
