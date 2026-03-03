@@ -161,6 +161,7 @@ impl Position<Pos> for Agent {
 
     fn set_pos(&mut self, pos: &Pos) {
         // Clean up self intersections
+        let pos = clean_self_intersections(pos.clone());
         self.position = pos.clone();
         self.position_helper = pos.clone();
         self.bounding_box = calculate_bbox(&self.position);
