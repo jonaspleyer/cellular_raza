@@ -250,6 +250,100 @@ pub fn bounding_boxes_intersect(
     x_overlap && y_overlap
 }
 
+fn segments_intersect(
+    p1: &VectorView2<f64>,
+    p2: &VectorView2<f64>,
+    q1: &VectorView2<f64>,
+    q2: &VectorView2<f64>,
+) -> bool {
+    // Helper to find the orientation of ordered triplet (p, q, r).
+    //  0 -> p, q and r are collinear
+    //  1 -> Clockwise
+    // -1 -> Counterclockwise
+    fn orientation(p: &VectorView2<f64>, q: &VectorView2<f64>, r: &VectorView2<f64>) -> i32 {
+        let val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+        if val == 0.0 {
+            return 0;
+        }
+        if val > 0.0 {
+            1
+        } else {
+            -1
+        }
+    }
+
+    // Helper to check if point q lies on segment pr
+    fn on_segment(p: &VectorView2<f64>, q: &VectorView2<f64>, r: &VectorView2<f64>) -> bool {
+        q.x <= p.x.max(r.x) && q.x >= p.x.min(r.x) && q.y <= p.y.max(r.y) && q.y >= p.y.min(r.y)
+    }
+
+    let o1 = orientation(p1, p2, q1);
+    let o2 = orientation(p1, p2, q2);
+    let o3 = orientation(q1, q2, p1);
+    let o4 = orientation(q1, q2, p2);
+
+    false
+        // General case: segments straddle each other
+        || o1 != o2 && o3 != o4
+        // Special Cases: collinearity and overlap
+        || o1 == 0 && on_segment(p1, q1, p2)
+        || o2 == 0 && on_segment(p1, q2, p2)
+        || o3 == 0 && on_segment(q1, p1, q2)
+        || o4 == 0 && on_segment(q1, p2, q2)
+}
+
+pub fn clean_self_intersections(pos: Matrix2xX<f64>) -> Matrix2xX<f64> {
+    // Calculate the sum of all angles
+    let ncols = pos.ncols();
+
+    // Compare with every kth neighbor.
+    // We can start at 2 and omit self-checking and direct neighbors
+    let mut overlaps = Vec::new();
+    for k in 2..ncols.div_ceil(2) {
+        // Iterate over all vertices
+        for i in 0..ncols {
+            let i1 = i;
+            let i2 = (i + 1) % ncols;
+            // Pick kth neighbor
+            let j1 = (i + k) % ncols;
+            let j2 = (j1 + 1) % ncols;
+            let p1 = pos.column(i2);
+            let p2 = pos.column(i1);
+            let q1 = pos.column(j1);
+            let q2 = pos.column(j2);
+            // Test if the line segments are crossing
+            // if line_segments_are_crossing(&p1, &p2, &q1, &q2) {
+            if segments_intersect(&p1, &p2, &q1, &q2) {
+                overlaps.push((i1, j1, k));
+            }
+        }
+    }
+
+    // Sort overlaps by size: start with largest
+    overlaps.sort_by_key(|x| x.2);
+
+    let mut new_pos = pos;
+    // ni = index start (initial)
+    // nf = index end (final)
+    // k = distance between ni and nf (accounting for roundtrips exceeding ncols)
+    for (ni, nf, k) in overlaps {
+        if k == 2 {
+            // Change the two positions
+            new_pos.swap_columns((ni + 1) % ncols, nf);
+        } else {
+            // Reorder every entry between i and j
+            let pi: Vector2<f64> = new_pos.column(ni).into();
+            let pf: Vector2<f64> = new_pos.column((nf + 1) % ncols).into();
+            for m in 0..k {
+                let n = (ni + m) % ncols;
+                let s = (m + 1) as f64 / (k + 1) as f64;
+                new_pos.set_column(n, &(pi + s * (pf - pi)));
+            }
+        }
+    }
+    new_pos
+}
+
 #[test]
 fn test_apply_restrictions_1() {
     //        .
