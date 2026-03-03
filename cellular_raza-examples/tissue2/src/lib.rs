@@ -477,11 +477,7 @@ pub fn run_simulation<'py>(
                 .into_iter()
                 .map(|(_, (c, _))| {
                     let cell = c.cell;
-                    let array = numpy::ndarray::Array2::<f64>::from_shape_fn(
-                        cell.position.shape(),
-                        |(i, j)| cell.position[(i, j)],
-                    );
-                    let array = numpy::PyArray2::from_owned_array(py, array);
+                    let array = matrix_to_py_array(py, &cell.position);
                     (
                         array,
                         [
