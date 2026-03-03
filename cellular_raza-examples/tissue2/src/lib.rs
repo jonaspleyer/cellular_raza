@@ -311,9 +311,14 @@ impl SortCells<Agent> for MyDomain {
 
 impl SubDomainMechanics<Pos, Pos> for MySubDomain {
     fn apply_boundary(&self, pos: &mut Pos, vel: &mut Pos) -> Result<(), BoundaryError> {
-        for (p, v) in pos.column_iter_mut().zip(vel.column_iter_mut()) {
-            self.subdomain
-                .apply_boundary(&mut [p[0], p[1]], &mut [v[0], v[1]])?;
+        for (mut p, mut v) in pos.column_iter_mut().zip(vel.column_iter_mut()) {
+            let mut pi = [p[0], p[1]];
+            let mut vi = [v[0], v[1]];
+            self.subdomain.apply_boundary(&mut pi, &mut vi)?;
+            p[0] = pi[0];
+            p[1] = pi[1];
+            v[0] = vi[0];
+            v[1] = vi[1];
         }
         Ok(())
     }
