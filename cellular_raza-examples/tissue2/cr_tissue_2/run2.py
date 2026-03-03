@@ -38,9 +38,9 @@ if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
     domain_size = 60
-    domain_size_start_x = 30
-    domain_size_start_y = 30
-    n_agents = 10
+    domain_size_start_x = 50
+    domain_size_start_y = 50
+    n_agents = 25
     n_voxels = 3
 
     settings.dt = 0.2
@@ -66,6 +66,18 @@ if __name__ == "__main__":
         domain_size / 2 + domain_size_start_y / 2,
     ]
     midpoints = sp.stats.qmc.scale(midpoints, dlow, dhigh)
+
+    midpoints = []
+    n = np.ceil(n_agents**0.5)
+    dx = domain_size_start_x / n
+    dy = domain_size_start_y / n
+    xlow = domain_size / 2 - 0.5 * domain_size_start_x + dx / 2
+    ylow = domain_size / 2 - 0.5 * domain_size_start_y + dy / 2
+    print(n)
+    for i in range(n_agents):
+        col = i % n
+        row = int(i / n)
+        midpoints.append([xlow + dx * col, ylow + dy * row])
 
     # Generate a polygon for each starting point
     n_vertices = 40
