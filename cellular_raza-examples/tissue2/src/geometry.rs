@@ -144,9 +144,6 @@ pub fn apply_restrictions(
         ls_centroid / total_length
     }
 
-    // let poly1 = position_to_poly(pos1);
-    // let poly2 = position_to_poly(pos2);
-
     // Determine all intersections
     // let intersection = poly1.intersection(&poly2);
     let intersection = intersect_polygons(&cell_pos, &cell_pos_other);
