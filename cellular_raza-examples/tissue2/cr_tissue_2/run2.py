@@ -85,24 +85,6 @@ if __name__ == "__main__":
         dx = 0.1 * radius * np.random.rand(*x.shape)
         samples.append(x + dx)
 
-    # fig, ax = plt.subplots(figsize=(8, 8))
-    # ax.set_xlim(0, settings.domain_size)
-    # ax.set_ylim(0, settings.domain_size)
-    # for s in samples:
-    #     polygon = mpl.patches.Polygon(s, linestyle="-", facecolor="pink", edgecolor="k")
-    #     ax.add_patch(polygon)
-    # plt.show()
-
-    # samples = np.array(
-    #     [
-    #         [0.49 * domain_size, 0.49 * domain_size],
-    #         [0.49 * domain_size, 0.51 * domain_size],
-    #         [0.51 * domain_size, 0.49 * domain_size],
-    #         [0.51 * domain_size, 0.51 * domain_size],
-    #         [0.55 * domain_size, 0.50 * domain_size],
-    #     ]
-    # )
-
     agents = []
     for pos in samples:
         agent = crt.Agent(
