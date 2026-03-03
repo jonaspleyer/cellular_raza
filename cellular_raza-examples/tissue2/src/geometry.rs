@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use nalgebra::{Matrix2xX, Vector, Vector2, VectorView2};
+use nalgebra::{Matrix2xX, Vector2, VectorView2};
 
 pub const EPSILON: f64 = 1e-6;
 
