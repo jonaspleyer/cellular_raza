@@ -437,3 +437,62 @@ fn test_apply_restrictions_2() {
         }
     }
 }
+
+#[test]
+fn test_segment_intersect_1() {
+    let p1 = nalgebra::vector![0.0, 0.0];
+    let p2 = nalgebra::vector![1.0, 0.0];
+    let q1 = nalgebra::vector![0.0, 1.0];
+    let q2 = nalgebra::vector![1.0, 1.0];
+    let r = segments_intersect(&p1.as_view(), &p2.as_view(), &q1.as_view(), &q2.as_view());
+    assert!(!r);
+}
+
+#[test]
+fn test_segment_intersect_2() {
+    let p1 = nalgebra::vector![0.0, 0.0];
+    let p2 = nalgebra::vector![1.0, 1.0];
+    let q1 = nalgebra::vector![0.0, 1.0];
+    let q2 = nalgebra::vector![1.0, 0.0];
+    let r = segments_intersect(&p1.as_view(), &p2.as_view(), &q1.as_view(), &q2.as_view());
+    assert!(r);
+}
+
+#[test]
+fn test_segment_intersect_3() {
+    let p1 = nalgebra::vector![0.0, 0.0];
+    let p2 = nalgebra::vector![1.0, 0.0];
+    let q1 = nalgebra::vector![0.0, 1.0];
+    let q2 = nalgebra::vector![1.0, 0.0];
+    let r = segments_intersect(&p1.as_view(), &p2.as_view(), &q1.as_view(), &q2.as_view());
+    assert!(r);
+}
+
+#[test]
+fn test_clean_self_intersections_swap() {
+    let pos = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::vector![0.0, 0.0],
+        nalgebra::vector![0.0, 1.0],
+        nalgebra::vector![1.0, 1.0],
+        nalgebra::vector![0.8, 0.4],
+        nalgebra::vector![0.8, 0.6],
+        nalgebra::vector![1.0, 0.0],
+    ]);
+
+    let new_pos = clean_self_intersections(pos);
+
+    let expected = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::vector![0.0, 0.0],
+        nalgebra::vector![0.0, 1.0],
+        nalgebra::vector![1.0, 1.0],
+        nalgebra::vector![0.8, 0.6],
+        nalgebra::vector![0.8, 0.4],
+        nalgebra::vector![1.0, 0.0],
+    ]);
+
+    for j in 0..new_pos.ncols() {
+        for i in 0..2 {
+            assert!(new_pos[(i, j)] == expected[(i, j)]);
+        }
+    }
+}
