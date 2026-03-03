@@ -37,11 +37,11 @@ def __pool_save_snapshot_helper(args):
 if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
-    domain_size = 100
-    domain_size_start_x = 40
-    domain_size_start_y = 40
-    n_agents = 2
-    n_voxels = 10
+    domain_size = 60
+    domain_size_start_x = 30
+    domain_size_start_y = 30
+    n_agents = 10
+    n_voxels = 3
 
     settings.dt = 0.2
     settings.t_max = 10_000.0
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     radius = 5.0
     target_area = np.pi * radius**2
-    target_perimeter = 2 * np.pi * radius * 2.0
+    target_perimeter = 2 * np.pi * radius * 1.3
 
     # Generate initial starting points of cells
     sampler = sp.stats.qmc.LatinHypercube(d=2, seed=10)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     midpoints = sp.stats.qmc.scale(midpoints, dlow, dhigh)
 
     # Generate a polygon for each starting point
-    n_vertices = 50
+    n_vertices = 40
     samples = []
     for middle in midpoints:
         angle_delta = 2 * np.pi / n_vertices
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             ]
         )
         x = middle + radius * coords
-        dx = 0.1 * radius * np.random.rand(*x.shape)
+        dx = 0.02 * radius * np.random.rand(*x.shape)
         samples.append(x + dx)
 
     agents = []
@@ -90,13 +90,13 @@ if __name__ == "__main__":
         agent = crt.Agent(
             pos.T,
             force_area=0.01,
-            force_perimeter=0.01,
-            force_dist=0.000,
-            force_angle=0.0002,
+            force_perimeter=0.1,
+            force_dist=0.0001,
+            force_angle=0.0001,
             min_dist=0.8 * radius,
             target_area=target_area,
             target_perimeter=target_perimeter,
-            damping=0.5,
+            damping=0.3,
             diffusion_constant=0.0000,
         )
         agents.append(agent)
