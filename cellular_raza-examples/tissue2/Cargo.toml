@@ -1,0 +1,29 @@
+[package]
+name = "tissue-2-pyo3"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "stub_gen"
+doc = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "tissue_2_pyo3"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = "1.0"
+rand.workspace = true
+rand_chacha.workspace = true
+cellular_raza = { path="../../cellular_raza", features=["pyo3"] }
+nalgebra.workspace = true
+num.workspace = true
+pyo3.workspace = true
+numpy = "0.28.0"
+voronoice = "0.2.0"
+approx.workspace = true
+pyo3-stub-gen = "0.19.0"
+env_logger = "0.11.9"
+itertools.workspace = true
+i_overlay = ">=4"

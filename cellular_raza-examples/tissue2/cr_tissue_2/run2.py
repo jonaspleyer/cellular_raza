@@ -1,0 +1,143 @@
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+import scipy as sp
+from tqdm import tqdm
+import multiprocessing as mp
+import itertools
+
+import cr_tissue_2 as crt
+
+
+def save_snapshot(iteration, domain_size, result, resolution=30):
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for polygon, [area, target_area, perimeter, target_perimeter] in result[iteration]:
+        color1 = mpl.colormaps["coolwarm"](0.5 * area / target_area)
+        color2 = mpl.colormaps["coolwarm"](0.5 * perimeter / target_perimeter)
+        ax.add_patch(
+            mpl.patches.Polygon(
+                polygon.T,
+                facecolor=color2,
+                linestyle="-",
+                edgecolor="k",
+            )
+        )
+        middle = np.mean(polygon, axis=1)
+        radius = np.linalg.norm(polygon.T - middle, axis=1)
+        radius = np.min(radius) / 2
+        ax.add_patch(
+            mpl.patches.Circle(
+                middle,
+                radius,
+                facecolor=color1,
+                linestyle="-",
+                edgecolor="k",
+            )
+        )
+
+    dx = domain_size
+    ax.set_xlim(-0.01 * dx, 1.01 * domain_size)
+    ax.set_ylim(-0.01 * dx, 1.01 * domain_size)
+
+    fig.savefig(f"out/{iteration:010}.png")
+    plt.close(fig)
+
+
+def __pool_save_snapshot_helper(args):
+    return save_snapshot(*args)
+
+
+if __name__ == "__main__":
+    settings = crt.SimulationSettings()
+
+    domain_size = 100
+    domain_size_start_x = 40
+    domain_size_start_y = 40
+    n_agents = 2
+    n_voxels = 10
+
+    settings.dt = 0.2
+    settings.t_max = 10_000.0
+    settings.save_interval = 10.0
+    settings.domain_size = domain_size
+    settings.n_voxels = n_voxels
+
+    radius = 5.0
+    target_area = np.pi * radius**2
+    target_perimeter = 2 * np.pi * radius * 2.0
+
+    # Generate initial starting points of cells
+    sampler = sp.stats.qmc.LatinHypercube(d=2, seed=10)
+    domain_size = settings.domain_size
+    midpoints = sampler.random(n_agents)
+    dlow = [
+        domain_size / 2 - domain_size_start_x / 2,
+        domain_size / 2 - domain_size_start_y / 2,
+    ]
+    dhigh = [
+        domain_size / 2 + domain_size_start_x / 2,
+        domain_size / 2 + domain_size_start_y / 2,
+    ]
+    midpoints = sp.stats.qmc.scale(midpoints, dlow, dhigh)
+
+    # Generate a polygon for each starting point
+    n_vertices = 50
+    samples = []
+    for middle in midpoints:
+        angle_delta = 2 * np.pi / n_vertices
+        coords = np.array(
+            [
+                [
+                    np.cos(angle_delta * i),
+                    np.sin(angle_delta * i),
+                ]
+                for i in range(n_vertices)
+            ]
+        )
+        x = middle + radius * coords
+        dx = 0.1 * radius * np.random.rand(*x.shape)
+        samples.append(x + dx)
+
+    # fig, ax = plt.subplots(figsize=(8, 8))
+    # ax.set_xlim(0, settings.domain_size)
+    # ax.set_ylim(0, settings.domain_size)
+    # for s in samples:
+    #     polygon = mpl.patches.Polygon(s, linestyle="-", facecolor="pink", edgecolor="k")
+    #     ax.add_patch(polygon)
+    # plt.show()
+
+    # samples = np.array(
+    #     [
+    #         [0.49 * domain_size, 0.49 * domain_size],
+    #         [0.49 * domain_size, 0.51 * domain_size],
+    #         [0.51 * domain_size, 0.49 * domain_size],
+    #         [0.51 * domain_size, 0.51 * domain_size],
+    #         [0.55 * domain_size, 0.50 * domain_size],
+    #     ]
+    # )
+
+    agents = []
+    for pos in samples:
+        agent = crt.Agent(
+            pos.T,
+            force_area=0.01,
+            force_perimeter=0.01,
+            force_dist=0.000,
+            force_angle=0.0002,
+            min_dist=0.8 * radius,
+            target_area=target_area,
+            target_perimeter=target_perimeter,
+            damping=0.5,
+            diffusion_constant=0.0000,
+        )
+        agents.append(agent)
+
+    result = crt.run_simulation(settings, agents)
+    print()
+
+    arglist = zip(
+        result, itertools.repeat(settings.domain_size), itertools.repeat(result)
+    )
+
+    pool = mp.Pool()
+    _ = list(tqdm(pool.imap(__pool_save_snapshot_helper, arglist), total=len(result)))
