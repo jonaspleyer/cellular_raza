@@ -19,6 +19,7 @@ def save_snapshot(iteration, domain_size, result, resolution=30):
                 facecolor=color2,
                 linestyle="-",
                 edgecolor="k",
+                alpha=0.5,
             )
         )
 
