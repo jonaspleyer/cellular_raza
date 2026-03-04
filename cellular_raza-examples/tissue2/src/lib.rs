@@ -257,14 +257,43 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         _: &Pos,
         _: &Inf,
     ) -> Result<(Pos, Pos), CalcError> {
-        let c1 = area_centroid(&own_pos);
-        let c2 = area_centroid(&ext_pos);
-        let dir = (c1 - c2).normalize();
-        let d = (c1 - c2).norm() / (self.target_area / core::f64::consts::PI).sqrt();
-        let force = self.force_dist * (1.0 - d) / (1.0 + d).max(0.0);
-        let f1 = Matrix2xX::from_fn(own_pos.ncols(), |i, _| dir[i] * force);
-        let f2 = Matrix2xX::from_fn(ext_pos.ncols(), |i, _| dir[i] * force);
-        Ok((f1, f2))
+        use core::ops::AddAssign;
+        let ncols1 = own_pos.ncols();
+        let ncols2 = ext_pos.ncols();
+        let mut own_force = Pos::zeros(ncols1);
+        let mut ext_force = Pos::zeros(ncols2);
+        for i in 0..ncols1 {
+            let p1 = own_pos.column(i);
+            // Calculate segment with closest distance
+            let mut dist = f64::INFINITY;
+            let mut f = Vector2::zeros();
+            let mut t = 0.0;
+            let (mut k1, mut k2) = (0, 0);
+            for j1 in 0..ncols2 {
+                let j2 = (j1 + 1) % ncols2;
+                let v1 = ext_pos.column(j1);
+                let v2 = ext_pos.column(j2);
+                let (s, q) = closest_point_on_segment(&p1, &v1, &v2);
+
+                // Calculate interaction betwen p1 and q
+                let x = q - p1;
+                let d = (x.norm() / self.interaction_range).clamp(0.0, 1.0);
+
+                // Update calculated force if another distance was smaller
+                if 0.0 < d && d < 1.0 && d < dist {
+                    f = self.force_dist * 6.0 * (d - 1.0) * x;
+                    t = s;
+                    k1 = j1;
+                    k2 = j2;
+                    dist = d;
+                }
+            }
+            // Apply forces
+            own_force.column_mut(i).add_assign(-f);
+            ext_force.column_mut(k1).add_assign(t * f);
+            ext_force.column_mut(k2).add_assign((1.0 - t) * f);
+        }
+        Ok((own_force, ext_force))
     }
 }
 
