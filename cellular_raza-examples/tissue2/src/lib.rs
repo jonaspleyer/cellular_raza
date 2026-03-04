@@ -176,7 +176,7 @@ impl Velocity<Pos> for Agent {
         Matrix2xX::zeros(self.position.ncols())
     }
 
-    fn set_velocity(&mut self, vel: &Pos) {}
+    fn set_velocity(&mut self, _: &Pos) {}
 }
 
 impl Mechanics<Pos, Pos, Pos> for Agent {
@@ -255,7 +255,7 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         _: &Pos,
         ext_pos: &Pos,
         _: &Pos,
-        ext_info: &Inf,
+        _: &Inf,
     ) -> Result<(Pos, Pos), CalcError> {
         let c1 = area_centroid(&own_pos);
         let c2 = area_centroid(&ext_pos);
