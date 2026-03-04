@@ -31,6 +31,10 @@ class Agent:
     @force_angle.setter
     def force_angle(self, value: builtins.float) -> None: ...
     @property
+    def interaction_range(self) -> builtins.float: ...
+    @interaction_range.setter
+    def interaction_range(self, value: builtins.float) -> None: ...
+    @property
     def min_dist(self) -> builtins.float: ...
     @min_dist.setter
     def min_dist(self, value: builtins.float) -> None: ...
@@ -62,6 +66,7 @@ class Agent:
         target_area: builtins.float,
         force_angle: builtins.float,
         force_dist: builtins.float,
+        interaction_range: builtins.float,
         min_dist: builtins.float,
         target_perimeter: builtins.float,
         damping: builtins.float,
