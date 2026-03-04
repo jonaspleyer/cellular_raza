@@ -35,6 +35,39 @@ def __pool_save_snapshot_helper(args):
     return save_snapshot(*args)
 
 
+def midpoints_lhs():
+    # Generate initial starting points of cells
+    sampler = sp.stats.qmc.LatinHypercube(d=2, seed=10)
+    domain_size = settings.domain_size
+    midpoints = sampler.random(n_agents)
+    dlow = [
+        domain_size / 2 - domain_size_start_x / 2,
+        domain_size / 2 - domain_size_start_y / 2,
+    ]
+    dhigh = [
+        domain_size / 2 + domain_size_start_x / 2,
+        domain_size / 2 + domain_size_start_y / 2,
+    ]
+    midpoints = sp.stats.qmc.scale(midpoints, dlow, dhigh)
+    return midpoints
+
+
+def midpoints_circle_packing():
+    midpoints = []
+    n = np.ceil(n_agents**0.5)
+    dx = domain_size_start_x / n
+    dy = domain_size_start_y / n * np.sqrt(3) / 2
+    xlow = domain_size / 2 - 0.5 * dx * n + dx / 4
+    ylow = domain_size / 2 - 0.5 * dy * n + dy / 2
+    for i in range(n_agents):
+        col = i % n
+        row = int(i / n)
+        dxe = 0.5 * dx if row % 2 == 0 else 0.0
+        midpoints.append([xlow + dx * col + dxe, ylow + dy * row])
+
+    return midpoints
+
+
 if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
@@ -54,31 +87,7 @@ if __name__ == "__main__":
     target_area = np.pi * radius**2
     target_perimeter = 2 * np.pi * radius * 1.3
 
-    # Generate initial starting points of cells
-    sampler = sp.stats.qmc.LatinHypercube(d=2, seed=10)
-    domain_size = settings.domain_size
-    midpoints = sampler.random(n_agents)
-    dlow = [
-        domain_size / 2 - domain_size_start_x / 2,
-        domain_size / 2 - domain_size_start_y / 2,
-    ]
-    dhigh = [
-        domain_size / 2 + domain_size_start_x / 2,
-        domain_size / 2 + domain_size_start_y / 2,
-    ]
-    midpoints = sp.stats.qmc.scale(midpoints, dlow, dhigh)
-
-    midpoints = []
-    n = np.ceil(n_agents**0.5)
-    dx = domain_size_start_x / n
-    dy = domain_size_start_y / n
-    xlow = domain_size / 2 - 0.5 * domain_size_start_x + dx / 2
-    ylow = domain_size / 2 - 0.5 * domain_size_start_y + dy / 2
-    print(n)
-    for i in range(n_agents):
-        col = i % n
-        row = int(i / n)
-        midpoints.append([xlow + dx * col, ylow + dy * row])
+    midpoints = midpoints_circle_packing()
 
     # Generate a polygon for each starting point
     n_vertices = 40
