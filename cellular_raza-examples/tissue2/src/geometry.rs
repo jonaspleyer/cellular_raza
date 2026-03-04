@@ -23,18 +23,17 @@ pub fn get_polygon_perimeter(vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
     perimeter
 }
 
-pub fn minimum_dist_to_segment(
+pub fn closest_point_on_segment(
     point: &Vector2<f64>,
     v1: VectorView2<f64>,
     v2: VectorView2<f64>,
-) -> f64 {
+) -> Vector2<f64> {
     let l2 = (v1 - v2).norm_squared();
     if approx::abs_diff_eq!(l2, 0.0) {
-        return (point - v1).norm();
+        return v1.into();
     }
     let t = ((point - v1).dot(&(v2 - v1)) / l2).clamp(0.0, 1.0);
-    let closest_point = v1 + t * (v2 - v1);
-    (point - closest_point).norm()
+    v1 + t * (v2 - v1)
 }
 
 pub fn area_centroid(vertices: &Matrix2xX<f64>) -> Vector2<f64> {
@@ -50,18 +49,6 @@ pub fn area_centroid(vertices: &Matrix2xX<f64>) -> Vector2<f64> {
     }
     signed_area *= 0.5;
     centroid / (6.0 * signed_area)
-}
-
-pub fn intersect(
-    p1: Vector2<f64>,
-    p2: Vector2<f64>,
-    line_pt: Vector2<f64>,
-    normal: Vector2<f64>,
-) -> Vector2<f64> {
-    let d1 = (p1 - line_pt).dot(&normal);
-    let d2 = (p2 - line_pt).dot(&normal);
-    let t = d1 / (d1 - d2);
-    p1 + t * (p2 - p1)
 }
 
 fn is_on_edge_approx(poly: &Matrix2xX<f64>, q: &VectorView2<f64>) -> bool {
@@ -83,7 +70,6 @@ pub fn intersect_polygons(poly1: &Matrix2xX<f64>, poly2: &Matrix2xX<f64>) -> Vec
     use i_overlay::core::fill_rule::FillRule;
     use i_overlay::core::overlay_rule::OverlayRule;
     use i_overlay::float::overlay::FloatOverlay;
-    use i_overlay::float::single::SingleFloatOverlay;
 
     let subj = poly1
         .column_iter()
