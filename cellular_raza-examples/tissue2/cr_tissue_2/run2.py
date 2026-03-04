@@ -71,21 +71,21 @@ def midpoints_circle_packing():
 if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
-    domain_size = 60
-    domain_size_start_x = 50
-    domain_size_start_y = 50
-    n_agents = 25
+    domain_size = 120
+    domain_size_start_x = 100
+    domain_size_start_y = 100
+    n_agents = 100
     n_voxels = 3
 
-    settings.dt = 0.2
+    settings.dt = 1.0
     settings.t_max = 10_000.0
-    settings.save_interval = 10.0
+    settings.save_interval = 100.0
     settings.domain_size = domain_size
     settings.n_voxels = n_voxels
 
     radius = 5.0
     target_area = np.pi * radius**2
-    target_perimeter = 2 * np.pi * radius * 1.3
+    target_perimeter = 2 * np.pi * radius * 1.15
 
     midpoints = midpoints_circle_packing()
 
@@ -111,10 +111,10 @@ if __name__ == "__main__":
     for pos in samples:
         agent = crt.Agent(
             pos.T,
-            force_area=0.01,
+            force_area=0.001,
             force_perimeter=0.1,
-            force_dist=0.0001,
-            force_angle=0.0001,
+            force_dist=0.01,
+            force_angle=0.0005,
             interaction_range=(target_area / np.pi) ** 0.5 / 5,
             min_dist=0.8 * radius,
             target_area=target_area,
