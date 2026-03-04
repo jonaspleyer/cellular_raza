@@ -24,16 +24,16 @@ pub fn get_polygon_perimeter(vertices: &nalgebra::Matrix2xX<f64>) -> f64 {
 }
 
 pub fn closest_point_on_segment(
-    point: &Vector2<f64>,
-    v1: VectorView2<f64>,
-    v2: VectorView2<f64>,
-) -> Vector2<f64> {
+    point: &VectorView2<f64>,
+    v1: &VectorView2<f64>,
+    v2: &VectorView2<f64>,
+) -> (f64, Vector2<f64>) {
     let l2 = (v1 - v2).norm_squared();
     if approx::abs_diff_eq!(l2, 0.0) {
-        return v1.into();
+        return (0.0, (*v1).into());
     }
     let t = ((point - v1).dot(&(v2 - v1)) / l2).clamp(0.0, 1.0);
-    v1 + t * (v2 - v1)
+    (t, v1 + t * (v2 - v1))
 }
 
 pub fn area_centroid(vertices: &Matrix2xX<f64>) -> Vector2<f64> {
