@@ -110,33 +110,11 @@ pub fn apply_restrictions(
     pos_helper: &mut Matrix2xX<f64>,
     cell_pos_other: &Matrix2xX<f64>,
 ) {
-    fn get_linestring_centroid(
-        ls: &Vec<(Option<usize>, usize)>,
-        poly: &Matrix2xX<f64>,
-    ) -> Vector2<f64> {
-        if ls.len() == 1 {
-            let x = poly.column(ls[0].1);
-            return Vector2::from([x.x, x.y]);
-        }
-        let mut total_length = 0.0;
-        let mut ls_centroid = Vector2::zeros();
-        for ((_, i), (_, j)) in ls.iter().tuple_windows() {
-            let x1 = poly.column(*i);
-            let x2 = poly.column(*j);
-            let d = (x1 - x2).norm();
-            total_length += d;
-            ls_centroid += 0.5 * (x1 + x2) * d;
-        }
-        ls_centroid / total_length
-    }
-
     // Determine all intersections
     // let intersection = poly1.intersection(&poly2);
     let intersection = intersect_polygons(&cell_pos, &cell_pos_other);
 
     for poly in intersection {
-        // Determine area centroid
-        let centroid = area_centroid(&poly);
         // Determine which points of the intersection belong to which polygon
         let mut l1 = Vec::with_capacity(poly.ncols());
         let mut l2 = Vec::with_capacity(poly.ncols());
@@ -158,11 +136,13 @@ pub fn apply_restrictions(
 
         // Add endpoints
         let mut n_endpoints = 0;
+        let mut endpoints = vec![];
         for (i, q) in poly.column_iter().enumerate() {
             if is_on_edge_approx(&cell_pos, &q) && is_on_edge_approx(&cell_pos_other, &q) {
                 l1.push((None, i));
                 l2.push((None, i));
                 n_endpoints += 1;
+                endpoints.push(q);
             }
         }
 
@@ -195,14 +175,15 @@ pub fn apply_restrictions(
         // Determine linestring centroids for overlaps
         // - corresponding to polygon1
         // - corresponding to polygon2
-        let l1c = get_linestring_centroid(&l1, &poly);
-        let l2c = get_linestring_centroid(&l2, &poly);
+        // let l1c = get_linestring_centroid(&l1, &poly);
+        // let l2c = get_linestring_centroid(&l2, &poly);
         // Get orthogonal between centroids
-        let dir = Vector2::from([-l2c[1] + l1c[1], l2c[0] - l1c[0]]).normalize();
+        // let dir = Vector2::from([-l2c[1] + l1c[1], l2c[0] - l1c[0]]).normalize();
+        let dir = (endpoints[1] - endpoints[0]).normalize();
         // Project all points along this axis
         for (i, _) in l1.iter() {
             if let Some(i) = i {
-                let q = centroid;
+                let q = 0.5 * (endpoints[0] + endpoints[1]);
                 let t = dir.dot(&(cell_pos.column(*i) - q));
                 pos_helper.set_column(*i, &(q + t * dir));
             }
