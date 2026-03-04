@@ -105,6 +105,7 @@ if __name__ == "__main__":
             force_perimeter=0.1,
             force_dist=0.0001,
             force_angle=0.0001,
+            interaction_range=(target_area / np.pi) ** 0.5 / 5,
             min_dist=0.8 * radius,
             target_area=target_area,
             target_perimeter=target_perimeter,
