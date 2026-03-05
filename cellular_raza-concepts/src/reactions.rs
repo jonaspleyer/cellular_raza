@@ -24,8 +24,6 @@ pub trait Reactions<Ri/*, Float = f64*/>: Intracellular<Ri> {
 
 /// This trait models extracellular reactions which interact with agents.
 pub trait ReactionsExtra<Ri, Re> {
-    // TODO do we need this associated type?
-    // type IncrementExtracellular;
     /// TODO add description
     fn calculate_combined_increment(
         &self,
