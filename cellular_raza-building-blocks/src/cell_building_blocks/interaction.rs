@@ -11,7 +11,7 @@ use approx::RelativeEq;
 
 /// No interaction of the cell with any other.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(from_py_object))]
 pub struct NoInteraction;
 
 impl<Pos, Vel, For> Interaction<Pos, Vel, For> for NoInteraction
@@ -82,7 +82,7 @@ impl InteractionInformation<()> for NoInteraction {
 /// [10.1098/rspa.1924.0081](https://doi.org/10.1098/rspa.1924.0081).
 ///
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all, from_py_object))]
 #[cfg_attr(feature = "approx", derive(RelativeEq))]
 pub struct BoundLennardJones {
     /// Interaction strength $\epsilon$ of the potential.
@@ -96,7 +96,7 @@ pub struct BoundLennardJones {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all, from_py_object))]
 #[cfg_attr(feature = "approx", derive(RelativeEq))]
 /// Identical to [BoundLennardJones] but for `f32` type.
 pub struct BoundLennardJonesF32 {
@@ -210,7 +210,7 @@ macro_rules! implement_morse_potential(
         /// pp. 57–64, Jul. 01, 1929.
         /// doi: [10.1103/physrev.34.57](https://doi.org/10.1103/PhysRev.34.57).
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-        #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all))]
+        #[cfg_attr(feature = "pyo3", pyclass(set_all, get_all, from_py_object))]
         #[cfg_attr(feature = "approx", derive(RelativeEq))]
         pub struct $struct_name {
             /// Radius of the object
@@ -316,7 +316,7 @@ macro_rules! implement_mie_potential(
         /// G. Mie, “Zur kinetischen Theorie der einatomigen Körper,”
         /// Annalen der Physik, vol. 316, no. 8. Wiley, pp. 657–697, Jan. 1903.
         /// doi: [10.1002/andp.19033160802](https://doi.org/10.1002/andp.19033160802).
-        #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
+        #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all, from_py_object))]
         #[cfg_attr(feature = "approx", derive(RelativeEq))]
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
         pub struct $name {

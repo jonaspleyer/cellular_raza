@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// This can be due to initial setup or due to other methods such as division in a cell cycle.
 /// The second parameter is a counter which is unique for each voxel.
 /// This ensures that each cell obtains a unique identifier over the course of the simulation.
-#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass(from_py_object))]
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub enum CellIdentifier {
     /// Produced from a division process

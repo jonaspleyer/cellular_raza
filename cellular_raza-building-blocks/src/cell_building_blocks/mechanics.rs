@@ -48,7 +48,7 @@ macro_rules! implement_newton_damped_mechanics(
         /// Both operations need to be implemented by other concepts such as
         /// [Cycle](cellular_raza_concepts::Cycle).
         #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyclass(from_py_object))]
         #[cfg_attr(feature = "approx", derive(RelativeEq))]
         #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {
@@ -247,7 +247,7 @@ macro_rules! implement_brownian_mechanics(
         /// If we choose this value larger than one, we can
         /// resolve smaller timesteps to more accurately solve the equations.
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyclass(from_py_object))]
         #[cfg_attr(feature = "approx", derive(RelativeEq))]
         #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {
@@ -407,7 +407,7 @@ macro_rules! define_langevin_nd(
         ///     M \ddot{\mathbf{X}} = - \mathbf{\nabla} U(\mathbf{X}) - \gamma M\dot{\mathbf{X}} + \sqrt{2 M \gamma k_{\rm B} T}\mathbf{R}(t)
         /// \\end{equation}
         #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-        #[cfg_attr(feature = "pyo3", pyclass)]
+        #[cfg_attr(feature = "pyo3", pyclass(from_py_object))]
         #[cfg_attr(feature = "approx", derive(RelativeEq))]
         #[cfg_attr(feature = "approx", approx(epsilon_type = $float_type))]
         pub struct $struct_name {

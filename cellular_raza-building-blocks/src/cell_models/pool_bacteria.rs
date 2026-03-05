@@ -20,7 +20,7 @@ pub type ReactionVector = nalgebra::SVector<f64, NUMBER_OF_REACTION_COMPONENTS>;
 
 /// Bacteria-Agent as used in the pool-model example
 #[derive(CellAgent, Clone, Debug, Deserialize, Serialize)]
-#[pyclass(get_all, set_all)]
+#[pyclass(get_all, set_all, from_py_object)]
 pub struct Bacteria {
     /// See [NewtonDamped2D](crate::cell_building_blocks::NewtonDamped2D) mechanics
     #[Mechanics]
@@ -45,7 +45,7 @@ pub struct Bacteria {
 /// It contains heap-allocated instances of the python classes for the individual aspects.
 /// This is useful when modifying said properties from python directly via dot-notation.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[pyclass(get_all, set_all)]
+#[pyclass(get_all, set_all, from_py_object)]
 pub struct BacteriaTemplate {
     /// See [NewtonDamped2D](crate::cell_building_blocks::NewtonDamped2D) mechanics
     pub mechanics: pyo3::Py<NewtonDamped2D>,
@@ -192,7 +192,7 @@ impl Interaction<Vector2<f64>, Vector2<f64>, Vector2<f64>, f64> for BacteriaReac
 
 /// Implementation of the [cellular_raza_concepts::Cycle] trait for the [Bacteria] struct
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[pyclass(get_all, set_all)]
+#[pyclass(get_all, set_all, from_py_object)]
 pub struct BacteriaCycle {
     /// Threshold for the volume when the cell should divide
     pub volume_division_threshold: f64,
@@ -294,7 +294,7 @@ impl Cycle<Bacteria> for BacteriaCycle {
 
 /// Species of the cells (S1, S2)
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, from_py_object)]
 pub enum Species {
     /// Species 1
     S1,
@@ -305,7 +305,7 @@ pub enum Species {
 /// Implementation of the [cellular_raza_concepts::CellularReactions] trait and
 /// [cellular_raza_concepts::Interaction] trait for [Bacteria].
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[pyclass(get_all, set_all)]
+#[pyclass(get_all, set_all, from_py_object)]
 pub struct BacteriaReactions {
     /// Overall interaction strength for physical interaction
     pub potential_strength: f64,
@@ -431,7 +431,7 @@ impl Volume for Bacteria {
 
 /// This struct does nothing
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[pyclass]
+#[pyclass(from_py_object)]
 pub struct GradientSensing;
 
 impl

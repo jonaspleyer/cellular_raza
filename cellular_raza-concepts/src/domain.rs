@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::errors::{BoundaryError, DecomposeError};
 
 /// Identifier for voxels used internally to get rid of user-defined ones.
-#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass(from_py_object))]
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
 pub struct VoxelPlainIndex(pub usize);
 
@@ -28,7 +28,7 @@ impl VoxelPlainIndex {
 
 /// Identifier or subdomains
 #[derive(Clone, Copy, Debug, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize)]
-#[cfg_attr(feature = "pyo3", pyo3::pyclass)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass(from_py_object))]
 pub struct SubDomainPlainIndex(pub usize);
 
 /// Provides an abstraction of the physical total simulation domain.

@@ -124,7 +124,7 @@ impl Error for StorageError {}
 ///
 /// We currently support saving results in a [sled] database, or as a json file by using
 /// [serde_json].
-#[cfg_attr(feature = "pyo3", pyo3::pyclass(eq, eq_int))]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass(eq, eq_int, from_py_object))]
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum StorageOption {
     /// Save results as [sled] database.

@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 /// No cycle of the cell.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(from_py_object))]
 pub struct NoCycle;
 
 impl<Cel, Float> Cycle<Cel, Float> for NoCycle {
