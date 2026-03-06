@@ -397,8 +397,8 @@ fn test_apply_restrictions_1() {
     let mut poly_helper1 = poly1.clone();
     let mut poly_helper2 = poly2.clone();
 
-    apply_restrictions(&poly1, &mut poly_helper1, &poly2);
-    apply_restrictions(&poly2, &mut poly_helper2, &poly1);
+    apply_restrictions(&poly1, &poly2, &mut poly_helper1);
+    apply_restrictions(&poly2, &poly1, &mut poly_helper2);
 
     approx::assert_abs_diff_eq!(poly_helper1[(0, 2)], 0.75);
     approx::assert_abs_diff_eq!(poly_helper1[(1, 2)], 0.75);
@@ -434,8 +434,8 @@ fn test_apply_restrictions_2() {
     let mut poly_helper1 = poly1.clone();
     let mut poly_helper2 = poly2.clone();
 
-    apply_restrictions(&poly1, &mut poly_helper1, &poly2);
-    apply_restrictions(&poly2, &mut poly_helper2, &poly1);
+    apply_restrictions(&poly1, &poly2, &mut poly_helper1);
+    apply_restrictions(&poly2, &poly1, &mut poly_helper2);
 
     let expected_1 = nalgebra::Matrix2xX::from_columns(&[
         nalgebra::vector![0.0, 0.0],
@@ -519,6 +519,37 @@ fn test_clean_self_intersections_swap() {
     for j in 0..new_pos.ncols() {
         for i in 0..2 {
             assert!(new_pos[(i, j)] == expected[(i, j)]);
+        }
+    }
+}
+
+#[test]
+fn test_intersect_polygons() {
+    let poly1 = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::vector![0.0, 0.0],
+        nalgebra::vector![0.0, 1.0],
+        nalgebra::vector![1.0, 1.0],
+        nalgebra::vector![1.0, 0.0],
+    ]);
+    let poly2 = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::vector![0.5, 0.5],
+        nalgebra::vector![0.5, 1.5],
+        nalgebra::vector![1.5, 1.5],
+        nalgebra::vector![1.5, 0.5],
+    ]);
+    let mut pos_helper = poly1.clone();
+    apply_restrictions(&poly1, &poly2, &mut pos_helper);
+
+    let expected = nalgebra::Matrix2xX::from_columns(&[
+        nalgebra::vector![0.0, 0.0],
+        nalgebra::vector![0.0, 1.0],
+        nalgebra::vector![0.75, 0.75],
+        nalgebra::vector![1.0, 0.0],
+    ]);
+
+    for i in 0..2 {
+        for j in 0..poly1.ncols() {
+            approx::assert_abs_diff_eq!(pos_helper[(i, j)], expected[(i, j)]);
         }
     }
 }
