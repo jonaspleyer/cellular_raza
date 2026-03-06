@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use i_overlay::i_float::{adapter::FloatPointAdapter, int::point::IntPoint};
 use nalgebra::{Matrix2xX, Vector2, VectorView2};
 
 pub const EPSILON: f64 = 1e-6;
@@ -51,141 +51,203 @@ pub fn area_centroid(vertices: &Matrix2xX<f64>) -> Vector2<f64> {
     centroid / (6.0 * signed_area)
 }
 
-fn is_on_edge_approx(poly: &Matrix2xX<f64>, q: &VectorView2<f64>) -> bool {
-    poly.column_iter()
-        .circular_tuple_windows::<(_, _)>()
-        .any(|(p1, p2)| {
-            let dir = p2 - p1;
-            let p = Vector2::from([q.x, q.y]);
-            if approx::abs_diff_eq!(dir.norm(), 0.0, epsilon = EPSILON) {
-                return approx::abs_diff_eq!((p2 - p).norm(), 0.0, epsilon = EPSILON);
-            }
-            let t = dir.dot(&(p - p1)) / dir.norm_squared();
-            let pnew = p1 + t * dir;
-            approx::abs_diff_eq!((pnew - p).norm(), 0.0, epsilon = EPSILON)
-        })
-}
-
-pub fn intersect_polygons(poly1: &Matrix2xX<f64>, poly2: &Matrix2xX<f64>) -> Vec<Matrix2xX<f64>> {
-    use i_overlay::core::fill_rule::FillRule;
-    use i_overlay::core::overlay_rule::OverlayRule;
-    use i_overlay::float::overlay::FloatOverlay;
-
-    let subj = poly1
-        .column_iter()
-        .map(|col| [col[0], col[1]])
-        .collect::<Vec<_>>();
-    let clip = poly2
-        .column_iter()
-        .map(|col| [col[0], col[1]])
-        .collect::<Vec<_>>();
-
-    let options = i_overlay::float::overlay::OverlayOptions {
-        preserve_input_collinear: true,
-        preserve_output_collinear: true,
-        clean_result: false,
-        ..Default::default()
-    };
-    let solver = Default::default();
-    let mut float_overlay = FloatOverlay::with_subj_and_clip_custom(&subj, &clip, options, solver);
-    // Returns a list of shapes
-    // A shape is a list of contours
-    // A contour is a list of points
-    //
-    // These are the types used in i_overlay
-    // pub type Contour<P> = Vec<P>;
-    // pub type Shape<P> = Vec<Contour<P>>;
-    // pub type Shapes<P> = Vec<Shape<P>>;
-
-    let result = float_overlay.overlay(OverlayRule::Intersect, FillRule::EvenOdd);
-
-    result
-        .iter()
-        .map(|r| Matrix2xX::from_fn(r[0].len(), |i, j| r[0][j][i]))
-        .collect()
+pub fn area_centroid_with_adapter(
+    slice: &[IntPoint],
+    adapter: &FloatPointAdapter<[f64; 2], f64>,
+) -> Vector2<f64> {
+    let n = slice.len();
+    let mut signed_area = 0.0;
+    let mut centroid = Vector2::zeros();
+    for i in 0..n {
+        let p1 = Vector2::from(adapter.int_to_float(&slice[i]));
+        let p2 = Vector2::from(adapter.int_to_float(&slice[(i + 1) % n]));
+        let cross = p1.perp(&p2);
+        signed_area += cross;
+        centroid += (p1 + p2) * cross;
+    }
+    signed_area *= 0.5;
+    if approx::abs_diff_eq!(signed_area, 0.0, epsilon = EPSILON.powi(2)) {
+        centroid *= 0.0;
+        for p in slice {
+            centroid += Vector2::from(adapter.int_to_float(&p));
+        }
+        centroid / (n as f64)
+    } else {
+        centroid / (6.0 * signed_area)
+    }
 }
 
 pub fn apply_restrictions(
-    cell_pos: &Matrix2xX<f64>,
+    poly1: &Matrix2xX<f64>,
+    poly2: &Matrix2xX<f64>,
     pos_helper: &mut Matrix2xX<f64>,
-    cell_pos_other: &Matrix2xX<f64>,
 ) {
-    // Determine all intersections
-    // let intersection = poly1.intersection(&poly2);
-    let intersection = intersect_polygons(&cell_pos, &cell_pos_other);
+    use i_overlay::core::fill_rule::FillRule;
+    use i_overlay::core::overlay::Overlay;
+    use i_overlay::core::overlay_rule::OverlayRule;
+    use i_overlay::i_float::float::rect::FloatRect;
 
-    for poly in intersection {
-        // Determine which points of the intersection belong to which polygon
-        let mut l1 = Vec::with_capacity(poly.ncols());
-        let mut l2 = Vec::with_capacity(poly.ncols());
+    let options = i_overlay::core::overlay::IntOverlayOptions {
+        preserve_output_collinear: true,
+        preserve_input_collinear: true,
+        ..Default::default()
+    };
 
-        // Gather indices of points which are in the intersection
-        let build_ls = |ls: &mut Vec<(Option<usize>, usize)>, pos: &Matrix2xX<f64>| {
-            for (i1, pi) in pos.column_iter().enumerate() {
-                // Check if it matches given coordinate
-                if let Some(i_its) = poly
-                    .column_iter()
-                    .position(|x| approx::abs_diff_eq!((x - pi).norm(), 0.0, epsilon = EPSILON))
-                {
-                    ls.push((Some(i1), i_its));
+    let mut min_x = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    poly1
+        .column_iter()
+        .chain(poly2.column_iter())
+        .for_each(|col| {
+            min_x = col[0].min(min_x);
+            min_y = col[1].min(min_y);
+            max_x = col[0].max(max_x);
+            max_y = col[1].max(max_y);
+        });
+
+    let adapter = FloatPointAdapter::<[f64; 2], f64>::new(FloatRect {
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+    });
+
+    let poly_to_points = |poly: &Matrix2xX<f64>| {
+        poly.column_iter()
+            .map(|col| adapter.float_to_int(&[col[0], col[1]]))
+            .collect::<Vec<_>>()
+    };
+    let points1 = poly_to_points(poly1);
+    let points2 = poly_to_points(poly2);
+
+    let solver = Default::default();
+    let mut overlay = Overlay::with_contour_custom(&points1, &points2, options, solver);
+    let shapes = overlay.overlay(OverlayRule::Intersect, FillRule::EvenOdd);
+
+    for shape in shapes {
+        for contour in shape {
+            // Determine the centroid of the intersection
+            let centroid = area_centroid_with_adapter(&contour, &adapter);
+
+            // Filter out all points which belong to Poly1
+            // This vec will contain elements in the form
+            // (i, (j, x))
+            // * i: Index wrt. the contour
+            // * j: Index wrt. the poly1 Polygon
+            // * x IntPoint of the contour
+
+            // Case 1: (Example sketch)
+            // The contour vec starts with something that is not in polygon1
+            // [P2, P2, P2, Its, P1, P1, ...]
+            //
+            // Case 2:
+            // The contour vec starts with a point in polygon1
+            // [P1, P1, P1, .. , P1?]
+            // and it also might end with a point in polygon1
+            // We can now infer the final point
+
+            let mut new_contour = Vec::with_capacity(contour.len());
+            let n = contour.len();
+            let mut partial_start = false;
+            for count in 0..2 * n {
+                let i = count % n;
+                // SAFETY: we have used modulo operator to ensure that bound is correct
+                let x = unsafe { contour.get_unchecked(i) };
+                let res = points1.iter().position(|y| y == x);
+
+                if count == 0 && res.is_some() {
+                    partial_start = true;
                 }
+
+                // If we did not have a partial start
+                // but find something, we can start
+                if let (false, Some(j)) = (partial_start, res) {
+                    new_contour.push((i, (j, *x)));
+                }
+                // If we did not have a partial start and stop finding
+                // after we found something, we can stop the loop entirely
+                if !partial_start && res.is_none() && !new_contour.is_empty() {
+                    break;
+                }
+                // If we had a partial start and stop finding
+                // we reset the partial start
+                if let (true, None) = (partial_start, res) {
+                    partial_start = false;
+                }
+                // If we had a partial start and find stuff
+                // we do nothing.
             }
-        };
-        build_ls(&mut l1, cell_pos);
-        build_ls(&mut l2, cell_pos_other);
 
-        // Add endpoints
-        let mut n_endpoints = 0;
-        let mut endpoints = vec![];
-        for (i, q) in poly.column_iter().enumerate() {
-            if is_on_edge_approx(&cell_pos, &q) && is_on_edge_approx(&cell_pos_other, &q) {
-                l1.push((None, i));
-                l2.push((None, i));
-                n_endpoints += 1;
-                endpoints.push(q);
+            // We continue if there are no elements
+            if new_contour.is_empty() {
+                continue;
             }
-        }
 
-        fn sort_entries(
-            x: &(Option<usize>, usize),
-            y: &(Option<usize>, usize),
-        ) -> std::cmp::Ordering {
-            match (x.0, y.0) {
-                // Endpoints involved
-                (None, None) => y.1.cmp(&x.1), // Note that this is inverted!
-                (Some(_), None) => std::cmp::Ordering::Greater,
-                (None, Some(_)) => std::cmp::Ordering::Less,
-                // No endpoint involved
-                (Some(i), Some(j)) => i.cmp(&j),
-            }
-        }
-        l1.sort_by(sort_entries);
-        l2.sort_by(sort_entries);
+            // SAFETY: We checked that the contour is not empty
+            let i1 = (unsafe { new_contour.first().unwrap_unchecked().0 } + n - 1) % n;
+            let i2 = (unsafe { new_contour.last().unwrap_unchecked().0 } + 1) % n;
 
-        // If the intersections are empty; we do nothing
-        // If the intersections do not have 2 endpoints, we also do nothing
-        if l1.is_empty() || l2.is_empty() || n_endpoints != 2 {
-            continue;
-        }
-        let e1 = l1.remove(0);
-        l1.push(e1);
-        let e1 = l2.remove(0);
-        l2.push(e1);
+            // SAFETY: We wrap with module to ensure that we stay within bounds
+            let q0 = unsafe { contour.get_unchecked(i1) };
+            let e1 = adapter.int_to_float(&q0);
+            // Gets the index of the last element
+            let e2 = unsafe { adapter.int_to_float(&contour.get(i2).unwrap_unchecked()) };
+            let e1 = Vector2::from(e1);
+            let e2 = Vector2::from(e2);
 
-        // Determine linestring centroids for overlaps
-        // - corresponding to polygon1
-        // - corresponding to polygon2
-        // let l1c = get_linestring_centroid(&l1, &poly);
-        // let l2c = get_linestring_centroid(&l2, &poly);
-        // Get orthogonal between centroids
-        // let dir = Vector2::from([-l2c[1] + l1c[1], l2c[0] - l1c[0]]).normalize();
-        let dir = (endpoints[1] - endpoints[0]).normalize();
-        // Project all points along this axis
-        for (i, _) in l1.iter() {
-            if let Some(i) = i {
-                let q = 0.5 * (endpoints[0] + endpoints[1]);
-                let t = dir.dot(&(cell_pos.column(*i) - q));
-                pos_helper.set_column(*i, &(q + t * dir));
+            // Helper method to calculate projection onto line segment
+            let calculate_new_point = |x: &VectorView2<f64>, e: Vector2<f64>| {
+                let d1 = centroid - e;
+                if d1.norm() > 0.0 {
+                    let dir = d1.normalize();
+                    let t = dir.dot(&(x - centroid));
+                    centroid + t * dir
+                } else {
+                    e1
+                }
+            };
+
+            // SAFETY: We have checked that the vec is not empty and that i1
+            // is an actual element by the methods just above.
+            for (_, (j2, _)) in new_contour {
+                let x2 = poly1.column(j2);
+
+                // Approximate the slope
+                /* let ncols1 = poly1.ncols();
+                let j0 = (j2 + ncols1 - 2) % ncols1;
+                let j1 = (j2 + ncols1 - 1) % ncols1;
+                let j3 = (j2 + 1) % ncols1;
+                let j4 = (j2 + 2) % ncols1;
+
+                let x0 = poly1.column(j0);
+                let x1 = poly1.column(j1);
+                let x3 = poly1.column(j3);
+                let x4 = poly1.column(j4);
+
+                let dir = (x4 - x3) + 2.0 * (x3 - x2) + 2.0 * (x2 - x1) + (x1 - x0);
+                let dir = if dir.norm() > 0.0 {
+                    dir.normalize()
+                } else {
+                    (x3 - x1).normalize()
+                };
+
+                let t = dir.dot(&(x2 - centroid));
+                pos_helper.set_column(j2, &(centroid + t * dir));*/
+
+                // Project to line1 e1-->centroid and line2 e0-->centroid
+                let v1 = calculate_new_point(&x2, e1);
+                let v2 = calculate_new_point(&x2, e2);
+
+                // Determine which point is closer to original point
+                // and update helper
+                let cond = (v1 - x2).norm() < (v2 - x2).norm();
+                if cond {
+                    pos_helper.set_column(j2, &v1);
+                } else {
+                    pos_helper.set_column(j2, &v2);
+                };
             }
         }
     }
