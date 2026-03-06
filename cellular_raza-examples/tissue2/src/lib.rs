@@ -393,18 +393,23 @@ where
             let pos1 = c1.position.clone();
             let mut pos_helper_1 = c1.position_helper.clone();
 
-            // Iterate over all remaining cells in the voxel
-            for _ in n + 1..n_cells {
+            let mut apply_restrictions_c2 = |c2: &mut Agent| {
                 // Properties of cell 2
-                let (c2, _) = cells_mut.nth(0).unwrap();
                 let pos2 = c2.position.clone();
-                let bbox2 = c2.cell.bounding_box;
+                let bbox2 = c2.bounding_box;
+                let pos_helper_2 = &mut c2.position_helper;
 
                 // Only compute if bounding boxes are intersecting
                 if bounding_boxes_intersect(&bbox1, &bbox2) {
-                    apply_restrictions(&pos1, &mut pos_helper_1, &c2.position);
-                    apply_restrictions(&pos2, &mut c2.position_helper, &pos1);
+                    apply_restrictions(&pos1, &pos2, &mut pos_helper_1);
+                    apply_restrictions(&pos2, &pos1, pos_helper_2);
                 }
+            };
+
+            // Iterate over all remaining cells in the voxel
+            for _ in n + 1..n_cells {
+                let (c2, _) = cells_mut.nth(0).unwrap();
+                apply_restrictions_c2(c2);
             }
 
             // Get neighbor cells and gather restrictions from them
@@ -415,9 +420,7 @@ where
                 let mut cells_mut_2 = neighbor.cells.iter_mut();
                 for _ in 0..n_cells2 {
                     let (c2, _) = cells_mut_2.nth(0).unwrap();
-                    let pos2 = c2.position.clone();
-                    apply_restrictions(&pos1, &mut pos_helper_1, &c2.position);
-                    apply_restrictions(&pos2, &mut c2.position_helper, &pos1);
+                    apply_restrictions_c2(c2);
                 }
             }
 
