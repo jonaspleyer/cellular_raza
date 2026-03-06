@@ -55,8 +55,8 @@ def midpoints_lhs():
 def midpoints_circle_packing():
     midpoints = []
     n = np.ceil(n_agents**0.5)
-    dx = domain_size_start_x / n
-    dy = domain_size_start_y / n * np.sqrt(3) / 2
+    dx = 1.1 * domain_size_start_x / n
+    dy = 1.1 * domain_size_start_y / n * np.sqrt(3) / 2
     xlow = domain_size / 2 - 0.5 * dx * n + dx / 4
     ylow = domain_size / 2 - 0.5 * dy * n + dy / 2
     for i in range(n_agents):
@@ -71,14 +71,14 @@ def midpoints_circle_packing():
 if __name__ == "__main__":
     settings = crt.SimulationSettings()
 
-    domain_size = 120
-    domain_size_start_x = 100
-    domain_size_start_y = 100
-    n_agents = 100
-    n_voxels = 3
+    domain_size = 40
+    domain_size_start_x = 30
+    domain_size_start_y = 30
+    n_agents = 6
+    n_voxels = 4
 
     settings.dt = 1.0
-    settings.t_max = 10_000.0
+    settings.t_max = 20_000.0
     settings.save_interval = 100.0
     settings.domain_size = domain_size
     settings.n_voxels = n_voxels
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             ]
         )
         x = middle + radius * coords
-        dx = 0.02 * radius * np.random.rand(*x.shape)
+        dx = 0.1 * radius * np.random.rand(*x.shape)
         samples.append(x + dx)
 
     agents = []
@@ -112,14 +112,14 @@ if __name__ == "__main__":
         agent = crt.Agent(
             pos.T,
             force_area=0.001,
-            force_perimeter=0.1,
+            force_perimeter=0.025,
             force_dist=0.01,
-            force_angle=0.0005,
+            force_angle=0.00025,
             interaction_range=(target_area / np.pi) ** 0.5 / 5,
             min_dist=0.8 * radius,
             target_area=target_area,
             target_perimeter=target_perimeter,
-            damping=0.3,
+            damping=0.1,
             diffusion_constant=0.0000,
         )
         agents.append(agent)
