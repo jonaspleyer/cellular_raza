@@ -503,7 +503,8 @@ where
     let intra = cell.get_intracellular();
     let dintra = aux_storage.get_conc();
     cell.set_intracellular(dintra.xapy(dt, &intra));
-    aux_storage.set_conc(aux_storage.get_conc().xa(F::zero()));
+    let intra_new = cell.get_intracellular();
+    aux_storage.set_conc(intra_new.xa(F::zero()));
     Ok(())
 }
 
