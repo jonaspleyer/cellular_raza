@@ -155,6 +155,7 @@ define_kwargs!(
         crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
     update_mechanics_interaction_step_3: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
+    custom_update: Option<syn::Path> | None,
 );
 
 define_kwargs!(
@@ -211,6 +212,7 @@ define_kwargs!(
         crate::run_sim::default_update_mechanics_interaction_step_2_fn_name(),
     update_mechanics_interaction_step_3: syn::Path |
         crate::run_sim::default_update_mechanics_interaction_step_3_fn_name(),
+    custom_update: Option<syn::Path> | None,
     @from
     KwargsSim
 );
@@ -319,6 +321,10 @@ pub fn run_main_update(kwargs: KwargsMain) -> proc_macro2::TokenStream {
         step_3.extend(quote!(sbox.update_reactions_extra_step_3(#determinism)?;));
         local_subdomain_func_names
             .push(quote!(#core_path::backend::chili::local_subdomain_update_reactions_extra));
+    }
+
+    if let Some(update_fun) = kwargs.custom_update {
+        step_5.extend(quote!(#update_fun(&mut sbox)?;));
     }
 
     let update_local_subdomain_funcs = quote!(

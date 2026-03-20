@@ -148,6 +148,13 @@ pub enum Kwarg {
         double_colon: syn::Token![:],
         update_mechanics_interaction_step_3: syn::Path,
     },
+    custom_update {
+        #[allow(unused)]
+        custom_update_kw: syn::Ident,
+        #[allow(unused)]
+        double_colon: syn::Token![:],
+        custom_update: Option<syn::Path>,
+    },
 }
 
 macro_rules! parse_optional_kw(
@@ -274,6 +281,11 @@ impl syn::parse::Parse for Kwarg {
                     update_mechanics_interaction_step_3: input.parse()?,
                 })
             }
+            "custom_update" => Ok(Kwarg::custom_update {
+                custom_update_kw: keyword,
+                double_colon: input.parse()?,
+                custom_update: Some(input.parse()?),
+            }),
             _ => Err(syn::Error::new(
                 keyword.span(),
                 format!("{keyword} is not a valid keyword for this macro"),
