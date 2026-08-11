@@ -11,13 +11,13 @@ def set_mpl_rc_params():
     plt.rcParams.update(
         {
             "font.family": "Courier New",  # monospace font
-            "font.size": 20,
-            "axes.titlesize": 20,
-            "axes.labelsize": 20,
-            "xtick.labelsize": 20,
-            "ytick.labelsize": 20,
-            "legend.fontsize": 20,
-            "figure.titlesize": 20,
+            "font.size": 25,
+            "axes.titlesize": 25,
+            "axes.labelsize": 25,
+            "xtick.labelsize": 25,
+            "ytick.labelsize": 25,
+            "legend.fontsize": 25,
+            "figure.titlesize": 25,
         }
     )
 
@@ -137,6 +137,7 @@ def get_runtime_dataset(
 
 
 def plot_runtime(
+    ax,
     entries: list[dict],
     subfolder: str = "sim-size",
     odir: Path = Path("benchmark_results"),
@@ -161,8 +162,6 @@ def plot_runtime(
                 [p * x ** (len(params) - i - 1) for i, p in enumerate(params)], axis=0
             )
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    configure_ax(ax)
     for entry in entries:
         name = entry["name"]
         grp = df[df["name"] == name]
@@ -255,20 +254,15 @@ def plot_runtime(
     ax.set_title("Scaling with Problem Size")
     ax.set_xlabel("Number of Agents")
     ax.set_ylabel("Runtime [s/step]")
-    fig.tight_layout()
-    fig.savefig(str(odir) + "/sim-size-scaling.png")
-    fig.savefig(str(odir) + "/sim-size-scaling.pdf")
-    return fig
 
 
 def plot_throughput(
+    ax,
     entries: list[dict],
     subfolder: str = "thread-scaling",
     odir: Path = Path("benchmark_results"),
 ) -> plt.Figure:
     df = get_throughput_dataset(subfolder, odir)
-    fig, ax = plt.subplots(figsize=(8, 8))
-    configure_ax(ax)
     for i, entry in enumerate(entries):
         name = entry["name"]
         grp = df[df["name"] == name]
@@ -322,30 +316,31 @@ def plot_throughput(
             )
         )
     ax.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
-    fig.tight_layout()
-    fig.savefig(str(odir) + "/thread_scaling.png")
-    fig.savefig(str(odir) + "/thread_scaling.pdf")
-    return fig
 
 
 if __name__ == "__main__":
     set_mpl_rc_params()
 
+    fig, axs = plt.subplots(1, 2, figsize=(24, 12))
+    configure_ax(axs[0], minor=False)
+    configure_ax(axs[1], minor=False)
+
     plot_runtime(
+        axs[0],
         entries=[
             {
-                "name": "12700H-at-2000MHz",
-                "label": "12700H @2GHz",
-                "color": "#ff6361",
-            },
-            {
                 "name": "3960X-at-2000MHz",
-                "label": "3960X @2GHz",
+                "label": " 3960X @2.0GHz",
                 "color": "#58508d",
             },
             {
+                "name": "12700H-at-2000MHz",
+                "label": "12700H @2.0GHz",
+                "color": "#ff6361",
+            },
+            {
                 "name": "3700X-at-2000MHz",
-                "label": "3700X @2GHz",
+                "label": " 3700X @2.0GHz",
                 "color": "#003f5c",
             },
         ],
@@ -353,23 +348,40 @@ if __name__ == "__main__":
         fit_exponential=False,
     )
     plot_throughput(
+        axs[1],
         entries=[
             {
-                "name": "3700X-at-2200MHz",
-                "label": "3700X @2.2GHz",
-                "color": "#003f5c",
-                "threads": list(range(16)),
-            },
-            {
                 "name": "3960X-at-2000MHz",
-                "label": "3960X @2GHz",
+                "label": " 3960X @2.0GHz",
                 "color": "#58508d",
                 "threads": list(range(46)),
             },
             {
                 "name": "12700H-at-2000MHz",
-                "label": "12700H @2GHz",
+                "label": "12700H @2.0GHz",
                 "color": "#ff6361",
             },
-        ]
+            {
+                "name": "3700X-at-2200MHz",
+                "label": " 3700X @2.2GHz",
+                "color": "#003f5c",
+                "threads": list(range(16)),
+            },
+        ],
     )
+
+    for ax, label in zip(axs, ["A", "B"]):
+        ax.text(
+            0.03,
+            0.97,
+            label,
+            fontsize=40,
+            fontweight="semibold",
+            fontfamily="serif",
+            va="top",
+            horizontalalignment="left",
+            transform=ax.transAxes,
+        )
+
+    fig.tight_layout()
+    fig.savefig("benchmark_results/scaling-results.pdf")
