@@ -472,4 +472,29 @@ mod two_component_contact_reaction {
         )
         .unwrap();
     }
+
+    #[test]
+    fn test_config2() {
+        // Simulation parameters
+        let production = 0.3;
+        let y0 = [0.0, 1.0];
+        let upper_limit = 7.0;
+        let t0 = 0.0;
+        let dt = 0.01;
+        let save_interval = 10;
+        let t_max = 6.0;
+        let n_agents = 4;
+        compare_results(
+            production,
+            y0,
+            upper_limit,
+            n_agents,
+            t0,
+            dt,
+            save_interval,
+            t_max,
+            "tests/contact_reactions-config2.csv",
+        )
+        .unwrap();
+    }
 }
