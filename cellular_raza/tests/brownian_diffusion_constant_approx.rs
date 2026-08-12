@@ -22,7 +22,7 @@ struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Self {
-            n_particles: 160,
+            n_particles: 1000,
             domain_size: 200.0,
 
             dt: 1e-3,
