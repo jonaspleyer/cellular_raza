@@ -1,11 +1,49 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import json
 from glob import glob
 import scipy as sp
+import string
+
+mpl.use("Agg")
+
+COLOR1 = "#6bd2db"
+COLOR2 = "#0ea7b5"
+COLOR3 = "#0c457d"
+COLOR4 = "#ffbe4f"
+COLOR5 = "#e8702a"
+COLOR6 = "#a02b08"
+
+
+def set_mpl_rc_params():
+    plt.rcParams.update(
+        {
+            "font.family": "Courier New",  # monospace font
+            "font.size": 25,
+            "axes.titlesize": 25,
+            "axes.labelsize": 25,
+            "xtick.labelsize": 25,
+            "ytick.labelsize": 25,
+            "legend.fontsize": 25,
+            "figure.titlesize": 25,
+        }
+    )
+
+
+def configure_ax(ax, minor=True):
+    ax.grid(True, which="major", linestyle="-", linewidth=0.75, alpha=0.25)
+    ax.minorticks_on()
+    if minor:
+        ax.grid(True, which="minor", linestyle="-", linewidth=0.25, alpha=0.15)
+    else:
+        ax.grid(False, which="minor")
+    ax.set_axisbelow(True)
+
 
 def get_last_save_dir(storage_name: str) -> str:
     return list(sorted(glob("out/{}/*".format(storage_name))))[-1]
+
 
 def get_trajectories(storage_name: str) -> np.ndarray:
     last_save_dir = get_last_save_dir(storage_name)
@@ -21,12 +59,18 @@ def get_trajectories(storage_name: str) -> np.ndarray:
 
     # Calculate the trajectories
     trajectories = np.array(
-        np.array([[
-            values_at_iter[j]["element"][0]["cell"]["pos"]
-            for values_at_iter in iterations_cells
-        ] for j in range(len(iterations_cells[0]))]
-    ))
+        np.array(
+            [
+                [
+                    values_at_iter[j]["element"][0]["cell"]["pos"]
+                    for values_at_iter in iterations_cells
+                ]
+                for j in range(len(iterations_cells[0]))
+            ]
+        )
+    )
     return trajectories
+
 
 def get_domain_boundaries(storage_name: str) -> tuple[np.ndarray, np.ndarray]:
     last_save_dir = get_last_save_dir(storage_name)
@@ -40,56 +84,67 @@ def get_domain_boundaries(storage_name: str) -> tuple[np.ndarray, np.ndarray]:
         # return np.ndarray([subdomain["domain_min"]]), np.ndarray([subdomain["domain_max"]])
         return dmin, dmax
 
-def plot_2d_only(trajectories: np.ndarray, domain_middle: np.ndarray, last_save_dir: str):
+
+def plot_2d_only(
+    trajectories: np.ndarray, domain_middle: np.ndarray, last_save_dir: str
+):
     # Plot the obtained results for each iteration
-    dh = np.max(np.abs(trajectories - domain_middle), axis=(0,1))
+    dh = np.max(np.abs(trajectories - domain_middle), axis=(0, 1))
     s = dh[0] / dh[1]
     lim_lower = domain_middle - 1.1 * dh
     lim_upper = domain_middle + 1.1 * dh
     xlim = [lim_lower[0], lim_upper[0]]
     ylim = [lim_lower[1], lim_upper[1]]
 
-    fig, ax = plt.subplots(figsize=(8, s*8))
+    fig, ax = plt.subplots(figsize=(8, s * 8))
     ax.set_title("Trajectories")
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     for traj in trajectories:
-        ax.plot(traj[:,0], traj[:,1], color="k", linestyle="-")
+        ax.plot(traj[:, 0], traj[:, 1], color="k", linestyle="-")
     fig.tight_layout()
     fig.savefig("{}/trajectories.png".format(last_save_dir))
+    plt.close(fig)
 
     # Plot a heatmap of the total explored space
     heatmap, _, _ = np.histogram2d(
-        trajectories[:,:,0].reshape((-1,)),
-        trajectories[:,:,1].reshape((-1,)),
+        trajectories[:, :, 0].reshape((-1,)),
+        trajectories[:, :, 1].reshape((-1,)),
         range=[xlim, ylim],
-        bins=50
+        bins=50,
     )
     extent = [*lim_lower, *lim_upper]
-    fig, ax = plt.subplots(figsize=(8, 8*s))
-    ax.imshow(heatmap.T, extent=extent, origin='lower')
+    fig, ax = plt.subplots(figsize=(8, 8 * s))
+    ax.imshow(heatmap.T, extent=extent, origin="lower")
     ax.set_title("Heatmap of explored space")
     fig.tight_layout()
     fig.savefig("{}/heatmap.png".format(last_save_dir))
     plt.close(fig)
 
-def plot_msd(trajectories: np.ndarray, domain_middle: np.ndarray):
+
+def plot_msd(ax, trajectories: np.ndarray, domain_middle: np.ndarray):
     # Plot the mean squared displacement per iteration
-    msd = np.mean(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)
-    msd_err = np.std(np.sum((trajectories - domain_middle)**2, axis=2), axis=0)\
-        / trajectories.shape[0]**0.5
+    msd = np.mean(np.sum((trajectories - domain_middle) ** 2, axis=2), axis=0)
+    msd_err = (
+        np.std(np.sum((trajectories - domain_middle) ** 2, axis=2), axis=0)
+        / trajectories.shape[0] ** 0.5
+    )
 
     x = np.arange(msd.shape[0])
-    fig, ax = plt.subplots()
-    ax.errorbar(x, msd, msd_err, color="gray", linestyle="-", label="Mean Displacements")
-    return fig, ax, x, msd, msd_err
+    ax.fill_between(
+        x, msd - msd_err, msd + msd_err, color="gray", alpha=0.5, label="Data"
+    )
+    return x, msd, msd_err
+
 
 def plot_brownian(
-        storage_name: str,
-        diffusion_constant: float,
-        dimension: int,
-        dt: float,
-    ):
+    ax,
+    storage_name: str,
+    diffusion_constant: float,
+    dimension: int,
+    dt: float,
+    color,
+):
     print(storage_name)
 
     # Get trajectories
@@ -100,7 +155,7 @@ def plot_brownian(
     domain_min, domain_max = get_domain_boundaries(storage_name)
     domain_middle = 0.5 * (domain_min + domain_max)
 
-    fig, ax, x, msd, msd_err = plot_msd(trajectories, domain_middle)
+    x, msd, msd_err = plot_msd(ax, trajectories, domain_middle)
 
     def prediction_brownian(t, dim, diffusion):
         return 2 * dim * diffusion * t
@@ -108,62 +163,45 @@ def plot_brownian(
     y = prediction_brownian(dt * x, dimension, diffusion_constant)
     popt, pcov = sp.optimize.curve_fit(
         lambda t, D: prediction_brownian(t, D, dimension),
-        dt * x,
-        msd,
-        sigma=msd_err,
+        dt * x[1:],
+        msd[1:],
+        p0=(diffusion_constant,),
+        sigma=msd_err[1:] * trajectories.shape[0] ** 0.5,
+        absolute_sigma=True,
     )
 
     ax.plot(
         x,
         y,
-        label="Prediction $2nDt$ with $D={}$".format(diffusion_constant),
+        label=f"D={diffusion_constant:<4.3}",
         color="k",
         linestyle=":",
+        linewidth=4,
     )
     ax.plot(
         x,
         prediction_brownian(dt * x, popt[0], dimension),
-        label="Fit $D={:4.3} \\pm {:4.3}$".format(popt[0], pcov[0][0]**0.5),
+        label="D={:4.3}±{:4.3}".format(popt[0], pcov[0][0] ** 0.5),
         linestyle="--",
-        color="orange",
+        linewidth=4,
+        color=color,
     )
 
-    ax.legend()
+    ax.set_title(f"Brownian {dimension}D")
 
-    ax.set_title("Mean Squared Displacement {}".format(storage_name))
-    fig.tight_layout()
-    fig.savefig("{}/mean-squared-displacement.png".format(last_save_dir))
-    plt.close(fig)
+    # if trajectories.shape[2] == 2:
+    #     plot_2d_only(trajectories, domain_middle, last_save_dir)
 
-    if trajectories.shape[2] == 2:
-        plot_2d_only(trajectories, domain_middle, last_save_dir)
-
-# Note that the values here do need to match the values of the
-# tests as defined by the cellular_raza test suite.
-# See cellular_raza/tests/brownian_diffusion_constant_approx.rs
-BROWNIAN_VALUES = [
-    {"storage_name":"brownian_1d_1", "diffusion_constant": 1.0, "dimension":1, "dt":1e-3},
-    {"storage_name":"brownian_1d_1", "diffusion_constant": 1.0, "dimension":1, "dt":1e-3},
-    {"storage_name":"brownian_1d_2", "diffusion_constant": 0.5, "dimension":1, "dt":1e-3},
-    {"storage_name":"brownian_1d_3", "diffusion_constant":0.25, "dimension":1, "dt":1e-3},
-    {"storage_name":"brownian_2d_1", "diffusion_constant": 1.0, "dimension":2, "dt":1e-3},
-    {"storage_name":"brownian_2d_2", "diffusion_constant": 0.5, "dimension":2, "dt":1e-3},
-    {"storage_name":"brownian_2d_3", "diffusion_constant":0.25, "dimension":2, "dt":1e-3},
-    {"storage_name":"brownian_3d_1", "diffusion_constant": 1.0, "dimension":3, "dt":1e-3},
-    {"storage_name":"brownian_3d_2", "diffusion_constant": 0.5, "dimension":3, "dt":1e-3},
-    {"storage_name":"brownian_3d_3", "diffusion_constant":0.25, "dimension":3, "dt":1e-3},
-]
-
-for kwargs in BROWNIAN_VALUES:
-    plot_brownian(**kwargs)
 
 def plot_langevin(
-        storage_name: str,
-        damping: float,
-        diffusion: float,
-        dim: int,
-        dt: float
-    ):
+    ax,
+    storage_name: str,
+    damping: float,
+    diffusion: float,
+    dim: int,
+    dt: float,
+    color,
+):
     print(storage_name)
     kb_temperature_div_mass = diffusion * damping
 
@@ -176,74 +214,124 @@ def plot_langevin(
     domain_middle = 0.5 * (domain_min + domain_max)
 
     # Plot the mean squared displacement per iteration
-    fig, ax, x, msd, msd_err = plot_msd(trajectories, domain_middle)
+    x, msd, msd_err = plot_msd(ax, trajectories, domain_middle)
 
     def prediction_langevin(t, damping, kb_temperature_div_mass, dim):
-        return - dim * kb_temperature_div_mass / damping**2\
-            * (1.0 - np.exp(- damping * t))\
-            * (3.0 - np.exp(- damping * t))\
+        return (
+            -dim
+            * kb_temperature_div_mass
+            / damping**2
+            * (1.0 - np.exp(-damping * t))
+            * (3.0 - np.exp(-damping * t))
             + 2.0 * dim * kb_temperature_div_mass * t / damping
+        )
 
     popt, pcov = sp.optimize.curve_fit(
         lambda t, damping, kb_temp_div_mass: prediction_langevin(
             t, damping, kb_temp_div_mass, dim
         ),
-        dt * x[1:],
-        msd[1:],
-        # sigma=msd_err[1:],
+        dt * x[2:],
+        msd[2:],
         p0=(damping, kb_temperature_div_mass),
+        sigma=msd_err[2:] * trajectories.shape[0] ** 0.5,
+        absolute_sigma=True,
     )
 
     y = prediction_langevin(dt * x, damping, kb_temperature_div_mass, dim)
     ax.plot(
         x,
         y,
-        label="Prediciton $\\left<r^2(t)\\right>$",
+        label=f"λ={damping:4.3} D={diffusion:4.3}",
         color="k",
         linestyle=":",
+        linewidth=4,
     )
     ax.plot(
         x,
         prediction_langevin(dt * x, *popt, dim),
-        label="Fit $\\lambda={:4.3} \\pm {:4.3}, D={:4.3}\\pm {:4.3}$".format(
+        label="λ={:4.3}±{:4.3}\nD={:4.3}±{:4.3}".format(
             popt[0],
-            pcov[0][0]**0.5,
+            pcov[0][0] ** 0.5,
             popt[1] / popt[0],
-            ((pcov[1][1]/popt[0]**2) + (pcov[0][0]*popt[1]**2/popt[0]**4))**0.5
+            ((pcov[1][1] / popt[0] ** 2) + (pcov[0][0] * popt[1] ** 2 / popt[0] ** 4))
+            ** 0.5,
         ),
         linestyle="--",
-        color="orange",
+        linewidth=4,
+        color=color,
     )
+    ax.set_title(f"Langevin {dim}D")
 
-    ax.legend()
 
-    ax.set_title("Mean Squared Displacement")
-    fig.tight_layout()
-    fig.savefig("{}/mean-squared-displacement.png".format(last_save_dir))
+if __name__ == "__main__":
+    set_mpl_rc_params()
 
-    if trajectories.shape[2] == 2:
-        plot_2d_only(trajectories, domain_middle, last_save_dir)
+    fig, axs = plt.subplots(2, 3, figsize=(24, 16), sharey="row", sharex=True)
+    for ax, label in zip(axs.flatten(), string.ascii_uppercase):
+        configure_ax(ax, minor=False)
+        ax.text(
+            0.03,
+            0.97,
+            label,
+            fontsize=40,
+            fontweight="semibold",
+            fontfamily="serif",
+            va="top",
+            horizontalalignment="left",
+            transform=ax.transAxes,
+        )
 
-# Note that the values here do need to match the values of the
-# tests as defined by the cellular_raza test suite.
-# See cellular_raza/tests/brownian_diffusion_constant_approx.rs
-LANGEVIN_VALUES = [
-    {"storage_name": "langevin_3d_1", "diffusion": 80.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_3d_2", "diffusion": 40.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_3d_3", "diffusion": 20.0, "dim": 3, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_3d_4", "diffusion": 40.0, "dim": 3, "damping":  1.0, "dt": 1e-3},
-    {"storage_name": "langevin_3d_5", "diffusion": 40.0, "dim": 3, "damping":  0.1, "dt": 1e-3},
-    {"storage_name": "langevin_2d_1", "diffusion": 80.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_2d_2", "diffusion": 40.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_2d_3", "diffusion": 20.0, "dim": 2, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_2d_4", "diffusion": 20.0, "dim": 2, "damping":  1.0, "dt": 1e-3},
-    {"storage_name": "langevin_2d_5", "diffusion": 20.0, "dim": 2, "damping":  0.1, "dt": 1e-3},
-    {"storage_name": "langevin_1d_1", "diffusion": 80.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_1d_2", "diffusion": 40.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_1d_3", "diffusion": 20.0, "dim": 1, "damping": 10.0, "dt": 1e-3},
-    {"storage_name": "langevin_1d_4", "diffusion": 20.0, "dim": 1, "damping":  1.0, "dt": 1e-3},
-    {"storage_name": "langevin_1d_5", "diffusion": 20.0, "dim": 1, "damping":  0.1, "dt": 1e-3},
-]
+    for i, name, dim, d in [
+        (0, "brownian_1d_1", 1, 1.0),
+        (1, "brownian_2d_2", 2, 0.5),
+        (2, "brownian_3d_3", 3, 0.25),
+    ]:
+        plot_brownian(
+            axs[0, i],
+            storage_name=name,
+            diffusion_constant=d,
+            dimension=dim,
+            dt=1e-3,
+            color=COLOR5,
+        )
+    for i, name, dim, d, damp in [
+        (0, "langevin_1d_1", 1, 80.0, 10.0),
+        (1, "langevin_2d_2", 2, 40.0, 10.0),
+        (2, "langevin_3d_3", 3, 20.0, 10.0),
+    ]:
+        plot_langevin(
+            axs[1, i],
+            storage_name=name,
+            diffusion=d,
+            dim=dim,
+            damping=damp,
+            dt=1e-3,
+            color=COLOR5,
+        )
 
-for kwargs in LANGEVIN_VALUES:
-    plot_langevin(**kwargs)
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    fig.legend(
+        handles=handles,
+        labels=["Data", "Analytical Prediction", "Fit"],
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.0),
+        ncols=3,
+        frameon=False,
+    )
+    for i, ax in enumerate(axs.flatten()):
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(
+            handles=[handles[1], handles[2]],
+            labels=[labels[1], labels[2]],
+            frameon=False,
+            loc="lower right" if i < 3 else "center left",
+        )
+
+    axs[0, 0].set_ylabel("Mean Squared Displacement")
+    axs[1, 0].set_ylabel("Mean Squared Displacement")
+    for i in range(3):
+        axs[1, i].set_xlabel("Time")
+
+    fig.tight_layout(rect=(0, 0, 1, 1 - 0.03))
+    fig.subplots_adjust(wspace=0)
+    fig.savefig("mean-squared-displacements-brownian-langevin.pdf")
