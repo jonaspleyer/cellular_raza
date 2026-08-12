@@ -334,4 +334,4 @@ if __name__ == "__main__":
 
     fig.tight_layout(rect=(0, 0, 1, 1 - 0.03))
     fig.subplots_adjust(wspace=0)
-    fig.savefig("mean-squared-displacements-brownian-langevin.pdf")
+    fig.savefig("out/mean-squared-displacements-brownian-langevin.pdf")
