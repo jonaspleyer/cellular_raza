@@ -142,7 +142,6 @@ def plot_runtime(
     subfolder: str = "sim-size",
     odir: Path = Path("benchmark_results"),
     fit_exponential: bool = True,
-    fit_order: int = 2,
 ) -> plt.Figure:
     df = get_runtime_dataset(subfolder, odir)
 
@@ -174,16 +173,28 @@ def plot_runtime(
         # Do individual fits for every curve
         fit_x_values = np.log(x_values) if fit_exponential else x_values
         fit_y_values = np.log(y_values) if fit_exponential else y_values
-        p0 = np.zeros(fit_order + 1)
-        if fit_order > 1:
-            p0[-2] = list(y_values)[-1] / list(x_values)[-1]
-        popt, pcov = sp.optimize.curve_fit(
-            fit_func,
-            fit_x_values,
-            fit_y_values,
-            p0=p0,
-            bounds=(0, np.inf),
-        )
+
+        rss_vals = []
+        for fit_order in [1, 2]:
+            p0 = np.zeros(fit_order + 1)
+            p0[1] = 1
+            if fit_order > 1:
+                p0[-2] = list(y_values)[-1] / list(x_values)[-1]
+            popt, pcov = sp.optimize.curve_fit(
+                fit_func,
+                fit_x_values,
+                fit_y_values,
+                p0=p0,
+                bounds=(0, np.inf),
+            )
+            pred_y_values = fit_func(fit_x_values, *popt)
+            rss = np.sum(((pred_y_values - fit_y_values) / fit_y_values) ** 2)
+            rss_vals.append(rss)
+        df1 = 3 - 2
+        df2 = len(fit_x_values) - 3
+        F = ((rss_vals[0] - rss_vals[1]) / df1) / (rss_vals[1] / df2)
+        p_value = sp.stats.f.sf(F, df1, df2)
+
         color = entry.get("color", "k")
         ax.plot(
             x_values,
@@ -216,9 +227,12 @@ def plot_runtime(
         print(
             "| Variance:     ",
             *[
-                "s{}={:.3e}".format(len(pcov) - i - 1, p[i] ** 0.5)
-                for i, p in enumerate(pcov)
+                "s{}={:.3e}".format(len(pcov) - i - 1, pcov[i, i] ** 0.5)
+                for i in range(len(pcov))
             ],
+        )
+        print(
+            f"| p_value: {p_value:5.3f} F value: {F} rss1: {rss_vals[0]} rss2: {rss_vals[1]}"
         )
         print("| Effects at n_agents={}:".format(list(x_values)[-2]))
         for n_x_value in range(len(x_values)):
@@ -344,7 +358,6 @@ if __name__ == "__main__":
                 "color": "#003f5c",
             },
         ],
-        fit_order=2,
         fit_exponential=False,
     )
     plot_throughput(
