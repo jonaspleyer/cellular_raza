@@ -326,7 +326,7 @@ if __name__ == "__main__":
     configure_ax(axs[1], minor=False)
 
     plot_runtime(
-        axs[0],
+        axs[1],
         entries=[
             {
                 "name": "3960X-at-2000MHz",
@@ -348,7 +348,7 @@ if __name__ == "__main__":
         fit_exponential=False,
     )
     plot_throughput(
-        axs[1],
+        axs[0],
         entries=[
             {
                 "name": "3960X-at-2000MHz",
