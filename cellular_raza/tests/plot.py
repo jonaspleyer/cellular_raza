@@ -67,7 +67,6 @@ if __name__ == "__main__":
         ax.legend(frameon=False)
         ax.set_xlabel("Time")
         ax.set_ylabel("Intracellular Concentration y(t)")
-        ax.set_title(f"Test {i + 1}")
 
     fig.tight_layout()
     fig.savefig("out/contact_reactions.pdf")
