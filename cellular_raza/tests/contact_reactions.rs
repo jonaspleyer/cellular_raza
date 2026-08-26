@@ -325,8 +325,9 @@ mod two_component_contact_reaction {
 
         // Estimate upper bound on local and global truncation error
         let lipschitz_constant = nalgebra::vector![
-            (n_agents - 1) as f64 * production,
-            (n_agents - 1) as f64
+            23.0 / 12.0 * (n_agents - 1) as f64 * production * f64::EPSILON,
+            23.0 / 12.0
+                * (n_agents - 1) as f64
                 * production
                 * (upper_limit - 2.0 * y0_first[1]).abs().max(
                     (upper_limit
@@ -339,9 +340,7 @@ mod two_component_contact_reaction {
 
         // Calculate upper bound on local and global truncation error
         let local_truncation_error = nalgebra::vector![
-            n_agents as f64
-                * (y0_first[0] + (n_agents - 1) as f64 * production * (t_max - t0_first))
-                * f64::EPSILON,
+            f64::EPSILON,
             fourth_derivative_bound * (3f64 / 8.0 * dt.powi(4))
         ];
         let global_truncation_error = |t: f64| -> nalgebra::Vector2<f64> {
