@@ -217,13 +217,10 @@ def plot_langevin(
     x, msd, msd_err = plot_msd(ax, trajectories, domain_middle)
 
     def prediction_langevin(t, damping, kb_temperature_div_mass, dim):
-        return (
-            -dim
-            * kb_temperature_div_mass
-            / damping**2
-            * (1.0 - np.exp(-damping * t))
-            * (3.0 - np.exp(-damping * t))
-            + 2.0 * dim * kb_temperature_div_mass * t / damping
+        return -dim * kb_temperature_div_mass * (
+            (1 - np.exp(-damping * t)) / damping
+        ) ** 2 + 2 * dim * kb_temperature_div_mass / damping * (
+            t - (1 - np.exp(-damping * t)) / damping
         )
 
     popt, pcov = sp.optimize.curve_fit(
