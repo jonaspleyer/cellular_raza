@@ -57,7 +57,7 @@ def load_data(output_dir=None):
     return data
 
 
-def plot_iteration(iteration, data, margin=0):
+def plot_iteration(iteration, data, margin=0, ax=None):
     cell_data = data[iteration]["cells"]
     subdomain_data = data[iteration]["subdomains"]
 
@@ -85,7 +85,9 @@ def plot_iteration(iteration, data, margin=0):
     xymax = np.min([si["element"]["base"]["max"] for si in subdomain_data], axis=0)
 
     ratio = (xymax[0] - xymin[0]) / (xymax[1] - xymin[1])
-    fig, ax = plt.subplots(figsize=(ratio * 8, 8))
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(ratio * 8, 8))
     ax.set_axis_off()
 
     ax.set_xlim(xymin[0] - margin, xymax[0] + margin)
@@ -122,9 +124,10 @@ def plot_iteration(iteration, data, margin=0):
         ax.add_patch(circ)
         ax.scatter([pos[0]], [pos[1]], marker="x", color="k")
 
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    fig.savefig(f"out/{iteration:08}.png")
-    plt.close(fig)
+    if fig is not None:
+        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+        fig.savefig(f"out/{iteration:08}.png")
+        plt.close(fig)
 
 
 def create_movie():
