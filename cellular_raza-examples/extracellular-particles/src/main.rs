@@ -16,6 +16,7 @@ pub const P_MASS: f64 = 0.01;
 pub const C_RELATIVE_INTERACTION_RANGE: f64 = 1.0;
 pub const C_POTENTIAL_STRENGTH: f64 = 0.5;
 pub const C_VELOCITY_INIT_BOUND: f64 = 0.02;
+pub const C_UPTAKE_RATE: f64 = 0.5;
 
 pub const C_GROWTH_INCREMENT: f64 = 0.2;
 pub const C_DIVISION_RADIUS: f64 = 8.0;
@@ -74,9 +75,6 @@ impl Cycle for Cell {
             cell.retain_particle_indices = (0..cell.particles.ncols()).collect();
             Some(CycleEvent::Division)
         } else {
-            if cell.particles.ncols() > 20 {
-                panic!();
-            }
             for i in 0..cell.particles.ncols() {
                 if rng.random_bool(dt * C_DEVOUR_RATE) {
                     cell.interaction.radius += C_GROWTH_INCREMENT;
@@ -381,12 +379,15 @@ fn main() -> Result<(), SimulationError> {
 
     // Position cells on lattice grid
     let n_grids = (N_CELLS as f64).sqrt().ceil() as usize;
-    let dx = DOMAIN_SIZE / n_grids as f64;
+    let dx = 0.8 * DOMAIN_SIZE / n_grids as f64;
     let cells = (0..N_CELLS)
         .map(|i| {
             let pos = Vector2::from([
-                dx * ((i % n_grids) as f64 + 0.5) + rng.random_range(-0.1 * dx..0.1 * dx),
-                dx * ((i as f64 / n_grids as f64).floor() + 0.5)
+                0.1 * DOMAIN_SIZE
+                    + dx * ((i % n_grids) as f64 + 0.5)
+                    + rng.random_range(-0.1 * dx..0.1 * dx),
+                0.1 * DOMAIN_SIZE
+                    + dx * ((i as f64 / n_grids as f64).floor() + 0.5)
                     + rng.random_range(-0.1 * dx..0.1 * dx),
             ]);
             Cell {
@@ -420,7 +421,7 @@ fn main() -> Result<(), SimulationError> {
 
     let base = CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE; 2], [1; 2])?;
 
-    let n_particles_outer = 100;
+    let n_particles_outer = 1_000;
 
     let mut particles = ParticleVec::zeros(n_particles_outer);
     for mut pi in particles.column_iter_mut() {
@@ -448,15 +449,23 @@ fn main() -> Result<(), SimulationError> {
         progressbar: Some("".into()),
     };
 
+    prepare_types!(
+        aspects: [Mechanics, Interaction, Reactions, ReactionsExtra, Cycle],
+    );
+
     let custom_update_fun = |sbox: &mut _| -> Result<(), SimulationError> {
         let sbox: &mut SubDomainBox<_, CuboidSubDomain<f64, 2>, _, _, _, _> = sbox;
-        for (v_index, p_indices) in sbox.subdomain.particle_indices.iter() {
+        for (v_index, p_indices) in sbox.subdomain.particle_indices.iter_mut() {
             let plain_index = sbox.voxel_index_to_plain_index[v_index];
-            for (cbox, _) in sbox.voxels.get_mut(&plain_index).unwrap().cells.iter_mut() {
+            let voxel: &mut Voxel<_, _CrAuxStorage<_, _, _, _, ParticleVec>> =
+                sbox.voxels.get_mut(&plain_index).unwrap();
+            let rng = &mut voxel.rng;
+            let mut remove_indices = vec![];
+            for (cbox, aux_storage) in voxel.cells.iter_mut() {
                 let cell: &mut Cell = &mut cbox.cell;
-                for n in p_indices.iter() {
-                    let pos = sbox.subdomain.particles.view((0, *n), (2, 1));
-                    let vel = sbox.subdomain.particles.view((2, *n), (2, 1));
+                for &n in p_indices.iter() {
+                    let pos = sbox.subdomain.particles.view((0, n), (2, 1));
+                    let vel = sbox.subdomain.particles.view((2, n), (2, 1));
                     let cpos = cell.mechanics.pos;
                     let radius = cell.interaction.radius;
 
@@ -471,22 +480,68 @@ fn main() -> Result<(), SimulationError> {
                             - (v.dot(&x).powi(2) + (radius.powi(2) - x.norm_squared())).sqrt();
                         let q = pos + s * v;
 
-                        // Perform reflection
-                        let mut particle = sbox.subdomain.particles.column_mut(*n);
-                        let vel_change = reflect_at(
-                            &mut particle,
-                            &q.as_view(),
-                            &(cpos - &q).normalize().as_view(),
-                        );
-                        cell.mechanics.vel += vel_change * P_MASS / cell.mechanics.mass;
+                        // Determine if particle is taken up or reflected
+                        if rng.random_bool(DT * C_UPTAKE_RATE) {
+                            println!("Uptake");
+                            let s = sbox.subdomain.particles.column(n);
+                            let m = cell.particles.ncols();
+
+                            // Add particle to cell
+                            let particles = cell.particles.clone();
+                            cell.particles = particles.insert_column(m, 0.0);
+                            cell.particles.set_column(m, &s);
+
+                            // Update AuxStorage
+                            let conc = aux_storage.reactions.get_conc();
+                            let ncols = conc.ncols();
+                            aux_storage.set_conc(conc.insert_column(ncols, 0.0));
+
+                            // Remove from subdomain later
+                            remove_indices.push(n);
+                        } else {
+                            // Perform reflection
+                            let mut particle = sbox.subdomain.particles.column_mut(n);
+                            let vel_change = reflect_at(
+                                &mut particle,
+                                &q.as_view(),
+                                &(cpos - &q).normalize().as_view(),
+                            );
+                            cell.mechanics.vel += vel_change * P_MASS / cell.mechanics.mass;
+                        }
                     }
                 }
+            }
+            // Remove particle from subdomain
+            remove_indices.sort();
+            let sparticles = sbox.subdomain.particles.clone();
+            sbox.subdomain.particles = sparticles.remove_columns_at(&remove_indices);
+            p_indices.retain_mut(|x| {
+                for r in remove_indices.iter() {
+                    if r == x {
+                        return false;
+                    } else if r < x {
+                        *x -= 1;
+                    } else {
+                        break;
+                    }
+                }
+                true
+            });
+            for (i, &p) in p_indices.iter().enumerate() {
+                debug_assert!(i == p);
             }
         }
         Ok(())
     };
 
-    run_simulation!(
+    test_compatibility!(
+        domain,
+        agents: cells,
+        settings,
+        aspects: [Mechanics, Interaction, Reactions, ReactionsExtra, Cycle],
+        zero_reactions_default: |c: &Cell| ParticleVec::zeros(c.particles.ncols()),
+    );
+    run_main!(
         domain,
         agents: cells,
         settings,
