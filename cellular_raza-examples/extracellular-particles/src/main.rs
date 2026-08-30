@@ -499,7 +499,7 @@ fn main() -> Result<(), SimulationError> {
 
 #[test]
 fn test_reflect_at_1() {
-    let mut particle = ParticleVec::from_fn(1, |n, _| [1.0, 0.0, 0.0, 1.0, 0.0, 0.0][n]);
+    let mut particle = ParticleVec::from_fn(1, |n, _| [1.0, 0.0, 1.0, 0.0][n]);
     let q = Vector2::from([0.0, 0.0]);
     let dir = Vector2::from([1.0, 0.0]);
     reflect_at(&mut particle.column_mut(0), &q.as_view(), &dir.as_view());
@@ -511,7 +511,7 @@ fn test_reflect_at_1() {
 
 #[test]
 fn test_reflect_at_2() {
-    let mut particle = ParticleVec::from_fn(1, |n, _| [1.0, 1.0, 0.0, 1.0, 0.5, 0.0][n]);
+    let mut particle = ParticleVec::from_fn(1, |n, _| [1.0, 1.0, 1.0, 0.5][n]);
     let q = Vector2::from([0.5, 0.5]);
     let dir = Vector2::from([0.5, 0.5]);
     reflect_at(&mut particle.column_mut(0), &q.as_view(), &dir.as_view());
