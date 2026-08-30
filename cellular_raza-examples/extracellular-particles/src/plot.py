@@ -5,10 +5,16 @@ from glob import glob
 from pathlib import Path
 import json
 from tqdm import tqdm
-import pyvista as pv
 import os
 
 # Get last output dir
+
+COLOR1 = "#6bd2db"
+COLOR2 = "#0ea7b5"
+COLOR3 = "#0c457d"
+COLOR4 = "#ffbe4f"
+COLOR5 = "#e8702a"
+COLOR6 = "#a02b08"
 
 
 def load_data(output_dir=None):
@@ -59,7 +65,7 @@ def plot_iteration(iteration, data, margin=0):
     cells = []
     for c in cell_data:
         # Select the positions of every particle
-        pi = np.array(c["particles"][0]).reshape((-1, 6))[:, :3]
+        pi = np.array(c["particles"][0]).reshape((-1, 4))[:, :3]
         particles.append(pi)
 
         pos = c["mechanics"]["pos"]
@@ -68,7 +74,7 @@ def plot_iteration(iteration, data, margin=0):
         cells.append((pos, radius))
 
     particles_domain = [
-        np.array(si["element"]["particles"][0]).reshape((-1, 6))
+        np.array(si["element"]["particles"][0]).reshape((-1, 4))
         for si in subdomain_data
     ]
 
@@ -80,6 +86,7 @@ def plot_iteration(iteration, data, margin=0):
 
     ratio = (xymax[0] - xymin[0]) / (xymax[1] - xymin[1])
     fig, ax = plt.subplots(figsize=(ratio * 8, 8))
+    ax.set_axis_off()
 
     ax.set_xlim(xymin[0] - margin, xymax[0] + margin)
     ax.set_ylim(xymin[1] - margin, xymax[1] + margin)
@@ -91,23 +98,31 @@ def plot_iteration(iteration, data, margin=0):
     ax.scatter(
         particles[:, 0],
         particles[:, 1],
-        color="orange",
+        s=80,
+        color=COLOR5,
         marker=".",
-        alpha=0.5,
     )
     ax.scatter(
         particles_domain[:, 0],
         particles_domain[:, 1],
-        color="red",
+        s=80,
+        color=COLOR3,
         marker=".",
-        alpha=0.5,
     )
 
     for pos, radius in cells:
-        circ = mpl.patches.Circle(xy=pos[:2], radius=radius, fill=False, color="k")
+        circ = mpl.patches.Circle(
+            xy=pos[:2],
+            radius=radius,
+            fill=True,
+            facecolor=(0.1, 0.1, 0.1, 0.1),
+            edgecolor="k",
+            linewidth=2,
+        )
         ax.add_patch(circ)
         ax.scatter([pos[0]], [pos[1]], marker="x", color="k")
 
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     fig.savefig(f"out/{iteration:08}.png")
     plt.close(fig)
 
