@@ -169,8 +169,8 @@ if __name__ == "__main__":
     ymax = y1[0] + y2[0]
     ylim = 1.1 * ymax
     ax2.set_ylim(0, ylim)
-    ax2.axvline(x=t[i1], ymax=(y1[i1] + y2[i1]) / ylim, color="white", linewidth=2)
-    ax2.axvline(x=t[i2], ymax=(y1[i2] + y2[i2]) / ylim, color="white", linewidth=2)
+    ax2.axvline(x=t[i1], ymax=(y1[i1] + y2[i1]) / ylim, color="white", linewidth=4)
+    ax2.axvline(x=t[i2], ymax=(y1[i2] + y2[i2]) / ylim, color="white", linewidth=4)
     ax2.legend(frameon=False, ncols=2, loc="upper center", bbox_to_anchor=(0.5, 1.13))
     ax2.set_xlabel("Time [min]")
 
