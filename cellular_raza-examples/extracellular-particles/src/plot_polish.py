@@ -4,9 +4,12 @@ import matplotlib.pyplot as plt
 import string
 import sys
 import os
+import scipy as sp
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
+
+from src.plot import plot_iteration, load_data
 
 DT = 0.1
 
@@ -43,7 +46,32 @@ def configure_ax(ax, minor=True):
     ax.set_axisbelow(True)
 
 
-from src.plot import plot_iteration, load_data
+def bivariate_pcf(cells, particles, r, dr, area=None):
+    cells = np.asarray(cells, float)
+    particles = np.asarray(particles, float)
+
+    if area is None:
+        allpts = np.vstack([cells, particles])
+        mins, maxs = allpts.min(0), allpts.max(0)
+        area = np.prod(maxs - mins)
+    lambda_particles = len(particles) / area
+
+    edges = np.array([r - dr, r + dr])
+
+    tree = sp.spatial.cKDTree(particles)
+    counts_cum = np.array(
+        [tree.query_ball_point(cells, e, return_length=True).sum() for e in edges]
+    )
+    counts_ring = counts_cum[1] - counts_cum[0]  # counts per annulus
+
+    ring_area = np.pi * (edges[1] ** 2 - edges[0] ** 2)
+    expected = ring_area * lambda_particles * len(cells)
+
+    g = np.divide(
+        counts_ring, expected, out=np.zeros_like(counts_ring, float), where=expected > 0
+    )
+    return g
+
 
 if __name__ == "__main__":
     set_mpl_rc_params()
@@ -69,30 +97,40 @@ if __name__ == "__main__":
     intracellular_particles = []
     extracellular_particles = []
     n_cells = []
+    pcfs = []
     for it in iterations:
         cell_data = data[it]["cells"]
         subdomain_data = data[it]["subdomains"]
-        particles_cells = []
+
+        i_particles = []
         areas = []
         n_cells.append(len(cell_data))
+        cell_positions = []
         for c in cell_data:
             # Select the positions of every particle
             pi = np.array(c["particles"][0]).reshape((-1, 4))[:, :3]
-            particles_cells.append(pi.shape[0])
+            i_particles.append(pi)
             areas.append(c["interaction"]["radius"] ** 2 * np.pi)
+            cell_positions.append(c["mechanics"]["pos"][:2])
 
-        intracellular_particles.append(np.sum(particles_cells))
+        i_particles = np.vstack(i_particles)
+        cell_positions = np.vstack(cell_positions)
+
+        intracellular_particles.append(i_particles.shape[0])
         cell_area.append(areas)
 
-        extracellular_particles.append(
-            np.sum(
-                [
-                    np.array(si["element"]["particles"][0]).reshape((-1, 4)).shape[0]
-                    for si in subdomain_data
-                ]
-            )
+        e_particles = np.vstack(
+            [
+                np.array(si["element"]["particles"][0]).reshape((-1, 4))[:, :2]
+                for si in subdomain_data
+            ]
         )
+        extracellular_particles.append(e_particles.shape[0])
 
+        g = bivariate_pcf(cell_positions, e_particles, r=15, dr=12)
+        pcfs.append(g)
+
+    pcfs = np.array(pcfs)
     t = np.array(iterations) * DT
 
     gs1 = GridSpec(
@@ -113,13 +151,6 @@ if __name__ == "__main__":
         bbox_to_anchor=(0.45, 1.13),
     )
     ax1.set_xlabel("Time [min]")
-
-    prev = 10000
-    for i in range(len(intracellular_particles)):
-        new = intracellular_particles[i] + extracellular_particles[i]
-        # print(new, prev)
-        # assert new <= prev
-        prev = new
 
     ax2 = fig1.add_subplot(gs1[1])
 
@@ -143,45 +174,11 @@ if __name__ == "__main__":
     ax2.legend(frameon=False, ncols=2, loc="upper center", bbox_to_anchor=(0.5, 1.13))
     ax2.set_xlabel("Time [min]")
 
-    # ax3 = fig1.add_subplot(gs1[2])
-    fig13 = fig1.add_subfigure(gs1[2])
-    n_plots = 5
-    gs13 = GridSpec(n_plots, 1, hspace=0, bottom=0.1, top=1 - 0.1)
-    # , left=0, right=1, bottom=0, top=1, wspace=0)
-    ax_prev = None
-    iters = [
-        min(int(len(cell_area) / n_plots * (i + 1)), len(cell_area) - 1)
-        for i in range(n_plots)
-    ]
-    for i, it in enumerate(iters):
-        ax = fig13.add_subplot(gs13[i], sharex=ax_prev)
-        ax_prev = ax
-        ax.hist(
-            cell_area[it],
-            edgecolor=COLOR3,
-            bins=10,
-            density=True,
-            facecolor=COLOR1,
-            alpha=0.8,
-            label="t=" + ",".join([f"{t[it] / 60:2.0f}" for it in iters]) + "h",
-        )
-        if i == 0:
-            ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.65))
-        ax.set_ylim(0, 0.039)
-        if i != n_plots - 1:
-            ax.set_xticks([])  # ["" for _ in ax.get_xticklabels()])
-        if i == 0:
-            ax.text(
-                0.03,
-                1 - n_plots * 0.03,
-                "C",
-                fontsize=40,
-                fontweight="semibold",
-                fontfamily="serif",
-                va="top",
-                horizontalalignment="left",
-                transform=ax.transAxes,
-            )
+    ax3 = fig1.add_subplot(gs1[2])
+    configure_ax(ax3)
+    ax3.plot(t, pcfs, color=COLOR3, label="Bivariate Pair CF")
+    ax3.set_xlabel("Time [min]")
+    ax3.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.13))
 
     for ax, label in zip([ax1, ax2], string.ascii_uppercase):
         configure_ax(ax)
