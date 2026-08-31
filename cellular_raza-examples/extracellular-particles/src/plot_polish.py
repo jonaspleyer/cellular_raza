@@ -48,7 +48,7 @@ from src.plot import plot_iteration, load_data
 if __name__ == "__main__":
     set_mpl_rc_params()
     s = 0.04
-    fig = plt.figure(figsize=(24, 12 + 8 * (1 - 2 * s)))
+    fig = plt.figure(figsize=(24, 8 + 8 * (1 - 2 * s)))
     gs = GridSpec(
         2,
         1,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         right=1,
         bottom=0,
         top=1,
-        height_ratios=(12, 8 * (1 - 2 * s)),
+        height_ratios=(8, 8 * (1 - 2 * s)),
     )
     fig1 = fig.add_subfigure(gs[0])
     fig2 = fig.add_subfigure(gs[1])
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     t = np.array(iterations) * DT
 
-    gs1 = GridSpec(1, 2, left=0.05, right=1 - 0.05, bottom=0.1, top=1 - 0.1)
+    gs1 = GridSpec(1, 3, left=0.05, right=1 - 0.05, bottom=0.1, top=1 - 0.1)
     ax1 = fig1.add_subplot(gs1[0])
     ax1.plot(t, [np.sum(a) for a in cell_area], color=COLOR5, label="Cell Area")
     ax11 = ax1.twinx()
@@ -135,9 +135,42 @@ if __name__ == "__main__":
         bbox_to_anchor=(0.5, 1.1),
     )
     ax2.set_xlabel("Time [min]")
-    ax2.set_ylabel("Particle Count")
 
     # ax3 = fig1.add_subplot(gs1[2])
+    fig13 = fig1.add_subfigure(gs1[2])
+    n_plots = 5
+    gs13 = GridSpec(n_plots, 1, hspace=0, bottom=0.1, top=1 - 0.1)
+    # , left=0, right=1, bottom=0, top=1, wspace=0)
+    ax_prev = None
+    for i in range(n_plots):
+        it = min(int(len(cell_area) / n_plots * (i + 1)), len(cell_area) - 1)
+        ax = fig13.add_subplot(gs13[i], sharex=ax_prev)
+        ax_prev = ax
+        ax.hist(
+            cell_area[it],
+            edgecolor=COLOR3,
+            bins=10,
+            density=True,
+            facecolor=COLOR1,
+            alpha=0.8,
+            label=f"t={t[it] / 60:2.0f}h",
+        )
+        ax.legend(frameon=False, loc="upper right")
+        ax.set_ylim(0, 0.039)
+        if i != n_plots - 1:
+            ax.set_xticks([])  # ["" for _ in ax.get_xticklabels()])
+        if i == 0:
+            ax.text(
+                0.03,
+                1 - n_plots * 0.03,
+                "C",
+                fontsize=40,
+                fontweight="semibold",
+                fontfamily="serif",
+                va="top",
+                horizontalalignment="left",
+                transform=ax.transAxes,
+            )
 
     for ax, label in zip([ax1, ax2], string.ascii_uppercase):
         configure_ax(ax)
@@ -162,7 +195,7 @@ if __name__ == "__main__":
         ax.text(
             0.03,
             0.97,
-            string.ascii_uppercase[i + 2],
+            string.ascii_uppercase[i + 3],
             fontsize=40,
             fontweight="semibold",
             fontfamily="serif",
