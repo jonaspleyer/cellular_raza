@@ -95,7 +95,9 @@ if __name__ == "__main__":
 
     t = np.array(iterations) * DT
 
-    gs1 = GridSpec(1, 3, left=0.05, right=1 - 0.05, bottom=0.1, top=1 - 0.1)
+    gs1 = GridSpec(
+        1, 3, left=0.05, right=1 - 0.025, bottom=0.1, top=1 - 0.1, wspace=0.25
+    )
     ax1 = fig1.add_subplot(gs1[0])
     ax1.plot(t, [np.sum(a) for a in cell_area], color=COLOR5, label="Cell Area")
     ax11 = ax1.twinx()
@@ -108,7 +110,7 @@ if __name__ == "__main__":
         frameon=False,
         loc="upper center",
         ncols=2,
-        bbox_to_anchor=(0.5, 1.1),
+        bbox_to_anchor=(0.45, 1.13),
     )
     ax1.set_xlabel("Time [min]")
 
@@ -132,7 +134,7 @@ if __name__ == "__main__":
         frameon=False,
         ncols=2,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.1),
+        bbox_to_anchor=(0.5, 1.13),
     )
     ax2.set_xlabel("Time [min]")
 
@@ -142,8 +144,11 @@ if __name__ == "__main__":
     gs13 = GridSpec(n_plots, 1, hspace=0, bottom=0.1, top=1 - 0.1)
     # , left=0, right=1, bottom=0, top=1, wspace=0)
     ax_prev = None
-    for i in range(n_plots):
-        it = min(int(len(cell_area) / n_plots * (i + 1)), len(cell_area) - 1)
+    iters = [
+        min(int(len(cell_area) / n_plots * (i + 1)), len(cell_area) - 1)
+        for i in range(n_plots)
+    ]
+    for i, it in enumerate(iters):
         ax = fig13.add_subplot(gs13[i], sharex=ax_prev)
         ax_prev = ax
         ax.hist(
@@ -153,9 +158,10 @@ if __name__ == "__main__":
             density=True,
             facecolor=COLOR1,
             alpha=0.8,
-            label=f"t={t[it] / 60:2.0f}h",
+            label="t=" + ",".join([f"{t[it] / 60:2.0f}" for it in iters]) + "h",
         )
-        ax.legend(frameon=False, loc="upper right")
+        if i == 0:
+            ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.65))
         ax.set_ylim(0, 0.039)
         if i != n_plots - 1:
             ax.set_xticks([])  # ["" for _ in ax.get_xticklabels()])
