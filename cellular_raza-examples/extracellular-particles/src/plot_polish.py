@@ -154,7 +154,7 @@ if __name__ == "__main__":
         )
 
     gs2 = GridSpec(1, 3, wspace=s, left=0, right=1, bottom=0, top=1)
-    for i, j in enumerate([1, int(len(iterations) / 2), -1]):
+    for i, j in enumerate([1, int(len(iterations) / 4), -1]):
         ax = fig2.add_subplot(gs2[i])
         ax.set_axis_off()
         plot_iteration(iterations[j], data, ax=ax)
