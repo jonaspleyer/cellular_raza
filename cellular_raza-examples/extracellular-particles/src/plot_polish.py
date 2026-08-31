@@ -122,20 +122,25 @@ if __name__ == "__main__":
         prev = new
 
     ax2 = fig1.add_subplot(gs1[1])
+
+    y1 = [pi for pi in intracellular_particles]
+    y2 = [pi for pi in extracellular_particles]
     ax2.stackplot(
         t,
-        [pi for pi in intracellular_particles],
-        [pi for pi in extracellular_particles],
+        y1,
+        y2,
         colors=[COLOR5, COLOR3],
         labels=["Intracellular", "Extracellular"],
         alpha=0.8,
     )
-    ax2.legend(
-        frameon=False,
-        ncols=2,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.13),
-    )
+    i1 = np.argmin(t < 300)
+    i2 = np.argmin(t < 800)
+    ymax = y1[0] + y2[0]
+    ylim = 1.1 * ymax
+    ax2.set_ylim(0, ylim)
+    ax2.axvline(x=t[i1], ymax=(y1[i1] + y2[i1]) / ylim, color="white", linewidth=2)
+    ax2.axvline(x=t[i2], ymax=(y1[i2] + y2[i2]) / ylim, color="white", linewidth=2)
+    ax2.legend(frameon=False, ncols=2, loc="upper center", bbox_to_anchor=(0.5, 1.13))
     ax2.set_xlabel("Time [min]")
 
     # ax3 = fig1.add_subplot(gs1[2])
