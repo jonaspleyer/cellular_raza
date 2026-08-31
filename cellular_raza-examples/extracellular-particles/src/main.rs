@@ -11,7 +11,11 @@ pub const N_CELLS: usize = 16;
 
 pub const C_DAMPING: f64 = 0.1;
 pub const C_RADIUS: f64 = 6.0;
+pub const C_N_PARTICLES_INTRACELLULAR: usize = 20;
+
 pub const P_MASS: f64 = 0.01;
+pub const P_INITIAL_VELOCITY_BOUND: f64 = 1.0;
+pub const P_N_PARTICLES_EXTRACELLULAR: usize = 1_000;
 
 pub const C_RELATIVE_INTERACTION_RANGE: f64 = 1.0;
 pub const C_POTENTIAL_STRENGTH: f64 = 0.3;
@@ -407,11 +411,11 @@ fn main() -> Result<(), SimulationError> {
                     cutoff: (1.0 + C_RELATIVE_INTERACTION_RANGE) * C_RADIUS,
                 },
                 // particles: MatrixXx3::from_fn_generic(4, 3, |_, m| pos[m]),
-                particles: ParticleVec::from_fn(20, |n, _| {
+                particles: ParticleVec::from_fn(C_N_PARTICLES_INTRACELLULAR, |n, _| {
                     if n < 2 {
                         pos[n] + rng.random_range(-1.0..1.0) * C_RADIUS
                     } else {
-                        rng.random_range(-1.0..1.0)
+                        rng.random_range(-P_INITIAL_VELOCITY_BOUND..P_INITIAL_VELOCITY_BOUND)
                     }
                 }),
                 remove_particle_indices: Vec::with_capacity(4),
@@ -421,15 +425,13 @@ fn main() -> Result<(), SimulationError> {
 
     let base = CartesianCuboid::from_boundaries_and_n_voxels([0.0; 2], [DOMAIN_SIZE; 2], [1; 2])?;
 
-    let n_particles_outer = 1_000;
-
-    let mut particles = ParticleVec::zeros(n_particles_outer);
+    let mut particles = ParticleVec::zeros(P_N_PARTICLES_EXTRACELLULAR);
     for mut pi in particles.column_iter_mut() {
         pi[0] = rng.random_range(0.0..DOMAIN_SIZE);
         pi[1] = rng.random_range(0.0..DOMAIN_SIZE);
 
-        pi[2] = rng.random_range(-1.0..1.0);
-        pi[3] = rng.random_range(-1.0..1.0);
+        pi[2] = rng.random_range(-P_INITIAL_VELOCITY_BOUND..P_INITIAL_VELOCITY_BOUND);
+        pi[3] = rng.random_range(-P_INITIAL_VELOCITY_BOUND..P_INITIAL_VELOCITY_BOUND);
     }
 
     let domain = Cuboid2D { base, particles };
