@@ -35,7 +35,7 @@ struct Cell {
     #[Mechanics]
     mechanics: NewtonDamped2D,
     particles: ParticleVec,
-    retain_particle_indices: Vec<usize>,
+    remove_particle_indices: Vec<usize>,
 }
 
 fn reflect_at(
@@ -72,17 +72,21 @@ impl Cycle for Cell {
         cell: &mut Self,
     ) -> Option<CycleEvent> {
         if cell.interaction.radius >= C_DIVISION_RADIUS {
-            cell.retain_particle_indices = (0..cell.particles.ncols()).collect();
+            cell.remove_particle_indices = Vec::with_capacity(4);
             Some(CycleEvent::Division)
         } else {
             for i in 0..cell.particles.ncols() {
                 if rng.random_bool(dt * C_DEVOUR_RATE) {
-                    cell.interaction.radius += C_GROWTH_INCREMENT;
+                    let r = cell.interaction.radius;
+                    let pi = core::f64::consts::PI;
+                    let d_area = C_GROWTH_INCREMENT;
+                    cell.interaction.radius = (r.powi(2) + d_area / pi).sqrt();
                     cell.interaction.cutoff =
                         cell.interaction.radius * (1.0 + C_RELATIVE_INTERACTION_RANGE);
-                } else {
-                    if !cell.retain_particle_indices.contains(&i) {
-                        cell.retain_particle_indices.push(i);
+
+                    // Remove particle in next step
+                    if !cell.remove_particle_indices.contains(&i) {
+                        cell.remove_particle_indices.push(i);
                     }
                 }
             }
@@ -125,9 +129,9 @@ impl Cycle for Cell {
         c2.mechanics.pos = p2;
 
         c1.particles = pa1;
-        c1.retain_particle_indices = (0..d1).collect();
+        c1.remove_particle_indices = (d1..n).collect();
         c2.particles = pa2;
-        c2.retain_particle_indices = (0..d2).collect();
+        c2.remove_particle_indices = (d2..n).collect();
 
         Ok(c2)
     }
@@ -169,13 +173,9 @@ impl Intracellular<ParticleVec> for Cell {
             }
         }
 
-        let retained_particles =
-            ParticleVec::from_fn(self.retain_particle_indices.len(), |i, n| {
-                let j = self.retain_particle_indices[n];
-                self.particles[(i, j)]
-            });
-        self.particles = retained_particles;
-        self.retain_particle_indices.clear();
+        let particles = self.particles.clone();
+        self.particles = particles.remove_columns_at(&self.remove_particle_indices);
+        self.remove_particle_indices.clear();
     }
 }
 
@@ -414,7 +414,7 @@ fn main() -> Result<(), SimulationError> {
                         rng.random_range(-1.0..1.0)
                     }
                 }),
-                retain_particle_indices: Vec::with_capacity(20),
+                remove_particle_indices: Vec::with_capacity(4),
             }
         })
         .collect::<Vec<_>>();
