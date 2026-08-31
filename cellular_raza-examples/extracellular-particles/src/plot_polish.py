@@ -127,7 +127,7 @@ if __name__ == "__main__":
         )
         extracellular_particles.append(e_particles.shape[0])
 
-        g = bivariate_pcf(cell_positions, e_particles, r=15, dr=12)
+        g = bivariate_pcf(cell_positions, e_particles, r=15, dr=15)
         pcfs.append(g)
 
     pcfs = np.array(pcfs)
