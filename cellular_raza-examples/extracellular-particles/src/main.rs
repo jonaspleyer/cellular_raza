@@ -16,14 +16,14 @@ pub const P_MASS: f64 = 0.01;
 pub const C_RELATIVE_INTERACTION_RANGE: f64 = 1.0;
 pub const C_POTENTIAL_STRENGTH: f64 = 0.5;
 pub const C_VELOCITY_INIT_BOUND: f64 = 0.02;
-pub const C_UPTAKE_RATE: f64 = 0.5;
+pub const C_UPTAKE_RATE: f64 = 0.3;
 
-pub const C_GROWTH_INCREMENT: f64 = 0.2;
+pub const C_GROWTH_INCREMENT: f64 = 8.0;
 pub const C_DIVISION_RADIUS: f64 = 8.0;
 pub const C_DEVOUR_RATE: f64 = 0.005;
 
 pub const DT: f64 = 0.1;
-pub const N_TIMES: u64 = 2_000;
+pub const N_TIMES: u64 = 3_000;
 pub const SAVE_INTERVAL: u64 = 10;
 
 pub const DOMAIN_SIZE: f64 = 100.0;
@@ -482,7 +482,6 @@ fn main() -> Result<(), SimulationError> {
 
                         // Determine if particle is taken up or reflected
                         if rng.random_bool(DT * C_UPTAKE_RATE) {
-                            println!("Uptake");
                             let s = sbox.subdomain.particles.column(n);
                             let m = cell.particles.ncols();
 
