@@ -2,7 +2,7 @@ use cellular_raza::prelude::*;
 use nalgebra::{Matrix2xX, Vector2};
 use numpy::PyArrayMethods;
 use pyo3::prelude::*;
-use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction, derive::*};
+use pyo3_stub_gen::derive::*;
 use serde::{Deserialize, Serialize};
 
 use crate::geometry::*;
@@ -42,12 +42,12 @@ impl PlantCell {
     }
 }
 
-fn py_array_to_matrix(py_array: Bound<numpy::PyArray2<f64>>) -> Matrix2xX<f64> {
+pub(crate) fn py_array_to_matrix(py_array: Bound<numpy::PyArray2<f64>>) -> Matrix2xX<f64> {
     let array = py_array.to_owned_array();
     nalgebra::Matrix2xX::from_fn(array.ncols(), |i, j| array[(i, j)])
 }
 
-pub fn matrix_to_py_array<'py>(
+pub(crate) fn matrix_to_py_array<'py>(
     py: Python<'py>,
     matrix: &Matrix2xX<f64>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {

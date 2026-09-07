@@ -2,25 +2,56 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 from tqdm import tqdm
-import multiprocessing as mp
-import itertools
+from pathlib import Path
 
 import cr_rust_fungus as crf
 
 
-def save_snapshot(iteration, domain_size, result, resolution=30):
+def save_snapshot(iteration, domain_size, result, opath=Path("out"), prefix=""):
     fig, ax = plt.subplots(figsize=(12, 12))
     for cell in result[iteration]:
-        pos = np.array(cell[0].position).T
-        ax.add_patch(
-            mpl.patches.Polygon(
-                pos,
-                facecolor="#909090",
-                linestyle="-",
-                edgecolor="k",
-                alpha=0.5,
+        if not cell.is_fungus():
+            pos = np.array(cell[0].position).T
+            ax.add_patch(
+                mpl.patches.Polygon(
+                    pos,
+                    facecolor="#909090",
+                    linestyle="-",
+                    edgecolor="k",
+                    alpha=0.5,
+                )
             )
-        )
+        else:
+            pos = np.array(cell[0].position).T
+            for pi in pos:
+                ax.add_patch(
+                    mpl.patches.Circle(
+                        pi,
+                        radius=cell[0].radius,
+                        facecolor="#c0e384",
+                        edgecolor="gray",
+                    )
+                )
+            for i in range(pos.shape[0] - 1):
+                p1 = pos[i]
+                p2 = pos[i + 1]
+                z = p2 - p1
+                width = np.linalg.norm(z)
+                angle = np.arctan2(-z[1], z[0]) % (2 * np.pi)
+                dir = np.array([-z[1], z[0]]) / width
+                r = cell[0].radius
+                rect = mpl.patches.Rectangle(
+                    p1 - dir * r,
+                    width,
+                    height=2 * r,
+                    angle=-angle * 360 / 2 / np.pi,
+                    facecolor="#c0e384",
+                )
+                ax.add_patch(rect)
+                for s in [1.0, -1.0]:
+                    points = np.array([p1 + s * dir * r, p2 + s * dir * r])
+                    ax.plot(points[:, 0], points[:, 1], color="gray", linewidth=1)
+            ax.plot(pos[:, 0], pos[:, 1], color="gray", marker="+", linestyle=":")
 
     dx = domain_size
     ax.set_xlim(-0.01 * dx, 1.01 * domain_size)
@@ -28,7 +59,7 @@ def save_snapshot(iteration, domain_size, result, resolution=30):
 
     ax.set_axis_off()
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    fig.savefig(f"out/{iteration:010}.png")
+    fig.savefig(opath / f"{prefix}{iteration:010}.png")
     plt.close(fig)
 
 
@@ -58,9 +89,9 @@ if __name__ == "__main__":
     domain_size = 60
     n_voxels = 4
 
-    settings.dt = 5.0
-    settings.t_max = 2000.0
-    settings.save_interval = 100.0
+    settings.dt = 8.0
+    settings.t_max = 20_000.0
+    settings.save_interval = 1_000.0
     settings.domain_size = domain_size
     settings.n_voxels = n_voxels
 
@@ -68,9 +99,9 @@ if __name__ == "__main__":
         initial_cells = crf.load_cells("out/initial_plant_cells.json")
     except:
         midpoints = midpoints_gen(
-            n_agents=[9, 3],
+            n_agents=[9, 4],
             xlim=[0.0, 60.0],
-            ylim=[0.0, 20.0],
+            ylim=[0.0, 28.0],
         )
         midpoints = np.array(midpoints)
 
@@ -111,7 +142,7 @@ if __name__ == "__main__":
                 min_dist=0.8 * radius,
                 target_area=target_area,
                 target_perimeter=target_perimeter,
-                damping=0.1,
+                damping=0.3,
                 diffusion_constant=0.0000,
             )
             plant_cells.append(agent)
@@ -124,15 +155,33 @@ if __name__ == "__main__":
         crf.store_cells(initial_cells, "out/initial_plant_cells.json")
 
         iterations = list(sorted(result.keys()))
-        save_snapshot(iterations[0], settings.domain_size, result)
-        save_snapshot(iterations[1], settings.domain_size, result)
-        save_snapshot(iterations[-1], settings.domain_size, result)
+        save_snapshot(iterations[0], settings.domain_size, result, prefix="pre")
+        save_snapshot(iterations[1], settings.domain_size, result, prefix="pre")
+        save_snapshot(iterations[-1], settings.domain_size, result, prefix="pre")
 
     # Create Fungus Cells now
-    fungal_cells = []
+    spring_length = 3.0
+    pos = spring_length * (np.arange(8) - 3.5)
+    pos = np.array([pos + domain_size / 2, 0 * pos + domain_size * 0.5])
+    fungal_cells = [
+        crf.Fungus(
+            pos,
+            diffusion_constant=0.0,
+            spring_tension=0.001,
+            rigidity=0.00002,
+            spring_length=spring_length,
+            damping=0.10,
+            radius=1.7,
+            potential_stiffness=0.05,
+            cutoff=2.0,
+            strength=0.05,
+        )
+    ]
 
     # Update Settings
-    settings.t_max = 100.0
+    settings.t_max = 3_000.0
+    settings.dt = 5.0
+    settings.save_interval = 200.0
 
     # Combine cells and run simulation
     agents = [*initial_cells, *fungal_cells]

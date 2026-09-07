@@ -6,7 +6,6 @@ use std::any::Any;
 
 use cellular_raza::prelude::*;
 use itertools::Itertools;
-use numpy::PyArrayMethods;
 use pyo3::prelude::*;
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction, derive::*};
 
@@ -38,6 +37,16 @@ impl Agent {
         match self {
             P(p) => nalgebra::Matrix2xX::zeros(p.position.ncols()),
             F(f) => nalgebra::Matrix2xX::zeros(f.mechanics.pos.nrows()),
+        }
+    }
+}
+
+#[pymethods]
+impl Agent {
+    fn is_fungus(&self) -> bool {
+        match self {
+            Agent::F(_) => true,
+            _ => false,
         }
     }
 }
@@ -108,18 +117,71 @@ impl Mechanics<V, V, V, f64> for Agent {
 
 impl Agent {
     pub fn get_middle(&self) -> Vector2<f64> {
-        area_centroid(&self.pos())
+        use Agent::*;
+        match self {
+            P(p) => area_centroid(&p.position),
+            F(f) => f.mechanics.pos.row_mean().transpose(),
+        }
     }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
 pub enum Inf {
     P,
-    F(f64),
+    // Radius, Interaction Range, Strength, Potential_stiffness
+    F(f64, f64, f64, f64),
 }
 
-fn force_plant_fungus(plant_pos: &V, fungus_pos: &V, radius: &f64) -> Result<(V, V), CalcError> {
-    todo!()
+fn force_plant_fungus(
+    plant_pos: &V,
+    fungus_pos: &V,
+    radius: f64,
+    cutoff: f64,
+    strength: f64,
+    potential_stiffness: f64,
+) -> Result<(V, V), CalcError> {
+    // Initialize Forces
+    let mut force_plant = V::zeros(plant_pos.ncols());
+    let mut force_fungus = V::zeros(fungus_pos.ncols());
+
+    for (n, point) in fungus_pos.column_iter().enumerate() {
+        let mut dist = f64::INFINITY;
+        let mut h = 0.0;
+        let mut k = 0;
+        let mut force = Vector2::zeros();
+
+        for (i, (v1, v2)) in plant_pos.column_iter().circular_tuple_windows().enumerate() {
+            let (s, q) = closest_point_on_segment(&point, &v1, &v2);
+            let z = q - point;
+            let d = z.norm();
+
+            if d < cutoff && d < dist {
+                dist = d;
+                h = s;
+                k = i;
+                // TODO this needs to be implemented!
+                // force = z
+                force = calculate_morse_interaction(
+                    &q,
+                    &Vector2::from([point[0], point[1]]),
+                    0.0,
+                    radius,
+                    cutoff,
+                    strength,
+                    potential_stiffness,
+                )?
+                .1;
+            }
+        }
+        if dist != f64::INFINITY {
+            use core::ops::AddAssign;
+            force_fungus.column_mut(n).add_assign(force);
+            force_plant.column_mut(k).add_assign(-h * force);
+            force_plant.column_mut(k).add_assign(-(1.0 - h) * force);
+        }
+    }
+
+    Ok((force_plant, force_fungus))
 }
 
 impl Interaction<V, V, V, Inf> for Agent {
@@ -134,9 +196,21 @@ impl Interaction<V, V, V, Inf> for Agent {
         use Agent::*;
         match (self, ext_info) {
             (P(p), Inf::P) => p.calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, &()),
-            (P(_), Inf::F(r)) => force_plant_fungus(&own_pos, &ext_pos, r),
-            (F(f), Inf::P) => force_plant_fungus(&ext_pos, &own_pos, &f.interaction.0.radius),
-            (F(f), Inf::F(r)) => f
+            (P(_), Inf::F(r, ir, s, ps)) => {
+                force_plant_fungus(&own_pos, &ext_pos, *r, *ir, *s, *ps)
+            }
+            (F(f), Inf::P) => {
+                let (f1, f2) = force_plant_fungus(
+                    &ext_pos,
+                    &own_pos,
+                    f.interaction.0.radius,
+                    f.interaction.0.cutoff,
+                    f.interaction.0.strength,
+                    f.interaction.0.potential_stiffness,
+                )?;
+                Ok((f2, f1))
+            }
+            (F(f), Inf::F(r, _, _, _)) => f
                 .interaction
                 .calculate_force_between(
                     &own_pos.transpose(),
@@ -155,7 +229,12 @@ impl InteractionInformation<Inf> for Agent {
         use Agent::*;
         match self {
             P(_) => Inf::P,
-            F(f) => Inf::F(f.interaction.get_interaction_information()),
+            F(f) => Inf::F(
+                f.interaction.0.radius,
+                f.interaction.0.cutoff,
+                f.interaction.0.strength,
+                f.interaction.0.potential_stiffness,
+            ),
         }
     }
 }
@@ -290,11 +369,11 @@ impl SubDomainForce<V, V, V, Inf> for MySubDomain {
     fn calculate_custom_force(
         &self,
         pos: &V,
-        vel: &V,
+        _: &V,
         inf: &Inf,
     ) -> Result<V, cellular_raza::concepts::CalcError> {
         match inf {
-            Inf::F(_) => Ok(0.0 * pos),
+            Inf::F(_, _, _, _) => Ok(0.0 * pos),
             Inf::P => {
                 let smin = self.subdomain.get_domain_min();
                 let smax = self.subdomain.get_domain_max();
@@ -308,7 +387,7 @@ impl SubDomainForce<V, V, V, Inf> for MySubDomain {
 
                 for (p1, mut f) in pos.column_iter().zip(force.column_iter_mut()) {
                     for (v1, v2) in corners.column_iter().circular_tuple_windows() {
-                        let (s, q) = closest_point_on_segment(&p1, &v1, &v2);
+                        let (_, q) = closest_point_on_segment(&p1, &v1, &v2);
                         let x = q - p1;
                         let d = (x.norm() / self.interaction_range).clamp(0.0, 1.0);
 
@@ -428,7 +507,7 @@ fn convert_agents(py: Python, agents: Vec<Py<PyAny>>) -> PyResult<Vec<Agent>> {
             let y: Result<Fungus, _> = a.extract(py);
             match (x, y) {
                 (Ok(xi), _) => Ok(Agent::P(xi)),
-                (Err(e), Ok(yi)) => Ok(Agent::F(yi)),
+                (Err(_), Ok(yi)) => Ok(Agent::F(yi)),
                 (Err(_), Err(_)) => Err(pyo3::exceptions::PyValueError::new_err(format!(
                     "Could not extract Agent from type {:?}",
                     a.type_id()
@@ -450,11 +529,10 @@ pub fn run_simulation<'py>(
     agents: Vec<Py<PyAny>>,
 ) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
     let agents = convert_agents(py, agents)?;
-    Ok(run_simulation_rs(py, settings, agents)?)
+    Ok(run_simulation_rs(settings, agents)?)
 }
 
-pub fn run_simulation_rs<'py>(
-    py: Python<'py>,
+pub fn run_simulation_rs(
     settings: &SimulationSettings,
     agents: Vec<Agent>,
 ) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
