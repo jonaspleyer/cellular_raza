@@ -1,0 +1,7 @@
+Cargo.lock
+target
+out
+.venv
+docs/_build
+cr_rust_fungus/*.so
+cr_rust_fungus/__pycache__

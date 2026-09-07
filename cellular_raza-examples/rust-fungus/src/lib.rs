@@ -1,0 +1,549 @@
+// #![deny(missing_docs)]
+//! This package is an example of how to construct python bindings with documentation with
+//! `cellular_raza <https://cellular-raza.com/>`_.
+
+use std::any::Any;
+
+use cellular_raza::prelude::*;
+use itertools::Itertools;
+use numpy::PyArrayMethods;
+use pyo3::prelude::*;
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction, derive::*};
+
+use serde::{Deserialize, Serialize};
+
+use nalgebra::{Matrix2xX, Vector2};
+
+use fungus::*;
+use geometry::*;
+use plant_cell::*;
+
+mod fungus;
+mod geometry;
+mod plant_cell;
+
+#[gen_stub_pyclass_enum]
+#[pyclass(from_py_object)]
+#[derive(Clone, Deserialize, Serialize)]
+pub enum Agent {
+    P(PlantCell),
+    F(Fungus),
+}
+
+type V = Matrix2xX<f64>;
+
+impl Agent {
+    fn zero_force_default(&self) -> V {
+        use Agent::*;
+        match self {
+            P(p) => nalgebra::Matrix2xX::zeros(p.position.ncols()),
+            F(f) => nalgebra::Matrix2xX::zeros(f.mechanics.pos.nrows()),
+        }
+    }
+}
+
+impl Position<V> for Agent {
+    fn pos(&self) -> V {
+        use Agent::*;
+        match self {
+            P(p) => p.pos(),
+            F(f) => f.mechanics.pos().transpose(),
+        }
+    }
+
+    fn set_pos(&mut self, position: &V) {
+        use Agent::*;
+        match self {
+            P(p) => p.set_pos(position),
+            F(f) => f.mechanics.set_pos(&position.transpose()),
+        }
+    }
+}
+
+impl Velocity<V> for Agent {
+    fn velocity(&self) -> V {
+        use Agent::*;
+        match self {
+            P(p) => p.velocity(),
+            F(f) => f.mechanics.velocity().transpose(),
+        }
+    }
+
+    fn set_velocity(&mut self, velocity: &V) {
+        use Agent::*;
+        match self {
+            P(p) => p.set_velocity(velocity),
+            F(f) => f.mechanics.set_velocity(&velocity.transpose()),
+        }
+    }
+}
+
+impl Mechanics<V, V, V, f64> for Agent {
+    fn get_random_contribution(
+        &self,
+        rng: &mut rand_chacha::ChaCha8Rng,
+        dt: f64,
+    ) -> Result<(V, V), RngError> {
+        use Agent::*;
+        match self {
+            P(p) => p.get_random_contribution(rng, dt),
+            F(f) => f
+                .mechanics
+                .get_random_contribution(rng, dt)
+                .map(|(p, v)| (p.transpose(), v.transpose())),
+        }
+    }
+
+    fn calculate_increment(&self, force: V) -> Result<(V, V), CalcError> {
+        use Agent::*;
+        match self {
+            P(p) => p.calculate_increment(force),
+            F(f) => f
+                .mechanics
+                .calculate_increment(force.transpose())
+                .map(|(p, v)| (p.transpose(), v.transpose())),
+        }
+    }
+}
+
+impl Agent {
+    pub fn get_middle(&self) -> Vector2<f64> {
+        area_centroid(&self.pos())
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub enum Inf {
+    P,
+    F(f64),
+}
+
+fn force_plant_fungus(plant_pos: &V, fungus_pos: &V, radius: &f64) -> Result<(V, V), CalcError> {
+    todo!()
+}
+
+impl Interaction<V, V, V, Inf> for Agent {
+    fn calculate_force_between(
+        &self,
+        own_pos: &V,
+        own_vel: &V,
+        ext_pos: &V,
+        ext_vel: &V,
+        ext_info: &Inf,
+    ) -> Result<(V, V), CalcError> {
+        use Agent::*;
+        match (self, ext_info) {
+            (P(p), Inf::P) => p.calculate_force_between(own_pos, own_vel, ext_pos, ext_vel, &()),
+            (P(_), Inf::F(r)) => force_plant_fungus(&own_pos, &ext_pos, r),
+            (F(f), Inf::P) => force_plant_fungus(&ext_pos, &own_pos, &f.interaction.0.radius),
+            (F(f), Inf::F(r)) => f
+                .interaction
+                .calculate_force_between(
+                    &own_pos.transpose(),
+                    &own_vel.transpose(),
+                    &ext_pos.transpose(),
+                    &ext_vel.transpose(),
+                    r,
+                )
+                .map(|(f1, f2)| (f1.transpose(), f2.transpose())),
+        }
+    }
+}
+
+impl InteractionInformation<Inf> for Agent {
+    fn get_interaction_information(&self) -> Inf {
+        use Agent::*;
+        match self {
+            P(_) => Inf::P,
+            F(f) => Inf::F(f.interaction.get_interaction_information()),
+        }
+    }
+}
+
+/// Contains settings needed to specify the simulation
+#[gen_stub_pyclass]
+#[pyclass(get_all, set_all, from_py_object)]
+#[derive(Clone, Debug)]
+pub struct SimulationSettings {
+    /// Overall domain size
+    pub domain_size: f64,
+    pub domain_force_dist: f64,
+    pub domain_interaction_range: f64,
+    /// Number of voxels to create subdivisions
+    pub n_voxels: usize,
+    /// Time increment used to solve the simulation
+    pub dt: f64,
+    /// Maximum duration of the simulation
+    pub t_max: f64,
+    /// Frequency to store results
+    pub save_interval: f64,
+    /// Random initial seed
+    pub rng_seed: u64,
+}
+
+#[gen_stub_pymethods]
+#[pymethods]
+impl SimulationSettings {
+    /// Creates a new :class:`SimulationSettings` class.
+    #[new]
+    fn new() -> Self {
+        Self {
+            domain_size: 30.0,
+            domain_force_dist: 0.002,
+            domain_interaction_range: 0.75,
+            n_voxels: 3,
+            dt: 0.05,
+            t_max: 10.0,
+            save_interval: 1.0,
+            rng_seed: 0,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{:#?}", self)
+    }
+}
+
+#[derive(Clone, Domain)]
+pub struct MyDomain {
+    #[DomainPartialDerive]
+    #[DomainRngSeed]
+    domain: CartesianCuboid<f64, 2>,
+    force_dist: f64,
+    interaction_range: f64,
+}
+
+impl DomainCreateSubDomains<MySubDomain> for MyDomain {
+    type VoxelIndex = [usize; 2];
+    type SubDomainIndex = usize;
+
+    fn create_subdomains(
+        &self,
+        n_subdomains: core::num::NonZeroUsize,
+    ) -> Result<
+        impl IntoIterator<Item = (Self::SubDomainIndex, MySubDomain, Vec<Self::VoxelIndex>)>,
+        DecomposeError,
+    > {
+        Ok(self
+            .domain
+            .create_subdomains(n_subdomains)?
+            .into_iter()
+            .map(move |(n, subdomain, voxels)| {
+                (
+                    n,
+                    MySubDomain {
+                        subdomain,
+                        force_dist: self.force_dist,
+                        interaction_range: self.interaction_range,
+                    },
+                    voxels,
+                )
+            }))
+    }
+}
+
+#[derive(Clone, SubDomain, Deserialize, Serialize)]
+pub struct MySubDomain {
+    #[Base]
+    subdomain: CartesianSubDomain<f64, 2>,
+    force_dist: f64,
+    interaction_range: f64,
+}
+
+impl SortCells<Agent> for MyDomain {
+    type VoxelIndex = [usize; 2];
+
+    fn get_voxel_index_of(
+        &self,
+        cell: &Agent,
+    ) -> Result<Self::VoxelIndex, cellular_raza::prelude::BoundaryError> {
+        let pos = cell.get_middle();
+        self.domain.get_voxel_index_of_raw(&pos)
+    }
+}
+
+impl SubDomainMechanics<V, V> for MySubDomain {
+    fn apply_boundary(&self, pos: &mut V, vel: &mut V) -> Result<(), BoundaryError> {
+        for (mut p, mut v) in pos.column_iter_mut().zip(vel.column_iter_mut()) {
+            let mut pi = [p[0], p[1]];
+            let mut vi = [v[0], v[1]];
+            self.subdomain.apply_boundary(&mut pi, &mut vi)?;
+            p[0] = pi[0];
+            p[1] = pi[1];
+            v[0] = vi[0];
+            v[1] = vi[1];
+        }
+        Ok(())
+    }
+}
+
+impl SortCells<Agent> for MySubDomain {
+    type VoxelIndex = [usize; 2];
+
+    fn get_voxel_index_of(&self, cell: &Agent) -> Result<Self::VoxelIndex, BoundaryError> {
+        let pos = cell.get_middle();
+        self.subdomain.get_index_of(pos)
+    }
+}
+
+impl SubDomainForce<V, V, V, Inf> for MySubDomain {
+    fn calculate_custom_force(
+        &self,
+        pos: &V,
+        vel: &V,
+        inf: &Inf,
+    ) -> Result<V, cellular_raza::concepts::CalcError> {
+        match inf {
+            Inf::F(_) => Ok(0.0 * pos),
+            Inf::P => {
+                let smin = self.subdomain.get_domain_min();
+                let smax = self.subdomain.get_domain_max();
+
+                let corners = nalgebra::matrix![
+                    smin[0], smin[0], smax[0], smax[0];
+                    smin[1], smax[1], smax[1], smin[1];
+                ];
+
+                let mut force = Matrix2xX::zeros(pos.ncols());
+
+                for (p1, mut f) in pos.column_iter().zip(force.column_iter_mut()) {
+                    for (v1, v2) in corners.column_iter().circular_tuple_windows() {
+                        let (s, q) = closest_point_on_segment(&p1, &v1, &v2);
+                        let x = q - p1;
+                        let d = (x.norm() / self.interaction_range).clamp(0.0, 1.0);
+
+                        if 0.0 < d && d < 1.0 {
+                            use core::ops::AddAssign;
+                            f.add_assign(-self.force_dist * 6.0 * (d - 1.0) * x);
+                        }
+                    }
+                }
+                Ok(force)
+            }
+        }
+    }
+}
+
+fn custom_update_func<I, A, Com, Sy, const N: usize>(
+    sbox: &mut SubDomainBox<I, MySubDomain, Agent, A, Com, Sy>,
+    neighbor_sensing_func: impl Fn(&mut A, &Agent, &V, &V, &Inf) -> Result<(), CalcError>,
+) -> Result<(), SimulationError>
+where
+    A: UpdateMechanics<V, V, V, N>,
+    Com: Communicator<SubDomainPlainIndex, PosInformation<V, V, Inf>>,
+    Com: Communicator<SubDomainPlainIndex, ForceInformation<V>>,
+{
+    let voxel_indices: Vec<_> = sbox.voxels.keys().map(|k| *k).collect();
+    for voxel_index in voxel_indices {
+        let n_cells = sbox.voxels[&voxel_index].cells.len();
+        // Iterate over all cells in current voxel
+        for n in 0..n_cells {
+            // Needs to be borrowed here due to later usage in loop
+            let vox = sbox.voxels.get_mut(&voxel_index).unwrap();
+
+            // Intermediate helper variable
+            let mut cells_mut = vox.cells.iter_mut();
+
+            // Properties of cell 1
+            if let Agent::P(c1) = &mut cells_mut.nth(n).unwrap().0.cell {
+                let bbox1 = c1.bounding_box;
+
+                // Initialize the position helper with the current position of the cell
+                let pos1 = c1.position.clone();
+                let mut pos_helper_1 = c1.position_helper.clone();
+
+                let mut apply_restrictions_c2 = |c2: &mut PlantCell| {
+                    // Properties of cell 2
+                    let pos2 = c2.position.clone();
+                    let bbox2 = c2.bounding_box;
+                    let pos_helper_2 = &mut c2.position_helper;
+
+                    // Only compute if bounding boxes are intersecting
+                    if bounding_boxes_intersect(&bbox1, &bbox2) {
+                        apply_restrictions(&pos1, &pos2, &mut pos_helper_1);
+                        apply_restrictions(&pos2, &pos1, pos_helper_2);
+                    }
+                };
+
+                // Iterate over all remaining cells in the voxel
+                for _ in n + 1..n_cells {
+                    if let Agent::P(c2) = &mut cells_mut.nth(0).unwrap().0.cell {
+                        apply_restrictions_c2(c2);
+                    }
+                }
+
+                // Get neighbor cells and gather restrictions from them
+                let neighbors = vox.neighbors.clone();
+                for neighbor_index in &neighbors {
+                    let neighbor = sbox.voxels.get_mut(&neighbor_index).unwrap();
+                    let n_cells2 = neighbor.cells.len();
+                    let mut cells_mut_2 = neighbor.cells.iter_mut();
+                    for _ in 0..n_cells2 {
+                        if let Agent::P(c2) = &mut cells_mut_2.nth(0).unwrap().0.cell {
+                            apply_restrictions_c2(c2);
+                        }
+                    }
+                }
+
+                // Update the position_helper of the cell
+                if let Agent::P(c1) = &mut sbox
+                    .voxels
+                    .get_mut(&voxel_index)
+                    .unwrap()
+                    .cells
+                    .get_mut(n)
+                    .unwrap()
+                    .0
+                    .cell
+                {
+                    c1.position_helper = pos_helper_1;
+                }
+            }
+        }
+    }
+
+    // Update all positions
+    sbox.voxels.iter_mut().for_each(|(_, vox)| {
+        vox.cells
+            .iter_mut()
+            .filter_map(|c| match &mut c.0.cell {
+                Agent::P(x) => Some(x),
+                _ => None,
+            })
+            .for_each(|c| c.position.copy_from(&c.position_helper))
+    });
+
+    sbox.update_mechanics_interaction_step_1(neighbor_sensing_func)?;
+    Ok(())
+}
+
+fn convert_agents(py: Python, agents: Vec<Py<PyAny>>) -> PyResult<Vec<Agent>> {
+    agents
+        .into_iter()
+        .map(|a| {
+            let x: Result<PlantCell, _> = a.extract(py);
+            let y: Result<Fungus, _> = a.extract(py);
+            match (x, y) {
+                (Ok(xi), _) => Ok(Agent::P(xi)),
+                (Err(e), Ok(yi)) => Ok(Agent::F(yi)),
+                (Err(_), Err(_)) => Err(pyo3::exceptions::PyValueError::new_err([
+                    "Could not extract Agent from type ".to_string(),
+                    format!("{:?}", a.type_id()),
+                ])),
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()
+}
+
+/// Performs a complete numerical simulation of our system.
+///
+/// Args:
+///     simulation_settings(SimulationSettings): The settings required to run the simulation
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn run_simulation<'py>(
+    py: Python<'py>,
+    settings: &SimulationSettings,
+    agents: Vec<Py<PyAny>>,
+) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
+    let agents = convert_agents(py, agents)?;
+    Ok(run_simulation_rs(py, settings, agents)?)
+}
+
+pub fn run_simulation_rs<'py>(
+    py: Python<'py>,
+    settings: &SimulationSettings,
+    agents: Vec<Agent>,
+) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
+    // Domain Setup
+    let domain_size = settings.domain_size;
+    let domain = MyDomain {
+        domain: CartesianCuboid::from_boundaries_and_n_voxels(
+            [0.0; 2],
+            [domain_size; 2],
+            [settings.n_voxels; 2],
+        )?,
+        force_dist: settings.domain_force_dist,
+        interaction_range: settings.domain_interaction_range,
+    };
+
+    // Storage Setup
+    let storage_builder = cellular_raza::prelude::StorageBuilder::new()
+        // .location("out")
+        .priority([StorageOption::Memory]);
+
+    // Time Setup
+    let t0 = 0.0;
+    let dt = settings.dt;
+    let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
+        t0,
+        dt,
+        settings.t_max,
+        settings.save_interval,
+    )?;
+
+    let settings = Settings {
+        n_threads: 1.try_into().unwrap(),
+        time: time_stepper,
+        storage: storage_builder,
+        progressbar: Some("Running Simulation".into()),
+    };
+
+    let storager = run_simulation!(
+        domain: domain,
+        agents: agents,
+        settings: settings,
+        aspects: [Mechanics, Interaction, DomainForce],
+        update_mechanics_interaction_step_1: custom_update_func,
+        zero_force_default: |c: &Agent| c.zero_force_default(),
+    )?;
+
+    let points = storager
+        .cells
+        .load_all_elements()?
+        .into_iter()
+        .map(|(iteration, cells)| {
+            let cells = cells
+                .into_iter()
+                .map(|(_, (c, _))| c.cell)
+                .collect::<Vec<_>>();
+
+            (iteration, cells)
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+
+    Ok(points)
+}
+
+#[gen_stub_pyfunction]
+#[pyfunction]
+fn store_cells(py: Python, agents: Vec<Py<PyAny>>, path: std::path::PathBuf) -> PyResult<()> {
+    let agents = convert_agents(py, agents)?;
+    let mut file = std::fs::File::create(path)?;
+    serde_json::ser::to_writer_pretty(&mut file, &agents)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    Ok(())
+}
+
+#[gen_stub_pyfunction]
+#[pyfunction]
+fn load_cells(path: std::path::PathBuf) -> PyResult<Vec<Agent>> {
+    let file = std::fs::File::open(path)?;
+    let cells: Vec<Agent> = serde_json::de::from_reader(file)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    Ok(cells)
+}
+
+#[pymodule]
+fn cr_rust_fungus(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PlantCell>()?;
+    m.add_class::<Fungus>()?;
+    m.add_class::<Agent>()?;
+    m.add_class::<SimulationSettings>()?;
+    m.add_function(wrap_pyfunction!(run_simulation, m)?)?;
+    m.add_function(wrap_pyfunction!(store_cells, m)?)?;
+    m.add_function(wrap_pyfunction!(load_cells, m)?)?;
+    Ok(())
+}
+
+define_stub_info_gatherer!(stub_info);
