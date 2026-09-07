@@ -421,15 +421,18 @@ fn convert_agents(py: Python, agents: Vec<Py<PyAny>>) -> PyResult<Vec<Agent>> {
     agents
         .into_iter()
         .map(|a| {
+            if let Ok(a) = a.extract::<Agent>(py) {
+                return Ok(a);
+            }
             let x: Result<PlantCell, _> = a.extract(py);
             let y: Result<Fungus, _> = a.extract(py);
             match (x, y) {
                 (Ok(xi), _) => Ok(Agent::P(xi)),
                 (Err(e), Ok(yi)) => Ok(Agent::F(yi)),
-                (Err(_), Err(_)) => Err(pyo3::exceptions::PyValueError::new_err([
-                    "Could not extract Agent from type ".to_string(),
-                    format!("{:?}", a.type_id()),
-                ])),
+                (Err(_), Err(_)) => Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Could not extract Agent from type {:?}",
+                    a.type_id()
+                ))),
             }
         })
         .collect::<Result<Vec<_>, _>>()
@@ -520,7 +523,11 @@ pub fn run_simulation_rs<'py>(
 fn store_cells(py: Python, agents: Vec<Py<PyAny>>, path: std::path::PathBuf) -> PyResult<()> {
     let agents = convert_agents(py, agents)?;
     let mut file = std::fs::File::create(path)?;
-    serde_json::ser::to_writer_pretty(&mut file, &agents)
+    let config = ron::ser::PrettyConfig::default();
+    let options = ron::Options::default();
+    options.to_io_writer_pretty(&mut file, &agents, config)
+    // ron::ser::to_writer_pretty(&mut out_string, &agents, config)
+    // serde_json::ser::to_writer_pretty(&mut file, &agents)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
     Ok(())
 }
@@ -529,7 +536,8 @@ fn store_cells(py: Python, agents: Vec<Py<PyAny>>, path: std::path::PathBuf) -> 
 #[pyfunction]
 fn load_cells(path: std::path::PathBuf) -> PyResult<Vec<Agent>> {
     let file = std::fs::File::open(path)?;
-    let cells: Vec<Agent> = serde_json::de::from_reader(file)
+    let cells: Vec<Agent> = ron::de::from_reader(file)
+    // let cells: Vec<Agent> = serde_json::de::from_reader(file)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
     Ok(cells)
 }

@@ -27,4 +27,4 @@ pyo3-stub-gen = "0.19.0"
 env_logger = "0.11.9"
 itertools.workspace = true
 i_overlay = "5"
-serde_json = "1.0.151"
+ron = "0.12.2"

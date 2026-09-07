@@ -1,23 +1,21 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-import scipy as sp
 from tqdm import tqdm
 import multiprocessing as mp
 import itertools
-import json
 
 import cr_rust_fungus as crf
 
 
 def save_snapshot(iteration, domain_size, result, resolution=30):
     fig, ax = plt.subplots(figsize=(12, 12))
-    for polygon, [area, target_area, perimeter, target_perimeter] in result[iteration]:
-        color2 = mpl.colormaps["coolwarm"](0.5 * perimeter / target_perimeter)
+    for cell in result[iteration]:
+        pos = np.array(cell[0].position).T
         ax.add_patch(
             mpl.patches.Polygon(
-                polygon.T,
-                facecolor=color2,
+                pos,
+                facecolor="#909090",
                 linestyle="-",
                 edgecolor="k",
                 alpha=0.5,
@@ -32,10 +30,6 @@ def save_snapshot(iteration, domain_size, result, resolution=30):
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     fig.savefig(f"out/{iteration:010}.png")
     plt.close(fig)
-
-
-def __pool_save_snapshot_helper(args):
-    return save_snapshot(*args)
 
 
 def midpoints_gen(n_agents, xlim, ylim):
@@ -71,8 +65,7 @@ if __name__ == "__main__":
     settings.n_voxels = n_voxels
 
     try:
-        with open("out/initial_cells.json", "r") as f:
-            initial_agents = json.load(f)
+        initial_cells = crf.load_cells("out/initial_plant_cells.json")
     except:
         midpoints = midpoints_gen(
             n_agents=[9, 3],
@@ -87,7 +80,7 @@ if __name__ == "__main__":
 
         # Generate a polygon for each starting point
         n_vertices = 40
-        agents = []
+        plant_cells = []
         for middle, radius in zip(midpoints, radii):
             # Calculate randomly placed points around centers
             angle_delta = 2 * np.pi / n_vertices
@@ -121,18 +114,29 @@ if __name__ == "__main__":
                 damping=0.1,
                 diffusion_constant=0.0000,
             )
-            agents.append(agent)
+            plant_cells.append(agent)
 
-        result = crf.run_simulation(settings, agents)
+        result = crf.run_simulation(settings, plant_cells)
         print()
 
         final_iter = list(sorted(result.keys()))[-1]
-        final_cells = [k[0] for k in result[final_iter]]
-        crf.store_cells(final_cells, "out/initial_cells.json")
+        initial_cells = [k[0] for k in result[final_iter]]
+        crf.store_cells(initial_cells, "out/initial_plant_cells.json")
 
-    # arglist = zip(
-    #     result, itertools.repeat(settings.domain_size), itertools.repeat(result)
-    # )
+        iterations = list(sorted(result.keys()))
+        save_snapshot(iterations[0], settings.domain_size, result)
+        save_snapshot(iterations[1], settings.domain_size, result)
+        save_snapshot(iterations[-1], settings.domain_size, result)
 
-    # pool = mp.Pool()
-    # _ = list(tqdm(pool.imap(__pool_save_snapshot_helper, arglist), total=len(result)))
+    # Create Fungus Cells now
+    fungal_cells = []
+
+    # Update Settings
+    settings.t_max = 100.0
+
+    # Combine cells and run simulation
+    agents = [*initial_cells, *fungal_cells]
+    result = crf.run_simulation(settings, agents)
+
+    for iteration in tqdm(result, total=len(result)):
+        save_snapshot(iteration, settings.domain_size, result)
