@@ -90,6 +90,7 @@ if __name__ == "__main__":
     settings.domain_size = domain_size
     settings.n_voxels = n_voxels
     settings.approximation_tolerance = 0.05
+    settings.approximation_max_steps = 20
 
     radius = 5.0
     target_area = np.pi * radius**2

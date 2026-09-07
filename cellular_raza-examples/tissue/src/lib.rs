@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use nalgebra::{Vector2, VectorView2};
 
-// mod vertex_based;
+use geometry::*;
 
-// use vertex_based::*;
+mod geometry;
 
 /// Contains settings needed to specify the simulation
 #[gen_stub_pyclass]
@@ -248,7 +248,7 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         let dir = ext_pos - own_pos;
         let dist = dir.norm();
         if dist < self.min_dist {
-            // Repulsive force due to close
+            // Repulsive force due to close distance
             let f = -self.force_dist * dir.normalize();
             return Ok((f, -f));
         }
@@ -257,14 +257,24 @@ impl Interaction<Pos, Pos, Pos, Inf> for Agent {
         let mut force_perimeter = Pos::zeros();
         let mut force_area = Pos::zeros();
         if let Some(segm) = get_intersecting_pathsegment(&self.path, &ext_info.path) {
-            let dir = self.position - ext_pos;
-            let perim_diff = perimeter - self.target_perimeter;
-            force_perimeter -= self.force_perimeter * perim_diff * dir;
+            // let dir = self.position - ext_pos;
+            // let perim_diff = perimeter - self.target_perimeter;
+            // force_perimeter -= self.force_perimeter * perim_diff * dir;
 
-            let dir2 = segm.pos2() - segm.pos1();
+            /* let dir2 = segm.pos2() - segm.pos1();
             let dir2 = Vector2::from([-dir2[1], dir2[0]]);
             let area_diff = self.current_area - self.target_area;
-            force_area -= self.force_area * area_diff * dir2;
+            force_area += self.force_area * area_diff * dir2;*/
+
+            let v = segm.pos1();
+            let w = segm.pos2();
+            let l = (v - w).norm();
+            if approx::abs_diff_ne!(l, 0.0) {
+                let area_diff = self.current_area - self.target_area;
+                let area_force = self.force_area * area_diff;
+                let e = Vector2::from([-v[1] + w[1], v[0] - w[0]]) / l;
+                // let dir = (v.cross(&e) - w.cross(&e)).transpose();
+            }
         }
 
         /* if let Some(PathSegment::Line { p1, p2 }) =
@@ -844,20 +854,20 @@ fn construct_constrained_path(
     }
 
     // Binary search for the optimal radius
-    let r_mid = 0.5 * (r_low + r_high);
-    let mut new_area = get_total_intersection_area(middle, vertices, r_mid);
+    let mut radius = 0.5 * (r_low + r_high);
+    let mut new_area = get_total_intersection_area(middle, vertices, radius);
     let mut count = 0;
     while approx::relative_ne!(
         new_area,
         target_area,
         max_relative = approximation_tolerance
     ) {
-        let r_mid = 0.5 * (r_low + r_high);
-        new_area = get_total_intersection_area(middle, vertices, r_mid);
+        radius = 0.5 * (r_low + r_high);
+        new_area = get_total_intersection_area(middle, vertices, radius);
         if new_area < target_area {
-            r_low = r_mid;
+            r_low = radius;
         } else {
-            r_high = r_mid;
+            r_high = radius;
         }
         count += 1;
         if count >= approximation_max_steps {
@@ -865,7 +875,7 @@ fn construct_constrained_path(
         }
     }
 
-    construct_path(middle, vertices, 0.5 * (r_high + r_low))
+    construct_path(middle, vertices, radius)
 }
 
 fn custom_update_func<I, A, Com, Sy, const N: usize>(
@@ -921,6 +931,21 @@ where
         .build();
 
     if let Some(voronoi) = voronoi {
+        use itertools::Itertools;
+        for (i1, i2, i3) in voronoi
+            .triangulation()
+            .triangles
+            .iter()
+            .circular_tuple_windows()
+        {
+            let p1 = &voronoi.sites()[*i1];
+            let p2 = &voronoi.sites()[*i2];
+            let p3 = &voronoi.sites()[*i3];
+            let p1 = Vector2::from([p1.x, p1.y]);
+            let p2 = Vector2::from([p2.x, p2.y]);
+            let p3 = Vector2::from([p3.x, p3.y]);
+            let [g1, g2, g3] = calculate_circumcenter_derivative(p1, p2, p3);
+        }
         for ((site, path, target_area, target_perimeter, current_area), vcell) in
             info_all.into_iter().zip(voronoi.iter_cells())
         {

@@ -25,3 +25,4 @@ voronoice = "0.2.0"
 approx.workspace = true
 pyo3-stub-gen = "0.19.0"
 env_logger = "0.11.9"
+itertools.workspace = true
