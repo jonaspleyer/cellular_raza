@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Fungus {
     pub mechanics: cellular_raza::building_blocks::RodMechanics<f64, 2>,
+    pub position_helper: nalgebra::Matrix2xX<f64>,
     pub interaction: cellular_raza::building_blocks::RodInteraction<MorsePotential>,
 }
 
@@ -28,6 +29,7 @@ impl Fungus {
         strength: f64,
     ) -> Self {
         let pos = crate::py_array_to_matrix(pos).transpose();
+        let position_helper = pos.transpose().clone();
         let vel = 0.0 * &pos;
         let mechanics = cellular_raza::building_blocks::RodMechanics {
             pos,
@@ -48,6 +50,7 @@ impl Fungus {
         Fungus {
             mechanics,
             interaction,
+            position_helper,
         }
     }
 

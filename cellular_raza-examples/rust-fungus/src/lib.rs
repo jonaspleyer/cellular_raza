@@ -64,7 +64,10 @@ impl Position<V> for Agent {
         use Agent::*;
         match self {
             P(p) => p.set_pos(position),
-            F(f) => f.mechanics.set_pos(&position.transpose()),
+            F(f) => {
+                f.position_helper = position.clone();
+                f.mechanics.set_pos(&position.transpose())
+            }
         }
     }
 }
@@ -403,6 +406,7 @@ impl SubDomainForce<V, V, V, Inf> for MySubDomain {
     }
 }
 
+#[allow(redundant_semicolons)]
 fn custom_update_func<I, A, Com, Sy, const N: usize>(
     sbox: &mut SubDomainBox<I, MySubDomain, Agent, A, Com, Sy>,
     neighbor_sensing_func: impl Fn(&mut A, &Agent, &V, &V, &Inf) -> Result<(), CalcError>,
@@ -431,23 +435,65 @@ where
                 let pos1 = c1.position.clone();
                 let mut pos_helper_1 = c1.position_helper.clone();
 
-                let mut apply_restrictions_c2 = |c2: &mut PlantCell| {
-                    // Properties of cell 2
-                    let pos2 = c2.position.clone();
-                    let bbox2 = c2.bounding_box;
-                    let pos_helper_2 = &mut c2.position_helper;
+                macro_rules! apply_restrictions_c2 {
+                    ($c2:expr) => {{
+                        // Properties of cell 2
+                        let pos2 = $c2.position.clone();
+                        let bbox2 = $c2.bounding_box;
+                        let pos_helper_2 = &mut $c2.position_helper;
 
-                    // Only compute if bounding boxes are intersecting
-                    if bounding_boxes_intersect(&bbox1, &bbox2) {
-                        apply_restrictions(&pos1, &pos2, &mut pos_helper_1);
-                        apply_restrictions(&pos2, &pos1, pos_helper_2);
-                    }
+                        // Only compute if bounding boxes are intersecting
+                        if bounding_boxes_intersect(&bbox1, &bbox2) {
+                            apply_restrictions(&pos1, &pos2, &mut pos_helper_1);
+                            apply_restrictions(&pos2, &pos1, pos_helper_2);
+                        }
+                    }};
+                };
+
+                macro_rules! apply_restrictions_fungus {
+                    ($f2:expr) => {{
+                        let pos_fungus = $f2.mechanics.pos.transpose();
+                        let pos_helper_fungus = &mut $f2.position_helper;
+
+                        for (n, w) in pos1.column_iter().enumerate() {
+                            let mut d = f64::INFINITY;
+                            let mut m = 0;
+                            let mut z = Vector2::zeros();
+                            let mut h = 0.0;
+
+                            for (k, (v1, v2)) in
+                                pos_fungus.column_iter().tuple_windows().enumerate()
+                            {
+                                let (s, q) = closest_point_on_segment(&w, &v1, &v2);
+                                let x = w - q; // Pointing from fungus to plant cell
+                                let dist = x.norm();
+                                if dist < $f2.interaction.0.radius && dist < d {
+                                    d = dist;
+                                    m = k;
+                                    z = x;
+                                    h = s;
+                                }
+                            }
+
+                            if d != f64::INFINITY && d > 1e-6 {
+                                use core::ops::AddAssign;
+                                // z is pointing from fungus to plant cell
+                                let y = z * ($f2.interaction.0.radius - d) / d;
+                                pos_helper_1.column_mut(n).add_assign(0.5 * y);
+                                pos_helper_fungus
+                                    .column_mut(m)
+                                    .add_assign(-0.5 * (1.0 - h) * y);
+                                pos_helper_fungus.column_mut(m + 1).add_assign(-0.5 * h * y);
+                            }
+                        }
+                    }};
                 };
 
                 // Iterate over all remaining cells in the voxel
                 for _ in n + 1..n_cells {
-                    if let Agent::P(c2) = &mut cells_mut.nth(0).unwrap().0.cell {
-                        apply_restrictions_c2(c2);
+                    match &mut cells_mut.nth(0).unwrap().0.cell {
+                        Agent::P(c2) => apply_restrictions_c2!(c2),
+                        Agent::F(f2) => apply_restrictions_fungus!(f2),
                     }
                 }
 
@@ -458,8 +504,9 @@ where
                     let n_cells2 = neighbor.cells.len();
                     let mut cells_mut_2 = neighbor.cells.iter_mut();
                     for _ in 0..n_cells2 {
-                        if let Agent::P(c2) = &mut cells_mut_2.nth(0).unwrap().0.cell {
-                            apply_restrictions_c2(c2);
+                        match &mut cells_mut_2.nth(0).unwrap().0.cell {
+                            Agent::P(c2) => apply_restrictions_c2!(c2),
+                            Agent::F(f2) => apply_restrictions_fungus!(f2),
                         }
                     }
                 }
@@ -483,13 +530,10 @@ where
 
     // Update all positions
     sbox.voxels.iter_mut().for_each(|(_, vox)| {
-        vox.cells
-            .iter_mut()
-            .filter_map(|c| match &mut c.0.cell {
-                Agent::P(x) => Some(x),
-                _ => None,
-            })
-            .for_each(|c| c.position.copy_from(&c.position_helper))
+        vox.cells.iter_mut().for_each(|c| match &mut c.0.cell {
+            Agent::P(c) => c.position.copy_from(&c.position_helper),
+            Agent::F(c) => c.mechanics.pos.copy_from(&c.position_helper.transpose()),
+        })
     });
 
     sbox.update_mechanics_interaction_step_1(neighbor_sensing_func)?;
