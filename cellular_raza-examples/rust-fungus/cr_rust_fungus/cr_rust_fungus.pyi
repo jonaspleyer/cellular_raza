@@ -8,19 +8,27 @@ import numpy.typing
 import os
 import pathlib
 import typing
-
 __all__ = [
     "Agent",
     "Fungus",
     "PlantCell",
     "SimulationSettings",
-    "load_cells",
+    "find_results",
+    "get_all_iterations",
+    "load_all_results",
+    "load_results",
     "run_simulation",
-    "store_cells",
 ]
 
 @typing.final
-class Fungus: ...
+class Fungus:
+    @property
+    def position(self) -> numpy.typing.NDArray[numpy.float64]: ...
+    @position.setter
+    def position(self, value: numpy.typing.NDArray[numpy.float64]) -> None: ...
+    @property
+    def radius(self) -> builtins.float: ...
+    def __new__(cls, pos: numpy.typing.NDArray[numpy.float64], diffusion_constant: builtins.float, spring_tension: builtins.float, rigidity: builtins.float, spring_length: builtins.float, damping: builtins.float, radius: builtins.float, potential_stiffness: builtins.float, cutoff: builtins.float, strength: builtins.float) -> Fungus: ...
 
 @typing.final
 class PlantCell:
@@ -68,20 +76,7 @@ class PlantCell:
     def position(self) -> numpy.typing.NDArray[numpy.float64]: ...
     @position.setter
     def position(self, value: numpy.typing.NDArray[numpy.float64]) -> None: ...
-    def __new__(
-        cls,
-        position: numpy.typing.NDArray[numpy.float64],
-        force_area: builtins.float,
-        force_perimeter: builtins.float,
-        target_area: builtins.float,
-        force_angle: builtins.float,
-        force_dist: builtins.float,
-        interaction_range: builtins.float,
-        min_dist: builtins.float,
-        target_perimeter: builtins.float,
-        damping: builtins.float,
-        diffusion_constant: builtins.float,
-    ) -> PlantCell: ...
+    def __new__(cls, position: numpy.typing.NDArray[numpy.float64], force_area: builtins.float, force_perimeter: builtins.float, target_area: builtins.float, force_angle: builtins.float, force_dist: builtins.float, interaction_range: builtins.float, min_dist: builtins.float, target_perimeter: builtins.float, damping: builtins.float, diffusion_constant: builtins.float) -> PlantCell: ...
     def get_perimeter(self) -> builtins.float: ...
     def get_area(self) -> builtins.float: ...
 
@@ -158,6 +153,10 @@ class SimulationSettings:
         r"""
         Random initial seed
         """
+    @property
+    def perimeter_mod(self) -> builtins.float: ...
+    @perimeter_mod.setter
+    def perimeter_mod(self, value: builtins.float) -> None: ...
     def __new__(cls) -> SimulationSettings:
         r"""
         Creates a new :class:`SimulationSettings` class.
@@ -169,19 +168,19 @@ class Agent(enum.Enum):
     P = ...
     F = ...
 
-def load_cells(
-    path: builtins.str | os.PathLike | pathlib.Path,
-) -> builtins.list[Agent]: ...
-def run_simulation(
-    settings: SimulationSettings, agents: typing.Sequence[typing.Any]
-) -> builtins.dict[builtins.int, builtins.list[Agent]]:
+def find_results(settings: SimulationSettings) -> typing.Optional[pathlib.Path]: ...
+
+def get_all_iterations(path: builtins.str | os.PathLike | pathlib.Path) -> builtins.list[builtins.int]: ...
+
+def load_all_results(path: builtins.str | os.PathLike | pathlib.Path) -> builtins.dict[builtins.int, builtins.list[Agent]]: ...
+
+def load_results(iteration: builtins.int, path: builtins.str | os.PathLike | pathlib.Path) -> builtins.list[Agent]: ...
+
+def run_simulation(settings: SimulationSettings, agents: typing.Sequence[typing.Any]) -> pathlib.Path:
     r"""
     Performs a complete numerical simulation of our system.
-
+    
     Args:
         simulation_settings(SimulationSettings): The settings required to run the simulation
     """
 
-def store_cells(
-    cells: typing.Sequence[Agent], path: builtins.str | os.PathLike | pathlib.Path
-) -> None: ...

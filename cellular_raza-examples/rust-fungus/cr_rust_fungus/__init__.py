@@ -4,6 +4,8 @@ from .cr_rust_fungus import (
     Fungus,
     SimulationSettings,
     run_simulation,
-    store_cells,
-    load_cells,
+    find_results,
+    load_results,
+    load_all_results,
+    get_all_iterations,
 )

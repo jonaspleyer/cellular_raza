@@ -245,13 +245,14 @@ impl InteractionInformation<Inf> for Agent {
 /// Contains settings needed to specify the simulation
 #[gen_stub_pyclass]
 #[pyclass(get_all, set_all, from_py_object)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, approx::AbsDiffEq, PartialEq, Serialize, Deserialize)]
 pub struct SimulationSettings {
     /// Overall domain size
     pub domain_size: f64,
     pub domain_force_dist: f64,
     pub domain_interaction_range: f64,
     /// Number of voxels to create subdivisions
+    #[approx(equal)]
     pub n_voxels: usize,
     /// Time increment used to solve the simulation
     pub dt: f64,
@@ -260,7 +261,10 @@ pub struct SimulationSettings {
     /// Frequency to store results
     pub save_interval: f64,
     /// Random initial seed
+    #[approx(equal)]
     pub rng_seed: u64,
+    // Cell-specific settings
+    pub perimeter_mod: f64,
 }
 
 #[gen_stub_pymethods]
@@ -278,6 +282,7 @@ impl SimulationSettings {
             t_max: 10.0,
             save_interval: 1.0,
             rng_seed: 0,
+            perimeter_mod: 1.2,
         }
     }
 
@@ -561,6 +566,32 @@ fn convert_agents(py: Python, agents: Vec<Py<PyAny>>) -> PyResult<Vec<Agent>> {
         .collect::<Result<Vec<_>, _>>()
 }
 
+fn storage_builder() -> StorageBuilder {
+    cellular_raza::prelude::StorageBuilder::new()
+        .priority([StorageOption::Ron, StorageOption::Memory])
+}
+
+fn load_agents<T>(
+    cells: &StorageManager<CellIdentifier, (CellBox<Agent>, T)>,
+) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError>
+where
+    T: Clone + for<'a> serde::Deserialize<'a>,
+{
+    Ok(cells
+        .load_all_elements()?
+        .into_iter()
+        .map(|(iteration, cells)| {
+            let cells = cells
+                .into_iter()
+                .sorted_by_key(|x| x.0)
+                .map(|(_, (c, _))| c.cell)
+                .collect::<Vec<_>>();
+
+            (iteration, cells)
+        })
+        .collect::<std::collections::BTreeMap<_, _>>())
+}
+
 /// Performs a complete numerical simulation of our system.
 ///
 /// Args:
@@ -571,40 +602,38 @@ pub fn run_simulation<'py>(
     py: Python<'py>,
     settings: &SimulationSettings,
     agents: Vec<Py<PyAny>>,
-) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
+) -> Result<std::path::PathBuf, SimulationError> {
     let agents = convert_agents(py, agents)?;
     Ok(run_simulation_rs(settings, agents)?)
 }
 
 pub fn run_simulation_rs(
-    settings: &SimulationSettings,
+    sim_settings: &SimulationSettings,
     agents: Vec<Agent>,
-) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
+) -> Result<std::path::PathBuf, SimulationError> {
     // Domain Setup
-    let domain_size = settings.domain_size;
+    let domain_size = sim_settings.domain_size;
     let domain = MyDomain {
         domain: CartesianCuboid::from_boundaries_and_n_voxels(
             [0.0; 2],
             [domain_size; 2],
-            [settings.n_voxels; 2],
+            [sim_settings.n_voxels; 2],
         )?,
-        force_dist: settings.domain_force_dist,
-        interaction_range: settings.domain_interaction_range,
+        force_dist: sim_settings.domain_force_dist,
+        interaction_range: sim_settings.domain_interaction_range,
     };
 
     // Storage Setup
-    let storage_builder = cellular_raza::prelude::StorageBuilder::new()
-        // .location("out")
-        .priority([StorageOption::Memory]);
+    let storage_builder = storage_builder();
 
     // Time Setup
     let t0 = 0.0;
-    let dt = settings.dt;
+    let dt = sim_settings.dt;
     let time_stepper = cellular_raza::prelude::time::FixedStepsize::from_partial_save_interval(
         t0,
         dt,
-        settings.t_max,
-        settings.save_interval,
+        sim_settings.t_max,
+        sim_settings.save_interval,
     )?;
 
     let settings = Settings {
@@ -623,45 +652,89 @@ pub fn run_simulation_rs(
         zero_force_default: |c: &Agent| c.zero_force_default(),
     )?;
 
-    let points = storager
-        .cells
-        .load_all_elements()?
-        .into_iter()
-        .map(|(iteration, cells)| {
-            let cells = cells
-                .into_iter()
-                .map(|(_, (c, _))| c.cell)
-                .collect::<Vec<_>>();
-
-            (iteration, cells)
-        })
-        .collect::<std::collections::BTreeMap<_, _>>();
-
-    Ok(points)
-}
-
-#[gen_stub_pyfunction]
-#[pyfunction]
-fn store_cells(py: Python, agents: Vec<Py<PyAny>>, path: std::path::PathBuf) -> PyResult<()> {
-    let agents = convert_agents(py, agents)?;
-    let mut file = std::fs::File::create(path)?;
+    let opath = storager.get_path()?;
+    let mut file = std::fs::File::create(opath.join("settings.ron"))?;
     let config = ron::ser::PrettyConfig::default();
     let options = ron::Options::default();
-    options.to_io_writer_pretty(&mut file, &agents, config)
-    // ron::ser::to_writer_pretty(&mut out_string, &agents, config)
-    // serde_json::ser::to_writer_pretty(&mut file, &agents)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
-    Ok(())
+    options
+        .to_io_writer_pretty(&mut file, &sim_settings, config)
+        .map_err(|e| SimulationError::StorageError(StorageError::from(e)))?;
+
+    Ok(opath)
 }
 
 #[gen_stub_pyfunction]
 #[pyfunction]
-fn load_cells(path: std::path::PathBuf) -> PyResult<Vec<Agent>> {
-    let file = std::fs::File::open(path)?;
-    let cells: Vec<Agent> = ron::de::from_reader(file)
-    // let cells: Vec<Agent> = serde_json::de::from_reader(file)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
-    Ok(cells)
+pub fn find_results(settings: &SimulationSettings) -> PyResult<Option<std::path::PathBuf>> {
+    for path in
+        glob::glob("out/*").map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?
+    {
+        let path = path
+            .map_err(|e| std::io::Error::from(e))?
+            .join("settings.ron");
+        if let Ok(file) = std::fs::File::open(&path) {
+            if ron::de::from_reader(&file)
+                .is_ok_and(|s: SimulationSettings| approx::abs_diff_eq!(settings, &s))
+            {
+                // let s = ron::de::from_reader(&file).unwrap();
+                // if approx::abs_diff_eq!(settings, &s, epsilon = 1e-8) {
+                let mut opath = path;
+                opath.pop();
+                return Ok(Some(opath));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+fn _storage_builder_helper(path: &std::path::Path) -> StorageBuilder<true> {
+    storage_builder()
+        .location(path)
+        .add_date(false)
+        .suffix("cells")
+        .init()
+}
+
+fn _cell_storager(
+    path: &std::path::Path,
+) -> Result<
+    cellular_raza::prelude::StorageManager<CellIdentifier, (CellBox<Agent>, ron::Value)>,
+    StorageError,
+> {
+    let storage_builder = _storage_builder_helper(&path);
+    cellular_raza::prelude::StorageManager::open_or_create(storage_builder, 0)
+}
+
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn get_all_iterations(path: std::path::PathBuf) -> Result<Vec<u64>, SimulationError> {
+    let storager = _cell_storager(&path)?;
+    Ok(storager.get_all_iterations()?)
+}
+
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn load_all_results(
+    path: std::path::PathBuf,
+) -> Result<std::collections::BTreeMap<u64, Vec<Agent>>, SimulationError> {
+    let cells = _cell_storager(&path)?;
+    load_agents(&cells)
+}
+
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn load_results(
+    iteration: u64,
+    path: std::path::PathBuf,
+) -> Result<Vec<Agent>, SimulationError> {
+    let cells = _cell_storager(&path)?;
+    Ok(cells
+        .load_all_elements_at_iteration(iteration)?
+        .into_iter()
+        .sorted_by_key(|x| x.0)
+        .map(|(_, x)| x.0.cell)
+        .collect())
 }
 
 #[pymodule]
@@ -671,8 +744,10 @@ fn cr_rust_fungus(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Agent>()?;
     m.add_class::<SimulationSettings>()?;
     m.add_function(wrap_pyfunction!(run_simulation, m)?)?;
-    m.add_function(wrap_pyfunction!(store_cells, m)?)?;
-    m.add_function(wrap_pyfunction!(load_cells, m)?)?;
+    m.add_function(wrap_pyfunction!(find_results, m)?)?;
+    m.add_function(wrap_pyfunction!(load_results, m)?)?;
+    m.add_function(wrap_pyfunction!(load_all_results, m)?)?;
+    m.add_function(wrap_pyfunction!(get_all_iterations, m)?)?;
     Ok(())
 }
 
