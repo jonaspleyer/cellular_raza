@@ -3,54 +3,61 @@ import matplotlib as mpl
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+from matplotlib.patches import Circle, Rectangle, Polygon
+import string
 
 import cr_rust_fungus as crf
 
 
 def save_snapshot(iteration, domain_size, result, opath=Path("out"), prefix=""):
     fig, ax = plt.subplots(figsize=(12, 12))
-    for cell in result[iteration]:
-        if not cell.is_fungus():
-            pos = np.array(cell[0].position).T
-            ax.add_patch(
-                mpl.patches.Polygon(
-                    pos,
-                    facecolor="#909090",
-                    linestyle="-",
-                    edgecolor="k",
-                    alpha=0.5,
-                )
+
+    def plot_plant(cell):
+        pos = np.array(cell[0].position).T
+        ax.add_patch(
+            Polygon(
+                pos,
+                facecolor="#909090",
+                linestyle="-",
+                edgecolor="k",
+                alpha=0.5,
             )
+        )
+
+    def plot_fungus(cell, edgecolor=None, facecolor=None):
+        for pi in pos:
+            circ = Circle(
+                pi,
+                radius=cell[0].radius,
+                edgecolor=edgecolor,
+                facecolor=facecolor,
+            )
+            ax.add_patch(circ)
+        for i in range(pos.shape[0] - 1):
+            p1 = pos[i]
+            p2 = pos[i + 1]
+            z = p2 - p1
+            width = float(np.linalg.norm(z))
+            angle = np.arctan2(-z[1], z[0]) % (2 * np.pi)
+            dir = np.array([-z[1], z[0]]) / width
+            r = cell[0].radius
+            rect = Rectangle(
+                p1 - dir * r,
+                width,
+                height=2 * r,
+                angle=-angle * 360 / 2 / np.pi,
+                edgecolor=edgecolor,
+                facecolor=facecolor,
+            )
+            ax.add_patch(rect)
+
+    for cell in result[iteration]:
+        pos = np.array(cell[0].position).T
+        if not cell.is_fungus():
+            plot_plant(cell)
         else:
-            pos = np.array(cell[0].position).T
-            for pi in pos:
-                ax.add_patch(
-                    mpl.patches.Circle(
-                        pi,
-                        radius=cell[0].radius,
-                        facecolor="#c0e384",
-                        edgecolor="gray",
-                    )
-                )
-            for i in range(pos.shape[0] - 1):
-                p1 = pos[i]
-                p2 = pos[i + 1]
-                z = p2 - p1
-                width = np.linalg.norm(z)
-                angle = np.arctan2(-z[1], z[0]) % (2 * np.pi)
-                dir = np.array([-z[1], z[0]]) / width
-                r = cell[0].radius
-                rect = mpl.patches.Rectangle(
-                    p1 - dir * r,
-                    width,
-                    height=2 * r,
-                    angle=-angle * 360 / 2 / np.pi,
-                    facecolor="#c0e384",
-                )
-                ax.add_patch(rect)
-                for s in [1.0, -1.0]:
-                    points = np.array([p1 + s * dir * r, p2 + s * dir * r])
-                    ax.plot(points[:, 0], points[:, 1], color="gray", linewidth=1)
+            plot_fungus(cell, edgecolor="gray", facecolor="gray")
+            plot_fungus(cell, facecolor="#c0e384")
             ax.plot(pos[:, 0], pos[:, 1], color="gray", marker="+", linestyle=":")
 
     dx = domain_size
