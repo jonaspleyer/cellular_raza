@@ -78,10 +78,6 @@ def midpoints_gen(n_agents, xlim, ylim):
     y0 = ylim[0]
     dy = (ylim[1] - ylim[0]) / n_agents[1]
 
-    # dx = domain_size_start_x / n
-    # dy = domain_size_start_y / n * np.sqrt(3) / 2
-    # xlow = domain_size / 2 - 0.5 * dx * n + dx / 4
-    # ylow = domain_size / 2 - 0.5 * dy * n + dy / 2
     for row in range(n_agents[1]):
         for col in range(n_agents[0]):
             midpoints.append([x0 + dx * (col + 0.5), y0 + dy * (row + 0.5)])
@@ -102,74 +98,86 @@ if __name__ == "__main__":
     settings.domain_size = domain_size
     settings.n_voxels = n_voxels
 
-    try:
-        initial_cells = crf.load_cells("out/initial_plant_cells.json")
-    except:
-        midpoints = midpoints_gen(
-            n_agents=[9, 4],
-            xlim=[0.0, 60.0],
-            ylim=[0.0, 28.0],
-        )
-        midpoints = np.array(midpoints)
+    midpoints1 = midpoints_gen(
+        n_agents=[3, 3],
+        xlim=[0.0, 27.0],
+        ylim=[14.0, 35.0],
+    )
+    midpoints2 = midpoints_gen(
+        n_agents=[3, 3],
+        xlim=[33.0, 60.0],
+        ylim=[14.0, 35.0],
+    )
+    midpoints3 = midpoints_gen(
+        n_agents=[2, 1],
+        xlim=[0.0, 20.0],
+        ylim=[7.0, 14.0],
+    )
+    midpoints4 = midpoints_gen(
+        n_agents=[3, 1],
+        xlim=[30.0, 60.0],
+        ylim=[7.0, 14.0],
+    )
+    midpoints5 = midpoints_gen(
+        n_agents=[8, 1],
+        xlim=[0.0, 60.0],
+        ylim=[0.0, 7.0],
+    )
 
-        radius = 3.8
-        radius_variance = 1.0
-        radii = radius + radius_variance * (0.5 - rng.random(midpoints.shape[0]))
+    midpoints = np.array(
+        [*midpoints1, *midpoints2, *midpoints3, *midpoints4, *midpoints5]
+    )
 
-        # Generate a polygon for each starting point
-        n_vertices = 40
-        plant_cells = []
-        for middle, radius in zip(midpoints, radii):
-            # Calculate randomly placed points around centers
-            angle_delta = 2 * np.pi / n_vertices
-            coords = np.array(
+    radius = 4.45
+    radius_variance = 0.5
+    radii = radius + radius_variance * (0.5 - rng.random(midpoints.shape[0]))
+
+    # Generate a polygon for each starting point
+    n_vertices = 40
+    plant_cells = []
+    for middle, radius in zip(midpoints, radii):
+        # Calculate randomly placed points around centers
+        angle_delta = 2 * np.pi / n_vertices
+        coords = np.array(
+            [
                 [
-                    [
-                        np.cos(angle_delta * i),
-                        np.sin(angle_delta * i),
-                    ]
-                    for i in range(n_vertices)
+                    np.cos(angle_delta * i),
+                    np.sin(angle_delta * i),
                 ]
-            )
-            x = middle + radius * coords
-            dx = 0.1 * radius * rng.random(x.shape)
-            pos = x + dx
+                for i in range(n_vertices)
+            ]
+        )
+        x = middle + radius * coords
+        dx = 0.1 * radius * rng.random(x.shape)
+        pos = x + dx
 
-            # Calculate Target Area and perimeter
-            target_area = np.pi * radius**2
-            target_perimeter = 2 * np.pi * radius * 1.025
+        # Calculate Target Area and perimeter
+        target_area = np.pi * radius**2
+        target_perimeter = 2 * np.pi * radius * 1.2
 
-            agent = crf.PlantCell(
-                pos.T,
-                force_area=0.001,
-                force_perimeter=0.025,
-                force_dist=0.002,
-                force_angle=0.0001,
-                interaction_range=radius / 5,
-                min_dist=0.8 * radius,
-                target_area=target_area,
-                target_perimeter=target_perimeter,
-                damping=0.3,
-                diffusion_constant=0.0000,
-            )
-            plant_cells.append(agent)
-
-        result = crf.run_simulation(settings, plant_cells)
-        print()
-
-        final_iter = list(sorted(result.keys()))[-1]
-        initial_cells = [k[0] for k in result[final_iter]]
-        crf.store_cells(initial_cells, "out/initial_plant_cells.json")
-
-        iterations = list(sorted(result.keys()))
-        save_snapshot(iterations[0], settings.domain_size, result, prefix="pre")
-        save_snapshot(iterations[1], settings.domain_size, result, prefix="pre")
-        save_snapshot(iterations[-1], settings.domain_size, result, prefix="pre")
+        agent = crf.PlantCell(
+            pos.T,
+            force_area=0.001,
+            force_perimeter=0.025,
+            force_dist=0.002,
+            force_angle=0.0001,
+            interaction_range=radius / 10,
+            min_dist=0.8 * radius,
+            target_area=target_area,
+            target_perimeter=target_perimeter,
+            damping=0.3,
+            diffusion_constant=0.0000,
+        )
+        plant_cells.append(agent)
 
     # Create Fungus Cells now
     spring_length = 3.0
-    pos = spring_length * (np.arange(8) - 3.5)
-    pos = np.array([pos + domain_size / 2, 0 * pos + domain_size * 0.5])
+    pos = spring_length * (np.arange(11) - 3.5)
+    pos = np.array([0 * pos + domain_size / 2, pos + domain_size / 4])
+    pos[:, 0] = [22, 10]
+    pos[:, 1] = [25, 11]
+    pos[:, 2] = [27, 12]
+    pos[:, 3] = [29, 13]
     fungal_cells = [
         crf.Fungus(
             pos,
@@ -177,7 +185,7 @@ if __name__ == "__main__":
             spring_tension=0.001,
             rigidity=0.00002,
             spring_length=spring_length,
-            damping=0.10,
+            damping=0.03,
             radius=1.7,
             potential_stiffness=0.05,
             cutoff=2.0,
@@ -186,12 +194,12 @@ if __name__ == "__main__":
     ]
 
     # Update Settings
-    settings.t_max = 3_000.0
+    settings.t_max = 10_000.0
     settings.dt = 5.0
-    settings.save_interval = 200.0
+    settings.save_interval = 1_000.0
 
     # Combine cells and run simulation
-    agents = [*initial_cells, *fungal_cells]
+    agents = [*plant_cells, *fungal_cells]
     result = crf.run_simulation(settings, agents)
 
     for iteration in tqdm(result, total=len(result)):
