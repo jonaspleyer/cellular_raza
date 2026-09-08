@@ -62,9 +62,11 @@ def plot_schematic(ax):
     ax.plot(
         [*pos[:, 0], pos[0, 0]],
         [*pos[:, 1], pos[0, 1]],
-        marker="x",
+        marker="o",
         color="k",
-        linestyle="--",
+        linestyle=":",
+        markersize=5,
+        linewidth=2,
     )
 
     ax.set_xticks([])
@@ -108,7 +110,17 @@ def plot_schematic(ax):
         r = 1.3 * (q - q[2]) + np.array(xy) + np.array([0.5 * dss, 0.6 * dss])
         # Clip to rectangle
         r[:, 0] = np.clip(r[:, 0], xy[0], xy[0] + dss)
-        ax.plot(r[:, 0], r[:, 1], color="k", linewidth=2, zorder=101, marker="o")
+        ax.plot(
+            r[1:-1, 0],
+            r[1:-1, 1],
+            color="k",
+            linewidth=2,
+            zorder=101,
+            marker="o",
+            linestyle=":",
+        )
+        ax.plot(r[:2, 0], r[:2, 1], color="k", linewidth=2, zorder=101, linestyle=":")
+        ax.plot(r[-2:, 0], r[-2:, 1], color="k", linewidth=2, zorder=101, linestyle=":")
 
         for i in range(len(r) - 1):
             p = 0.5 * (r[i] + r[i + 1])
@@ -148,7 +160,6 @@ def plot_schematic(ax):
                     q[i : i + 2, 1],
                     color="k",
                     zorder=101,
-                    markersize=5,
                 )
 
     def plot_schema_3():
@@ -181,7 +192,18 @@ def plot_schematic(ax):
         q = dmid + 0.5 * ds * r
         q = np.clip(q, xy, [xy[0] + dss, xy[1] + dss])
 
-        ax.plot(q[:, 0], q[:, 1], color="k", linestyle="--", linewidth=2, zorder=101)
+        ax.plot(
+            q[1:-1, 0],
+            q[1:-1, 1],
+            color="k",
+            linestyle=":",
+            linewidth=2,
+            zorder=101,
+            marker="o",
+            markersize=5,
+        )
+        ax.plot(q[:2, 0], q[:2, 1], color="k", linestyle=":", linewidth=2, zorder=101)
+        ax.plot(q[-2:, 0], q[-2:, 1], color="k", linestyle=":", linewidth=2, zorder=101)
 
         for i in range(1, len(q) - 1):
             p1 = q[i - 1]
@@ -218,7 +240,7 @@ def save_snapshot(
         ax.add_patch(
             Polygon(
                 pos,
-                facecolor="#909090",
+                facecolor="#96ab6f",  # "#909090",
                 linestyle="-",
                 edgecolor="k",
                 alpha=0.5,
@@ -258,7 +280,7 @@ def save_snapshot(
             plot_plant(cell)
         else:
             plot_fungus(cell, edgecolor="gray", facecolor="gray")
-            plot_fungus(cell, facecolor="#c0e384")
+            plot_fungus(cell, facecolor="#ffbe4f")
             ax.plot(pos[:, 0], pos[:, 1], color="gray", marker="+", linestyle=":")
 
     dx = domain_size
