@@ -127,6 +127,14 @@ where
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
-        Ok(self.map.lock()?.keys().into_iter().map(|&k| k).collect())
+        use itertools::Itertools;
+        Ok(self
+            .map
+            .lock()?
+            .keys()
+            .into_iter()
+            .sorted()
+            .map(|&k| k)
+            .collect())
     }
 }

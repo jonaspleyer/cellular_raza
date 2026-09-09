@@ -1100,18 +1100,31 @@ where
     }
 
     fn get_all_iterations(&self) -> Result<Vec<u64>, StorageError> {
+        use itertools::Itertools;
         let paths = std::fs::read_dir(&self.0.get_path())?;
-        paths
+        let mut error = None;
+        let iterations = paths
             .into_iter()
-            .filter_map(|path| match path {
-                Ok(p) => match self.0.folder_name_to_iteration(&p.path()) {
-                    Ok(Some(entry)) => Some(Ok(entry)),
-                    Ok(None) => None,
-                    Err(e) => Some(Err(e)),
-                },
-                Err(_) => None,
+            .filter_map(|path| {
+                match path
+                    .ok()
+                    .and_then(|x| self.0.folder_name_to_iteration(&x.path()).transpose())
+                {
+                    Some(Ok(i)) => Some(i),
+                    Some(Err(e)) => {
+                        error = Some(e);
+                        None
+                    }
+                    None => None,
+                }
             })
-            .collect::<Result<Vec<_>, _>>()
+            .sorted_by_key(|x| *x)
+            .collect::<Vec<_>>();
+
+        if let Some(e) = error {
+            return Err(e);
+        }
+        Ok(iterations)
     }
 }
 
