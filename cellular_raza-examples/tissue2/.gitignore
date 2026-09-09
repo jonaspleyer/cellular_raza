@@ -3,5 +3,5 @@ target
 out
 .venv
 docs/_build
-cr_tissue/*.so
-cr_tissue/__pycache__
+cr_tissue_2/*.so
+cr_tissue_2/__pycache__
