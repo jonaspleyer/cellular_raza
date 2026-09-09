@@ -383,7 +383,7 @@ def generate_agents(settings, fungal=True):
             pos.T,
             force_area=0.001,
             force_perimeter=0.025,
-            force_dist=0.002,
+            force_dist=0.005,
             force_angle=0.0001,
             interaction_range=radius / 10,
             min_dist=0.8 * radius,

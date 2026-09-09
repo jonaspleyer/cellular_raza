@@ -239,7 +239,7 @@ impl Interaction<Pos, Pos, Pos, Inf> for PlantCell {
 
                 // Update calculated force if another distance was smaller
                 if 0.0 < d && d < 1.0 && d < dist {
-                    f = self.force_dist * 6.0 * (d - 1.0) * x;
+                    f = self.force_dist * (d - 1.0) / self.interaction_range * x;
                     t = s;
                     k1 = j1;
                     k2 = j2;

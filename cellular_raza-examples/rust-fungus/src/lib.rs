@@ -299,7 +299,7 @@ impl SimulationSettings {
     fn new() -> Self {
         Self {
             domain_size: 30.0,
-            domain_force_dist: 0.002,
+            domain_force_dist: 0.01,
             domain_interaction_range: 0.75,
             n_voxels: 3,
             dt: 0.05,
@@ -425,7 +425,7 @@ impl SubDomainForce<V, V, V, Inf> for MySubDomain {
 
                         if 0.0 < d && d < 1.0 {
                             use core::ops::AddAssign;
-                            f.add_assign(-self.force_dist * 6.0 * (d - 1.0) * x);
+                            f.add_assign(-self.force_dist * (d - 1.0) / self.interaction_range * x);
                         }
                     }
                 }
