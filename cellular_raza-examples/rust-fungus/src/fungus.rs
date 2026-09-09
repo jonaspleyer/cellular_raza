@@ -10,6 +10,8 @@ pub struct Fungus {
     pub mechanics: cellular_raza::building_blocks::RodMechanics<f64, 2>,
     pub position_helper: nalgebra::Matrix2xX<f64>,
     pub interaction: cellular_raza::building_blocks::RodInteraction<MorsePotential>,
+    pub growth_rate: f64,
+    pub fixed_pos: Option<(usize, nalgebra::Vector2<f64>)>,
 }
 
 #[gen_stub_pymethods]
@@ -27,6 +29,8 @@ impl Fungus {
         potential_stiffness: f64,
         cutoff: f64,
         strength: f64,
+        growth_rate: f64,
+        fixed_pos: Option<(usize, [f64; 2])>,
     ) -> Self {
         let pos = crate::py_array_to_matrix(pos).transpose();
         let position_helper = pos.transpose().clone();
@@ -51,6 +55,8 @@ impl Fungus {
             mechanics,
             interaction,
             position_helper,
+            growth_rate,
+            fixed_pos: fixed_pos.map(|(i, x)| (i, nalgebra::Vector2::from(x))),
         }
     }
 

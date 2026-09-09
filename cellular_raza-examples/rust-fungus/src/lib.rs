@@ -66,7 +66,13 @@ impl Position<V> for Agent {
             P(p) => p.set_pos(position),
             F(f) => {
                 f.position_helper = position.clone();
-                f.mechanics.set_pos(&position.transpose())
+                f.mechanics.set_pos(&position.transpose());
+                if let Some((n, p)) = f.fixed_pos {
+                    f.position_helper.column_mut(n)[0] = p[0];
+                    f.position_helper.column_mut(n)[1] = p[1];
+                    f.mechanics.pos.row_mut(n)[0] = p[0];
+                    f.mechanics.pos.row_mut(n)[1] = p[1];
+                }
             }
         }
     }
@@ -115,6 +121,24 @@ impl Mechanics<V, V, V, f64> for Agent {
                 .calculate_increment(force.transpose())
                 .map(|(p, v)| (p.transpose(), v.transpose())),
         }
+    }
+}
+
+impl Cycle for Agent {
+    fn update_cycle(
+        _: &mut rand_chacha::ChaCha8Rng,
+        dt: &f64,
+        cell: &mut Self,
+    ) -> Option<CycleEvent> {
+        match cell {
+            Agent::F(f) => f.mechanics.spring_length += f.growth_rate * dt,
+            _ => (),
+        }
+        None
+    }
+
+    fn divide(_: &mut rand_chacha::ChaCha8Rng, _: &mut Self) -> Result<Self, DivisionError> {
+        panic!("This function should never be called!")
     }
 }
 
@@ -647,7 +671,7 @@ pub fn run_simulation_rs(
         domain: domain,
         agents: agents,
         settings: settings,
-        aspects: [Mechanics, Interaction, DomainForce],
+        aspects: [Mechanics, Interaction, DomainForce, Cycle],
         update_mechanics_interaction_step_1: custom_update_func,
         zero_force_default: |c: &Agent| c.zero_force_default(),
     )?;

@@ -312,12 +312,13 @@ def midpoints_gen(n_agents, xlim, ylim):
     return midpoints
 
 
-def run_or_load_sim(settings):
+def generate_agents(settings, fungal=True):
     # Try loading previous result
     path = crf.find_results(settings)
     if path is not None:
         print("Loaded Result from", path)
-        return path
+        iterations = list(sorted(crf.get_all_iterations(path)))
+        return crf.load_results(iterations[-1], path)
 
     rng = np.random.default_rng(settings.rng_seed)
 
@@ -338,7 +339,7 @@ def run_or_load_sim(settings):
     )
     midpoints4 = midpoints_gen(
         n_agents=[3, 1],
-        xlim=[30.0, 60.0],
+        xlim=[27.0, 60.0],
         ylim=[7.0, 14.0],
     )
     midpoints5 = midpoints_gen(
@@ -393,63 +394,57 @@ def run_or_load_sim(settings):
         )
         plant_cells.append(agent)
 
-    # Create Fungus Cells now
-    spring_length = 3.0
-    pos = spring_length * (np.arange(11) - 3.5)
-    pos = np.array([0 * pos + settings.domain_size / 2, pos + settings.domain_size / 4])
-    pos[:, 0] = [22, 10]
-    pos[:, 1] = [25, 11]
-    pos[:, 2] = [27, 12]
-    pos[:, 3] = [29, 13]
-    fungal_cells = [
-        crf.Fungus(
-            pos,
-            diffusion_constant=0.0,
-            spring_tension=0.001,
-            rigidity=0.00002,
-            spring_length=spring_length,
-            damping=0.03,
-            radius=1.7,
-            potential_stiffness=0.05,
-            cutoff=2.0,
-            strength=0.05,
-        )
-    ]
+    if fungal:
+        # Create Fungus Cells now
+        spring_length = 2.0
+        pos = spring_length * np.arange(11)
+        pos = np.array([0 * pos + settings.domain_size / 2, pos + 35 - pos[-1]])
+        fungal_cells = [
+            crf.Fungus(
+                pos,
+                diffusion_constant=0.0,
+                spring_tension=0.002,
+                rigidity=0.0025,
+                spring_length=spring_length,
+                damping=0.03,
+                radius=1.5,
+                potential_stiffness=0.05,
+                cutoff=2.0,
+                strength=0.05,
+                growth_rate=0.0010,
+                # fixed_pos=None,
+                fixed_pos=(pos.shape[1] - 1, pos[:, -1]),
+            )
+        ]
 
-    # Combine cells and run simulation
-    agents = [*plant_cells, *fungal_cells]
-    result = crf.run_simulation(settings, agents)
-    print()
-    return result
+        # Combine cells and run simulation
+        agents = [*plant_cells, *fungal_cells]
+    else:
+        agents = plant_cells
+
+    return agents
 
 
 if __name__ == "__main__":
     settings = crf.SimulationSettings()
     # Update Settings
-    settings.t_max = 20_000.0
+    settings.t_max = 5_000.0
     settings.dt = 5.0
-    settings.save_interval = 1_000.0
+    settings.save_interval = 50.0
     settings.domain_size = 60.0
     settings.n_voxels = 4
 
-    parameters = [
-        (0, 1.00),
-        (1, 1.20),
-    ]
+    settings.rng_seed = 0
+    settings.perimeter_mod = 1.2
 
-    results = []
-    for seed, perimeter_mod in parameters:
-        settings.rng_seed = seed
-        settings.perimeter_mod = perimeter_mod
+    agents = generate_agents(settings, fungal=False)
+    path = crf.run_simulation(settings, agents)
+    iterations = crf.get_all_iterations(path)
+    final_agents = crf.load_results(iterations[-1], path)
 
-        path = run_or_load_sim(settings)
-        iterations = crf.get_all_iterations(path)
-        final_agents = crf.load_results(iterations[-1], path)
-        results.append(final_agents)
-
-    # iterations = list(sorted(result.keys()))
-    # for iteration in tqdm(iterations):
-    #     save_snapshot(iteration, settings.domain_size, result)
+    settings.t_max = 2_000.0
+    fungus = generate_agents(settings, fungal=True)[-1]
+    path = crf.run_simulation(settings, [*final_agents, fungus])
 
     fig, axs = plt.subplots(1, 3, figsize=(24, 8 * 1.04))
 
@@ -468,7 +463,11 @@ if __name__ == "__main__":
             transform=ax.transAxes,
         )
 
-    for i, cells in enumerate(results):
+    iterations = crf.get_all_iterations(path)
+    i1 = iterations[1]
+    i2 = iterations[-1]
+    for i, iteration in enumerate([i1, i2]):
+        cells = crf.load_results(iteration, path)
         save_snapshot(
             cells,
             settings.domain_size,
