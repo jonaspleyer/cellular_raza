@@ -508,11 +508,8 @@ where
                                 use core::ops::AddAssign;
                                 // z is pointing from fungus to plant cell
                                 let y = z * ($f2.interaction.0.radius - d) / d;
-                                pos_helper_1.column_mut(n).add_assign(0.5 * y);
-                                pos_helper_fungus
-                                    .column_mut(m)
-                                    .add_assign(-0.5 * (1.0 - h) * y);
-                                pos_helper_fungus.column_mut(m + 1).add_assign(-0.5 * h * y);
+                                pos_helper_fungus.column_mut(m).add_assign(-(1.0 - h) * y);
+                                pos_helper_fungus.column_mut(m + 1).add_assign(-h * y);
                             }
                         }
                     }};
