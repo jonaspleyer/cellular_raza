@@ -313,13 +313,6 @@ def midpoints_gen(n_agents, xlim, ylim):
 
 
 def generate_agents(settings, fungal=True):
-    # Try loading previous result
-    path = crf.find_results(settings)
-    if path is not None:
-        print("Loaded Result from", path)
-        iterations = list(sorted(crf.get_all_iterations(path)))
-        return crf.load_results(iterations[-1], path)
-
     rng = np.random.default_rng(settings.rng_seed)
 
     midpoints1 = midpoints_gen(
