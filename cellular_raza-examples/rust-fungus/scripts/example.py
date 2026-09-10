@@ -435,7 +435,7 @@ if __name__ == "__main__":
     iterations = crf.get_all_iterations(path)
     final_agents = crf.load_results(iterations[-1], path)
 
-    settings.t_max = 2_000.0
+    settings.t_max = 3_000.0
     fungus = generate_agents(settings, fungal=True)[-1]
     path = crf.run_simulation(settings, [*final_agents, fungus])
 
