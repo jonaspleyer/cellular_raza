@@ -98,10 +98,10 @@ impl Cycle<Agent> for Agent {
     }
 
     fn divide(
-        rng: &mut rand_chacha::ChaCha8Rng,
+        _rng: &mut rand_chacha::ChaCha8Rng,
         cell: &mut Agent,
     ) -> Result<Agent, cellular_raza::prelude::DivisionError> {
-        let c2_mechanics = cell.mechanics.divide(rng, cell.interaction.0.radius)?;
+        let c2_mechanics = cell.mechanics.divide(cell.interaction.0.radius)?;
         let mut c2 = cell.clone();
         c2.mechanics = c2_mechanics;
         Ok(c2)
