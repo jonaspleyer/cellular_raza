@@ -318,31 +318,49 @@ def generate_agents(settings, fungal=True):
     midpoints1 = midpoints_gen(
         n_agents=[3, 3],
         xlim=[0.0, 27.0],
-        ylim=[14.0, 35.0],
+        ylim=[28.0, 49.0],
     )
     midpoints2 = midpoints_gen(
         n_agents=[3, 3],
         xlim=[33.0, 60.0],
-        ylim=[14.0, 35.0],
+        ylim=[28.0, 49.0],
     )
     midpoints3 = midpoints_gen(
         n_agents=[2, 1],
         xlim=[0.0, 20.0],
-        ylim=[7.0, 14.0],
+        ylim=[21.0, 28.0],
     )
     midpoints4 = midpoints_gen(
         n_agents=[3, 1],
-        xlim=[27.0, 60.0],
-        ylim=[7.0, 14.0],
+        xlim=[32.0, 60.0],
+        ylim=[21.0, 28.0],
     )
     midpoints5 = midpoints_gen(
+        n_agents=[2, 2],
+        xlim=[0.0, 14.0],
+        ylim=[7.0, 21.0],
+    )
+    midpoints6 = midpoints_gen(
+        n_agents=[4, 2],
+        xlim=[26.0, 60.0],
+        ylim=[7.0, 21.0],
+    )
+    midpoints7 = midpoints_gen(
         n_agents=[8, 1],
         xlim=[0.0, 60.0],
         ylim=[0.0, 7.0],
     )
 
     midpoints = np.array(
-        [*midpoints1, *midpoints2, *midpoints3, *midpoints4, *midpoints5]
+        [
+            *midpoints1,
+            *midpoints2,
+            *midpoints3,
+            *midpoints4,
+            *midpoints5,
+            *midpoints6,
+            *midpoints7,
+        ]
     )
 
     radius = 4.45
@@ -377,7 +395,7 @@ def generate_agents(settings, fungal=True):
             force_area=0.001,
             force_perimeter=0.025,
             force_dist=0.005,
-            force_angle=0.0001,
+            force_angle=0.0002,
             interaction_range=radius / 10,
             min_dist=0.8 * radius,
             target_area=target_area,
@@ -389,9 +407,9 @@ def generate_agents(settings, fungal=True):
 
     if fungal:
         # Create Fungus Cells now
-        spring_length = 2.0
+        spring_length = 1.5
         pos = spring_length * np.arange(11)
-        pos = np.array([0 * pos + settings.domain_size / 2, pos + 35 - pos[-1]])
+        pos = np.array([0 * pos + settings.domain_size / 2, pos + 49 - pos[-1]])
         fungal_cells = [
             crf.Fungus(
                 pos,
@@ -399,7 +417,7 @@ def generate_agents(settings, fungal=True):
                 spring_tension=0.002,
                 rigidity=0.0025,
                 spring_length=spring_length,
-                damping=0.03,
+                damping=0.02,
                 radius=1.5,
                 potential_stiffness=0.05,
                 cutoff=2.0,
@@ -421,7 +439,7 @@ def generate_agents(settings, fungal=True):
 if __name__ == "__main__":
     settings = crf.SimulationSettings()
     # Update Settings
-    settings.t_max = 5_000.0
+    settings.t_max = 10_000.0
     settings.dt = 5.0
     settings.save_interval = 50.0
     settings.domain_size = 60.0
