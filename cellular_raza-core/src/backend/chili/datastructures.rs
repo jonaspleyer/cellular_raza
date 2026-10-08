@@ -291,7 +291,7 @@ where
                 "Could not find correct voxel for cell".to_owned(),
             ))?;
             let aux_storage = aux_storage.map_or(init_aux_storage(&cell), |x| x);
-            let cbox = CellBox::new_initial(n_cell, cell);
+            let cbox = CellBox::new_initial(n_cell, plain_index, cell);
             voxel.cells.push((cbox, aux_storage));
             voxel.id_counter += 1;
         }

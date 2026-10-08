@@ -19,7 +19,7 @@ pub enum CellIdentifier {
     /// Produced from a division process
     Division(VoxelPlainIndex, u64),
     /// Initially placed inside the simulation
-    Initial(usize),
+    Initial(VoxelPlainIndex, usize),
     /// Inserted manually by other processes
     Inserted(VoxelPlainIndex, u64),
 }
@@ -35,8 +35,8 @@ impl CellIdentifier {
 
     /// Construct a new [CellIdentifier::Initial]
     #[staticmethod]
-    pub fn new_initial(index: usize) -> Self {
-        CellIdentifier::Initial(index)
+    pub fn new_initial(index: usize, voxel_plain_index: VoxelPlainIndex) -> Self {
+        CellIdentifier::Initial(voxel_plain_index, index)
     }
 
     /// Construct a new [CellIdentifier::Inserted]
@@ -92,9 +92,9 @@ impl CellIdentifier {
     ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
         use pyo3::IntoPyObject;
         let (key0, key1) = match self {
-            CellIdentifier::Initial(key0) => (*key0, None),
-            CellIdentifier::Division(key0, key1) => (key0.0, Some(*key1)),
-            CellIdentifier::Inserted(key0, key1) => (key0.0, Some(*key1)),
+            CellIdentifier::Initial(key0, key1) => (key0.0, *key1 as u64),
+            CellIdentifier::Division(key0, key1) => (key0.0, *key1),
+            CellIdentifier::Inserted(key0, key1) => (key0.0, *key1),
         };
         if key == 0 {
             Ok(key0.into_pyobject(py)?.into_any())
@@ -241,9 +241,9 @@ impl<C> core::ops::DerefMut for CellBox<C> {
 
 impl<C> CellBox<C> {
     /// Create a new [CellBox] for a cell present initially in the simulation.
-    pub fn new_initial(n_cell: usize, cell: C) -> CellBox<C> {
+    pub fn new_initial(n_cell: usize, plain_index: VoxelPlainIndex, cell: C) -> CellBox<C> {
         CellBox::<C> {
-            identifier: CellIdentifier::Initial(n_cell),
+            identifier: CellIdentifier::Initial(plain_index, n_cell),
             parent: None,
             cell,
         }

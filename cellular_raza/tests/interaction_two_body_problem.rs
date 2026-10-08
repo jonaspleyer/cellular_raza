@@ -126,7 +126,7 @@ fn two_body_problem() {
             .map(|(iteration, elements)| {
                 let mut elements: Vec<_> = elements.into_iter().collect();
                 elements.sort_by_key(|(id, _)| match id {
-                    CellIdentifier::Initial(key) => *key,
+                    CellIdentifier::Initial(_, key) => *key,
                     _ => panic!("This should be an initial key"),
                 });
                 let mut matrix = SMatrix::<f64, 4, 2>::zeros();

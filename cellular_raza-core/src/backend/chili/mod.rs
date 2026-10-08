@@ -146,7 +146,7 @@
 //! #     assert!(iteration >= 0);
 //! #     assert_eq!(cells.len(), 10);
 //! #     for (_, (cbox, _)) in cells {
-//! #         if let CellIdentifier::Initial(key) = cbox.get_id() {
+//! #         if let CellIdentifier::Initial(_, key) = cbox.get_id() {
 //! #             let calculated = key as f64 + iteration as f64 * 0.1 * initial_vel;
 //! #             let cr = cbox.cell.pos;
 //! #             assert!((calculated - cr).abs() < 1e-5);
